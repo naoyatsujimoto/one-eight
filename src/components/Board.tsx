@@ -326,13 +326,15 @@ export function Board({
     if (!scaler) return;
     const parent = scaler.parentElement;
     if (!parent) return;
-    // Available width (panel padding already excluded by box-sizing)
-    const available = parent.clientWidth;
+    // Use scaler's own rendered width (= parent content width, excludes padding/border).
+    // getBoundingClientRect gives the post-layout pixel width, which correctly reflects
+    // the parent's content box and avoids the parent.clientWidth (includes padding) bug.
+    const rect = scaler.getBoundingClientRect();
+    const available = rect.width > 0 ? rect.width : parent.clientWidth;
     const scale = Math.min(1, available / BOARD_W);
     // Set CSS custom property read by board-inner transform
     scaler.style.setProperty('--board-scale', String(scale));
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;
-    scaler.style.width = '100%';
   }, []);
 
   useEffect(() => {
