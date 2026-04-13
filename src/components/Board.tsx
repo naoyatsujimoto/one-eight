@@ -390,11 +390,11 @@ export function Board({
         {/* Octagonal board outline */}
         <svg className="board-octagon-svg" aria-hidden="true">
           <polygon
-            points="64,-8 536,-8 608,64 608,582 536,654 64,654 -8,582 -8,64"
+            points="72,0 528,0 600,72 600,608 528,680 72,680 0,608 0,72"
             className="board-octagon-outer"
           />
           <polygon
-            points="70,-2 530,-2 602,70 602,576 530,648 70,648 -2,576 -2,70"
+            points="78,6 522,6 594,78 594,602 522,674 78,674 6,602 6,78"
             className="board-octagon-inner"
           />
         </svg>
