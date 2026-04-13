@@ -330,10 +330,15 @@ export function Board({
     // getBoundingClientRect gives the post-layout pixel width, which correctly reflects
     // the parent's content box and avoids the parent.clientWidth (includes padding) bug.
     const rect = scaler.getBoundingClientRect();
-    // Safety margin: subtract 8px to prevent edge overflow on narrow devices (≤390px)
     const raw = rect.width > 0 ? rect.width : parent.clientWidth;
-    const available = Math.max(0, raw - 8);
-    const scale = Math.min(1, available / BOARD_W);
+    // On narrow viewports (≤600px / iPhone), apply a larger safety margin and
+    // cap scale explicitly to 0.45 to prevent the board from bleeding outside
+    // the panel regardless of layout rounding or border contributions.
+    const isMobile = window.innerWidth <= 600;
+    const safetyMargin = isMobile ? 24 : 8;
+    const scaleCap = isMobile ? 0.45 : 1;
+    const available = Math.max(0, raw - safetyMargin);
+    const scale = Math.min(scaleCap, available / BOARD_W);
     // Set CSS custom property read by board-inner transform
     scaler.style.setProperty('--board-scale', String(scale));
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;

@@ -796,11 +796,14 @@ ol { padding-left: 20px; }
     min-height: 34px !important;
   }
 
-  /* Board panel: scale board-inner to fit screen */
+  /* Board panel: strip all horizontal spacing on mobile so the
+     scaler gets the full viewport width with no wasted pixels. */
   .board-panel {
-    padding: 8px 2px;
+    padding: 4px 0;
     overflow: hidden;
     min-width: 0;
+    border: none;
+    border-radius: 0;
   }
 
   /*
