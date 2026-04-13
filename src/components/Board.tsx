@@ -326,27 +326,26 @@ export function Board({
     if (!scaler) return;
     const parent = scaler.parentElement;
     if (!parent) return;
-    // Use scaler's own rendered width (= parent content width, excludes padding/border).
-    // getBoundingClientRect gives the post-layout pixel width, which correctly reflects
-    // the parent's content box and avoids the parent.clientWidth (includes padding) bug.
-    const rect = scaler.getBoundingClientRect();
-    const raw = rect.width > 0 ? rect.width : parent.clientWidth;
-    // On narrow viewports (≤600px / iPhone), apply a larger safety margin and
-    // cap scale to prevent the board from bleeding outside the panel.
     const isMobile = window.innerWidth <= 600;
     const safetyMargin = isMobile ? 24 : 8;
     const scaleCap = isMobile ? 0.50 : 1;
+    // Use parent.clientWidth for available space.
+    // This avoids measuring the scaler itself (whose width JS is about to override)
+    // and correctly reflects the panel's content width.
+    const raw = parent.clientWidth > 0 ? parent.clientWidth : 320;
     const available = Math.max(0, raw - safetyMargin);
     const scale = Math.min(scaleCap, available / BOARD_W);
-    // Set CSS custom property read by board-inner transform
     scaler.style.setProperty('--board-scale', String(scale));
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;
-    // Center the scaled board within the scaler container.
-    // After scale, the board renders at (scale * BOARD_W) wide inside a container
-    // of `raw` pixels. Push it right by half the leftover space so it sits centred.
-    const scaledW = Math.ceil(BOARD_W * scale);
-    const leftOffset = Math.max(0, Math.floor((raw - scaledW) / 2));
-    scaler.style.setProperty('--board-left-offset', `${leftOffset}px`);
+    if (isMobile) {
+      // Shrink scaler to the post-scale visual width so CSS `margin: 0 auto`
+      // can center it inside the panel — no margin-left math needed on board-inner.
+      scaler.style.width = `${Math.ceil(BOARD_W * scale)}px`;
+    } else {
+      scaler.style.removeProperty('width');
+    }
+    // Remove legacy left-offset variable (centering is now done via scaler width + margin auto)
+    scaler.style.removeProperty('--board-left-offset');
   }, []);
 
   useEffect(() => {

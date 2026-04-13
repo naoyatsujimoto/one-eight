@@ -813,25 +813,23 @@ ol { padding-left: 20px; }
    * also provide a CSS fallback via transform on .board-inner-scaler.
    */
   .board-inner-scaler {
-    /* Reserve the scaled height so content below doesn't overlap */
-    width: 100%;
+    /* JS sets width to the post-scale visual width (BOARD_W * scale).
+       margin: 0 auto then centers that box inside board-panel. */
     overflow: hidden;
-    /* height will match scaled board-inner: set via --board-scale inline style */
-    /* Prevent scaler itself from contributing to horizontal scroll */
+    /* Prevent scaler from contributing to horizontal scroll */
     max-width: 100%;
+    /* height is set inline by JS to BOARD_H * scale */
+    /* Center the visually-sized scaler within its parent */
+    margin: 0 auto;
     /* Ensure grid/flex child can shrink below intrinsic width */
     min-width: 0;
   }
   .board-inner {
     transform-origin: top left;
-    /* Default fallback scale — JS will refine via inline style */
+    /* Default fallback scale — JS will refine via inline --board-scale */
     transform: scale(var(--board-scale, 0.50));
-    /* Centre the scaled board within the scaler.
-       --board-left-offset is set by JS in Board.tsx as (scaler_width - scaled_board_width) / 2. */
-    margin-left: var(--board-left-offset, 0px);
-    /* Prevent layout bleed — board-inner is 600px wide but after scale
-       the containing scaler clips it. Setting display:block ensures no
-       extra margin/inline space leaks outside the transform. */
+    /* Prevent layout bleed; board-inner is 600px wide and escapes the scaler
+       after transform, but that's intentional (scaler clips at visual width). */
     display: block;
   }
 
