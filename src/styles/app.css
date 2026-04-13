@@ -62,7 +62,7 @@ button { cursor: pointer; }
 
 .layout {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: 16px;
 }
 .panel {
@@ -770,7 +770,7 @@ ol { padding-left: 20px; }
 /* ─── Mobile (≤ 600px): scale board + compact UI ── */
 @media (max-width: 600px) {
   /* App shell */
-  .app-shell { padding: 10px 8px; }
+  .app-shell { padding: 8px 6px; }
 
   /* Header: wrap to two rows */
   .app-header {
@@ -798,8 +798,9 @@ ol { padding-left: 20px; }
 
   /* Board panel: scale board-inner to fit screen */
   .board-panel {
-    padding: 10px 4px;
+    padding: 8px 2px;
     overflow: hidden;
+    min-width: 0;
   }
 
   /*
@@ -815,11 +816,13 @@ ol { padding-left: 20px; }
     /* height will match scaled board-inner: set via --board-scale inline style */
     /* Prevent scaler itself from contributing to horizontal scroll */
     max-width: 100%;
+    /* Ensure grid/flex child can shrink below intrinsic width */
+    min-width: 0;
   }
   .board-inner {
     transform-origin: top left;
     /* Default fallback scale — JS will refine via inline style */
-    transform: scale(var(--board-scale, 0.54));
+    transform: scale(var(--board-scale, 0.50));
     /* Prevent layout bleed — board-inner is 600px wide but after scale
        the containing scaler clips it. Setting display:block ensures no
        extra margin/inline space leaks outside the transform. */

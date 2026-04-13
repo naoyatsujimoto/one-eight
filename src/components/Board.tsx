@@ -330,7 +330,9 @@ export function Board({
     // getBoundingClientRect gives the post-layout pixel width, which correctly reflects
     // the parent's content box and avoids the parent.clientWidth (includes padding) bug.
     const rect = scaler.getBoundingClientRect();
-    const available = rect.width > 0 ? rect.width : parent.clientWidth;
+    // Safety margin: subtract 8px to prevent edge overflow on narrow devices (≤390px)
+    const raw = rect.width > 0 ? rect.width : parent.clientWidth;
+    const available = Math.max(0, raw - 8);
     const scale = Math.min(1, available / BOARD_W);
     // Set CSS custom property read by board-inner transform
     scaler.style.setProperty('--board-scale', String(scale));
