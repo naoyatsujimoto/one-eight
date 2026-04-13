@@ -332,16 +332,21 @@ export function Board({
     const rect = scaler.getBoundingClientRect();
     const raw = rect.width > 0 ? rect.width : parent.clientWidth;
     // On narrow viewports (≤600px / iPhone), apply a larger safety margin and
-    // cap scale explicitly to 0.45 to prevent the board from bleeding outside
-    // the panel regardless of layout rounding or border contributions.
+    // cap scale to prevent the board from bleeding outside the panel.
     const isMobile = window.innerWidth <= 600;
     const safetyMargin = isMobile ? 24 : 8;
-    const scaleCap = isMobile ? 0.45 : 1;
+    const scaleCap = isMobile ? 0.50 : 1;
     const available = Math.max(0, raw - safetyMargin);
     const scale = Math.min(scaleCap, available / BOARD_W);
     // Set CSS custom property read by board-inner transform
     scaler.style.setProperty('--board-scale', String(scale));
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;
+    // Center the scaled board within the scaler container.
+    // After scale, the board renders at (scale * BOARD_W) wide inside a container
+    // of `raw` pixels. Push it right by half the leftover space so it sits centred.
+    const scaledW = Math.ceil(BOARD_W * scale);
+    const leftOffset = Math.max(0, Math.floor((raw - scaledW) / 2));
+    scaler.style.setProperty('--board-left-offset', `${leftOffset}px`);
   }, []);
 
   useEffect(() => {

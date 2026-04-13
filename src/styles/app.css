@@ -826,6 +826,9 @@ ol { padding-left: 20px; }
     transform-origin: top left;
     /* Default fallback scale — JS will refine via inline style */
     transform: scale(var(--board-scale, 0.50));
+    /* Centre the scaled board within the scaler.
+       --board-left-offset is set by JS in Board.tsx as (scaler_width - scaled_board_width) / 2. */
+    margin-left: var(--board-left-offset, 0px);
     /* Prevent layout bleed — board-inner is 600px wide but after scale
        the containing scaler clips it. Setting display:block ensures no
        extra margin/inline space leaks outside the transform. */
