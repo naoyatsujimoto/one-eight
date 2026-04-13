@@ -1,0 +1,315 @@
+import { useEffect, useRef, useState } from 'react';
+import { Board } from '../components/Board';
+import { BuildControls } from '../components/BuildControls';
+import { HowToPlay } from '../components/HowToPlay';
+import { ImportRecord } from '../components/ImportRecord';
+import { MoveHistory } from '../components/MoveHistory';
+import { ResultModal } from '../components/ResultModal';
+import { TurnInfo } from '../components/TurnInfo';
+import {
+  applyMassiveBuild,
+  applyQuadBuildForGates,
+  applySelectiveBuild,
+  resetGame,
+  selectPosition,
+  skipTurn,
+} from '../game/engine';
+import { selectCpuMove } from '../game/ai';
+import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
+import type { GateId, GameState, Player, PositionId } from '../game/types';
+
+export type BuildMode = 'none' | 'massive' | 'selective' | 'quad';
+
+export interface BoardBuildState {
+  mode: BuildMode;
+  selectiveFirst: GateId | null;
+  quadSelected: GateId[];
+}
+
+const EMPTY_BUILD_STATE: BoardBuildState = {
+  mode: 'none',
+  selectiveFirst: null,
+  quadSelected: [],
+};
+
+/** Delay (ms) before CPU executes its move — gives the player a moment to see the board */
+const CPU_MOVE_DELAY_MS = 600;
+
+export default function App() {
+  const [state, setState] = useState<GameState>(() => {
+    const saved = loadState();
+    // Migrate saved state that lacks cpuPlayer field
+    if (saved.cpuPlayer === undefined) {
+      return { ...saved, cpuPlayer: null };
+    }
+    return saved;
+  });
+  const [hasSaved, setHasSaved] = useState<boolean>(() => hasSavedState());
+  const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
+
+  /**
+   * Undo stack: stores complete GameState snapshots BEFORE each finalized turn.
+   * - Human vs Human: each entry = one finalized turn
+   * - Human vs CPU: entries alternate (human turn, then CPU turn)
+   * On Undo (H vs H): pop 1. On Undo (H vs CPU): pop until we reach a human-turn state.
+   */
+  const [undoStack, setUndoStack] = useState<GameState[]>([]);
+
+  const cpuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persist state to localStorage on every change
+  useEffect(() => {
+    saveState(state);
+    setHasSaved(true);
+  }, [state]);
+
+  // Reset build state whenever selectedPosition changes
+  useEffect(() => {
+    setBuildState(EMPTY_BUILD_STATE);
+  }, [state.selectedPosition]);
+
+  // CPU auto-move
+  useEffect(() => {
+    if (state.gameEnded) return;
+    if (state.cpuPlayer === null) return;
+    if (state.currentPlayer !== state.cpuPlayer) return;
+
+    // Schedule CPU move after short delay
+    cpuTimerRef.current = setTimeout(() => {
+      setState((prev) => {
+        if (prev.gameEnded) return prev;
+        if (prev.currentPlayer !== prev.cpuPlayer) return prev;
+
+        // Push snapshot BEFORE CPU applies its move (for Undo)
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        setUndoStack((s) => [...s, prev]);
+
+        const move = selectCpuMove(prev, prev.cpuPlayer!);
+
+        if (move.type === 'pass') {
+          const POSITION_IDS = ['A','B','C','D','E','F','G','H','I','J','K','L','M'] as PositionId[];
+          let interim = prev;
+          for (const posId of POSITION_IDS) {
+            const candidate = selectPosition(prev, posId);
+            if (candidate.selectedPosition === posId) {
+              interim = candidate;
+              break;
+            }
+          }
+          return skipTurn(interim);
+        }
+
+        const afterSelect = selectPosition(prev, move.positionId);
+
+        if (move.type === 'massive') {
+          return applyMassiveBuild(afterSelect, move.gateId);
+        }
+        if (move.type === 'selective') {
+          return applySelectiveBuild(afterSelect, move.gates);
+        }
+        if (move.type === 'quad') {
+          return applyQuadBuildForGates(afterSelect, move.gateIds);
+        }
+        return prev;
+      });
+    }, CPU_MOVE_DELAY_MS);
+
+    return () => {
+      if (cpuTimerRef.current !== null) {
+        clearTimeout(cpuTimerRef.current);
+        cpuTimerRef.current = null;
+      }
+    };
+  }, [state.currentPlayer, state.cpuPlayer, state.gameEnded]);
+
+  function handleNewGame(cpuPlayer: Player | null = null) {
+    if (cpuTimerRef.current !== null) {
+      clearTimeout(cpuTimerRef.current);
+      cpuTimerRef.current = null;
+    }
+    clearState();
+    setHasSaved(false);
+    setState(resetGame(cpuPlayer));
+    setBuildState(EMPTY_BUILD_STATE);
+    setUndoStack([]);
+  }
+
+  function handleClearSaved() {
+    clearState();
+    setHasSaved(false);
+  }
+
+  function handleImport(importedState: GameState) {
+    if (cpuTimerRef.current !== null) {
+      clearTimeout(cpuTimerRef.current);
+      cpuTimerRef.current = null;
+    }
+    setState(importedState);
+    setBuildState(EMPTY_BUILD_STATE);
+    setUndoStack([]);
+  }
+
+  // Block human interaction during CPU turn
+  const isCpuTurn = !state.gameEnded && state.cpuPlayer !== null && state.currentPlayer === state.cpuPlayer;
+
+  // ── Undo ──────────────────────────────────────────────────
+  function handleUndo() {
+    if (isCpuTurn) return;
+    if (undoStack.length === 0) return;
+
+    // Cancel any pending CPU timer
+    if (cpuTimerRef.current !== null) {
+      clearTimeout(cpuTimerRef.current);
+      cpuTimerRef.current = null;
+    }
+
+    if (state.cpuPlayer === null) {
+      // Human vs Human: restore 1 turn
+      const prev = undoStack[undoStack.length - 1];
+      if (prev === undefined) return;
+      setUndoStack((s) => s.slice(0, -1));
+      setState(prev);
+    } else {
+      // Human vs CPU: pop back until we reach a state where it's the human's turn.
+      // In normal play the stack looks like: [..., beforeHumanTurn, beforeCpuTurn]
+      // We want to restore to beforeHumanTurn.
+      let targetIdx = undoStack.length - 1;
+      while (targetIdx >= 0 && undoStack[targetIdx]?.currentPlayer === state.cpuPlayer) {
+        targetIdx--;
+      }
+      if (targetIdx < 0) return;
+      const prev = undoStack[targetIdx];
+      if (prev === undefined) return;
+      setUndoStack((s) => s.slice(0, targetIdx));
+      setState(prev);
+    }
+    setBuildState(EMPTY_BUILD_STATE);
+  }
+
+  const canUndo = !isCpuTurn && undoStack.length > 0 && !state.gameEnded;
+
+  // ── Human action handlers ──────────────────────────────────
+
+  function handleSelectPosition(positionId: PositionId) {
+    if (isCpuTurn) return;
+    setState((prev) => selectPosition(prev, positionId));
+  }
+
+  function handleLargePocketClick(gateId: GateId) {
+    if (isCpuTurn) return;
+    // Push snapshot before finalizing turn
+    setUndoStack((s) => [...s, state]);
+    setState((prev) => applyMassiveBuild(prev, gateId));
+    setBuildState(EMPTY_BUILD_STATE);
+  }
+
+  function handleMiddlePocketClick(gateId: GateId) {
+    if (isCpuTurn) return;
+    setBuildState((prev) => {
+      if (prev.selectiveFirst === null) {
+        return { mode: 'selective', selectiveFirst: gateId, quadSelected: [] };
+      }
+      if (prev.selectiveFirst === gateId) {
+        return EMPTY_BUILD_STATE;
+      }
+      const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
+      // Push snapshot before finalizing turn
+      setUndoStack((s) => [...s, state]);
+      setState((gs) => applySelectiveBuild(gs, gates));
+      return EMPTY_BUILD_STATE;
+    });
+  }
+
+  function handleSmallPocketClick(gateId: GateId) {
+    if (isCpuTurn) return;
+    setBuildState((prev) => {
+      if (prev.quadSelected.includes(gateId)) {
+        const next = prev.quadSelected.filter((id) => id !== gateId);
+        return next.length === 0
+          ? EMPTY_BUILD_STATE
+          : { mode: 'quad', selectiveFirst: null, quadSelected: next };
+      }
+      const next = [...prev.quadSelected, gateId];
+      if (next.length === 4) {
+        // Push snapshot before finalizing turn
+        setUndoStack((s) => [...s, state]);
+        setState((gs) => applyQuadBuildForGates(gs, next as GateId[]));
+        return EMPTY_BUILD_STATE;
+      }
+      return { mode: 'quad', selectiveFirst: null, quadSelected: next };
+    });
+  }
+
+  function handleSkip() {
+    if (isCpuTurn) return;
+    // Push snapshot before finalizing turn
+    setUndoStack((s) => [...s, state]);
+    setState((prev) => skipTurn(prev));
+    setBuildState(EMPTY_BUILD_STATE);
+  }
+
+  const modeLabel = state.cpuPlayer === null
+    ? 'Human vs Human'
+    : `Human (Black) vs CPU (White)`;
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <h1>ONE EIGHT Web MVP</h1>
+        <div className="header-actions">
+          {hasSaved && <span className="saved-badge">Saved</span>}
+          {hasSaved && (
+            <button type="button" className="btn-clear-saved" onClick={handleClearSaved}>
+              Clear save
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn-undo"
+            onClick={handleUndo}
+            disabled={!canUndo}
+          >
+            ↩ Undo
+          </button>
+          <button type="button" onClick={() => handleNewGame(null)}>
+            Human vs Human
+          </button>
+          <button type="button" onClick={() => handleNewGame('white')}>
+            vs CPU
+          </button>
+        </div>
+      </header>
+
+      {isCpuTurn && (
+        <div className="cpu-thinking-banner">CPU is thinking…</div>
+      )}
+
+      <div className="game-mode-label">{modeLabel}</div>
+
+      <main className="layout">
+        <div className="left-column">
+          <Board
+            state={state}
+            buildState={buildState}
+            onSelectPosition={handleSelectPosition}
+            onLargePocketClick={handleLargePocketClick}
+            onMiddlePocketClick={handleMiddlePocketClick}
+            onSmallPocketClick={handleSmallPocketClick}
+          />
+        </div>
+        <div className="right-column">
+          <HowToPlay />
+          <TurnInfo state={state} />
+          <BuildControls
+            state={state}
+            buildState={buildState}
+            onSkip={handleSkip}
+          />
+          <MoveHistory history={state.history} />
+          <ImportRecord onImport={handleImport} />
+          <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
+        </div>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,919 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #111;
+  background: #f0ece6;
+  --black-color: #1a1a2e;
+  --white-color: #e8e8e8;
+  --black-bg: #d6dff8;
+  --white-bg: #f5f5f5;
+  --empty-bg: #fff;
+  --accent: #4a90e2;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button { cursor: pointer; }
+
+.app-shell { padding: 20px; }
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.app-header h1 { font-size: 1.4rem; letter-spacing: 0.04em; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.saved-badge {
+  font-size: 0.78rem;
+  color: #666;
+  background: #f0f0ec;
+  border: 1px solid #d0d0c8;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.app-header button {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  font-size: 0.9rem;
+}
+.btn-clear-saved {
+  padding: 4px 10px !important;
+  font-size: 0.78rem !important;
+  color: #888;
+  border-color: #ccc !important;
+}
+.btn-undo {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #a0a8c0;
+  background: #eef0fa;
+  font-size: 0.9rem;
+  color: #3a4a8a;
+}
+.btn-undo:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+}
+.panel {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Board ─────────────────────────────────────── */
+.board-title { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: #555; display: flex; align-items: baseline; gap: 8px; }
+
+/* Board inner: fixed-size coordinate canvas; all children are absolutely placed */
+.board-inner {
+  position: relative;
+  width: 600px;
+  height: 680px;
+  flex-shrink: 0;
+}
+
+/* Octagonal board outline SVG */
+.board-octagon-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 0;
+}
+.board-octagon-outer {
+  fill: none;
+  stroke: #a89880;
+  stroke-width: 2;
+}
+.board-octagon-inner {
+  fill: #faf7f3;
+  stroke: #c4b49a;
+  stroke-width: 1;
+}
+
+/* SVG overlay for connection lines (selected position → related gates) */
+.board-connection-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+.board-connection-line {
+  stroke: rgba(120, 160, 220, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+/* board-middle / gate-zone styles removed: gates are now absolutely placed */
+
+.position-grid {
+  /* absolute container: width=369px (4×73 + 77), height=369px */
+  position: relative;
+  width: 369px;
+  height: 369px;
+  flex-shrink: 0;
+}
+
+.position-btn {
+  /* Square, rounded corners — 77px (64 × 1.2) */
+  width: 77px;
+  height: 77px;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+  background: var(--empty-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  transition: border-color 0.1s;
+}
+.position-btn:hover { border-color: #888; }
+.position-btn.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
+}
+.owner-black { background: var(--black-bg); }
+.owner-white { background: var(--white-bg); }
+.owner-none  { background: var(--empty-bg); }
+
+.pos-id {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #333;
+}
+.pos-gates {
+  font-size: 0.5rem;
+  color: #888;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Owner dot */
+.owner-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.15);
+}
+.owner-dot-black { background: var(--black-color); border-color: rgba(0,0,0,0.4); }
+.owner-dot-white { background: var(--white-color); border-color: #bbb; }
+.owner-dot-none  { background: transparent; border-color: #ccc; border-style: dashed; }
+
+/* ── Gates ─────────────────────────────────────── */
+.gates-related-hint { font-size: 0.65rem; text-transform: none; letter-spacing: 0; color: var(--accent); font-weight: 600; }
+
+/* gate-card: button reset + 盤面に生えているクラスターとして見せる */
+.gate-card {
+  border: none;
+  border-radius: 0;
+  padding: 2px;
+  font-size: 12px;
+  text-align: center;
+  background: transparent;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: opacity 0.15s, filter 0.15s, outline 0.1s;
+  cursor: default;
+  /* button reset */
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+}
+.gate-card:disabled {
+  cursor: default;
+}
+
+/* Position 選択中で関連Gate: active (フォーカス可能な状態) */
+.gate-card-active {
+  filter: drop-shadow(0 0 3px rgba(74,144,226,0.6));
+}
+/* 関連外Gate */
+.gate-card-inactive {
+  opacity: 0.28;
+}
+
+/* 選択済み (Selective 1st, Quad 選択中) */
+.gate-card-selected {
+  cursor: pointer;
+  filter: drop-shadow(0 0 6px rgba(123,94,167,0.9));
+  outline: 2px solid rgba(123,94,167,0.7);
+  outline-offset: 2px;
+}
+.gate-card-selected:hover:not(:disabled) {
+  filter: drop-shadow(0 0 8px rgba(123,94,167,1.0));
+}
+
+.gate-card-id {
+  font-weight: 600;
+  font-size: 0.58rem;
+  color: #999;
+  opacity: 0.7;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+
+/* ── Gate cluster base layout ── */
+/* 辺Gate: 上下辺 (top/bottom-edge) — 縦並び */
+.gate-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gate-cluster-top-edge,
+.gate-cluster-bottom-edge {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0px;
+  width: 96px;
+  height: 96px;
+}
+
+/* 辺Gate: 左右辺 (left/right-edge) — 固定正方形コンテナ、Small を四隅に絶対配置 */
+.gate-cluster-left-edge,
+.gate-cluster-right-edge {
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0px;
+  width: 96px;
+  height: 96px;
+}
+
+/* Small 四隅アンカー: 外形ぴったり四隅、ただし内側 2px オフセットして各要素と非接触を保証 */
+.gate-corner-tl,
+.gate-corner-tr,
+.gate-corner-bl,
+.gate-corner-br {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gate-corner-tl { top: 2px;    left: 2px;  }
+.gate-corner-tr { top: 2px;    right: 2px; }
+.gate-corner-bl { bottom: 2px; left: 2px;  }
+.gate-corner-br { bottom: 2px; right: 2px; }
+
+/* Middle を Large 方向（中心）へ寄せる — 左右辺 */
+.gate-cluster-left-edge  > div:nth-child(5),
+.gate-cluster-right-edge > div:nth-child(5) { transform: translateY(3px); }
+.gate-cluster-left-edge  > div:nth-child(7),
+.gate-cluster-right-edge > div:nth-child(7) { transform: translateY(-3px); }
+
+/* Middle を Large 方向（中心）へ寄せる — 上下辺 */
+.gate-cluster-top-edge    > div:nth-child(5),
+.gate-cluster-bottom-edge > div:nth-child(5) { transform: translateX(3px); }
+.gate-cluster-top-edge    > div:nth-child(7),
+.gate-cluster-bottom-edge > div:nth-child(7) { transform: translateX(-3px); }
+
+/* 角Gate: Middle 外側エッジを Small 外側エッジ(x=2)に揃える */
+.gate-cluster-corner > div:nth-child(5) { transform: translateX(-2px); }
+.gate-cluster-corner > div:nth-child(7) { transform: translateX(2px); }
+
+/* 上下辺: Middle 単独中央配置（横方向） */
+.gate-col-1row-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 上下辺: Large 上下配置（縦方向、頂点接触） */
+.gate-col-tb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* Large 2個を中心寄せ（点で接する距離） */
+.gate-cluster-left-edge  .gate-row-lr,
+.gate-cluster-right-edge .gate-row-lr {
+  justify-content: center;
+  gap: 15px;
+  width: auto;
+}
+
+/* 角Gate: 縦並びベース */
+.gate-cluster-corner {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0px;
+  width: 96px;
+  height: 96px;
+}
+
+/* 辺Gate用レイアウトクラス */
+.gate-row-1col-center {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+.gate-row-lr {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+/* Diamond pip: square rotated 45° to form a diamond */
+.diamond-pip {
+  display: inline-block;
+  border: 1px solid #ccc;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* サイズ × 1.5 */
+.diamond-pip-size-large  { width: 35px; height: 35px; }
+.diamond-pip-size-middle { width: 24px; height: 24px; }
+.diamond-pip-size-small  { width: 14px; height: 14px; }
+
+/* left/right-edge 専用サイズ override */
+.gate-cluster-left-edge  .diamond-pip-size-large,
+.gate-cluster-right-edge .diamond-pip-size-large  { width: 35px; height: 35px; }
+.gate-cluster-left-edge  .diamond-pip-size-middle,
+.gate-cluster-right-edge .diamond-pip-size-middle { width: 26px; height: 26px; }
+.gate-cluster-left-edge  .diamond-pip-size-small,
+.gate-cluster-right-edge .diamond-pip-size-small  { width: 20px; height: 20px; }
+
+/* top/bottom-edge 専用サイズ override */
+.gate-cluster-top-edge    .diamond-pip-size-large,
+.gate-cluster-bottom-edge .diamond-pip-size-large  { width: 35px; height: 35px; }
+.gate-cluster-top-edge    .diamond-pip-size-middle,
+.gate-cluster-bottom-edge .diamond-pip-size-middle { width: 26px; height: 26px; }
+.gate-cluster-top-edge    .diamond-pip-size-small,
+.gate-cluster-bottom-edge .diamond-pip-size-small  { width: 20px; height: 20px; }
+
+/* corner 専用サイズ override */
+.gate-cluster-corner .diamond-pip-size-large  { width: 35px; height: 35px; }
+.gate-cluster-corner .gate-col-tb { gap: 24px; }
+.gate-cluster-corner .diamond-pip-size-middle { width: 26px; height: 26px; }
+.gate-cluster-corner .diamond-pip-size-small  { width: 20px; height: 20px; }
+
+/* corner Gate コンテナ回転: 大がボード中心側を向くように */
+.gate-cluster-corner-tl { transform: rotate(135deg); }
+.gate-cluster-corner-tr { transform: rotate(-135deg); }
+.gate-cluster-corner-br { transform: rotate(-45deg); }
+.gate-cluster-corner-bl { transform: rotate(45deg); }
+
+/* ピースの rotate(90deg) を打ち消してボード軸に戻す */
+.gate-cluster-corner-tl .diamond-pip { transform: rotate(-135deg); }
+.gate-cluster-corner-tr .diamond-pip { transform: rotate(135deg); }
+.gate-cluster-corner-br .diamond-pip { transform: rotate(45deg); }
+.gate-cluster-corner-bl .diamond-pip { transform: rotate(-45deg); }
+
+/* corner Gate (1,4,7,10) 専用ピース回転:
+   グローバルの rotate(45deg) を明示的に継承しつつ、
+   次工程（角ごとの向き分け）での per-corner override フックを確立する */
+.gate-cluster-corner .diamond-pip {
+  transform: rotate(90deg);
+  transform-origin: center;
+}
+
+.diamond-pip-black { background: var(--black-color); border-color: #222; }
+.diamond-pip-white { background: var(--white-color); border-color: #aaa; }
+.diamond-pip-none  { background: #e0dbd5; border-color: #bbb; }
+
+/* ── Pocket click states ────────────────────────── */
+/* clickable: blue glow — tells the user "this pip can be pressed" */
+.diamond-pip.pocket-clickable {
+  cursor: pointer;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 5px rgba(74, 144, 226, 0.75);
+}
+.diamond-pip.pocket-clickable:hover {
+  box-shadow: 0 0 10px rgba(74, 144, 226, 1.0);
+  background: rgba(74, 144, 226, 0.18);
+}
+
+/* selected: purple glow — first pick in Selective / any pick in Quad */
+.diamond-pip.pocket-selected {
+  cursor: pointer;
+  border: 2px solid #7b5ea7;
+  box-shadow: 0 0 7px rgba(123, 94, 167, 0.9);
+  background: rgba(123, 94, 167, 0.18);
+}
+.diamond-pip.pocket-selected:hover {
+  box-shadow: 0 0 11px rgba(123, 94, 167, 1.0);
+}
+
+/* disabled: subdued — not interactive in current context */
+.diamond-pip.pocket-disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* ── Turn Info ──────────────────────────────────── */
+.turn-info-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.player-chip {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.2);
+}
+.player-chip-black { background: var(--black-color); }
+.player-chip-white { background: var(--white-color); border-color: #aaa; }
+
+.turn-info-phase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.phase-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 64px;
+  text-align: center;
+}
+.phase-badge-select-position {
+  background: #e8f4ec;
+  color: #2d7a46;
+  border: 1px solid #b2d9bf;
+}
+.phase-badge-select-build {
+  background: #eef2fc;
+  color: #2a5cbf;
+  border: 1px solid #b0c4ef;
+}
+.phase-badge-finished {
+  background: #f4f4f4;
+  color: #888;
+  border: 1px solid #ccc;
+}
+.phase-hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* ── Build Controls ─────────────────────────────── */
+.control-group { margin-top: 12px; }
+.control-group button {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  background: #fff;
+  font-size: 0.85rem;
+}
+.control-group button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.build-controls-title {
+  margin-top: 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #555;
+}
+.build-hint {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Pass button accent */
+.build-type-skip     { border-left: 3px solid #aaa;    padding-left: 8px; margin-top: 16px; }
+
+/* Build buttons by type */
+.build-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  background: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.build-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.build-btn-skip     { border-color: #aaa; color: #666; }
+.build-btn-skip:hover:not(:disabled)     { background: #f5f5f5; }
+
+.build-skip-hint {
+  font-size: 0.75rem;
+  color: #e06c26;
+  margin-left: 8px;
+}
+
+/* ── Move History ────────────────────────────────── */
+ol { padding-left: 20px; }
+
+.move-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.move-history-header h2 {
+  margin: 0;
+}
+
+.btn-copy-record {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #f4f2f0;
+  color: #444;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-copy-record:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-copy-record:not(:disabled):hover {
+  background: #e8e4e0;
+}
+
+.move-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.move-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-bottom: 1px solid #f0ece6;
+  font-size: 0.85rem;
+  color: #555;
+  border-radius: 4px;
+}
+.move-entry:last-child { border-bottom: none; }
+
+/* Latest move highlight */
+.move-entry-latest {
+  background: #eef4fd;
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+/* Pass/Skip */
+.move-entry-skip { color: #999; }
+.move-skip-label {
+  font-style: italic;
+  color: #aaa;
+}
+
+/* Player dot */
+.move-player-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.move-player-dot-black { background: #1a1a2e; }
+.move-player-dot-white { background: #ccc; border: 1px solid #bbb; }
+
+/* Move number */
+.move-number { color: #bbb; font-size: 0.78rem; min-width: 20px; }
+
+/* Positioning */
+.move-pos {
+  font-weight: 700;
+  color: #333;
+  min-width: 14px;
+}
+
+.move-sep { color: #ccc; }
+
+/* Build types */
+.move-build { font-size: 0.8rem; }
+.move-build-massive   { color: #c45a15; }
+.move-build-selective { color: #2a70c2; }
+.move-build-quad      { color: #5a3e87; }
+
+/* ── How to Play ────────────────────────────────── */
+.how-to-play-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.how-to-play-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: #555;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+.how-to-play-toggle:hover { background: #f7f5f2; }
+
+.how-to-play-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #888;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #666;
+  flex-shrink: 0;
+}
+.how-to-play-label { flex: 1; }
+.how-to-play-arrow { font-size: 0.75rem; color: #999; }
+
+.how-to-play-content {
+  padding: 4px 16px 14px;
+  border-top: 1px solid #eee;
+}
+
+.htp-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 0.82rem;
+}
+.htp-list dt {
+  font-weight: 700;
+  color: #444;
+  padding-top: 2px;
+  white-space: nowrap;
+}
+.htp-list dd {
+  margin: 0;
+  color: #555;
+  line-height: 1.55;
+}
+
+.htp-build {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-right: 2px;
+}
+.htp-build-large  { background: #fde8d8; color: #c45a15; }
+.htp-build-middle { background: #deeafc; color: #2a5cbf; }
+.htp-build-small  { background: #ede8f7; color: #5a3e87; }
+
+/* Mobile: keep same layout, slightly tighter */
+@media (max-width: 600px) {
+  .how-to-play-toggle { padding: 10px 12px; font-size: 0.85rem; }
+  .how-to-play-content { padding: 4px 12px 12px; }
+  .htp-list { font-size: 0.8rem; gap: 5px 10px; }
+}
+
+/* ── ResultModal ────────────────────────────────── */
+.result-panel {
+  border-color: #c8d8f0;
+  background: #f0f5fc;
+}
+.result-panel h2 {
+  margin-top: 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #555;
+}
+.result-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.btn-new-game {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #4a90e2;
+  background: #4a90e2;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.btn-new-game:hover { background: #3a7acc; border-color: #3a7acc; }
+
+/* ── CPU ─────────────────────────────────────────── */
+.cpu-thinking-banner {
+  background: #1a1a2e;
+  color: #fff;
+  text-align: center;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.game-mode-label {
+  font-size: 0.78rem;
+  color: #888;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Responsive ─────────────────────────────────── */
+
+/* ─── Tablet (≤ 900px): single-column ───────────── */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* ─── Mobile (≤ 600px): scale board + compact UI ── */
+@media (max-width: 600px) {
+  /* App shell */
+  .app-shell { padding: 10px 8px; }
+
+  /* Header: wrap to two rows */
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .app-header h1 { font-size: 1.1rem; }
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .app-header button,
+  .btn-undo {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    min-height: 36px;
+  }
+  .btn-clear-saved {
+    padding: 6px 10px !important;
+    font-size: 0.78rem !important;
+    min-height: 34px !important;
+  }
+
+  /* Board panel: scale board-inner to fit screen */
+  .board-panel {
+    padding: 10px 6px;
+    overflow: hidden;
+  }
+
+  /*
+   * board-inner is 600×680px absolutely. We wrap it in a scaler div
+   * that constrains the layout width to the available viewport.
+   * We use CSS custom property --board-scale (set inline by JS) but
+   * also provide a CSS fallback via transform on .board-inner-scaler.
+   */
+  .board-inner-scaler {
+    /* Reserve the scaled height so content below doesn't overlap */
+    width: 100%;
+    overflow: hidden;
+    /* height will match scaled board-inner: set via --board-scale inline style */
+  }
+  .board-inner {
+    transform-origin: top left;
+    /* Default fallback scale — JS will refine via inline style */
+    transform: scale(var(--board-scale, 0.54));
+  }
+
+  /* Layout: single column, tighter gap */
+  .layout { gap: 10px; }
+
+  /* Panels */
+  .panel { padding: 12px 10px; margin-bottom: 10px; }
+
+  /* Turn Info */
+  .turn-info-player { gap: 6px; margin-bottom: 6px; }
+  .player-chip { width: 18px; height: 18px; }
+
+  /* Build controls */
+  .build-hint { font-size: 0.82rem; }
+  .build-btn  { padding: 8px 14px; font-size: 0.82rem; min-height: 36px; }
+  .build-skip-hint { font-size: 0.72rem; display: block; margin-left: 0; margin-top: 4px; }
+
+  /* Move history */
+  .move-history-list { max-height: 180px; }
+  .move-entry { font-size: 0.8rem; padding: 5px 6px; }
+
+  /* Result modal */
+  .result-panel h2 { font-size: 0.9rem; }
+  .result-actions { flex-wrap: wrap; gap: 6px; }
+  .btn-new-game { padding: 8px 14px; font-size: 0.85rem; min-height: 36px; }
+
+  /* CPU banner */
+  .cpu-thinking-banner { font-size: 0.8rem; padding: 8px 0; }
+
+  /* Game mode label */
+  .game-mode-label { font-size: 0.72rem; }
+
+  /* Position buttons: ensure tap target inside scaled board */
+  .position-btn { min-width: 44px; min-height: 44px; }
+}
+
+/* ─── Import Record ───────────────────────────────────── */
+.import-record-panel { margin-top: 0; }
+
+.import-record-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+  width: 100%;
+}
+.import-record-toggle:hover { color: var(--text-primary, #ccc); }
+
+.import-record-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.import-record-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #1a1a1a;
+  color: #ccc;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 8px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+  min-height: 100px;
+}
+.import-record-textarea::placeholder { color: #555; }
+.import-record-textarea:focus { outline: 1px solid #888; }
+
+.import-record-error {
+  color: #f66;
+  font-size: 0.78rem;
+  margin: 0;
+  word-break: break-word;
+}
+.import-record-success {
+  color: #6d6;
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.btn-import-record {
+  align-self: flex-start;
+  background: #333;
+  color: #ccc;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.btn-import-record:hover:not(:disabled) { background: #444; }
+.btn-import-record:disabled { opacity: 0.4; cursor: default; }
