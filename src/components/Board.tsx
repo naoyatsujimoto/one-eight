@@ -304,7 +304,7 @@ const ALL_GATES: GateId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 // Result: every corner is equidistant from the position-grid corner (~dx=40, dy=64).
 const GATE_COORDS: Record<number, { left: number; top: number }> = {
   1:  { left: 16,  top: 55  },  // centre (64, 103) — symmetric with Gate 7
-  2:  { left: 172, top: 8   },  // centre (220, 56)
+  2:  { left: 180, top: 25  },  // centre (228, 73)  — base point (228, 121)
   3:  { left: 328, top: 8   },  // centre (376, 56)
   4:  { left: 489, top: 55  },  // centre (537, 103) — symmetric with Gate 10
   5:  { left: 500, top: 196 },  // centre (548, 244)
