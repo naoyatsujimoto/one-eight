@@ -305,7 +305,7 @@ const ALL_GATES: GateId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const GATE_COORDS: Record<number, { left: number; top: number }> = {
   1:  { left: 16,  top: 55  },  // centre (64, 103) — symmetric with Gate 7
   2:  { left: 180, top: 25  },  // centre (228, 73)  — base point (228, 121)
-  3:  { left: 328, top: 8   },  // centre (376, 56)
+  3:  { left: 326, top: 25  },  // centre (374, 73)  — base point (374, 121)
   4:  { left: 489, top: 55  },  // centre (537, 103) — symmetric with Gate 10
   5:  { left: 500, top: 196 },  // centre (548, 244)
   6:  { left: 500, top: 388 },  // centre (548, 436) — symmetric with Gate 5
