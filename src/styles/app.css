@@ -340,6 +340,14 @@ button { cursor: pointer; }
   height: 96px;
 }
 
+/* 角Gate: 大-中ポケット間の距離を広げる (flex row の child 間 gap) */
+.gate-cluster-corner-tl,
+.gate-cluster-corner-tr,
+.gate-cluster-corner-br,
+.gate-cluster-corner-bl {
+  gap: 4px;
+}
+
 /* 辺Gate用レイアウトクラス */
 .gate-row-1col-center {
   display: flex;
