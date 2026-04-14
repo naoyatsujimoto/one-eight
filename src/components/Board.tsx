@@ -306,13 +306,13 @@ const GATE_COORDS: Record<number, { left: number; top: number }> = {
   1:  { left: 16,  top: 55  },  // centre (64, 103) — symmetric with Gate 7
   2:  { left: 172, top: 8   },  // centre (220, 56)
   3:  { left: 328, top: 8   },  // centre (376, 56)
-  4:  { left: 477, top: 43  },  // centre (525, 91)  — symmetric with Gate 10
+  4:  { left: 489, top: 55  },  // centre (537, 103) — symmetric with Gate 10
   5:  { left: 500, top: 196 },  // centre (548, 244)
   6:  { left: 500, top: 388 },  // centre (548, 436) — symmetric with Gate 5
   7:  { left: 489, top: 528 },  // centre (537, 576) — symmetric with Gate 1
   8:  { left: 328, top: 576 },  // centre (376, 624) — symmetric with Gate 3
   9:  { left: 172, top: 576 },  // centre (220, 624) — symmetric with Gate 2
-  10: { left: 27,  top: 541 },  // centre (75, 589)  — symmetric with Gate 4
+  10: { left: 16,  top: 528 },  // centre (64, 576)  — symmetric with Gate 4
   11: { left: 0,   top: 388 },  // centre (48, 436)  — symmetric with Gate 12
   12: { left: 0,   top: 196 },  // centre (48, 244)
 };
