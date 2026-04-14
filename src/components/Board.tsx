@@ -307,7 +307,7 @@ const GATE_COORDS: Record<number, { left: number; top: number }> = {
   2:  { left: 180, top: 25  },  // centre (228, 73)  — base point (228, 121)
   3:  { left: 326, top: 25  },  // centre (374, 73)  — base point (374, 121)
   4:  { left: 489, top: 55  },  // centre (537, 103) — symmetric with Gate 10
-  5:  { left: 500, top: 196 },  // centre (548, 244)
+  5:  { left: 520, top: 219 },  // centre (568, 267) — base point (520, 267)
   6:  { left: 500, top: 388 },  // centre (548, 436) — symmetric with Gate 5
   7:  { left: 489, top: 528 },  // centre (537, 576) — symmetric with Gate 1
   8:  { left: 328, top: 576 },  // centre (376, 624) — symmetric with Gate 3
