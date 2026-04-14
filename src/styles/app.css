@@ -255,7 +255,7 @@ button { cursor: pointer; }
   gap: 0px;
   width: 96px;
   height: 96px;
-  transform: scale(1.1);
+  transform: scale(1.155);
   transform-origin: center;
 }
 
@@ -269,7 +269,7 @@ button { cursor: pointer; }
   gap: 0px;
   width: 96px;
   height: 96px;
-  transform: scale(1.1);
+  transform: scale(1.155);
   transform-origin: center;
 }
 
@@ -390,10 +390,10 @@ button { cursor: pointer; }
 .gate-cluster-corner .diamond-pip-size-small  { width: 20px; height: 20px; }
 
 /* corner Gate コンテナ回転: 大がボード中心側を向くように */
-.gate-cluster-corner-tl { transform: rotate(135deg) scale(1.1); transform-origin: center; }
-.gate-cluster-corner-tr { transform: rotate(-135deg) scale(1.1); transform-origin: center; }
-.gate-cluster-corner-br { transform: rotate(-45deg) scale(1.1); transform-origin: center; }
-.gate-cluster-corner-bl { transform: rotate(45deg) scale(1.1); transform-origin: center; }
+.gate-cluster-corner-tl { transform: rotate(135deg) scale(1.155); transform-origin: center; }
+.gate-cluster-corner-tr { transform: rotate(-135deg) scale(1.155); transform-origin: center; }
+.gate-cluster-corner-br { transform: rotate(-45deg) scale(1.155); transform-origin: center; }
+.gate-cluster-corner-bl { transform: rotate(45deg) scale(1.155); transform-origin: center; }
 
 /* ピースの rotate(90deg) を打ち消してボード軸に戻す */
 .gate-cluster-corner-tl .diamond-pip { transform: rotate(-135deg); }
