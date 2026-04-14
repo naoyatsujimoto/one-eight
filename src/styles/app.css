@@ -184,6 +184,7 @@ button { cursor: pointer; }
 
 /* gate-card: button reset + 盤面に生えているクラスターとして見せる */
 .gate-card {
+  position: relative;
   border: none;
   border-radius: 0;
   padding: 2px;
@@ -224,12 +225,17 @@ button { cursor: pointer; }
 }
 
 .gate-card-id {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   font-weight: 600;
   font-size: 0.58rem;
   color: #999;
   opacity: 0.7;
-  margin-bottom: 2px;
   line-height: 1;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ── Gate cluster base layout ── */
@@ -375,7 +381,7 @@ button { cursor: pointer; }
 
 /* corner 専用サイズ override */
 .gate-cluster-corner .diamond-pip-size-large  { width: 35px; height: 35px; }
-.gate-cluster-corner .gate-col-tb { gap: 24px; }
+.gate-cluster-corner .gate-col-tb { gap: 16px; }
 .gate-cluster-corner .diamond-pip-size-middle { width: 26px; height: 26px; }
 .gate-cluster-corner .diamond-pip-size-small  { width: 20px; height: 20px; }
 
