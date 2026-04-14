@@ -79,7 +79,7 @@ button { cursor: pointer; }
 /* Board inner: fixed-size coordinate canvas; all children are absolutely placed */
 .board-inner {
   position: relative;
-  width: 600px;
+  width: 680px;
   height: 680px;
   flex-shrink: 0;
 }

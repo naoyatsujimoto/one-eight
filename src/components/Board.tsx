@@ -303,18 +303,18 @@ const ALL_GATES: GateId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 // Corner gates (1, 4, 7, 10) left adjusted by ±2 for x-symmetry around x=300.
 // Result: every corner is equidistant from the position-grid corner (~dx=40, dy=64).
 const GATE_COORDS: Record<number, { left: number; top: number }> = {
-  1:  { left: 16,  top: 55  },  // centre (64, 103) — symmetric with Gate 7
-  2:  { left: 180, top: 25  },  // centre (228, 73)  — base point (228, 121)
-  3:  { left: 326, top: 25  },  // centre (374, 73)  — base point (374, 121)
-  4:  { left: 489, top: 55  },  // centre (537, 103) — symmetric with Gate 10
-  5:  { left: 520, top: 219 },  // centre (568, 267) — base point (520, 267)
-  6:  { left: 520, top: 365 },  // centre (568, 413) — base point (520, 413)
-  7:  { left: 489, top: 528 },  // centre (537, 576) — symmetric with Gate 1
-  8:  { left: 326, top: 559 },  // centre (374, 607) — base point (374, 559)
-  9:  { left: 180, top: 559 },  // centre (228, 607) — base point (228, 559)
-  10: { left: 16,  top: 528 },  // centre (64, 576)  — symmetric with Gate 4
-  11: { left: -14, top: 365 },  // centre (34, 413)  — base point (82, 413)
-  12: { left: -14, top: 219 },  // centre (34, 267)  — base point (82, 267)
+  1:  { left: 56,  top: 55  },  // centre (104, 103) — symmetric with Gate 7
+  2:  { left: 220, top: 25  },  // centre (268, 73)  — base point (268, 121)
+  3:  { left: 366, top: 25  },  // centre (414, 73)  — base point (414, 121)
+  4:  { left: 529, top: 55  },  // centre (577, 103) — symmetric with Gate 10
+  5:  { left: 560, top: 219 },  // centre (608, 267) — base point (560, 267)
+  6:  { left: 560, top: 365 },  // centre (608, 413) — base point (560, 413)
+  7:  { left: 529, top: 528 },  // centre (577, 576) — symmetric with Gate 1
+  8:  { left: 366, top: 559 },  // centre (414, 607) — base point (414, 559)
+  9:  { left: 220, top: 559 },  // centre (268, 607) — base point (268, 559)
+  10: { left: 56,  top: 528 },  // centre (104, 576) — symmetric with Gate 4
+  11: { left: 26,  top: 365 },  // centre (74, 413)  — base point (122, 413)
+  12: { left: 26,  top: 219 },  // centre (74, 267)  — base point (122, 267)
 };
 
 interface LineCoord { x1: number; y1: number; x2: number; y2: number }
@@ -344,7 +344,7 @@ export function Board({
   const [lines, setLines] = useState<LineCoord[]>([]);
 
   // ── Responsive board scaling ──────────────────────────────────────────────
-  const BOARD_W = 600;
+  const BOARD_W = 680;
   const BOARD_H = 680;
 
   const applyScale = useCallback(() => {
@@ -429,11 +429,11 @@ export function Board({
         {/* Octagonal board outline */}
         <svg className="board-octagon-svg" aria-hidden="true">
           <polygon
-            points="72,0 528,0 600,72 600,608 528,680 72,680 0,608 0,72"
+            points="72,0 608,0 680,72 680,608 608,680 72,680 0,608 0,72"
             className="board-octagon-outer"
           />
           <polygon
-            points="78,6 522,6 594,78 594,602 522,674 78,674 6,602 6,78"
+            points="78,6 602,6 674,78 674,602 602,674 78,674 6,602 6,78"
             className="board-octagon-inner"
           />
         </svg>
@@ -481,7 +481,7 @@ export function Board({
 
         {/* Position grid */}
         {/* position-grid top=155 → centre (300.5, 339.5) ≈ octagon centre (300, 340) */}
-        <div className="position-grid" style={{ position: 'absolute', left: 116, top: 155 }}>
+        <div className="position-grid" style={{ position: 'absolute', left: 156, top: 155 }}>
           {BOARD_POSITIONS.map((id) => {
             const pos = state.positions[id];
             const isSelected = state.selectedPosition === id;
