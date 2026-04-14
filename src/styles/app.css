@@ -383,11 +383,30 @@ button { cursor: pointer; }
 .gate-cluster-top-edge    .diamond-pip-size-small,
 .gate-cluster-bottom-edge .diamond-pip-size-small  { width: 20px; height: 20px; }
 
-/* corner 専用サイズ override */
-.gate-cluster-corner .diamond-pip-size-large  { width: 35px; height: 35px; }
-.gate-cluster-corner .gate-col-tb { gap: 16px; }
-.gate-cluster-corner .diamond-pip-size-middle { width: 26px; height: 26px; }
-.gate-cluster-corner .diamond-pip-size-small  { width: 20px; height: 20px; }
+/* corner 専用サイズ override
+   NOTE: 実際のクラスは gate-cluster-corner-{tl/tr/br/bl} なので
+   4バリアントそれぞれを列挙してセレクタを確実にマッチさせる */
+.gate-cluster-corner-tl .diamond-pip-size-large,
+.gate-cluster-corner-tr .diamond-pip-size-large,
+.gate-cluster-corner-br .diamond-pip-size-large,
+.gate-cluster-corner-bl .diamond-pip-size-large  { width: 35px; height: 35px; }
+
+.gate-cluster-corner-tl .gate-col-tb,
+.gate-cluster-corner-tr .gate-col-tb,
+.gate-cluster-corner-br .gate-col-tb,
+.gate-cluster-corner-bl .gate-col-tb { gap: 16px; }
+
+.gate-cluster-corner-tl .diamond-pip-size-middle,
+.gate-cluster-corner-tr .diamond-pip-size-middle,
+.gate-cluster-corner-br .diamond-pip-size-middle,
+.gate-cluster-corner-bl .diamond-pip-size-middle { width: 26px; height: 26px; }
+
+/* 小ポケット: 辺ゲートと同じ 20px に統一 (旧: 14px デフォルト落ち) */
+/* 絶対配置(2px from corner)のため大/中ポケットとの重なりは発生しない */
+.gate-cluster-corner-tl .diamond-pip-size-small,
+.gate-cluster-corner-tr .diamond-pip-size-small,
+.gate-cluster-corner-br .diamond-pip-size-small,
+.gate-cluster-corner-bl .diamond-pip-size-small  { width: 20px; height: 20px; }
 
 /* corner Gate コンテナ回転: 大がボード中心側を向くように */
 .gate-cluster-corner-tl { transform: rotate(135deg) scale(1.155); transform-origin: center; }
