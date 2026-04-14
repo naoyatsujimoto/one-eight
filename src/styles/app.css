@@ -828,13 +828,13 @@ ol { padding-left: 20px; }
    */
   .board-inner-scaler {
     /* JS sets width to the post-scale visual width (BOARD_W * scale).
-       margin: 0 auto then centers that box inside board-panel. */
+       margin: 0 left-aligns the board to avoid right-edge clipping. */
     overflow: hidden;
     /* Prevent scaler from contributing to horizontal scroll */
     max-width: 100%;
     /* height is set inline by JS to BOARD_H * scale */
-    /* Center the visually-sized scaler within its parent */
-    margin: 0 auto;
+    /* Left-align: transform-origin is top left, so board anchors to left edge */
+    margin: 0;
     /* Ensure grid/flex child can shrink below intrinsic width */
     min-width: 0;
   }
