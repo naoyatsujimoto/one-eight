@@ -314,7 +314,7 @@ const GATE_COORDS: Record<number, { left: number; top: number }> = {
   9:  { left: 180, top: 559 },  // centre (228, 607) — base point (228, 559)
   10: { left: 16,  top: 528 },  // centre (64, 576)  — symmetric with Gate 4
   11: { left: -14, top: 365 },  // centre (34, 413)  — base point (82, 413)
-  12: { left: 0,   top: 196 },  // centre (48, 244)
+  12: { left: -14, top: 219 },  // centre (34, 267)  — base point (82, 267)
 };
 
 interface LineCoord { x1: number; y1: number; x2: number; y2: number }
