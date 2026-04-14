@@ -409,10 +409,10 @@ button { cursor: pointer; }
 .gate-cluster-corner-bl .diamond-pip-size-small  { width: 20px; height: 20px; }
 
 /* corner Gate コンテナ回転: 大がボード中心側を向くように */
-.gate-cluster-corner-tl { transform: rotate(135deg) scale(1.155); transform-origin: center; }
-.gate-cluster-corner-tr { transform: rotate(-135deg) scale(1.155); transform-origin: center; }
-.gate-cluster-corner-br { transform: rotate(-45deg) scale(1.155); transform-origin: center; }
-.gate-cluster-corner-bl { transform: rotate(45deg) scale(1.155); transform-origin: center; }
+.gate-cluster-corner-tl { transform: rotate(135deg) scale(1.178); transform-origin: center; }
+.gate-cluster-corner-tr { transform: rotate(-135deg) scale(1.178); transform-origin: center; }
+.gate-cluster-corner-br { transform: rotate(-45deg) scale(1.178); transform-origin: center; }
+.gate-cluster-corner-bl { transform: rotate(45deg) scale(1.178); transform-origin: center; }
 
 /* ピースの菱形(45deg)をボード軸で維持する:
    screen_angle = cluster_rotation + pip_transform = 45deg となる値を設定
