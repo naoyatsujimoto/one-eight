@@ -414,11 +414,16 @@ button { cursor: pointer; }
 .gate-cluster-corner-br { transform: rotate(-45deg) scale(1.155); transform-origin: center; }
 .gate-cluster-corner-bl { transform: rotate(45deg) scale(1.155); transform-origin: center; }
 
-/* ピースの rotate(90deg) を打ち消してボード軸に戻す */
-.gate-cluster-corner-tl .diamond-pip { transform: rotate(-135deg); }
-.gate-cluster-corner-tr .diamond-pip { transform: rotate(135deg); }
-.gate-cluster-corner-br .diamond-pip { transform: rotate(45deg); }
-.gate-cluster-corner-bl .diamond-pip { transform: rotate(-45deg); }
+/* ピースの菱形(45deg)をボード軸で維持する:
+   screen_angle = cluster_rotation + pip_transform = 45deg となる値を設定
+   corner-tl(+135): pip=-90  → 135+(-90)=45 ✓
+   corner-tr(-135): pip=+180 → -135+180=45 ✓
+   corner-br( -45): pip=+90  → -45+90=45  ✓
+   corner-bl( +45): pip=0    → 45+0=45    ✓ */
+.gate-cluster-corner-tl .diamond-pip { transform: rotate(-90deg); }
+.gate-cluster-corner-tr .diamond-pip { transform: rotate(180deg); }
+.gate-cluster-corner-br .diamond-pip { transform: rotate(90deg); }
+.gate-cluster-corner-bl .diamond-pip { transform: rotate(0deg); }
 
 /* corner Gate (1,4,7,10) 専用ピース回転:
    グローバルの rotate(45deg) を明示的に継承しつつ、
