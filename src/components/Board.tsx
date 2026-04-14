@@ -310,11 +310,11 @@ const GATE_COORDS: Record<number, { left: number; top: number }> = {
   5:  { left: 520, top: 219 },  // centre (568, 267) — base point (520, 267)
   6:  { left: 520, top: 365 },  // centre (568, 413) — base point (520, 413)
   7:  { left: 489, top: 528 },  // centre (537, 576) — symmetric with Gate 1
-  8:  { left: 328, top: 576 },  // centre (376, 624) — symmetric with Gate 3
-  9:  { left: 172, top: 576 },  // centre (220, 624) — symmetric with Gate 2
+  8:  { left: 326, top: 559 },  // centre (374, 607) — base point (374, 559)
+  9:  { left: 180, top: 559 },  // centre (228, 607) — base point (228, 559)
   10: { left: 16,  top: 528 },  // centre (64, 576)  — symmetric with Gate 4
-  11: { left: 0,   top: 388 },  // centre (48, 436)  — symmetric with Gate 12
-  12: { left: 0,   top: 196 },  // centre (48, 244)
+  11: { left: 0,   top: 365 },  // centre (48, 413)  — base point (96, 413)
+  12: { left: 0,   top: 219 },  // centre (48, 267)  — base point (96, 267)
 };
 
 interface LineCoord { x1: number; y1: number; x2: number; y2: number }
