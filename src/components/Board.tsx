@@ -303,13 +303,13 @@ const ALL_GATES: GateId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 // Corner gates (1, 4, 7, 10) left adjusted by ±2 for x-symmetry around x=300.
 // Result: every corner is equidistant from the position-grid corner (~dx=40, dy=64).
 const GATE_COORDS: Record<number, { left: number; top: number }> = {
-  1:  { left: 27,  top: 43  },  // centre (75, 91)  — symmetric with Gate 7
+  1:  { left: 16,  top: 55  },  // centre (64, 103) — symmetric with Gate 7
   2:  { left: 172, top: 8   },  // centre (220, 56)
   3:  { left: 328, top: 8   },  // centre (376, 56)
   4:  { left: 477, top: 43  },  // centre (525, 91)  — symmetric with Gate 10
   5:  { left: 500, top: 196 },  // centre (548, 244)
   6:  { left: 500, top: 388 },  // centre (548, 436) — symmetric with Gate 5
-  7:  { left: 477, top: 541 },  // centre (525, 589) — symmetric with Gate 1
+  7:  { left: 489, top: 528 },  // centre (537, 576) — symmetric with Gate 1
   8:  { left: 328, top: 576 },  // centre (376, 624) — symmetric with Gate 3
   9:  { left: 172, top: 576 },  // centre (220, 624) — symmetric with Gate 2
   10: { left: 27,  top: 541 },  // centre (75, 589)  — symmetric with Gate 4
