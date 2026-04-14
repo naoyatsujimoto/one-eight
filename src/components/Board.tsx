@@ -242,17 +242,32 @@ function GateCard({
     anySelected ? 'gate-card-selected' : '',
   ].filter(Boolean).join(' ');
 
+  const isCorner = gateType.startsWith('corner');
+
   return (
     <div
       className={cardClass}
       data-gate-id={gateId}
       aria-label={`Gate ${gateId}`}
     >
+      {DEBUG_GATES && (
+        <div
+          className={`dbg-gate-border ${isCorner ? 'dbg-gate-border-corner' : 'dbg-gate-border-edge'}`}
+          aria-hidden="true"
+        >
+          <div className="dbg-gate-center" />
+        </div>
+      )}
       <div className="gate-card-id">{gateId}</div>
       {renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall })}
     </div>
   );
 }
+
+// ── Debug gate-border overlay (active only when ?debug_gates present in URL) ─
+const DEBUG_GATES =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).has('debug_gates');
 
 // ── Board layout constants ────────────────────────────────────────────────────
 

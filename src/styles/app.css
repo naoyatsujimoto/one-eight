@@ -939,3 +939,35 @@ ol { padding-left: 20px; }
 }
 .btn-import-record:hover:not(:disabled) { background: #444; }
 .btn-import-record:disabled { opacity: 0.4; cursor: default; }
+
+/* ── DEBUG: Gate square-border overlay (?debug_gates) ─────────────────────── */
+/* Visible only when URL contains ?debug_gates — safe to ship in production     */
+.dbg-gate-border {
+  position: absolute;
+  inset: 0;                   /* fills the gate-card div exactly */
+  width: 96px;
+  height: 96px;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 10;
+}
+/* Corner Gates (1,4,7,10) — orange border */
+.dbg-gate-border-corner {
+  border: 2px dashed rgba(255, 140, 0, 0.85);
+}
+/* Edge Gates (2,3,5,6,8,9,11,12) — cyan border */
+.dbg-gate-border-edge {
+  border: 2px dashed rgba(0, 200, 255, 0.85);
+}
+/* Centre dot */
+.dbg-gate-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 230, 0, 0.9);
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
