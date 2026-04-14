@@ -327,8 +327,8 @@ export function Board({
     const parent = scaler.parentElement;
     if (!parent) return;
     const isMobile = window.innerWidth <= 600;
-    const safetyMargin = isMobile ? 16 : 8;
-    const scaleCap = isMobile ? 0.53 : 1;
+    const safetyMargin = isMobile ? 8 : 8;
+    const scaleCap = isMobile ? 0.60 : 1;
     // Use parent.clientWidth for available space.
     // This avoids measuring the scaler itself (whose width JS is about to override)
     // and correctly reflects the panel's content width.
