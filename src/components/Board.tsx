@@ -166,6 +166,18 @@ function renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall }: C
   const SmallBL = () => <div className="gate-corner-bl"><DiamondPip owner={S[2]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} /></div>;
   const SmallBR = () => <div className="gate-corner-br"><DiamondPip owner={S[3]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} /></div>;
 
+  const isCorner = gateType.startsWith('corner');
+  const DbgBorder = DEBUG_GATES
+    ? () => (
+        <div
+          className={`dbg-gate-border ${isCorner ? 'dbg-gate-border-corner' : 'dbg-gate-border-edge'}`}
+          aria-hidden="true"
+        >
+          <div className="dbg-gate-center" />
+        </div>
+      )
+    : () => null;
+
   switch (gateType) {
     case 'top-edge':
     case 'bottom-edge':
@@ -175,6 +187,7 @@ function renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall }: C
     case 'corner-bl':
       return (
         <div className={`gate-cluster gate-cluster-${gateType}`}>
+          <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
           <div className="gate-col-1row-center">
             <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} />
@@ -193,6 +206,7 @@ function renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall }: C
     case 'right-edge':
       return (
         <div className={`gate-cluster gate-cluster-${gateType}`}>
+          <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
           <div className="gate-row-1col-center">
             <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} />
@@ -250,14 +264,6 @@ function GateCard({
       data-gate-id={gateId}
       aria-label={`Gate ${gateId}`}
     >
-      {DEBUG_GATES && (
-        <div
-          className={`dbg-gate-border ${isCorner ? 'dbg-gate-border-corner' : 'dbg-gate-border-edge'}`}
-          aria-hidden="true"
-        >
-          <div className="dbg-gate-center" />
-        </div>
-      )}
       <div className="gate-card-id">{gateId}</div>
       {renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall })}
     </div>
