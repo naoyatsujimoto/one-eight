@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board';
 import { BuildControls } from '../components/BuildControls';
 import { HowToPlay } from '../components/HowToPlay';
+import { AnalyticsPanel } from '../components/AnalyticsPanel';
 import { ImportRecord } from '../components/ImportRecord';
 import { MoveHistory } from '../components/MoveHistory';
 import { ResultModal } from '../components/ResultModal';
@@ -312,6 +313,7 @@ export default function App() {
             onSkip={handleSkip}
           />
           <MoveHistory history={state.history} />
+          <AnalyticsPanel />
           <ImportRecord onImport={handleImport} />
           <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
         </div>

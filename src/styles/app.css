@@ -1016,3 +1016,51 @@ ol { padding-left: 20px; }
   background: rgba(255, 230, 0, 0.9);
 }
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Analytics Panel ─────────────────────────────────── */
+.analytics-panel { margin-top: 8px; }
+
+.analytics-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+  width: 100%;
+}
+.analytics-toggle:hover { color: var(--text-primary, #ccc); }
+
+.analytics-body {
+  margin-top: 6px;
+  font-size: 0.76rem;
+  color: #bbb;
+}
+
+.analytics-empty { color: #666; margin: 4px 0; }
+
+.analytics-total { margin: 0 0 6px; color: #aaa; }
+
+.analytics-section-title {
+  font-size: 0.72rem;
+  color: #888;
+  margin: 8px 0 2px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+.analytics-table th,
+.analytics-table td {
+  text-align: left;
+  padding: 2px 4px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.analytics-table th { color: #666; font-weight: normal; }
+.analytics-table td { color: #bbb; }
