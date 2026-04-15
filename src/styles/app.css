@@ -99,7 +99,7 @@ button { cursor: pointer; }
   stroke-width: 2;
 }
 .board-octagon-inner {
-  fill: #faf7f3;
+  fill: url(#silver-metallic-inner);
   stroke: #c4b49a;
   stroke-width: 1;
 }

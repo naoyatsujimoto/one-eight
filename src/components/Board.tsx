@@ -428,6 +428,15 @@ export function Board({
       <div className="board-inner" ref={containerRef}>
         {/* Octagonal board outline */}
         <svg className="board-octagon-svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="silver-metallic-inner" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"   stopColor="#f0f0f0" />
+              <stop offset="25%"  stopColor="#c8c8c8" />
+              <stop offset="50%"  stopColor="#a0a0a0" />
+              <stop offset="75%"  stopColor="#d8d8d8" />
+              <stop offset="100%" stopColor="#f0f0f0" />
+            </linearGradient>
+          </defs>
           <polygon
             points="72,0 608,0 680,72 680,608 608,680 72,680 0,608 0,72"
             className="board-octagon-outer"
@@ -435,6 +444,7 @@ export function Board({
           <polygon
             points="78,6 602,6 674,78 674,602 602,674 78,674 6,602 6,78"
             className="board-octagon-inner"
+            fill="url(#silver-metallic-inner)"
           />
         </svg>
 
