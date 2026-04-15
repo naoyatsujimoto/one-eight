@@ -406,11 +406,36 @@ export function Board({
       const gateEl = container.querySelector<HTMLElement>(`[data-gate-id="${gateId}"]`);
       if (!gateEl) continue;
       const gRect = gateEl.getBoundingClientRect();
-      newLines.push({
-        x1: posX, y1: posY,
-        x2: (gRect.left + gRect.width / 2 - cRect.left) / scale,
-        y2: (gRect.top + gRect.height / 2 - cRect.top) / scale,
-      });
+      const gateType: GateType = GATE_TYPE_MAP[gateId] ?? 'top-edge';
+      const centerX = (gRect.left + gRect.width / 2 - cRect.left) / scale;
+      const centerY = (gRect.top + gRect.height / 2 - cRect.top) / scale;
+      // Edge gates: target the midpoint of the position-facing edge (基準点).
+      // Corner gates: use center as-is.
+      let x2: number;
+      let y2: number;
+      switch (gateType) {
+        case 'top-edge':
+          x2 = centerX;
+          y2 = (gRect.bottom - cRect.top) / scale;
+          break;
+        case 'bottom-edge':
+          x2 = centerX;
+          y2 = (gRect.top - cRect.top) / scale;
+          break;
+        case 'left-edge':
+          x2 = (gRect.right - cRect.left) / scale;
+          y2 = centerY;
+          break;
+        case 'right-edge':
+          x2 = (gRect.left - cRect.left) / scale;
+          y2 = centerY;
+          break;
+        default:
+          // Corner gates: use center
+          x2 = centerX;
+          y2 = centerY;
+      }
+      newLines.push({ x1: posX, y1: posY, x2, y2 });
     }
     setLines(newLines);
   }, [selectedId, relatedGates]);
