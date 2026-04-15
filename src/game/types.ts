@@ -34,6 +34,8 @@ export type GameState = {
   currentPlayer: Player;
   moveNumber: number;
   selectedPosition: PositionId | null;
+  /** Preview owner for the currently selected position (committed on finalizeTurn). */
+  pendingPositionOwner: Player | null;
   positions: Record<PositionId, PositionState>;
   gates: Record<GateId, GateState>;
   history: MoveRecord[];

@@ -6,7 +6,9 @@ describe('engine flow', () => {
   it('selects an empty position', () => {
     const state = createInitialState();
     const next = selectPosition(state, 'A');
-    expect(next.positions.A.owner).toBe('black');
+    // owner is NOT committed yet; only pendingPositionOwner is set
+    expect(next.positions.A.owner).toBeNull();
+    expect(next.pendingPositionOwner).toBe('black');
     expect(next.selectedPosition).toBe('A');
   });
 
@@ -15,16 +17,19 @@ describe('engine flow', () => {
     expect(state.selectedPosition).toBe('A');
     const next = selectPosition(state, 'A');
     expect(next.selectedPosition).toBeNull();
-    // Owner must remain unchanged
-    expect(next.positions.A.owner).toBe('black');
+    expect(next.pendingPositionOwner).toBeNull();
+    // Owner is still uncommitted (was never finalized)
+    expect(next.positions.A.owner).toBeNull();
   });
 
   it('switches selection to a different position', () => {
     const state = selectPosition(createInitialState(), 'A');
     const next = selectPosition(state, 'B');
     expect(next.selectedPosition).toBe('B');
-    expect(next.positions.A.owner).toBe('black');
-    expect(next.positions.B.owner).toBe('black');
+    expect(next.pendingPositionOwner).toBe('black');
+    // Neither A nor B has a committed owner yet
+    expect(next.positions.A.owner).toBeNull();
+    expect(next.positions.B.owner).toBeNull();
   });
 
   it('applies a massive build and advances turn', () => {

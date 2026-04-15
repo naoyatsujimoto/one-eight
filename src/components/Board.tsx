@@ -486,19 +486,20 @@ export function Board({
           {BOARD_POSITIONS.map((id) => {
             const pos = state.positions[id];
             const isSelected = state.selectedPosition === id;
+            const displayOwner = isSelected ? state.pendingPositionOwner : pos.owner;
             const coord = POSITION_COORDS[id];
             return (
               <button
                 key={id}
                 data-pos-id={id}
-                className={`position-btn owner-${pos.owner ?? 'none'}${isSelected ? ' selected' : ''}`}
+                className={`position-btn owner-${displayOwner ?? 'none'}${isSelected ? ' selected' : ''}`}
                 onClick={() => onSelectPosition(id)}
                 type="button"
                 aria-pressed={isSelected}
                 style={{ position: 'absolute', left: coord.left, top: coord.top }}
               >
                 <span className="pos-id">{id}</span>
-                <OwnerDot owner={pos.owner} />
+                <OwnerDot owner={displayOwner} />
               </button>
             );
           })}

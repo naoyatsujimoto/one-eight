@@ -10,7 +10,7 @@ export function selectPosition(state: GameState, positionId: PositionId): GameSt
 
   // Toggle: re-clicking the selected position deselects it
   if (state.selectedPosition === positionId) {
-    return { ...state, selectedPosition: null };
+    return { ...state, selectedPosition: null, pendingPositionOwner: null };
   }
 
   const position = state.positions[positionId];
@@ -19,26 +19,35 @@ export function selectPosition(state: GameState, positionId: PositionId): GameSt
   const allowed = owner === null || owner === player || canCapturePosition(state, player, positionId);
   if (!allowed) return state;
 
-  const nextOwner = owner === player ? owner : player;
+  const pendingOwner = owner === player ? owner : player;
 
+  // Do NOT mutate positions here; store preview in pendingPositionOwner only.
   return {
     ...state,
     selectedPosition: positionId,
-    positions: {
-      ...state.positions,
-      [positionId]: {
-        ...position,
-        owner: nextOwner
-      }
-    }
+    pendingPositionOwner: pendingOwner,
   };
 }
 
 function finalizeTurn(state: GameState, record: MoveRecord): GameState {
+  // Commit pendingPositionOwner to the selected position if both are set.
+  let positions = state.positions;
+  if (state.selectedPosition && state.pendingPositionOwner !== null) {
+    positions = {
+      ...positions,
+      [state.selectedPosition]: {
+        ...positions[state.selectedPosition],
+        owner: state.pendingPositionOwner,
+      },
+    };
+  }
+
   const interim: GameState = {
     ...state,
+    positions,
     history: [...state.history, record],
     selectedPosition: null,
+    pendingPositionOwner: null,
     moveNumber: state.moveNumber + 1,
     currentPlayer: state.currentPlayer === 'black' ? 'white' : 'black'
   };

@@ -22,6 +22,7 @@ export function createInitialState(cpuPlayer: GameState['cpuPlayer'] = null): Ga
     currentPlayer: 'black',
     moveNumber: 1,
     selectedPosition: null,
+    pendingPositionOwner: null,
     positions,
     gates,
     history: [],
