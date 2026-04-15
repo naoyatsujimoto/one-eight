@@ -94,7 +94,7 @@ button { cursor: pointer; }
   z-index: 0;
 }
 .board-octagon-outer {
-  fill: none;
+  fill: #4a2e1a;
   stroke: #a89880;
   stroke-width: 2;
 }
