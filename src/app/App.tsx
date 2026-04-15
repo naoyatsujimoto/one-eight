@@ -16,6 +16,7 @@ import {
 } from '../game/engine';
 import { selectCpuMove } from '../game/ai';
 import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
+import { saveGameRecord, updateAggregates } from '../game/analytics';
 import type { GateId, GameState, Player, PositionId } from '../game/types';
 
 export type BuildMode = 'none' | 'massive' | 'selective' | 'quad';
@@ -61,6 +62,11 @@ export default function App() {
   useEffect(() => {
     saveState(state);
     setHasSaved(true);
+    // Auto-save analytics when CPU game ends
+    if (state.gameEnded && state.cpuPlayer !== null) {
+      const record = saveGameRecord(state);
+      if (record) updateAggregates(record);
+    }
   }, [state]);
 
   // Reset build state whenever selectedPosition changes
