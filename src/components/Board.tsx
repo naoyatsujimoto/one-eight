@@ -142,7 +142,7 @@ interface DiamondPipProps {
  * Arc rule: right-turn convex corner in a CW path → sweep=1.
  */
 function SilverCap({ owner }: { owner: 'black' | 'white' }) {
-  const r   = 0.10;         // rounding radius
+  const r   = 0.08;         // rounding radius (all 6 corners)
   const t   = 1 / 3;        // cell size
   const t2  = 2 / 3;
 
@@ -157,33 +157,41 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
     : { transformOrigin: '100% 100%', transform: 'scale(0.8)' };
 
   if (owner === 'white') {
-    // L-shape: top row (y 0→t) + left col (x 0→t)
-    // Clockwise from (0,0):
-    //   top edge → round corner at (1, t) → inner horizontal → inner vertical → round corner at (t, 1) → left edge back
+    // L-shape: top row + left col. All 6 corners rounded.
+    // Convex corners → sweep=1; concave inner corner (t,t) → sweep=0
     path = [
-      `M 0,0`,
-      `L 1,0`,
+      `M ${r},0`,
+      `L ${1 - r},0`,
+      `A ${r},${r} 0 0,1 1,${r}`,            // round TR (1,0)
       `L 1,${t - r}`,
-      `A ${r},${r} 0 0,1 ${1 - r},${t}`,   // round end of top row
-      `L ${t},${t}`,                          // inner corner (sharp)
+      `A ${r},${r} 0 0,1 ${1 - r},${t}`,     // round arm end (1,t)
+      `L ${t + r},${t}`,
+      `A ${r},${r} 0 0,0 ${t},${t + r}`,     // round inner concave (t,t) — sweep=0
       `L ${t},${1 - r}`,
-      `A ${r},${r} 0 0,1 ${t - r},1`,        // round end of left col
-      `L 0,1`,
+      `A ${r},${r} 0 0,1 ${t - r},1`,        // round arm end (t,1)
+      `L ${r},1`,
+      `A ${r},${r} 0 0,1 0,${1 - r}`,        // round BL (0,1)
+      `L 0,${r}`,
+      `A ${r},${r} 0 0,1 ${r},0`,            // round TL (0,0)
       `Z`,
     ].join(' ');
     gradCx = 0; gradCy = 0;
   } else {
-    // 180° mirror of white: bottom row (y t2→1) + right col (x t2→1)
-    // Clockwise from (1,1):
+    // 180° mirror of white
     path = [
-      `M 1,1`,
-      `L 0,1`,
+      `M ${1 - r},1`,
+      `L ${r},1`,
+      `A ${r},${r} 0 0,1 0,${1 - r}`,        // round BL (0,1)
       `L 0,${t2 + r}`,
-      `A ${r},${r} 0 0,1 ${r},${t2}`,        // round end of bottom row
-      `L ${t2},${t2}`,                         // inner corner (sharp)
+      `A ${r},${r} 0 0,1 ${r},${t2}`,        // round arm end (0,t2)
+      `L ${t2 - r},${t2}`,
+      `A ${r},${r} 0 0,0 ${t2},${t2 - r}`,   // round inner concave (t2,t2) — sweep=0
       `L ${t2},${r}`,
-      `A ${r},${r} 0 0,1 ${t2 + r},0`,        // round end of right col
-      `L 1,0`,
+      `A ${r},${r} 0 0,1 ${t2 + r},0`,       // round arm end (t2,0)
+      `L ${1 - r},0`,
+      `A ${r},${r} 0 0,1 1,${r}`,            // round TR (1,0)
+      `L 1,${1 - r}`,
+      `A ${r},${r} 0 0,1 ${1 - r},1`,        // round BR (1,1)
       `Z`,
     ].join(' ');
     gradCx = 1; gradCy = 1;
