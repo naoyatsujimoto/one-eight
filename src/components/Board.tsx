@@ -517,7 +517,7 @@ export function Board({
               <button
                 key={id}
                 data-pos-id={id}
-                className={`position-btn owner-${displayOwner ?? 'none'}${isSelected ? ' selected' : ''}`}
+                className={`position-btn bg-owner-${pos.owner ?? 'none'}${isSelected ? ' selected' : ''}`}
                 onClick={() => onSelectPosition(id)}
                 type="button"
                 aria-pressed={isSelected}

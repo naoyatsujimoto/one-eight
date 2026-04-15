@@ -144,12 +144,15 @@ button { cursor: pointer; }
   transition: border-color 0.1s;
   position: relative;
 }
+/* ポジション枠はポケットと同色（所有者ベース）— owner-dot のみで所有者色を表現 */
+.position-btn.bg-owner-black { background: var(--black-bg); }
+.position-btn.bg-owner-white { background: var(--white-bg); }
 .position-btn:hover { border-color: #888; }
 .position-btn.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
+  background: var(--empty-bg); /* 選択時は枠色を中立に戻す — owner-dot のみ着色 */
 }
-/* ポジション枠は常に中立色（--empty-bg）のまま — owner-dot のみで所有者色を表現する */
 
 .pos-id {
   position: absolute;
