@@ -122,6 +122,65 @@ interface DiamondPipProps {
   onClick?: () => void;
 }
 
+/**
+ * SilverCap renders a boomerang-shaped silver patch in one corner of the pip.
+ * The element is a square with side=1 (viewBox "0 0 1 1"), rotated 45deg by
+ * the parent.  We draw the cap in element space:
+ *
+ *   top-left corner    (0,0)  → white player (top visual vertex)
+ *   bottom-right corner(1,1)  → black player (bottom visual vertex)
+ *
+ * Shape: two edges run from the corner to the midpoint of each adjacent side
+ * (~45% of side length).  The inner boundary is a concave arc (large-radius
+ * circle) connecting those two midpoints — producing the boomerang / inlet.
+ *
+ *   For TL corner (white):
+ *     corner  = (0, 0)
+ *     p1      = (0.45, 0)   midpoint on top edge
+ *     p2      = (0, 0.45)   midpoint on left edge
+ *     arc from p1 to p2, large-radius concave (sweep=0)
+ *
+ *   For BR corner (black): mirror — translate to (1,1) and negate coords.
+ */
+function SilverCap({ owner }: { owner: 'black' | 'white' }) {
+  // Reach along each edge (fraction of side length)
+  const r = 0.50;
+  const gradId = `scap-${owner}`;
+
+  let path: string;
+  let gradCx: string;
+  let gradCy: string;
+
+  if (owner === 'white') {
+    // Corner at TL (0,0); edges go right and down
+    // M corner → p1 (along top) → arc → p2 (along left) → close
+    path = `M 0,0 L ${r},0 A 0.7,0.7 0 0,0 0,${r} Z`;
+    gradCx = '0'; gradCy = '0';
+  } else {
+    // Corner at BR (1,1); mirror of TL
+    path = `M 1,1 L ${1 - r},1 A 0.7,0.7 0 0,0 1,${1 - r} Z`;
+    gradCx = '1'; gradCy = '1';
+  }
+
+  return (
+    <svg
+      className="diamond-pip-cap"
+      viewBox="0 0 1 1"
+      aria-hidden="true"
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+    >
+      <defs>
+        <radialGradient id={gradId} cx={gradCx} cy={gradCy} r="0.7" gradientUnits="objectBoundingBox">
+          <stop offset="0%"   stopColor="#f8f8f8" />
+          <stop offset="40%"  stopColor="#d8d8d8" />
+          <stop offset="100%" stopColor="#a0a0a0" />
+        </radialGradient>
+      </defs>
+      <path d={path} fill={`url(#${gradId})`} opacity="0.92" />
+    </svg>
+  );
+}
+
 function DiamondPip({ owner, size, clickState, onClick }: DiamondPipProps) {
   const interactive = clickState === 'clickable' || clickState === 'selected';
   const cls = [
@@ -131,6 +190,7 @@ function DiamondPip({ owner, size, clickState, onClick }: DiamondPipProps) {
     clickState === 'clickable' ? 'pocket-clickable' : '',
     clickState === 'selected' ? 'pocket-selected' : '',
     clickState === 'disabled' ? 'pocket-disabled' : '',
+    (owner === 'black' || owner === 'white') ? 'diamond-pip-occupied' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -141,7 +201,10 @@ function DiamondPip({ owner, size, clickState, onClick }: DiamondPipProps) {
       aria-pressed={clickState === 'selected' ? true : undefined}
       onClick={interactive ? onClick : undefined}
       onKeyDown={interactive && onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
-    />
+      style={{ position: 'relative' }}
+    >
+      {(owner === 'black' || owner === 'white') && <SilverCap owner={owner} />}
+    </span>
   );
 }
 

@@ -375,8 +375,6 @@ button { cursor: pointer; }
   border: 1px solid #ccc;
   transform: rotate(45deg);
   flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
 }
 
 /* サイズ × 1.5 */
@@ -450,11 +448,9 @@ button { cursor: pointer; }
   transform-origin: center;
 }
 
-/* ── Occupied pocket: wooden tile + silver corner cap ─────────────────────── */
-/* Shared tile base: dark wood grain texture */
+/* ── Occupied pocket: wooden tile ─────────────────────────────────────────── */
 .diamond-pip-black,
 .diamond-pip-white {
-  /* Wood base: dark brown gradient simulating grain */
   background:
     linear-gradient(
       135deg,
@@ -473,42 +469,14 @@ button { cursor: pointer; }
     0 1px 3px rgba(0,0,0,0.4);
 }
 
-/* Silver corner cap via ::before pseudo-element
-   Large circle anchored at one corner → clipped by overflow:hidden to produce
-   a smooth quarter-arc boundary (organic "inlet" shape).
-
-   Rotation proof: for every gate type the element's TL corner maps to the TOP
-   visual vertex of the diamond, and BR maps to the BOTTOM vertex.
-   Therefore: white → TL anchor, black → BR anchor. */
-.diamond-pip-white::before,
-.diamond-pip-black::before {
-  content: '';
+/* Silver cap SVG is rendered inline in DiamondPip component */
+.diamond-pip-cap {
   position: absolute;
-  /* Circle diameter = 110% of element; radius = 55% → arc crosses each edge ~55% from corner */
-  width: 110%;
-  height: 110%;
-  border-radius: 50%;
-  /* Metallic silver radial gradient */
-  background: radial-gradient(
-    circle at center,
-    #f6f6f6 0%,
-    #e0e0e0 30%,
-    #c0c0c0 60%,
-    #a4a4a4 100%
-  );
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-}
-
-/* White: circle centered at element top-left → top visual vertex */
-.diamond-pip-white::before {
-  top: -55%;
-  left: -55%;
-}
-
-/* Black: circle centered at element bottom-right → bottom visual vertex */
-.diamond-pip-black::before {
-  bottom: -55%;
-  right: -55%;
+  overflow: visible;
 }
 
 .diamond-pip-none  { background: #e0dbd5; border-color: #bbb; }
