@@ -33,15 +33,15 @@ describe('importRecord — normal cases', () => {
     const state = ok(result);
     expect(state.moveNumber).toBe(2);
     expect(state.currentPlayer).toBe('white');
-    // Gate 2 should have a large slot filled by black
-    expect(state.gates[2].largeSlots[0]).toEqual({ size: 'large', owner: 'black' });
+    // Gate 2 is a vertical gate; black (near=bottom) fills largeSlots[1] first
+    expect(state.gates[2].largeSlots[1]).toEqual({ size: 'large', owner: 'black' });
   });
 
   it('imports a selective build', () => {
     const result = importRecord('1. A, s(1,2)');
     const state = ok(result);
     expect(state.moveNumber).toBe(2);
-    // Gate 1 and Gate 2 each have a middle slot filled by black
+    // Gate 1 and Gate 2 are vertical gates; black fills middleSlots[0] (left) first
     expect(state.gates[1].middleSlots[0]).toEqual({ size: 'middle', owner: 'black' });
     expect(state.gates[2].middleSlots[0]).toEqual({ size: 'middle', owner: 'black' });
   });
@@ -82,9 +82,9 @@ describe('importRecord — normal cases', () => {
 
     expect(importedState.moveNumber).toBe(state.moveNumber);
     expect(importedState.currentPlayer).toBe(state.currentPlayer);
-    // Gate 1 large slot 0 should be black
-    expect(importedState.gates[1].largeSlots[0]).toEqual({ size: 'large', owner: 'black' });
-    // Gate 3 large slot 0 should be white
+    // Gate 1 is a vertical gate; black (near=bottom) fills largeSlots[1] first
+    expect(importedState.gates[1].largeSlots[1]).toEqual({ size: 'large', owner: 'black' });
+    // Gate 3 is a vertical gate; white (near=top) fills largeSlots[0] first
     expect(importedState.gates[3].largeSlots[0]).toEqual({ size: 'large', owner: 'white' });
   });
 
