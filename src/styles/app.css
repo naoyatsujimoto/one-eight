@@ -150,9 +150,9 @@ button { cursor: pointer; }
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
 }
-.owner-black { background: var(--black-bg); }
-.owner-white { background: var(--white-bg); }
-.owner-none  { background: var(--empty-bg); }
+.owner-black { background: var(--black-color); }
+.owner-white { background: var(--white-color); }
+.owner-none  { background: #e0dbd5; }
 
 .pos-id {
   font-size: 1.6rem;
