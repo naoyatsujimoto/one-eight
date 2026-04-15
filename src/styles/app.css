@@ -136,7 +136,7 @@ button { cursor: pointer; }
   height: 77px;
   border-radius: 10px;
   border: 2px solid #ccc;
-  background: #b0b0b0;
+  background: #e0dbd5; /* ポケット枠内（diamond-pip-none）と同色 */
   display: grid;
   align-items: center;
   justify-items: center;
@@ -151,7 +151,7 @@ button { cursor: pointer; }
 .position-btn.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
-  background: #b0b0b0; /* 選択時もポケット同色を維持 — owner-dot のみ着色 */
+  background: #e0dbd5; /* 選択時もポケット同色を維持 — owner-dot のみ着色 */
 }
 
 .pos-id {
