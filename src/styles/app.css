@@ -137,13 +137,12 @@ button { cursor: pointer; }
   border-radius: 10px;
   border: 2px solid #ccc;
   background: var(--empty-bg);
-  display: flex;
-  flex-direction: column;
+  display: grid;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-items: center;
   padding: 8px;
   transition: border-color 0.1s;
+  position: relative;
 }
 .position-btn:hover { border-color: #888; }
 .position-btn.selected {
@@ -155,10 +154,13 @@ button { cursor: pointer; }
 .owner-none  { background: #e0dbd5; }
 
 .pos-id {
+  position: absolute;
+  top: 4px;
+  left: 6px;
   font-size: 0.65rem;
   font-weight: 400;
   line-height: 1;
-  color: #aaa;
+  color: #888;
 }
 .pos-gates {
   font-size: 0.5rem;
@@ -174,6 +176,8 @@ button { cursor: pointer; }
   height: 18px;
   border-radius: 50%;
   border: 2px solid rgba(0,0,0,0.15);
+  justify-self: center;
+  align-self: center;
 }
 .owner-dot-black { background: var(--black-color); border-color: rgba(0,0,0,0.4); }
 .owner-dot-white { background: var(--white-color); border-color: #555; box-shadow: 0 1px 3px rgba(0,0,0,0.22); }
