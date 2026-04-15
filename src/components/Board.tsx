@@ -499,7 +499,6 @@ export function Board({
               >
                 <span className="pos-id">{id}</span>
                 <OwnerDot owner={pos.owner} />
-                <span className="pos-gates">G{POSITION_TO_GATES[id].join(' ')}</span>
               </button>
             );
           })}

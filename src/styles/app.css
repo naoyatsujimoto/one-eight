@@ -155,10 +155,10 @@ button { cursor: pointer; }
 .owner-none  { background: #e0dbd5; }
 
 .pos-id {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 400;
   line-height: 1;
-  color: #333;
+  color: #aaa;
 }
 .pos-gates {
   font-size: 0.5rem;
