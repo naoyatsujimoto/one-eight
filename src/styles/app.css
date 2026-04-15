@@ -149,9 +149,8 @@ button { cursor: pointer; }
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
 }
-.owner-black { background: var(--black-color); }
-.owner-white { background: var(--white-color); }
-.owner-none  { background: #e0dbd5; }
+/* owner-dot のみで所有者色を表現するため position-btn への背景色付与は廃止 */
+/* .owner-black / .owner-white / .owner-none は position-btn に付与されるが背景色は設定しない */
 
 .pos-id {
   position: absolute;
