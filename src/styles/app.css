@@ -136,7 +136,7 @@ button { cursor: pointer; }
   height: 77px;
   border-radius: 10px;
   border: 2px solid #ccc;
-  background: var(--empty-bg);
+  background: #b0b0b0;
   display: grid;
   align-items: center;
   justify-items: center;
@@ -151,7 +151,7 @@ button { cursor: pointer; }
 .position-btn.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
-  background: var(--empty-bg); /* 選択時は枠色を中立に戻す — owner-dot のみ着色 */
+  background: #b0b0b0; /* 選択時もポケット同色を維持 — owner-dot のみ着色 */
 }
 
 .pos-id {
@@ -182,7 +182,7 @@ button { cursor: pointer; }
 }
 .owner-dot-black { background: var(--black-color); border-color: rgba(0,0,0,0.4); }
 .owner-dot-white { background: var(--white-color); border-color: #555; box-shadow: 0 1px 3px rgba(0,0,0,0.22); }
-.owner-dot-none  { background: transparent; border-color: #ccc; border-style: dashed; }
+.owner-dot-none  { background: transparent; border-color: rgba(255,255,255,0.75); border-style: dashed; }
 
 /* ── Gates ─────────────────────────────────────── */
 .gates-related-hint { font-size: 0.65rem; text-transform: none; letter-spacing: 0; color: var(--accent); font-weight: 600; }
