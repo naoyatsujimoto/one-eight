@@ -375,6 +375,8 @@ button { cursor: pointer; }
   border: 1px solid #ccc;
   transform: rotate(45deg);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 /* サイズ × 1.5 */
@@ -448,12 +450,71 @@ button { cursor: pointer; }
   transform-origin: center;
 }
 
-.diamond-pip-black { background: var(--black-color); border-color: #222; }
+/* ── Occupied pocket: wooden tile + silver corner cap ─────────────────────── */
+/* Shared tile base: dark wood grain texture */
+.diamond-pip-black,
 .diamond-pip-white {
-  background: var(--white-color);
-  border-color: #555;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(255,255,255,0.6);
+  /* Wood base: dark brown gradient simulating grain */
+  background:
+    linear-gradient(
+      135deg,
+      #3b2208 0%,
+      #5a3210 35%,
+      #4a2a0c 50%,
+      #6b3d14 70%,
+      #3e2408 100%
+    );
+  border-color: #2a1a06;
+  border-radius: 3px;
+  border-width: 1.5px;
+  box-shadow:
+    inset 0 1px 2px rgba(255,220,140,0.18),
+    inset 0 -1px 2px rgba(0,0,0,0.35),
+    0 1px 3px rgba(0,0,0,0.4);
 }
+
+/* Silver corner cap via ::before pseudo-element */
+/* The pip is rotated 45deg in screen space, so "top" in element space = physical top-right corner in screen.
+   White player: silver cap at top corner (top-right in screen = top in element coords).
+   Black player: silver cap at bottom corner (bottom-left in screen = bottom in element coords). */
+
+/* Shared silver cap style */
+.diamond-pip-white::before,
+.diamond-pip-black::before {
+  content: '';
+  position: absolute;
+  /* Metallic silver gradient */
+  background: radial-gradient(
+    ellipse at 30% 30%,
+    #f0f0f0 0%,
+    #c8c8c8 40%,
+    #a0a0a0 70%,
+    #888 100%
+  );
+  /* Smooth curved boundary via border-radius on one corner */
+  border-radius: 0 0 80% 0;
+  /* Size: roughly 48% of element, covering one corner */
+  width: 48%;
+  height: 48%;
+  box-shadow: inset -1px -1px 2px rgba(255,255,255,0.5), 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* White: cap at top-left in element space (= upper area in screen space) */
+.diamond-pip-white::before {
+  top: 0;
+  left: 0;
+  border-radius: 0 0 80% 0;
+  transform-origin: top left;
+}
+
+/* Black: cap at bottom-right in element space (= lower area in screen space) */
+.diamond-pip-black::before {
+  bottom: 0;
+  right: 0;
+  border-radius: 80% 0 0 0;
+  transform-origin: bottom right;
+}
+
 .diamond-pip-none  { background: #e0dbd5; border-color: #bbb; }
 
 /* ── Pocket click states ────────────────────────── */
