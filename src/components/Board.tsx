@@ -123,60 +123,87 @@ interface DiamondPipProps {
 }
 
 /**
- * SilverCap renders a boomerang-shaped silver patch in one corner of the pip.
- * The element is a square with side=1 (viewBox "0 0 1 1"), rotated 45deg by
- * the parent.  We draw the cap in element space:
+ * SilverCap — boomerang / L-shaped silver patch.
  *
- *   top-left corner    (0,0)  → white player (top visual vertex)
- *   bottom-right corner(1,1)  → black player (bottom visual vertex)
+ * The pip element is a square (viewBox 0 0 1 1) rotated 45° so that:
+ *   (0,0) TL corner → TOP    vertex of diamond  (white player)
+ *   (1,1) BR corner → BOTTOM vertex of diamond  (black player)
  *
- * Shape: two edges run from the corner to the midpoint of each adjacent side
- * (~45% of side length).  The inner boundary is a concave arc (large-radius
- * circle) connecting those two midpoints — producing the boomerang / inlet.
+ * Shape (3×3 grid, side = 1/3 each):
+ *   Filled cells (white): 1,2,3,4,7  =  top row + left column
+ *   Filled cells (black): 3,6,7,8,9  =  bottom row + right column  (180° mirror)
  *
- *   For TL corner (white):
- *     corner  = (0, 0)
- *     p1      = (0.45, 0)   midpoint on top edge
- *     p2      = (0, 0.45)   midpoint on left edge
- *     arc from p1 to p2, large-radius concave (sweep=0)
+ * Only two corners are rounded (r = 0.10):
+ *   white: end of top row  at (1,   1/3)  and end of left col at (1/3, 1)
+ *   black: mirror          at (0,   2/3)  and                    (2/3, 0)
  *
- *   For BR corner (black): mirror — translate to (1,1) and negate coords.
+ * All other corners (tile corners + inner concave corner) stay sharp.
+ *
+ * Arc rule: right-turn convex corner in a CW path → sweep=1.
  */
 function SilverCap({ owner }: { owner: 'black' | 'white' }) {
-  // Reach along each edge (fraction of side length)
-  const r = 0.50;
+  const r   = 0.10;         // rounding radius
+  const t   = 1 / 3;        // cell size
+  const t2  = 2 / 3;
+
   const gradId = `scap-${owner}`;
 
   let path: string;
-  let gradCx: string;
-  let gradCy: string;
+  let gradCx: number;
+  let gradCy: number;
 
   if (owner === 'white') {
-    // Corner at TL (0,0); edges go right and down
-    // M corner → p1 (along top) → arc → p2 (along left) → close
-    path = `M 0,0 L ${r},0 A 0.7,0.7 0 0,0 0,${r} Z`;
-    gradCx = '0'; gradCy = '0';
+    // L-shape: top row (y 0→t) + left col (x 0→t)
+    // Clockwise from (0,0):
+    //   top edge → round corner at (1, t) → inner horizontal → inner vertical → round corner at (t, 1) → left edge back
+    path = [
+      `M 0,0`,
+      `L 1,0`,
+      `L 1,${t - r}`,
+      `A ${r},${r} 0 0,1 ${1 - r},${t}`,   // round end of top row
+      `L ${t},${t}`,                          // inner corner (sharp)
+      `L ${t},${1 - r}`,
+      `A ${r},${r} 0 0,1 ${t - r},1`,        // round end of left col
+      `L 0,1`,
+      `Z`,
+    ].join(' ');
+    gradCx = 0; gradCy = 0;
   } else {
-    // Corner at BR (1,1); mirror of TL
-    path = `M 1,1 L ${1 - r},1 A 0.7,0.7 0 0,0 1,${1 - r} Z`;
-    gradCx = '1'; gradCy = '1';
+    // 180° mirror of white: bottom row (y t2→1) + right col (x t2→1)
+    // Clockwise from (1,1):
+    path = [
+      `M 1,1`,
+      `L 0,1`,
+      `L 0,${t2 + r}`,
+      `A ${r},${r} 0 0,1 ${r},${t2}`,        // round end of bottom row
+      `L ${t2},${t2}`,                         // inner corner (sharp)
+      `L ${t2},${r}`,
+      `A ${r},${r} 0 0,1 ${t2 + r},0`,        // round end of right col
+      `L 1,0`,
+      `Z`,
+    ].join(' ');
+    gradCx = 1; gradCy = 1;
   }
 
   return (
     <svg
-      className="diamond-pip-cap"
       viewBox="0 0 1 1"
       aria-hidden="true"
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
     >
       <defs>
-        <radialGradient id={gradId} cx={gradCx} cy={gradCy} r="0.7" gradientUnits="objectBoundingBox">
-          <stop offset="0%"   stopColor="#f8f8f8" />
-          <stop offset="40%"  stopColor="#d8d8d8" />
-          <stop offset="100%" stopColor="#a0a0a0" />
+        <radialGradient
+          id={gradId}
+          cx={gradCx} cy={gradCy} r="1"
+          gradientUnits="objectBoundingBox"
+        >
+          <stop offset="0%"   stopColor="#f4f4f4" />
+          <stop offset="35%"  stopColor="#d4d4d4" />
+          <stop offset="70%"  stopColor="#b0b0b0" />
+          <stop offset="100%" stopColor="#909090" />
         </radialGradient>
       </defs>
-      <path d={path} fill={`url(#${gradId})`} opacity="0.92" />
+      <path d={path} fill={`url(#${gradId})`} opacity="0.93" />
     </svg>
   );
 }
