@@ -152,6 +152,10 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
   let gradCx: number;
   let gradCy: number;
 
+  const scaleStyle = owner === 'white'
+    ? { transformOrigin: '0% 0%', transform: 'scale(0.8)' }
+    : { transformOrigin: '100% 100%', transform: 'scale(0.8)' };
+
   if (owner === 'white') {
     // L-shape: top row (y 0→t) + left col (x 0→t)
     // Clockwise from (0,0):
@@ -189,7 +193,7 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
     <svg
       viewBox="0 0 1 1"
       aria-hidden="true"
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', ...scaleStyle }}
     >
       <defs>
         <radialGradient
