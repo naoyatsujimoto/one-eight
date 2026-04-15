@@ -208,8 +208,9 @@ button { cursor: pointer; }
 }
 
 /* Position 選択中で関連Gate: active (フォーカス可能な状態) */
+/* drop-shadow を owner-dot 2.5× スケールに合わせて拡大 (3px → 8px) */
 .gate-card-active {
-  filter: drop-shadow(0 0 3px rgba(74,144,226,0.6));
+  filter: drop-shadow(0 0 8px rgba(74,144,226,0.75));
 }
 /* 関連外Gate */
 .gate-card-inactive {
@@ -217,14 +218,15 @@ button { cursor: pointer; }
 }
 
 /* 選択済み (Selective 1st, Quad 選択中) */
+/* drop-shadow を owner-dot 2.5× スケールに合わせて拡大 (6px → 15px) */
 .gate-card-selected {
   cursor: pointer;
-  filter: drop-shadow(0 0 6px rgba(123,94,167,0.9));
+  filter: drop-shadow(0 0 15px rgba(123,94,167,0.9));
   outline: 2px solid rgba(123,94,167,0.7);
   outline-offset: 2px;
 }
 .gate-card-selected:hover:not(:disabled) {
-  filter: drop-shadow(0 0 8px rgba(123,94,167,1.0));
+  filter: drop-shadow(0 0 20px rgba(123,94,167,1.0));
 }
 
 .gate-card-id {
@@ -454,25 +456,27 @@ button { cursor: pointer; }
 
 /* ── Pocket click states ────────────────────────── */
 /* clickable: blue glow — tells the user "this pip can be pressed" */
+/* box-shadow を owner-dot 2.5× スケールに合わせて拡大 (5px → 12px) */
 .diamond-pip.pocket-clickable {
   cursor: pointer;
   border: 2px solid var(--accent);
-  box-shadow: 0 0 5px rgba(74, 144, 226, 0.75);
+  box-shadow: 0 0 12px rgba(74, 144, 226, 0.85);
 }
 .diamond-pip.pocket-clickable:hover {
-  box-shadow: 0 0 10px rgba(74, 144, 226, 1.0);
+  box-shadow: 0 0 20px rgba(74, 144, 226, 1.0);
   background: rgba(74, 144, 226, 0.18);
 }
 
 /* selected: purple glow — first pick in Selective / any pick in Quad */
+/* box-shadow を owner-dot 2.5× スケールに合わせて拡大 (7px → 17px) */
 .diamond-pip.pocket-selected {
   cursor: pointer;
   border: 2px solid #7b5ea7;
-  box-shadow: 0 0 7px rgba(123, 94, 167, 0.9);
+  box-shadow: 0 0 17px rgba(123, 94, 167, 0.9);
   background: rgba(123, 94, 167, 0.18);
 }
 .diamond-pip.pocket-selected:hover {
-  box-shadow: 0 0 11px rgba(123, 94, 167, 1.0);
+  box-shadow: 0 0 25px rgba(123, 94, 167, 1.0);
 }
 
 /* disabled: subdued — not interactive in current context */
