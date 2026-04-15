@@ -149,10 +149,7 @@ button { cursor: pointer; }
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);
 }
-/* ポジションの背景色はポケット（diamond-pip）の配色に合わせる */
-.position-btn.owner-black { background: var(--black-color); }
-.position-btn.owner-white { background: var(--white-color); }
-.position-btn.owner-none  { background: #e0dbd5; }
+/* ポジション枠は常に中立色（--empty-bg）のまま — owner-dot のみで所有者色を表現する */
 
 .pos-id {
   position: absolute;
