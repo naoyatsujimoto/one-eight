@@ -33,7 +33,7 @@ describe('importRecord — normal cases', () => {
     const state = ok(result);
     expect(state.moveNumber).toBe(2);
     expect(state.currentPlayer).toBe('white');
-    // Gate 2 is a vertical gate; black (near=bottom) fills largeSlots[1] first
+    // Gate 2 (top-edge): inner = bottom, fills largeSlots[1] first
     expect(state.gates[2].largeSlots[1]).toEqual({ size: 'large', owner: 'black' });
   });
 
@@ -41,8 +41,9 @@ describe('importRecord — normal cases', () => {
     const result = importRecord('1. A, s(1,2)');
     const state = ok(result);
     expect(state.moveNumber).toBe(2);
-    // Gate 1 and Gate 2 are vertical gates; black fills middleSlots[0] (left) first
-    expect(state.gates[1].middleSlots[0]).toEqual({ size: 'middle', owner: 'black' });
+    // Gate 1 (corner-tl): inner side = right, fills middleSlots[1] first
+    // Gate 2 (top-edge): inner side = bottom, fills middleSlots[0] (left) first
+    expect(state.gates[1].middleSlots[1]).toEqual({ size: 'middle', owner: 'black' });
     expect(state.gates[2].middleSlots[0]).toEqual({ size: 'middle', owner: 'black' });
   });
 
@@ -82,10 +83,10 @@ describe('importRecord — normal cases', () => {
 
     expect(importedState.moveNumber).toBe(state.moveNumber);
     expect(importedState.currentPlayer).toBe(state.currentPlayer);
-    // Gate 1 is a vertical gate; black (near=bottom) fills largeSlots[1] first
+    // Gate 1 (corner-tl, top-side): inner = bottom, fills largeSlots[1] first
     expect(importedState.gates[1].largeSlots[1]).toEqual({ size: 'large', owner: 'black' });
-    // Gate 3 is a vertical gate; white (near=top) fills largeSlots[0] first
-    expect(importedState.gates[3].largeSlots[0]).toEqual({ size: 'large', owner: 'white' });
+    // Gate 3 (top-edge, top-side): inner = bottom, fills largeSlots[1] first
+    expect(importedState.gates[3].largeSlots[1]).toEqual({ size: 'large', owner: 'white' });
   });
 
   it('round-trip: engine moves → generateRecordText → importRecord reproduces state', () => {
