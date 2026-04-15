@@ -142,7 +142,7 @@ interface DiamondPipProps {
  * Arc rule: right-turn convex corner in a CW path → sweep=1.
  */
 function SilverCap({ owner }: { owner: 'black' | 'white' }) {
-  const r   = 0.08;         // rounding radius (all 6 corners)
+  const r   = 0.20;         // rounding radius (all 6 corners)
   const t   = 1 / 3;        // cell size
   const t2  = 2 / 3;
 
