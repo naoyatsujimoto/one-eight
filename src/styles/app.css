@@ -144,9 +144,6 @@ button { cursor: pointer; }
   transition: border-color 0.1s;
   position: relative;
 }
-/* ポジション枠はポケットと同色（所有者ベース）— owner-dot のみで所有者色を表現 */
-.position-btn.bg-owner-black { background: var(--black-bg); }
-.position-btn.bg-owner-white { background: var(--white-bg); }
 .position-btn:hover { border-color: #888; }
 .position-btn.selected {
   border-color: var(--accent);
@@ -176,12 +173,27 @@ button { cursor: pointer; }
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  border: 5px solid rgba(0,0,0,0.15);
+  border: 3px solid transparent;
   justify-self: center;
   align-self: center;
 }
-.owner-dot-black { background: var(--black-color); border-color: rgba(0,0,0,0.4); }
-.owner-dot-white { background: var(--white-color); border-color: #555; box-shadow: 0 1px 3px rgba(0,0,0,0.22); }
+/* Black dot: 木目調グラデーション + 銀アウトライン */
+.owner-dot-black {
+  background:
+    radial-gradient(ellipse at 38% 35%, #3a2e22 0%, #1a120a 55%, #0e0905 100%),
+    linear-gradient(135deg, #4a3828 0%, #1a1208 60%, #0e0905 100%);
+  background-blend-mode: overlay;
+  background: linear-gradient(135deg, #3d2b18 0%, #1a120a 45%, #2a1e10 70%, #0e0905 100%);
+  border-color: #a0a8b0;
+  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 3px rgba(255,255,255,0.08);
+}
+/* White dot: 象牙調グラデーション + 銀アウトライン */
+.owner-dot-white {
+  background: linear-gradient(135deg, #f8f4ee 0%, #e8e0d8 40%, #f4efe8 70%, #fffcf8 100%);
+  border-color: #a0a8b0;
+  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.18);
+}
+/* Empty dot: 点線のみ */
 .owner-dot-none  { background: transparent; border-color: rgba(255,255,255,0.75); border-style: dashed; }
 
 /* ── Gates ─────────────────────────────────────── */
@@ -602,6 +614,9 @@ button { cursor: pointer; }
   cursor: pointer;
 }
 .build-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.build-btn-confirm  { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.build-btn-confirm:hover { background: #eef4ff; }
 
 .build-btn-skip     { border-color: #aaa; color: #666; }
 .build-btn-skip:hover:not(:disabled)     { background: #f5f5f5; }

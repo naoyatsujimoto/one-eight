@@ -6,15 +6,17 @@ export function BuildControls({
   state,
   buildState,
   onSkip,
+  onQuadConfirm,
 }: {
   state: GameState;
   buildState: BoardBuildState;
   onSkip: () => void;
+  onQuadConfirm: () => void;
 }) {
   const options = getBuildOptionsForSelected(state);
   const canSkip = !options?.hasAny;
 
-  const { mode, selectiveFirst, quadSelected } = buildState;
+  const { mode, selectiveFirst, quadSelected, quadMax } = buildState;
 
   function getHint(): string {
     if (!state.selectedPosition) return 'ポジションを選択してください。';
@@ -25,10 +27,12 @@ export function BuildControls({
     }
     if (mode === 'quad') {
       if (quadSelected.length === 0) return 'Quad: Small ポケットを選択中…';
-      return `Quad: Gate ${quadSelected.join(', ')} 選択済み (${quadSelected.length}/4)`;
+      return `Quad: Gate ${quadSelected.join(', ')} 選択済み (${quadSelected.length}/${quadMax}) — Confirm で確定`;
     }
     return '';
   }
+
+  const showQuadConfirm = mode === 'quad' && quadSelected.length > 0;
 
   return (
     <section className="panel">
@@ -38,6 +42,15 @@ export function BuildControls({
 
       {state.selectedPosition && (
         <div className="control-group build-type-skip">
+          {showQuadConfirm && (
+            <button
+              type="button"
+              onClick={onQuadConfirm}
+              className="build-btn build-btn-confirm"
+            >
+              Confirm ({quadSelected.length}/{quadMax})
+            </button>
+          )}
           <button
             type="button"
             onClick={onSkip}

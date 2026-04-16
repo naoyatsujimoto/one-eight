@@ -18,6 +18,7 @@ import {
 import { selectCpuMove } from '../game/ai';
 import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
 import { saveGameRecord, updateAggregates } from '../game/analytics';
+import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, GameState, Player, PositionId } from '../game/types';
 
 export type BuildMode = 'none' | 'massive' | 'selective' | 'quad';
@@ -26,13 +27,28 @@ export interface BoardBuildState {
   mode: BuildMode;
   selectiveFirst: GateId | null;
   quadSelected: GateId[];
+  quadMax: number;
 }
 
 const EMPTY_BUILD_STATE: BoardBuildState = {
   mode: 'none',
   selectiveFirst: null,
   quadSelected: [],
+  quadMax: 4,
 };
+
+/** 選択ポジションの全 Gate の空き small スロット数を計算（quadMax 用） */
+function calcQuadMax(state: GameState): number {
+  if (!state.selectedPosition) return 4;
+  const gateIds = POSITION_TO_GATES[state.selectedPosition];
+  let freeCount = 0;
+  for (const gid of gateIds) {
+    const gate = state.gates[gid];
+    if (gate) freeCount += gate.smallSlots.filter((s) => s === null).length;
+  }
+  // 空きスロット数を Gate 数上限（4）でクランプ
+  return Math.min(freeCount, 4);
+}
 
 /** Delay (ms) before CPU executes its move — gives the player a moment to see the board */
 const CPU_MOVE_DELAY_MS = 600;
@@ -72,7 +88,9 @@ export default function App() {
 
   // Reset build state whenever selectedPosition changes
   useEffect(() => {
-    setBuildState(EMPTY_BUILD_STATE);
+    const qMax = calcQuadMax(state);
+    setBuildState({ ...EMPTY_BUILD_STATE, quadMax: qMax });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedPosition]);
 
   // CPU auto-move
@@ -214,7 +232,7 @@ export default function App() {
     if (isCpuTurn) return;
     setBuildState((prev) => {
       if (prev.selectiveFirst === null) {
-        return { mode: 'selective', selectiveFirst: gateId, quadSelected: [] };
+        return { mode: 'selective', selectiveFirst: gateId, quadSelected: [], quadMax: prev.quadMax };
       }
       if (prev.selectiveFirst === gateId) {
         return EMPTY_BUILD_STATE;
@@ -230,21 +248,26 @@ export default function App() {
   function handleSmallPocketClick(gateId: GateId) {
     if (isCpuTurn) return;
     setBuildState((prev) => {
+      const currentMax = prev.mode === 'quad' ? prev.quadMax : calcQuadMax(state);
       if (prev.quadSelected.includes(gateId)) {
         const next = prev.quadSelected.filter((id) => id !== gateId);
         return next.length === 0
           ? EMPTY_BUILD_STATE
-          : { mode: 'quad', selectiveFirst: null, quadSelected: next };
+          : { mode: 'quad', selectiveFirst: null, quadSelected: next, quadMax: currentMax };
       }
       const next = [...prev.quadSelected, gateId];
-      if (next.length === 4) {
-        // Push snapshot before finalizing turn
-        setUndoStack((s) => [...s, state]);
-        setState((gs) => applyQuadBuildForGates(gs, next as GateId[]));
-        return EMPTY_BUILD_STATE;
-      }
-      return { mode: 'quad', selectiveFirst: null, quadSelected: next };
+      // 上限に達したら Confirm 待ち（自動確定しない）
+      return { mode: 'quad', selectiveFirst: null, quadSelected: next, quadMax: currentMax };
     });
+  }
+
+  function handleQuadConfirm() {
+    if (isCpuTurn) return;
+    const { quadSelected } = buildState;
+    if (quadSelected.length === 0) return;
+    setUndoStack((s) => [...s, state]);
+    setState((gs) => applyQuadBuildForGates(gs, quadSelected as GateId[]));
+    setBuildState(EMPTY_BUILD_STATE);
   }
 
   function handleSkip() {
@@ -311,6 +334,7 @@ export default function App() {
             state={state}
             buildState={buildState}
             onSkip={handleSkip}
+            onQuadConfirm={handleQuadConfirm}
           />
           <MoveHistory history={state.history} />
           <AnalyticsPanel />
