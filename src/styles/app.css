@@ -151,6 +151,13 @@ button { cursor: pointer; }
   background: rgba(220, 200, 160, 0.28);
   box-shadow: 0 0 0 2px rgba(180, 155, 100, 0.18);
 }
+
+/* Subtle highlight for the last opponent's build move (gate card) */
+.gate-card.last-opponent-move {
+  outline: 1px solid rgba(160, 140, 100, 0.50);
+  outline-offset: 1px;
+  filter: drop-shadow(0 0 4px rgba(180, 155, 100, 0.30));
+}
 .position-btn.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);

@@ -337,6 +337,7 @@ function GateCard({
   hasPosition,
   gateType,
   ps,
+  isLastOpponentBuild,
   onLarge,
   onMiddle,
   onSmall,
@@ -347,6 +348,7 @@ function GateCard({
   hasPosition: boolean;
   gateType: GateType;
   ps: PocketStates;
+  isLastOpponentBuild: boolean;
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
@@ -356,6 +358,7 @@ function GateCard({
     'gate-card',
     hasPosition ? (isRelated ? 'gate-card-active' : 'gate-card-inactive') : '',
     anySelected ? 'gate-card-selected' : '',
+    isLastOpponentBuild && !anySelected ? 'last-opponent-move' : '',
   ].filter(Boolean).join(' ');
 
   const isCorner = gateType.startsWith('corner');
@@ -449,6 +452,25 @@ export function Board({
     if (last.player === state.currentPlayer) return null; // opponent's last move
     if (last.positioning === 'P') return null; // skip/pass — no position
     return last.positioning as PositionId;
+  })();
+
+  // Derive the last opponent's built gate(s) for subtle highlight
+  const lastOpponentBuildGateIds: Set<GateId> = (() => {
+    if (state.history.length === 0) return new Set();
+    const last = state.history[state.history.length - 1];
+    if (!last) return new Set();
+    if (last.player === state.currentPlayer) return new Set(); // opponent's last move
+    if (last.build.type === 'skip') return new Set();
+    if (last.build.type === 'massive' && last.build.gate !== null) {
+      return new Set([last.build.gate]);
+    }
+    if (last.build.type === 'selective') {
+      return new Set(last.build.gates);
+    }
+    if (last.build.type === 'quad') {
+      return new Set(last.build.placedGateIds);
+    }
+    return new Set();
   })();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -609,6 +631,7 @@ export function Board({
                 hasPosition={selectedId !== null}
                 gateType={gateType}
                 ps={ps}
+                isLastOpponentBuild={lastOpponentBuildGateIds.has(gateId)}
                 onLarge={() => onLargePocketClick(gateId)}
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}
