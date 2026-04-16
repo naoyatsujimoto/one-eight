@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { enumerateLegalMoves, selectCpuMove } from '../game/ai';
+import { enumerateLegalMoves, selectCpuMove, scoreMoveForOrdering, evaluateState } from '../game/ai';
 import { createInitialState } from '../game/initialState';
 import { applyMassiveBuild, selectPosition } from '../game/engine';
 import { canCapturePosition } from '../game/capture';
@@ -248,6 +248,149 @@ describe('selectCpuMove (hard)', () => {
     expect(positionsInLegal).toContain('A');
 
     // CPU (hard) should pick position A as the best move (capture is highest priority)
+    const move = selectCpuMove(captureState, 'black', 'hard');
+    expect(move.type).not.toBe('pass');
+    expect((move as any).positionId).toBe('A');
+  });
+});
+
+// ---------- move ordering ----------
+
+describe('move ordering', () => {
+  it('ordering does not break legality', () => {
+    const VALID_POS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M']);
+    const state = createInitialState('white');
+    const moves = enumerateLegalMoves(state, 'white');
+    const scored = moves
+      .filter(m => m.type !== 'pass')
+      .sort((a, b) => scoreMoveForOrdering(state, 'white', b) - scoreMoveForOrdering(state, 'white', a));
+    for (const m of scored) {
+      // m is already narrowed to non-pass by the filter above
+      expect(VALID_POS.has((m as any).positionId)).toBe(true);
+    }
+  });
+
+  it('capture move scores higher than non-capture move', () => {
+    // Use same scenario as the hard CPU capture test
+    const base = createInitialState('black');
+    const gate1: GateState = {
+      ...base.gates[1],
+      largeSlots: [{ size: 'large', owner: 'black' }, { size: 'large', owner: 'black' }],
+      middleSlots: [{ size: 'middle', owner: 'black' }, { size: 'middle', owner: 'black' }],
+      smallSlots: [
+        { size: 'small', owner: 'black' }, { size: 'small', owner: 'black' },
+        { size: 'small', owner: 'black' }, { size: 'small', owner: 'black' },
+      ],
+    } as GateState;
+    const fillWhite = (gate: GateState): GateState => ({
+      ...gate,
+      largeSlots: gate.largeSlots.map(() => ({ size: 'large' as const, owner: 'white' as const })),
+      middleSlots: gate.middleSlots.map(() => ({ size: 'middle' as const, owner: 'white' as const })),
+      smallSlots: gate.smallSlots.map(() => ({ size: 'small' as const, owner: 'white' as const })),
+    });
+    const newGates = { ...base.gates };
+    for (const gId of [3,4,5,6,8,9,10,11] as const) {
+      newGates[gId] = fillWhite(base.gates[gId]);
+    }
+    newGates[1] = gate1;
+    const positions = {
+      ...base.positions,
+      A: { ...base.positions['A'], owner: 'white' as const },
+    };
+    const captureState: GameState = { ...base, currentPlayer: 'black', positions, gates: newGates as GameState['gates'] };
+
+    const moves = enumerateLegalMoves(captureState, 'black');
+    const captureMove = moves.find(m => m.type !== 'pass' && (m as any).positionId === 'A');
+    const nonCaptureMoves = moves.filter(m => m.type !== 'pass' && (m as any).positionId !== 'A');
+
+    if (captureMove && nonCaptureMoves.length > 0) {
+      const captureScore = scoreMoveForOrdering(captureState, 'black', captureMove);
+      const nonCaptureScore = scoreMoveForOrdering(captureState, 'black', nonCaptureMoves[0]!);
+      expect(captureScore).toBeGreaterThan(nonCaptureScore);
+    }
+  });
+});
+
+// ---------- evaluateState Phase 2 ----------
+
+describe('evaluateState Phase 2', () => {
+  it('owning a position with gate dominance scores higher than initial state', () => {
+    const base = createInitialState('black');
+    // Give black position A and make black dominate all of A's gates (1,2,7,12)
+    const fillBlack = (gate: GateState): GateState => ({
+      ...gate,
+      largeSlots: gate.largeSlots.map(() => ({ size: 'large' as const, owner: 'black' as const })),
+      middleSlots: gate.middleSlots.map(() => ({ size: 'middle' as const, owner: 'black' as const })),
+      smallSlots: gate.smallSlots.map(() => ({ size: 'small' as const, owner: 'black' as const })),
+    });
+    const newGates = { ...base.gates };
+    for (const gId of [1,2,7,12] as const) {
+      newGates[gId] = fillBlack(base.gates[gId]);
+    }
+    const positions = { ...base.positions, A: { ...base.positions['A'], owner: 'black' as const } };
+    const stateA: GameState = { ...base, positions, gates: newGates as GameState['gates'] };
+    const stateB = createInitialState('black');
+    expect(evaluateState(stateA, 'black')).toBeGreaterThan(evaluateState(stateB, 'black'));
+  });
+
+  it('penalizes high recapture risk on own positions', () => {
+    const base = createInitialState('black');
+    const fillBlack = (gate: GateState): GateState => ({
+      ...gate,
+      largeSlots: gate.largeSlots.map(() => ({ size: 'large' as const, owner: 'black' as const })),
+      middleSlots: gate.middleSlots.map(() => ({ size: 'middle' as const, owner: 'black' as const })),
+      smallSlots: gate.smallSlots.map(() => ({ size: 'small' as const, owner: 'black' as const })),
+    });
+    const fillWhite = (gate: GateState): GateState => ({
+      ...gate,
+      largeSlots: gate.largeSlots.map(() => ({ size: 'large' as const, owner: 'white' as const })),
+      middleSlots: gate.middleSlots.map(() => ({ size: 'middle' as const, owner: 'white' as const })),
+      smallSlots: gate.smallSlots.map(() => ({ size: 'small' as const, owner: 'white' as const })),
+    });
+
+    // stateStrong: black owns A, dominates all 4 gates
+    const newGatesStrong = { ...base.gates };
+    for (const gId of [1,2,7,12] as const) { newGatesStrong[gId] = fillBlack(base.gates[gId]); }
+    const positionsOwned = { ...base.positions, A: { ...base.positions['A'], owner: 'black' as const } };
+    const stateStrong: GameState = { ...base, positions: positionsOwned, gates: newGatesStrong as GameState['gates'] };
+
+    // stateRisky: black owns A, but white dominates 3 of 4 gates (2,7,12 white; gate 1 black)
+    const newGatesRisky = { ...base.gates };
+    newGatesRisky[1] = fillBlack(base.gates[1]);
+    for (const gId of [2,7,12] as const) { newGatesRisky[gId] = fillWhite(base.gates[gId]); }
+    const stateRisky: GameState = { ...base, positions: positionsOwned, gates: newGatesRisky as GameState['gates'] };
+
+    expect(evaluateState(stateStrong, 'black')).toBeGreaterThan(evaluateState(stateRisky, 'black'));
+  });
+});
+
+// ---------- hard CPU Phase 2 regression ----------
+
+describe('hard CPU Phase 2 regression', () => {
+  it('hard still picks immediate capture after Phase 2', () => {
+    const base = createInitialState('black');
+    const gate1: GateState = {
+      ...base.gates[1],
+      largeSlots: [{ size: 'large', owner: 'black' }, { size: 'large', owner: 'black' }],
+      middleSlots: [{ size: 'middle', owner: 'black' }, { size: 'middle', owner: 'black' }],
+      smallSlots: [
+        { size: 'small', owner: 'black' }, { size: 'small', owner: 'black' },
+        { size: 'small', owner: 'black' }, { size: 'small', owner: 'black' },
+      ],
+    } as GateState;
+    const fillWhite = (gate: GateState): GateState => ({
+      ...gate,
+      largeSlots: gate.largeSlots.map(() => ({ size: 'large' as const, owner: 'white' as const })),
+      middleSlots: gate.middleSlots.map(() => ({ size: 'middle' as const, owner: 'white' as const })),
+      smallSlots: gate.smallSlots.map(() => ({ size: 'small' as const, owner: 'white' as const })),
+    });
+    const newGates = { ...base.gates };
+    for (const gId of [3,4,5,6,8,9,10,11] as const) {
+      newGates[gId] = fillWhite(base.gates[gId]);
+    }
+    newGates[1] = gate1;
+    const positions = { ...base.positions, A: { ...base.positions['A'], owner: 'white' as const } };
+    const captureState: GameState = { ...base, currentPlayer: 'black', positions, gates: newGates as GameState['gates'] };
     const move = selectCpuMove(captureState, 'black', 'hard');
     expect(move.type).not.toBe('pass');
     expect((move as any).positionId).toBe('A');

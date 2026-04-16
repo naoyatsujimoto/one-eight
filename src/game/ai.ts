@@ -2,21 +2,25 @@
  * ai.ts — CPU opponent for ONE EIGHT Web MVP
  *
  * Phase 1 upgrade: minimax with alpha-beta pruning.
+ * Phase 2 upgrade: move ordering + strengthened evaluation.
  *
  * Difficulty levels:
  *   'normal' → depth 2
  *   'hard'   → depth 3
  *
- * Evaluation factors (kept simple for Phase 1):
+ * Evaluation factors:
  *   1. Position count difference (own - opponent)
  *   2. Immediate capture opportunity count (+bonus for CPU)
  *   3. Immediate vulnerability count (-penalty if opponent can capture ours)
  *   4. Raw gate value pressure (Small=1 / Middle=8 / Large=64)
+ *   5. Per-position gate dominance (±30 per gate for owned positions)
+ *   6. Grip on own positions (+15 per dominated gate on own positions)
+ *   7. Recapture risk (-60 when opponent dominates ≥2 gates of our position)
  */
 
 import { POSITION_IDS, POSITION_TO_GATES, GATE_IDS } from './constants';
 import { canCapturePosition } from './capture';
-import { gatePlayerValue, assetValue } from './build';
+import { gatePlayerValue, assetValue, gateTotalValue } from './build';
 import { getAvailableBuildOptions } from './selectors';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from './engine';
 import type { GameState, GateId, Player, PositionId } from './types';
@@ -105,6 +109,65 @@ export function enumerateLegalMoves(state: GameState, player: Player): CpuMove[]
 }
 
 // ---------------------------------------------------------------------------
+// Move ordering
+// ---------------------------------------------------------------------------
+
+/**
+ * Score a move for alpha-beta ordering (higher = search first).
+ *
+ * Priority:
+ *   +1000  Immediate capture (opponent's position that we can take)
+ *   +500   Blocks opponent's immediate capture (our position opponent can take)
+ *   +200   Affects the most-built gate of the position
+ *   +5×V   Higher gate value involvement (V = max gateTotalValue among move's gates)
+ *   0      Passive baseline
+ */
+export function scoreMoveForOrdering(state: GameState, player: Player, move: CpuMove): number {
+  if (move.type === 'pass') return 0;
+
+  const opponent: Player = player === 'black' ? 'white' : 'black';
+  const posId = move.positionId;
+  const posOwner = state.positions[posId].owner;
+
+  let score = 0;
+
+  // Rule 1: Immediate capture
+  if (posOwner === opponent && canCapturePosition(state, player, posId)) {
+    score += 1000;
+  }
+
+  // Rule 2: Block opponent's immediate capture of our position
+  if (posOwner === player && canCapturePosition(state, opponent, posId)) {
+    score += 500;
+  }
+
+  // Determine which gates this move involves
+  const moveGates: GateId[] =
+    move.type === 'massive' ? [move.gateId] :
+    move.type === 'selective' ? [...move.gates] :
+    move.type === 'quad' ? [...move.gateIds] :
+    [];
+
+  // Rule 3: Affects the most-built gate of the position
+  const posGates = POSITION_TO_GATES[posId] as GateId[];
+  const maxGateValue = Math.max(...posGates.map(g => gateTotalValue(state.gates[g])));
+  const moveInvolvesMostBuilt = moveGates.some(
+    g => gateTotalValue(state.gates[g]) === maxGateValue
+  );
+  if (moveInvolvesMostBuilt) {
+    score += 200;
+  }
+
+  // Rule 4: Higher gate value involvement (+5 per point of max gate value in move)
+  const maxMoveGateValue = moveGates.length > 0
+    ? Math.max(...moveGates.map(g => gateTotalValue(state.gates[g])))
+    : 0;
+  score += maxMoveGateValue * 5;
+
+  return score;
+}
+
+// ---------------------------------------------------------------------------
 // Move simulation
 // ---------------------------------------------------------------------------
 
@@ -141,8 +204,11 @@ function simulateMove(state: GameState, player: Player, move: CpuMove): GameStat
  *   2. Immediate capture opportunity count
  *   3. Immediate vulnerability count
  *   4. Gate value pressure (own value - opponent value summed across all gates)
+ *   5. Per-position gate dominance (±30 per gate for owned positions)
+ *   6. Grip on own positions (+15 per gate player dominates on own positions)
+ *   7. Recapture risk (-60 if opponent dominates ≥2 of our position's gates)
  */
-function evaluateState(state: GameState, player: Player): number {
+export function evaluateState(state: GameState, player: Player): number {
   const opponent: Player = player === 'black' ? 'white' : 'black';
   let score = 0;
 
@@ -177,6 +243,50 @@ function evaluateState(state: GameState, player: Player): number {
     const ownVal = gatePlayerValue(gate, player);
     const oppVal = gatePlayerValue(gate, opponent);
     score += (ownVal - oppVal);
+  }
+
+  // 5. Per-position gate dominance for owned positions
+  // 6. Grip on own positions
+  // 7. Recapture risk
+  for (const posId of POSITION_IDS) {
+    const posOwner = state.positions[posId].owner;
+    if (posOwner === null) continue;
+
+    const posGates = POSITION_TO_GATES[posId] as GateId[];
+
+    for (const gId of posGates) {
+      const gate = state.gates[gId];
+      const ownVal = gatePlayerValue(gate, player);
+      const oppVal = gatePlayerValue(gate, opponent);
+
+      // Factor 5: per-position gate dominance
+      if (ownVal > oppVal) score += 30;
+      else if (oppVal > ownVal) score -= 30;
+    }
+
+    // Factors 6 & 7: apply only to player's own positions
+    if (posOwner === player) {
+      let playerDominatedGates = 0;
+      let opponentDominatedGates = 0;
+
+      for (const gId of posGates) {
+        const gate = state.gates[gId];
+        const ownVal = gatePlayerValue(gate, player);
+        const oppVal = gatePlayerValue(gate, opponent);
+
+        if (ownVal > oppVal) {
+          playerDominatedGates++;
+          score += 15; // Factor 6: grip on own positions
+        } else if (oppVal > ownVal) {
+          opponentDominatedGates++;
+        }
+      }
+
+      // Factor 7: recapture risk
+      if (opponentDominatedGates >= 2) {
+        score -= 60;
+      }
+    }
   }
 
   return score;
@@ -216,9 +326,14 @@ function minimax(
   const isMaximizing = currentPlayer === maximizingPlayer;
   const opponent: Player = currentPlayer === 'black' ? 'white' : 'black';
 
+  // Phase 2: sort moves by ordering score (descending) for better alpha-beta cutoffs
+  const orderedMoves = [...moves].sort(
+    (a, b) => scoreMoveForOrdering(state, currentPlayer, b) - scoreMoveForOrdering(state, currentPlayer, a)
+  );
+
   if (isMaximizing) {
     let best = -INF;
-    for (const move of moves) {
+    for (const move of orderedMoves) {
       const next = simulateMove(state, currentPlayer, move);
       const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer);
       if (score > best) best = score;
@@ -228,7 +343,7 @@ function minimax(
     return best;
   } else {
     let best = INF;
-    for (const move of moves) {
+    for (const move of orderedMoves) {
       const next = simulateMove(state, currentPlayer, move);
       const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer);
       if (score < best) best = score;
@@ -268,10 +383,15 @@ export function selectCpuMove(
   const depth = DEPTH_MAP[difficulty];
   const opponent: Player = player === 'black' ? 'white' : 'black';
 
+  // Phase 2: apply move ordering at root for better pruning
+  const orderedLegal = [...legal].sort(
+    (a, b) => scoreMoveForOrdering(state, player, b) - scoreMoveForOrdering(state, player, a)
+  );
+
   let bestScore = -INF;
   const bestMoves: CpuMove[] = [];
 
-  for (const move of legal) {
+  for (const move of orderedLegal) {
     const next = simulateMove(state, player, move);
     const score = minimax(next, depth - 1, -INF, INF, opponent, player);
     if (score > bestScore) {
