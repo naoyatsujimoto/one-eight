@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { POSITION_TO_GATES } from '../game/constants';
 import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build';
-import type { GameState, GateId, PositionId } from '../game/types';
+import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 
 function OwnerDot({ owner }: { owner: 'black' | 'white' | null }) {
@@ -220,7 +220,7 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
   );
 }
 
-function DiamondPip({ owner, size, clickState, onClick }: DiamondPipProps) {
+function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove }: DiamondPipProps & { isLastOpponentMove?: boolean }) {
   const interactive = clickState === 'clickable' || clickState === 'selected';
   const cls = [
     `diamond-pip`,
@@ -230,6 +230,7 @@ function DiamondPip({ owner, size, clickState, onClick }: DiamondPipProps) {
     clickState === 'selected' ? 'pocket-selected' : '',
     clickState === 'disabled' ? 'pocket-disabled' : '',
     (owner === 'black' || owner === 'white') ? 'diamond-pip-occupied' : '',
+    isLastOpponentMove && clickState !== 'selected' ? 'last-opponent-move' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -253,20 +254,25 @@ interface ClusterProps {
   gate: GameState['gates'][GateId];
   gateType: GateType;
   ps: PocketStates;
+  lastOpponentPocketSize?: AssetSize | null;
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
 }
 
-function renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall }: ClusterProps) {
+function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge, onMiddle, onSmall }: ClusterProps) {
   const L = gate.largeSlots;
   const M = gate.middleSlots;
   const S = gate.smallSlots;
 
-  const SmallTL = () => <div className="gate-corner-tl"><DiamondPip owner={S[0]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} /></div>;
-  const SmallTR = () => <div className="gate-corner-tr"><DiamondPip owner={S[1]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} /></div>;
-  const SmallBL = () => <div className="gate-corner-bl"><DiamondPip owner={S[2]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} /></div>;
-  const SmallBR = () => <div className="gate-corner-br"><DiamondPip owner={S[3]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} /></div>;
+  const hlS = lastOpponentPocketSize === 'small';
+  const hlM = lastOpponentPocketSize === 'middle';
+  const hlL = lastOpponentPocketSize === 'large';
+
+  const SmallTL = () => <div className="gate-corner-tl"><DiamondPip owner={S[0]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
+  const SmallTR = () => <div className="gate-corner-tr"><DiamondPip owner={S[1]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
+  const SmallBL = () => <div className="gate-corner-bl"><DiamondPip owner={S[2]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
+  const SmallBR = () => <div className="gate-corner-br"><DiamondPip owner={S[3]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
 
   const isCorner = gateType.startsWith('corner');
   const DbgBorder = DEBUG_GATES
@@ -292,14 +298,14 @@ function renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall }: C
           <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
           <div className="gate-col-1row-center">
-            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} />
+            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
           <div className="gate-col-tb">
-            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} />
-            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} />
+            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
+            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
           </div>
           <div className="gate-col-1row-center">
-            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} />
+            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
         </div>
       );
@@ -311,14 +317,14 @@ function renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall }: C
           <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
           <div className="gate-row-1col-center">
-            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} />
+            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
           <div className="gate-row-lr">
-            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} />
-            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} />
+            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
+            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
           </div>
           <div className="gate-row-1col-center">
-            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} />
+            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
         </div>
       );
@@ -337,7 +343,7 @@ function GateCard({
   hasPosition,
   gateType,
   ps,
-  isLastOpponentBuild,
+  lastOpponentPocketSize,
   onLarge,
   onMiddle,
   onSmall,
@@ -348,7 +354,7 @@ function GateCard({
   hasPosition: boolean;
   gateType: GateType;
   ps: PocketStates;
-  isLastOpponentBuild: boolean;
+  lastOpponentPocketSize?: AssetSize | null;
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
@@ -358,7 +364,6 @@ function GateCard({
     'gate-card',
     hasPosition ? (isRelated ? 'gate-card-active' : 'gate-card-inactive') : '',
     anySelected ? 'gate-card-selected' : '',
-    isLastOpponentBuild && !anySelected ? 'last-opponent-move' : '',
   ].filter(Boolean).join(' ');
 
   const isCorner = gateType.startsWith('corner');
@@ -370,7 +375,7 @@ function GateCard({
       aria-label={`Gate ${gateId}`}
     >
       <div className="gate-card-id">{gateId}</div>
-      {renderGateCluster({ gate, gateType, ps, onLarge, onMiddle, onSmall })}
+      {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge, onMiddle, onSmall })}
     </div>
   );
 }
@@ -454,23 +459,24 @@ export function Board({
     return last.positioning as PositionId;
   })();
 
-  // Derive the last opponent's built gate(s) for subtle highlight
-  const lastOpponentBuildGateIds: Set<GateId> = (() => {
-    if (state.history.length === 0) return new Set();
+  // Derive the last opponent's built gate(s) + pocket size for subtle highlight
+  const lastOpponentBuild: { gateIds: Set<GateId>; pocketSize: AssetSize | null } = (() => {
+    const empty = { gateIds: new Set<GateId>(), pocketSize: null as AssetSize | null };
+    if (state.history.length === 0) return empty;
     const last = state.history[state.history.length - 1];
-    if (!last) return new Set();
-    if (last.player === state.currentPlayer) return new Set(); // opponent's last move
-    if (last.build.type === 'skip') return new Set();
+    if (!last) return empty;
+    if (last.player === state.currentPlayer) return empty;
+    if (last.build.type === 'skip') return empty;
     if (last.build.type === 'massive' && last.build.gate !== null) {
-      return new Set([last.build.gate]);
+      return { gateIds: new Set([last.build.gate]), pocketSize: 'large' };
     }
     if (last.build.type === 'selective') {
-      return new Set(last.build.gates);
+      return { gateIds: new Set(last.build.gates), pocketSize: 'middle' };
     }
     if (last.build.type === 'quad') {
-      return new Set(last.build.placedGateIds);
+      return { gateIds: new Set(last.build.placedGateIds), pocketSize: 'small' };
     }
-    return new Set();
+    return empty;
   })();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -631,7 +637,7 @@ export function Board({
                 hasPosition={selectedId !== null}
                 gateType={gateType}
                 ps={ps}
-                isLastOpponentBuild={lastOpponentBuildGateIds.has(gateId)}
+                lastOpponentPocketSize={lastOpponentBuild.gateIds.has(gateId) ? lastOpponentBuild.pocketSize : null}
                 onLarge={() => onLargePocketClick(gateId)}
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}

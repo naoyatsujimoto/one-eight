@@ -152,11 +152,12 @@ button { cursor: pointer; }
   box-shadow: 0 0 0 2px rgba(180, 155, 100, 0.18);
 }
 
-/* Subtle highlight for the last opponent's build move (gate card) */
-.gate-card.last-opponent-move {
-  outline: 1px solid rgba(160, 140, 100, 0.50);
-  outline-offset: 1px;
-  filter: drop-shadow(0 0 4px rgba(180, 155, 100, 0.30));
+/* Subtle highlight for the last opponent's build move (pocket/pip level).
+   border-color only — no background — so the Asset (SilverCap) stays fully visible.
+   box-shadow spreads outside the rotated diamond border for a glow effect. */
+.diamond-pip.last-opponent-move {
+  border-color: rgba(160, 140, 100, 0.70);
+  box-shadow: 0 0 0 2px rgba(180, 155, 100, 0.30);
 }
 .position-btn.selected {
   border-color: var(--accent);
