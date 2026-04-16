@@ -145,6 +145,12 @@ button { cursor: pointer; }
   position: relative;
 }
 .position-btn:hover { border-color: #888; }
+/* Subtle highlight for the last opponent's positioned move */
+.position-btn.last-opponent-move {
+  border-color: rgba(160, 140, 100, 0.55);
+  background: rgba(220, 200, 160, 0.28);
+  box-shadow: 0 0 0 2px rgba(180, 155, 100, 0.18);
+}
 .position-btn.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(74,144,226,0.25);

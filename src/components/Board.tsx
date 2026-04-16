@@ -441,6 +441,16 @@ export function Board({
   const selectedId = state.selectedPosition;
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
 
+  // Derive the last opponent's positioned move for subtle highlight
+  const lastOpponentPositionId: PositionId | null = (() => {
+    if (state.history.length === 0) return null;
+    const last = state.history[state.history.length - 1];
+    if (!last) return null;
+    if (last.player === state.currentPlayer) return null; // opponent's last move
+    if (last.positioning === 'P') return null; // skip/pass — no position
+    return last.positioning as PositionId;
+  })();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const scalerRef = useRef<HTMLDivElement>(null);
   const [lines, setLines] = useState<LineCoord[]>([]);
@@ -619,7 +629,11 @@ export function Board({
               <button
                 key={id}
                 data-pos-id={id}
-                className={`position-btn${isSelected ? ' selected' : ''}`}
+                className={[
+                  'position-btn',
+                  isSelected ? 'selected' : '',
+                  !isSelected && id === lastOpponentPositionId ? 'last-opponent-move' : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
                 type="button"
                 aria-pressed={isSelected}
