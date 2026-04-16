@@ -177,28 +177,47 @@ button { cursor: pointer; }
   justify-self: center;
   align-self: center;
 }
-/* Black dot: 木目調グラデーション + 銀アウトライン */
+/* Black dot: ウォールナット木目調 + 銀アウトライン */
 .owner-dot-black {
-  background-color: #1a120a;
+  background-color: #4a2c0e;
+  background-image:
+    repeating-linear-gradient(
+      108deg,
+      rgba(0,0,0,0)      0px,
+      rgba(0,0,0,0)       4px,
+      rgba(0,0,0,0.35)    4px,
+      rgba(0,0,0,0.35)    5px,
+      rgba(0,0,0,0)       5px,
+      rgba(0,0,0,0)      10px,
+      rgba(120,60,10,0.3) 10px,
+      rgba(120,60,10,0.3) 11px,
+      rgba(0,0,0,0)      11px,
+      rgba(0,0,0,0)      18px
+    ),
+    radial-gradient(ellipse at 38% 30%, #7a4a1e 0%, #4a2c0e 55%, #2e1808 100%);
+  border-color: #a0a8b0;
+  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.12);
+}
+/* White dot: メープル木目調 + 銀アウトライン */
+.owner-dot-white {
+  background-color: #e8d8b8;
   background-image:
     repeating-linear-gradient(
       108deg,
       rgba(255,255,255,0)    0px,
+      rgba(255,255,255,0)    4px,
+      rgba(255,255,255,0.55) 4px,
+      rgba(255,255,255,0.55) 5px,
       rgba(255,255,255,0)    5px,
-      rgba(255,255,255,0.05) 5px,
-      rgba(255,255,255,0.05) 6px,
-      rgba(255,255,255,0)    6px,
-      rgba(255,255,255,0)   12px
+      rgba(255,255,255,0)   10px,
+      rgba(180,140,80,0.25)  10px,
+      rgba(180,140,80,0.25)  11px,
+      rgba(255,255,255,0)   11px,
+      rgba(255,255,255,0)   18px
     ),
-    radial-gradient(ellipse at 40% 30%, #3d2b18 0%, #1a120a 65%);
+    radial-gradient(ellipse at 38% 30%, #f5e8cc 0%, #e0c898 55%, #c8a870 100%);
   border-color: #a0a8b0;
-  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 3px rgba(255,255,255,0.08);
-}
-/* White dot: 象牙調グラデーション + 銀アウトライン */
-.owner-dot-white {
-  background: linear-gradient(135deg, #f8f4ee 0%, #e8e0d8 40%, #f4efe8 70%, #fffcf8 100%);
-  border-color: #a0a8b0;
-  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.18);
+  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.15);
 }
 /* Empty dot: 点線のみ */
 .owner-dot-none  { background: transparent; border-color: rgba(255,255,255,0.75); border-style: dashed; }
