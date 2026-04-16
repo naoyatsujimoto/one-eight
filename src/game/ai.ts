@@ -1,35 +1,36 @@
 /**
  * ai.ts — CPU opponent for ONE EIGHT Web MVP
  *
- * Scope: legal-move enumeration + evaluation-based move selection (depth 1).
- * No minimax, no search tree, no learning.
+ * Phase 1 upgrade: minimax with alpha-beta pruning.
  *
- * Move selection:
- *   Enumerate all legal moves → score each → pick highest-score move.
- *   Ties broken randomly for variety.
+ * Difficulty levels:
+ *   'normal' → depth 2
+ *   'hard'   → depth 3
+ *
+ * Evaluation factors (kept simple for Phase 1):
+ *   1. Position count difference (own - opponent)
+ *   2. Immediate capture opportunity count (+bonus for CPU)
+ *   3. Immediate vulnerability count (-penalty if opponent can capture ours)
+ *   4. Raw gate value pressure (Small=1 / Middle=8 / Large=64)
  */
 
-import { POSITION_IDS, POSITION_TO_GATES } from './constants';
+import { POSITION_IDS, POSITION_TO_GATES, GATE_IDS } from './constants';
 import { canCapturePosition } from './capture';
-import { gatePlayerValue } from './build';
+import { gatePlayerValue, assetValue } from './build';
 import { getAvailableBuildOptions } from './selectors';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from './engine';
 import type { GameState, GateId, Player, PositionId } from './types';
 
 // ---------------------------------------------------------------------------
-// Score constants (tune here)
+// Difficulty configuration
 // ---------------------------------------------------------------------------
 
-const SCORE_CAPTURE        =  1000; // move captures an opponent-owned position
-const SCORE_MASSIVE        =   300; // build type: massive (large asset, high value)
-const SCORE_SELECTIVE      =   150; // build type: selective (middle asset)
-const SCORE_QUAD           =    50; // build type: quad (small assets)
-const SCORE_PASS           =  -500; // pass move heavily penalised
-const SCORE_PER_OWN_POS    =    30; // per position owned by player after move
-const SCORE_PER_OPP_POS    =   -30; // per position owned by opponent after move
-const SCORE_PER_GATE_DOM   =    10; // per gate where player dominates (playerValue > opponentValue)
-const SCORE_EXPOSE_PENALTY =  -200; // penalty if opponent can capture one of our positions after move
-const SCORE_RANDOM_RANGE   =     5; // +/- random jitter to avoid monotony
+export type CpuDifficulty = 'normal' | 'hard';
+
+const DEPTH_MAP: Record<CpuDifficulty, number> = {
+  normal: 2,
+  hard: 3,
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,7 +65,6 @@ export type CpuMove = CpuMoveMassive | CpuMoveSelective | CpuMoveQuad | CpuMoveP
 
 /**
  * Returns all legal CPU moves for the given player in the current state.
- * A legal move is: pick a selectable position, then pick a valid build.
  */
 export function enumerateLegalMoves(state: GameState, player: Player): CpuMove[] {
   const moves: CpuMove[] = [];
@@ -79,8 +79,6 @@ export function enumerateLegalMoves(state: GameState, player: Player): CpuMove[]
     const opts = getAvailableBuildOptions(state, posId);
 
     if (!opts.hasAny) {
-      // Position selectable but no build → only contributes a pass at this pos,
-      // skip unless all positions have no builds (handled below)
       continue;
     }
 
@@ -107,19 +105,13 @@ export function enumerateLegalMoves(state: GameState, player: Player): CpuMove[]
 }
 
 // ---------------------------------------------------------------------------
-// Evaluation helpers
+// Move simulation
 // ---------------------------------------------------------------------------
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]!;
-}
 
 /** Apply a CpuMove to a state and return the resulting state. */
 function simulateMove(state: GameState, player: Player, move: CpuMove): GameState {
   if (move.type === 'pass') return state;
 
-  // selectPosition sets selectedPosition and updates owner to currentPlayer.
-  // We must ensure currentPlayer matches `player`.
   const stateForPlayer: GameState = state.currentPlayer === player
     ? state
     : { ...state, currentPlayer: player };
@@ -136,102 +128,160 @@ function simulateMove(state: GameState, player: Player, move: CpuMove): GameStat
   }
 }
 
-/** Count positions owned by `player` in the given state. */
-function countPositions(state: GameState, player: Player): number {
-  return Object.values(state.positions).filter((p) => p.owner === player).length;
-}
-
-/** Count gates where playerValue strictly dominates opponentValue. */
-function countDominatedGates(state: GameState, player: Player): number {
-  const opponent: Player = player === 'black' ? 'white' : 'black';
-  return Object.values(state.gates).filter((gate) => {
-    return gatePlayerValue(gate, player) > gatePlayerValue(gate, opponent);
-  }).length;
-}
-
-/** Returns true if opponent can capture at least one of player's positions. */
-function canOpponentCapture(state: GameState, player: Player): boolean {
-  const opponent: Player = player === 'black' ? 'white' : 'black';
-  return Object.values(state.positions).some(
-    (pos) => pos.owner === player && canCapturePosition(state, opponent, pos.id)
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Evaluation function
+// Static evaluation function
 // ---------------------------------------------------------------------------
 
 /**
- * Score a single move for `player` in the given state.
- * Higher = better for player.
+ * Evaluate state from `player`'s perspective.
+ * Returns a score: positive = good for player, negative = bad.
+ *
+ * Factors:
+ *   1. Position count difference
+ *   2. Immediate capture opportunity count
+ *   3. Immediate vulnerability count
+ *   4. Gate value pressure (own value - opponent value summed across all gates)
  */
-function scoreMove(state: GameState, player: Player, move: CpuMove): number {
+function evaluateState(state: GameState, player: Player): number {
   const opponent: Player = player === 'black' ? 'white' : 'black';
   let score = 0;
 
-  // 1. Pass penalty
-  if (move.type === 'pass') {
-    return SCORE_PASS + (Math.random() * 2 - 1) * SCORE_RANDOM_RANGE;
+  // 1. Position count difference
+  let ownPositions = 0;
+  let oppPositions = 0;
+  for (const posId of POSITION_IDS) {
+    const owner = state.positions[posId].owner;
+    if (owner === player)   ownPositions++;
+    if (owner === opponent) oppPositions++;
+  }
+  score += (ownPositions - oppPositions) * 50;
+
+  // 2. Immediate capture opportunities for player
+  for (const posId of POSITION_IDS) {
+    if (state.positions[posId].owner === opponent) {
+      if (canCapturePosition(state, player, posId)) score += 120;
+    }
   }
 
-  // 2. Capture bonus: move targets an opponent-owned position
-  const pos = state.positions[move.positionId];
-  if (pos.owner !== null && pos.owner === opponent) {
-    score += SCORE_CAPTURE;
+  // 3. Immediate vulnerability: opponent can capture our positions
+  for (const posId of POSITION_IDS) {
+    if (state.positions[posId].owner === player) {
+      if (canCapturePosition(state, opponent, posId)) score -= 100;
+    }
   }
 
-  // 3. Build-type value
-  if (move.type === 'massive')   score += SCORE_MASSIVE;
-  if (move.type === 'selective') score += SCORE_SELECTIVE;
-  if (move.type === 'quad')      score += SCORE_QUAD;
-
-  // 4. Simulate the move and evaluate resulting state
-  const after = simulateMove(state, player, move);
-
-  // Position count advantage
-  score += countPositions(after, player)   * SCORE_PER_OWN_POS;
-  score += countPositions(after, opponent) * SCORE_PER_OPP_POS;
-
-  // Gate domination
-  score += countDominatedGates(after, player) * SCORE_PER_GATE_DOM;
-
-  // 5. Exposure penalty: can opponent capture one of our positions next turn?
-  if (canOpponentCapture(after, player)) {
-    score += SCORE_EXPOSE_PENALTY;
+  // 4. Gate value pressure: sum of (own value - opponent value) across all gates
+  //    Using Small=1, Middle=8, Large=64 (assetValue already implements this)
+  for (const gId of GATE_IDS) {
+    const gate = state.gates[gId];
+    const ownVal = gatePlayerValue(gate, player);
+    const oppVal = gatePlayerValue(gate, opponent);
+    score += (ownVal - oppVal);
   }
-
-  // 6. Small random jitter to avoid monotony
-  score += (Math.random() * 2 - 1) * SCORE_RANDOM_RANGE;
 
   return score;
 }
 
 // ---------------------------------------------------------------------------
-// Move selection (evaluation-based)
+// Minimax with alpha-beta pruning
 // ---------------------------------------------------------------------------
 
+const INF = 1_000_000;
+
 /**
- * Select one move for the CPU player using evaluation scoring.
- * All legal moves are scored; the highest-scoring move is chosen.
- * Ties broken randomly.
+ * Minimax with alpha-beta pruning.
+ * `maximizingPlayer` = the root CPU player.
+ * Returns the best achievable score from this node.
  */
-export function selectCpuMove(state: GameState, player: Player): CpuMove {
+function minimax(
+  state: GameState,
+  depth: number,
+  alpha: number,
+  beta: number,
+  currentPlayer: Player,
+  maximizingPlayer: Player,
+): number {
+  if (depth === 0 || state.gameEnded) {
+    return evaluateState(state, maximizingPlayer);
+  }
+
+  const moves = enumerateLegalMoves(state, currentPlayer);
+
+  if (moves.length === 0) {
+    // No legal moves → treat as pass, switch player
+    const opponent: Player = currentPlayer === 'black' ? 'white' : 'black';
+    return minimax(state, depth - 1, alpha, beta, opponent, maximizingPlayer);
+  }
+
+  const isMaximizing = currentPlayer === maximizingPlayer;
+  const opponent: Player = currentPlayer === 'black' ? 'white' : 'black';
+
+  if (isMaximizing) {
+    let best = -INF;
+    for (const move of moves) {
+      const next = simulateMove(state, currentPlayer, move);
+      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer);
+      if (score > best) best = score;
+      if (score > alpha) alpha = score;
+      if (beta <= alpha) break; // beta cutoff
+    }
+    return best;
+  } else {
+    let best = INF;
+    for (const move of moves) {
+      const next = simulateMove(state, currentPlayer, move);
+      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer);
+      if (score < best) best = score;
+      if (score < beta) beta = score;
+      if (beta <= alpha) break; // alpha cutoff
+    }
+    return best;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Move selection
+// ---------------------------------------------------------------------------
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]!;
+}
+
+/**
+ * Select one move for the CPU player using minimax search.
+ *
+ * @param state   Current game state
+ * @param player  CPU player color
+ * @param difficulty  'normal' (depth 2) or 'hard' (depth 3). Defaults to 'normal'.
+ */
+export function selectCpuMove(
+  state: GameState,
+  player: Player,
+  difficulty: CpuDifficulty = 'normal',
+): CpuMove {
   const legal = enumerateLegalMoves(state, player);
 
   if (legal.length === 0) {
     return { type: 'pass' };
   }
 
-  // Score all legal moves
-  const scored = legal.map((move) => ({
-    move,
-    score: scoreMove(state, player, move),
-  }));
+  const depth = DEPTH_MAP[difficulty];
+  const opponent: Player = player === 'black' ? 'white' : 'black';
 
-  // Find the best score
-  const best = Math.max(...scored.map((s) => s.score));
-  const bestMoves = scored.filter((s) => s.score === best).map((s) => s.move);
+  let bestScore = -INF;
+  const bestMoves: CpuMove[] = [];
 
-  // Random tie-breaking
+  for (const move of legal) {
+    const next = simulateMove(state, player, move);
+    const score = minimax(next, depth - 1, -INF, INF, opponent, player);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves.length = 0;
+      bestMoves.push(move);
+    } else if (score === bestScore) {
+      bestMoves.push(move);
+    }
+  }
+
   return pickRandom(bestMoves);
 }
