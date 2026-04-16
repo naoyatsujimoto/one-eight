@@ -146,18 +146,18 @@ button { cursor: pointer; }
 }
 .position-btn:hover { border-color: #888; }
 /* Subtle highlight for the last opponent's positioned move */
-.position-btn.last-opponent-move {
-  border-color: rgba(160, 140, 100, 0.55);
-  background: rgba(220, 200, 160, 0.28);
-  box-shadow: 0 0 0 2px rgba(180, 155, 100, 0.18);
+/* Last opponent positioning move: highlight the owner-dot with a glowing ring */
+.owner-dot.last-opponent-move {
+  box-shadow:
+    0 0 0 3px rgba(200, 170, 80, 0.75),
+    0 0 8px 2px rgba(220, 190, 80, 0.45);
 }
 
-/* Subtle highlight for the last opponent's build move (pocket/pip level).
-   border-color only — no background — so the Asset (SilverCap) stays fully visible.
-   box-shadow spreads outside the rotated diamond border for a glow effect. */
+/* Last opponent build move: highlight pocket diamond outline + glow.
+   No background — Asset (SilverCap) stays fully visible. */
 .diamond-pip.last-opponent-move {
-  border-color: rgba(160, 140, 100, 0.70);
-  box-shadow: 0 0 0 2px rgba(180, 155, 100, 0.30);
+  border-color: rgba(200, 170, 80, 0.90);
+  box-shadow: 0 0 0 2px rgba(220, 190, 80, 0.55), 0 0 6px rgba(220, 190, 80, 0.35);
 }
 .position-btn.selected {
   border-color: var(--accent);

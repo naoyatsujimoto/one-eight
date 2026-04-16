@@ -4,10 +4,14 @@ import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build'
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 
-function OwnerDot({ owner }: { owner: 'black' | 'white' | null }) {
+function OwnerDot({ owner, isLastOpponentMove }: { owner: 'black' | 'white' | null; isLastOpponentMove?: boolean }) {
   return (
     <span
-      className={`owner-dot owner-dot-${owner ?? 'none'}`}
+      className={[
+        'owner-dot',
+        `owner-dot-${owner ?? 'none'}`,
+        isLastOpponentMove ? 'last-opponent-move' : '',
+      ].filter(Boolean).join(' ')}
       aria-label={owner ?? 'empty'}
     />
   );
@@ -661,7 +665,6 @@ export function Board({
                 className={[
                   'position-btn',
                   isSelected ? 'selected' : '',
-                  !isSelected && id === lastOpponentPositionId ? 'last-opponent-move' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
                 type="button"
@@ -669,7 +672,7 @@ export function Board({
                 style={{ position: 'absolute', left: coord.left, top: coord.top }}
               >
                 <span className="pos-id">{id}</span>
-                <OwnerDot owner={displayOwner} />
+                <OwnerDot owner={displayOwner} isLastOpponentMove={!isSelected && id === lastOpponentPositionId} />
               </button>
             );
           })}
