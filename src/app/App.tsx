@@ -11,6 +11,7 @@ import {
   applyMassiveBuild,
   applyQuadBuildForGates,
   applySelectiveBuild,
+  applySelectiveBuildSingle,
   resetGame,
   selectPosition,
   skipTurn,
@@ -26,6 +27,8 @@ export type BuildMode = 'none' | 'massive' | 'selective' | 'quad';
 export interface BoardBuildState {
   mode: BuildMode;
   selectiveFirst: GateId | null;
+  /** True when selectiveFirst is set but no other related gate has an open middle slot */
+  selectiveCanConfirm: boolean;
   quadSelected: GateId[];
   quadMax: number;
 }
@@ -33,6 +36,7 @@ export interface BoardBuildState {
 const EMPTY_BUILD_STATE: BoardBuildState = {
   mode: 'none',
   selectiveFirst: null,
+  selectiveCanConfirm: false,
   quadSelected: [],
   quadMax: 4,
 };
@@ -232,7 +236,18 @@ export default function App() {
     if (isCpuTurn) return;
     setBuildState((prev) => {
       if (prev.selectiveFirst === null) {
-        return { mode: 'selective', selectiveFirst: gateId, quadSelected: [], quadMax: prev.quadMax };
+        // 1st pick: check if any other related gate has an open middle slot
+        const relatedGates = state.selectedPosition ? POSITION_TO_GATES[state.selectedPosition] : [];
+        const otherHasOpen = relatedGates.some(
+          (id) => id !== gateId && state.gates[id].middleSlots.some((s) => s === null)
+        );
+        return {
+          mode: 'selective',
+          selectiveFirst: gateId,
+          selectiveCanConfirm: !otherHasOpen,
+          quadSelected: [],
+          quadMax: prev.quadMax,
+        };
       }
       if (prev.selectiveFirst === gateId) {
         return EMPTY_BUILD_STATE;
@@ -245,6 +260,15 @@ export default function App() {
     });
   }
 
+  function handleSelectiveConfirm() {
+    if (isCpuTurn) return;
+    const { selectiveFirst } = buildState;
+    if (!selectiveFirst) return;
+    setUndoStack((s) => [...s, state]);
+    setState((gs) => applySelectiveBuildSingle(gs, selectiveFirst));
+    setBuildState(EMPTY_BUILD_STATE);
+  }
+
   function handleSmallPocketClick(gateId: GateId) {
     if (isCpuTurn) return;
     setBuildState((prev) => {
@@ -253,11 +277,11 @@ export default function App() {
         const next = prev.quadSelected.filter((id) => id !== gateId);
         return next.length === 0
           ? EMPTY_BUILD_STATE
-          : { mode: 'quad', selectiveFirst: null, quadSelected: next, quadMax: currentMax };
+          : { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
       }
       const next = [...prev.quadSelected, gateId];
       // 上限に達したら Confirm 待ち（自動確定しない）
-      return { mode: 'quad', selectiveFirst: null, quadSelected: next, quadMax: currentMax };
+      return { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
     });
   }
 
@@ -335,6 +359,7 @@ export default function App() {
             buildState={buildState}
             onSkip={handleSkip}
             onQuadConfirm={handleQuadConfirm}
+            onSelectiveConfirm={handleSelectiveConfirm}
           />
           <MoveHistory history={state.history} />
           <AnalyticsPanel />

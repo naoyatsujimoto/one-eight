@@ -7,22 +7,25 @@ export function BuildControls({
   buildState,
   onSkip,
   onQuadConfirm,
+  onSelectiveConfirm,
 }: {
   state: GameState;
   buildState: BoardBuildState;
   onSkip: () => void;
   onQuadConfirm: () => void;
+  onSelectiveConfirm: () => void;
 }) {
   const options = getBuildOptionsForSelected(state);
   const canSkip = !options?.hasAny;
 
-  const { mode, selectiveFirst, quadSelected, quadMax } = buildState;
+  const { mode, selectiveFirst, selectiveCanConfirm, quadSelected, quadMax } = buildState;
 
   function getHint(): string {
     if (!state.selectedPosition) return 'ポジションを選択してください。';
     if (mode === 'none') return 'Gate のポケットをクリックしてください。Large → Massive / Middle → Selective / Small → Quad';
     if (mode === 'selective') {
       if (selectiveFirst === null) return 'Selective: 1つ目の Gate を選択中…';
+      if (selectiveCanConfirm) return `Selective: Gate ${selectiveFirst} 選択済み — 他に空き Middle なし。Confirm で確定してください。`;
       return `Selective: Gate ${selectiveFirst} 選択済み — 2つ目の Gate の Middle を選択してください。`;
     }
     if (mode === 'quad') {
@@ -33,6 +36,7 @@ export function BuildControls({
   }
 
   const showQuadConfirm = mode === 'quad' && quadSelected.length > 0;
+  const showSelectiveConfirm = mode === 'selective' && selectiveFirst !== null && selectiveCanConfirm;
 
   return (
     <section className="panel">
@@ -42,6 +46,15 @@ export function BuildControls({
 
       {state.selectedPosition && (
         <div className="control-group build-type-skip">
+          {showSelectiveConfirm && (
+            <button
+              type="button"
+              onClick={onSelectiveConfirm}
+              className="build-btn build-btn-confirm"
+            >
+              Confirm (Gate {selectiveFirst})
+            </button>
+          )}
           {showQuadConfirm && (
             <button
               type="button"

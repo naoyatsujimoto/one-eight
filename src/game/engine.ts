@@ -94,6 +94,34 @@ export function applySelectiveBuild(state: GameState, gates: [GateId, GateId]): 
   });
 }
 
+/**
+ * Selective build with only one gate (used when the second gate has no open middle slot).
+ * Records as s(gateId, gateId) to fit MoveRecord type, but only one piece is placed.
+ */
+export function applySelectiveBuildSingle(state: GameState, gateId: GateId): GameState {
+  if (!state.selectedPosition || state.gameEnded) return state;
+  const allowed = POSITION_TO_GATES[state.selectedPosition];
+  if (!allowed.includes(gateId)) return state;
+
+  const result = applySelectiveToGate(state.gates[gateId], state.currentPlayer);
+  if (result.placed === 0) return state;
+
+  const next = {
+    ...state,
+    gates: {
+      ...state.gates,
+      [gateId]: result.gate,
+    },
+  };
+
+  return finalizeTurn(next, {
+    moveNumber: state.moveNumber,
+    player: state.currentPlayer,
+    positioning: state.selectedPosition,
+    build: { type: 'selective', gates: [gateId, gateId], placed: result.placed }
+  });
+}
+
 export function applyQuadBuild(state: GameState): GameState {
   if (!state.selectedPosition || state.gameEnded) return state;
 
