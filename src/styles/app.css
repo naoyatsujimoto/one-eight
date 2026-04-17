@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, system-ui, sans-serif;
   color: #111;
-  background: #f0ece6;
+  background: #ffffff;
   --black-color: #1a1a2e;
   --white-color: #ffffff;
   --black-bg: #d6dff8;
@@ -29,7 +29,7 @@ button { cursor: pointer; }
 .saved-badge {
   font-size: 0.78rem;
   color: #666;
-  background: #f0f0ec;
+  background: #ffffff;
   border: 1px solid #d0d0c8;
   border-radius: 4px;
   padding: 2px 8px;
@@ -51,7 +51,7 @@ button { cursor: pointer; }
   padding: 6px 14px;
   border-radius: 8px;
   border: 1px solid #a0a8c0;
-  background: #eef0fa;
+  background: #ffffff;
   font-size: 0.9rem;
   color: #3a4a8a;
 }
@@ -143,7 +143,7 @@ button { cursor: pointer; }
 
 .btn-undo.menu-item {
   color: #3a4a8a;
-  background: #eef0fa !important;
+  background: #ffffff !important;
 }
 .btn-undo.menu-item:hover:not(:disabled) {
   background: #dce0f4 !important;
@@ -972,7 +972,7 @@ ol { padding-left: 20px; }
 /* ── ResultModal ────────────────────────────────── */
 .result-panel {
   border-color: #c8d8f0;
-  background: #f0f5fc;
+  background: #ffffff;
 }
 .result-panel h2 {
   margin-top: 0;
