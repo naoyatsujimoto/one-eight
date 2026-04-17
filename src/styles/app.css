@@ -13,14 +13,14 @@
 body { margin: 0; overflow-x: hidden; }
 button { cursor: pointer; }
 
-.app-shell { padding: 10px 20px; }
+.app-shell { padding: 4px 20px; }
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
-.app-header h1 { font-size: 0.85rem; letter-spacing: 0.04em; }
+.app-header h1 { font-size: 0.85rem; letter-spacing: 0.04em; margin: 0; }
 .header-actions {
   display: flex;
   align-items: center;
@@ -991,7 +991,8 @@ ol { padding-left: 20px; }
   font-size: 0.78rem;
   color: #888;
   text-align: center;
-  margin-bottom: 6px;
+  margin-top: 0;
+  margin-bottom: 4px;
   letter-spacing: 0.04em;
 }
 
@@ -1005,7 +1006,7 @@ ol { padding-left: 20px; }
 /* ─── Mobile (≤ 600px): scale board + compact UI ── */
 @media (max-width: 600px) {
   /* App shell */
-  .app-shell { padding: 8px 6px; }
+  .app-shell { padding: 4px 6px; }
 
   /* Header: wrap to two rows */
   .app-header {
