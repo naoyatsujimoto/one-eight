@@ -302,35 +302,50 @@ export default function App() {
     setBuildState(EMPTY_BUILD_STATE);
   }
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const modeLabel = state.cpuPlayer === null
     ? 'Human vs Human'
     : `Human (Black) vs CPU (White)`;
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" onClick={() => setMenuOpen(false)}>
       <header className="app-header">
         <h1>ONE EIGHT Web MVP</h1>
-        <div className="header-actions">
-          {hasSaved && <span className="saved-badge">Saved</span>}
-          {hasSaved && (
-            <button type="button" className="btn-clear-saved" onClick={handleClearSaved}>
-              Clear save
-            </button>
-          )}
+        <div className="hamburger-wrapper" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
-            className="btn-undo"
-            onClick={handleUndo}
-            disabled={!canUndo}
+            className={`hamburger-btn${menuOpen ? ' hamburger-btn-open' : ''}`}
+            aria-label="Menu"
+            onClick={() => setMenuOpen((v) => !v)}
           >
-            ↩ Undo
+            <span /><span /><span />
           </button>
-          <button type="button" onClick={() => handleNewGame(null)}>
-            Human vs Human
-          </button>
-          <button type="button" onClick={() => handleNewGame('white')}>
-            vs CPU
-          </button>
+          {menuOpen && (
+            <div className="hamburger-menu">
+              {hasSaved && <span className="saved-badge menu-saved-badge">Saved</span>}
+              {hasSaved && (
+                <button type="button" className="btn-clear-saved menu-item" onClick={() => { handleClearSaved(); setMenuOpen(false); }}>
+                  Clear save
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-undo menu-item"
+                onClick={() => { handleUndo(); setMenuOpen(false); }}
+                disabled={!canUndo}
+              >
+                ↩ Undo
+              </button>
+              <hr className="menu-divider" />
+              <button type="button" className="menu-item" onClick={() => { handleNewGame(null); setMenuOpen(false); }}>
+                Human vs Human
+              </button>
+              <button type="button" className="menu-item" onClick={() => { handleNewGame('white'); setMenuOpen(false); }}>
+                vs CPU
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

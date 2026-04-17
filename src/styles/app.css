@@ -60,6 +60,106 @@ button { cursor: pointer; }
   cursor: not-allowed;
 }
 
+/* ── Hamburger Menu ────────────────────────────── */
+.hamburger-wrapper {
+  position: relative;
+}
+
+.hamburger-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+.hamburger-btn span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #444;
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.hamburger-btn-open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger-btn-open span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger-btn-open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.hamburger-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+  z-index: 100;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 14px !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  font-size: 0.9rem !important;
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+}
+.menu-item:hover:not(:disabled) {
+  background: #f4f2f0 !important;
+  border-color: #e0dbd5 !important;
+}
+.menu-item:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-undo.menu-item {
+  color: #3a4a8a;
+  background: #eef0fa !important;
+}
+.btn-undo.menu-item:hover:not(:disabled) {
+  background: #dce0f4 !important;
+}
+
+.btn-clear-saved.menu-item {
+  color: #888 !important;
+  font-size: 0.82rem !important;
+}
+
+.menu-saved-badge {
+  display: block;
+  font-size: 0.75rem;
+  padding: 2px 14px;
+  color: #888;
+}
+
+.menu-divider {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
