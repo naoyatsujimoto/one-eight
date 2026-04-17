@@ -71,32 +71,22 @@ export function TurnInfo({
 
   return (
     <section className="panel turn-info-panel">
-      <h2 className="turn-info-heading">Turn Info</h2>
-
-      {modeLabel && (
-        <div className="game-mode-label">{modeLabel}</div>
-      )}
-
-      <div className="turn-info-player">
+      {/* Slim summary bar */}
+      <div className="turn-info-bar">
         <span className={`player-chip player-chip-${state.currentPlayer}`} />
-        <strong className="turn-info-name">
-          {state.currentPlayer}
-        </strong>
-        <span className="turn-info-move">— Move {state.moveNumber}</span>
-      </div>
-
-      <div className="turn-info-phase">
+        <strong className="turn-info-name">{state.currentPlayer}</strong>
+        <span className="turn-info-move">Move {state.moveNumber}</span>
+        <span className="turn-info-bar-sep" />
         <span className={`phase-badge phase-badge-${phase}`}>{PHASE_LABEL[phase]}</span>
-        <span className="phase-hint">{PHASE_HINT[phase]}</span>
+        {state.selectedPosition !== null && (
+          <span className="turn-info-pos-tag">→ {state.selectedPosition}</span>
+        )}
+        {modeLabel && (
+          <span className="turn-info-mode">{modeLabel}</span>
+        )}
       </div>
 
-      {state.selectedPosition !== null && (
-        <p className="turn-info-selected">
-          Selected: <strong className="turn-info-selected-id">{state.selectedPosition}</strong>
-        </p>
-      )}
-
-      {/* Pass / Selective / Quad controls — integrated inside TurnInfo */}
+      {/* Pass / Selective / Quad controls */}
       {buildState && state.selectedPosition && (
         <div className="control-group build-type-skip">
           {hint && <p className="build-hint">{hint}</p>}

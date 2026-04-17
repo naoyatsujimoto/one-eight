@@ -36,14 +36,15 @@ export function ImportRecord({ onImport }: Props) {
   }
 
   return (
-    <section className="panel import-record-panel">
+    <section className="panel collapsible-panel import-record-panel">
       <button
         type="button"
-        className="import-record-toggle"
+        className="collapsible-toggle"
         onClick={handleToggle}
         aria-expanded={open}
       >
-        {open ? '▲ Import record' : '▼ Import record'}
+        <span className="collapsible-arrow">{open ? '▾' : '▸'}</span>
+        <span className="collapsible-label">Import record</span>
       </button>
 
       {open && (

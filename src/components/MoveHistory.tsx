@@ -17,15 +17,17 @@ function buildLabel(record: MoveRecord): string {
 
 export function MoveHistory({ history }: { history: MoveRecord[] }) {
   const listRef = useRef<HTMLOListElement>(null);
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (listRef.current) {
+    if (open && listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
-  }, [history.length]);
+  }, [history.length, open]);
 
-  function handleCopy() {
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
     const text = generateRecordText(history);
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -34,48 +36,61 @@ export function MoveHistory({ history }: { history: MoveRecord[] }) {
   }
 
   return (
-    <section className="panel move-history-panel">
-      <div className="move-history-header">
-        <h2>Move History</h2>
-        <button
-          type="button"
-          className="btn-copy-record"
-          onClick={handleCopy}
-          disabled={history.length === 0}
-        >
-          {copied ? 'Copied' : 'Copy record'}
-        </button>
-      </div>
-      <ol className="move-history-list" ref={listRef}>
-        {history.map((record, index) => {
-          const isLatest = index === history.length - 1;
-          const isSkip = record.build.type === 'skip';
-          return (
-            <li
-              key={`${record.moveNumber}-${index}`}
-              className={[
-                'move-entry',
-                isLatest ? 'move-entry-latest' : '',
-                isSkip ? 'move-entry-skip' : '',
-              ].filter(Boolean).join(' ')}
-            >
-              <span className={`move-player-dot move-player-dot-${record.player}`} />
-              <span className="move-number">{record.moveNumber}.</span>
-              {isSkip ? (
-                <span className="move-skip-label">Pass</span>
-              ) : (
-                <>
-                  <span className="move-pos">{record.positioning}</span>
-                  <span className="move-sep">, </span>
-                  <span className={`move-build move-build-${record.build.type}`}>
-                    {buildLabel(record)}
-                  </span>
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+    <section className="panel collapsible-panel">
+      <button
+        type="button"
+        className="collapsible-toggle"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span className="collapsible-arrow">{open ? '▾' : '▸'}</span>
+        <span className="collapsible-label">Move History</span>
+        {history.length > 0 && (
+          <span className="collapsible-count">{history.length}</span>
+        )}
+        {open && (
+          <button
+            type="button"
+            className="btn-copy-record"
+            onClick={handleCopy}
+            disabled={history.length === 0}
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        )}
+      </button>
+      {open && (
+        <ol className="move-history-list" ref={listRef}>
+          {history.map((record, index) => {
+            const isLatest = index === history.length - 1;
+            const isSkip = record.build.type === 'skip';
+            return (
+              <li
+                key={`${record.moveNumber}-${index}`}
+                className={[
+                  'move-entry',
+                  isLatest ? 'move-entry-latest' : '',
+                  isSkip ? 'move-entry-skip' : '',
+                ].filter(Boolean).join(' ')}
+              >
+                <span className={`move-player-dot move-player-dot-${record.player}`} />
+                <span className="move-number">{record.moveNumber}.</span>
+                {isSkip ? (
+                  <span className="move-skip-label">Pass</span>
+                ) : (
+                  <>
+                    <span className="move-pos">{record.positioning}</span>
+                    <span className="move-sep">, </span>
+                    <span className={`move-build move-build-${record.build.type}`}>
+                      {buildLabel(record)}
+                    </span>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </section>
   );
 }

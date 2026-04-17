@@ -13,14 +13,14 @@
 body { margin: 0; overflow-x: hidden; }
 button { cursor: pointer; }
 
-.app-shell { padding: 4px 20px; }
+.app-shell { padding: 2px 20px; }
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
-.app-header h1 { font-size: 0.78rem; letter-spacing: 0.08em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #888; text-transform: uppercase; }
+.app-header h1 { font-size: 0.65rem; letter-spacing: 0.1em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #bbb; text-transform: uppercase; }
 .header-actions {
   display: flex;
   align-items: center;
@@ -170,7 +170,7 @@ button { cursor: pointer; }
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: 10px;
 }
 .panel {
   background: #faf8f6;
@@ -674,38 +674,43 @@ button { cursor: pointer; }
 
 /* ── Turn Info ──────────────────────────────────── */
 .turn-info-panel {
-  padding: 8px 12px !important;
+  padding: 6px 10px !important;
+  margin-bottom: 6px !important;
 }
-.turn-info-heading {
-  margin: 0 0 4px;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-weight: 400;
-  color: #aaa;
-  text-align: center;
+/* Single-line summary bar */
+.turn-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 28px;
 }
 .turn-info-name {
   text-transform: capitalize;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: #1a1a2e;
 }
 .turn-info-move {
-  color: #aaa;
-  font-size: 0.78rem;
+  color: #bbb;
+  font-size: 0.72rem;
   font-weight: 300;
 }
-.turn-info-selected {
-  margin: 2px 0 0;
-  font-size: 0.78rem;
+.turn-info-bar-sep {
+  flex: 1;
+}
+.turn-info-pos-tag {
+  font-size: 0.72rem;
   color: #888;
-  text-align: center;
+  letter-spacing: 0.02em;
 }
-.turn-info-selected-id {
-  color: #1a1a2e;
-  font-weight: 600;
+.turn-info-mode {
+  font-size: 0.65rem;
+  color: #ccc;
+  margin-left: auto;
+  white-space: nowrap;
 }
+/* legacy — keep for mobile fallback */
 .turn-info-player {
   display: flex;
   align-items: center;
@@ -763,6 +768,7 @@ button { cursor: pointer; }
   box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 3px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.15);
 }
 
+/* turn-info-phase no longer rendered as separate row; keep for legacy */
 .turn-info-phase {
   display: flex;
   align-items: center;
@@ -853,12 +859,45 @@ button { cursor: pointer; }
   margin-left: 8px;
 }
 
+/* ── Collapsible panels (shared) ─────────────────── */
+.collapsible-panel {
+  padding: 0 !important;
+  margin-bottom: 4px !important;
+  overflow: hidden;
+}
+.collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+  min-height: 30px;
+}
+.collapsible-toggle:hover { background: #f2f0ec; }
+.collapsible-arrow {
+  font-size: 0.6rem;
+  color: #ccc;
+  flex-shrink: 0;
+}
+.collapsible-label {
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #aaa;
+}
+.collapsible-count {
+  font-size: 0.62rem;
+  color: #ccc;
+  margin-left: 2px;
+}
+
 /* ── Move History ────────────────────────────────── */
 ol { padding-left: 20px; }
-
-.panel.move-history-panel {
-  padding: 6px 10px !important;
-}
 
 .move-history-header {
   display: flex;
@@ -963,47 +1002,11 @@ ol { padding-left: 20px; }
 
 /* ── How to Play ────────────────────────────────── */
 .how-to-play-panel {
-  padding: 0;
-  overflow: hidden;
   text-align: center;
 }
-
-.how-to-play-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 7px 12px;
-  cursor: pointer;
-  font-size: 0.72rem;
-  color: #aaa;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  text-align: center;
-}
-.how-to-play-toggle:hover { background: #f2f0ec; }
-
-.how-to-play-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1px solid #ccc;
-  font-size: 0.62rem;
-  font-weight: 400;
-  color: #bbb;
-  flex-shrink: 0;
-}
-.how-to-play-label { flex: 1; }
-.how-to-play-arrow { font-size: 0.75rem; color: #999; }
 
 .how-to-play-content {
-  padding: 4px 12px 10px;
+  padding: 4px 10px 10px;
   border-top: 1px solid #ece8e2;
   display: flex;
   flex-direction: column;
@@ -1211,23 +1214,11 @@ ol { padding-left: 20px; }
 }
 
 /* ─── Import Record ───────────────────────────────────── */
-.import-record-panel { margin-top: 0; text-align: center; padding: 0 !important; }
-
-.import-record-toggle {
-  background: none;
-  border: none;
-  color: #c0bbb4;
-  font-size: 0.68rem;
-  cursor: pointer;
-  padding: 7px 12px;
-  text-align: center;
-  width: 100%;
-  letter-spacing: 0.04em;
-}
-.import-record-toggle:hover { color: #999; }
+.import-record-panel { margin-top: 0; text-align: left; }
 
 .import-record-body {
-  margin-top: 8px;
+  margin-top: 0;
+  padding: 0 10px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;

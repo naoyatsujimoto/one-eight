@@ -4,16 +4,15 @@ export function HowToPlay() {
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="panel how-to-play-panel">
+    <section className="panel collapsible-panel how-to-play-panel">
       <button
         type="button"
-        className="how-to-play-toggle"
+        className="collapsible-toggle"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span className="how-to-play-icon">?</span>
-        <span className="how-to-play-label">How to Play</span>
-        <span className="how-to-play-arrow">{open ? '▾' : '▸'}</span>
+        <span className="collapsible-arrow">{open ? '▾' : '▸'}</span>
+        <span className="collapsible-label">How to Play</span>
       </button>
 
       {open && (
