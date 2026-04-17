@@ -310,7 +310,7 @@ export default function App() {
   return (
     <div className="app-shell" onClick={() => setMenuOpen(false)}>
       <header className="app-header">
-        <h1>ONE EIGHT Web MVP</h1>
+        <h1>ONE EIGHT</h1>
       </header>
 
       {/* Right-side fixed hamburger menu */}

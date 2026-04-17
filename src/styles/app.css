@@ -13,14 +13,14 @@
 body { margin: 0; overflow-x: hidden; }
 button { cursor: pointer; }
 
-.app-shell { padding: 2px 20px; }
+.app-shell { padding: 4px 20px; }
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
 }
-.app-header h1 { font-size: 0.72rem; letter-spacing: 0.1em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #999; text-transform: uppercase; }
+.app-header h1 { font-size: 0.8rem; letter-spacing: 0.22em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #888; text-transform: uppercase; }
 .header-actions {
   display: flex;
   align-items: center;
@@ -673,10 +673,17 @@ button { cursor: pointer; }
   opacity: 0.55;
 }
 
-/* ── Turn Info ──────────────────────────────────── */
+/* ── Turn Info — annotation band (not a card) ────── */
 .turn-info-panel {
-  padding: 8px 12px 6px !important;
-  margin-bottom: 8px !important;
+  /* No white box — blend with page */
+  background: transparent;
+  border: none;
+  border-top: 1px solid #e4e0da;
+  border-bottom: 1px solid #e4e0da;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 8px 12px 6px;
+  margin-bottom: 10px;
 }
 
 /* Row 1: Player + Move — primary */
@@ -708,6 +715,7 @@ button { cursor: pointer; }
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 2px;
 }
 .turn-info-phase-hint {
   font-size: 0.78rem;
@@ -721,9 +729,13 @@ button { cursor: pointer; }
 /* Row 3: mode label — auxiliary */
 .turn-info-mode {
   font-size: 0.65rem;
-  color: #ccc;
-  margin-top: 3px;
+  color: #bbb;
   letter-spacing: 0.02em;
+}
+
+/* Build controls inside turn-info */
+.turn-info-panel .control-group {
+  margin-top: 6px;
 }
 
 /* legacy — keep for mobile fallback */
@@ -875,11 +887,21 @@ button { cursor: pointer; }
   margin-left: 8px;
 }
 
-/* ── Collapsible panels (shared) ─────────────────── */
+/* ── Collapsible panels — label rows, not cards ───── */
 .collapsible-panel {
+  /* No card — transparent, ruled lines only */
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #e4e0da !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   padding: 0 !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 0 !important;
   overflow: hidden;
+}
+/* First collapsible: add top rule too */
+.collapsible-panel:first-of-type {
+  border-top: 1px solid #e4e0da !important;
 }
 .collapsible-toggle {
   display: flex;
@@ -888,31 +910,31 @@ button { cursor: pointer; }
   width: 100%;
   background: none;
   border: none;
-  padding: 7px 12px;
+  padding: 8px 12px;
   cursor: pointer;
   text-align: left;
-  min-height: 32px;
+  min-height: 34px;
   box-sizing: border-box;
 }
-.collapsible-toggle:hover { background: #f2f0ec; }
+.collapsible-toggle:hover { background: rgba(0,0,0,0.02); }
 .collapsible-arrow {
-  font-size: 0.58rem;
-  color: #c8c4be;
+  font-size: 0.55rem;
+  color: #c0bbb4;
   flex-shrink: 0;
-  width: 10px;        /* 幅固定で矢印をそろえる */
+  width: 10px;
   text-align: center;
 }
 .collapsible-label {
   font-size: 0.68rem;
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #999;
+  letter-spacing: 0.08em;
+  color: #888;
   flex: 1;
 }
 .collapsible-count {
   font-size: 0.62rem;
-  color: #ccc;
+  color: #c0bbb4;
   margin-left: auto;
   min-width: 16px;
   text-align: right;
@@ -936,6 +958,11 @@ ol { padding-left: 20px; }
   letter-spacing: 0.06em;
   color: #bbb;
   font-weight: 400;
+}
+/* Move list inside collapsible */
+.collapsible-panel .move-history-list {
+  padding: 4px 12px 8px;
+  background: transparent;
 }
 
 .btn-copy-record {
@@ -1025,15 +1052,16 @@ ol { padding-left: 20px; }
 
 /* ── How to Play ────────────────────────────────── */
 .how-to-play-panel {
-  text-align: center;
+  text-align: left;
 }
 
 .how-to-play-content {
-  padding: 4px 10px 10px;
-  border-top: 1px solid #ece8e2;
+  padding: 4px 12px 10px;
+  border-top: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  background: transparent;
 }
 
 .htp-list {
@@ -1237,15 +1265,16 @@ ol { padding-left: 20px; }
 }
 
 /* ─── Import Record ───────────────────────────────────── */
-.import-record-panel { margin-top: 0; text-align: left; }
+.import-record-panel { margin-top: 0; text-align: left; background: transparent; }
 
 .import-record-body {
   margin-top: 0;
-  padding: 0 10px 10px;
+  padding: 0 12px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  background: transparent;
 }
 
 .import-record-textarea {

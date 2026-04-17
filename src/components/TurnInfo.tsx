@@ -70,7 +70,7 @@ export function TurnInfo({
   const hint = getHint();
 
   return (
-    <section className="panel turn-info-panel">
+    <section className="turn-info-panel">
 
       {/* Row 1: Player + Move number (primary) */}
       <div className="turn-info-row1">
