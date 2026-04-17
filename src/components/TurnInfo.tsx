@@ -70,36 +70,36 @@ export function TurnInfo({
   const hint = getHint();
 
   return (
-    <section className="panel">
-      <h2 style={{ marginTop: 0, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#555', textAlign: 'center' }}>Turn Info</h2>
+    <section className="panel turn-info-panel">
+      <h2 className="turn-info-heading">Turn Info</h2>
 
       {modeLabel && (
-        <div className="game-mode-label" style={{ textAlign: 'center', marginBottom: '8px' }}>{modeLabel}</div>
+        <div className="game-mode-label">{modeLabel}</div>
       )}
 
-      <div className="turn-info-player" style={{ justifyContent: 'center' }}>
+      <div className="turn-info-player">
         <span className={`player-chip player-chip-${state.currentPlayer}`} />
-        <strong style={{ textTransform: 'capitalize', fontSize: '1.05rem' }}>
+        <strong className="turn-info-name">
           {state.currentPlayer}
         </strong>
-        <span style={{ color: '#888', fontSize: '0.85rem' }}>— Move {state.moveNumber}</span>
+        <span className="turn-info-move">— Move {state.moveNumber}</span>
       </div>
 
-      <div className="turn-info-phase" style={{ justifyContent: 'center' }}>
+      <div className="turn-info-phase">
         <span className={`phase-badge phase-badge-${phase}`}>{PHASE_LABEL[phase]}</span>
         <span className="phase-hint">{PHASE_HINT[phase]}</span>
       </div>
 
       {state.selectedPosition !== null && (
-        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#555', textAlign: 'center' }}>
-          Selected: <strong style={{ color: '#1a1a2e' }}>{state.selectedPosition}</strong>
+        <p className="turn-info-selected">
+          Selected: <strong className="turn-info-selected-id">{state.selectedPosition}</strong>
         </p>
       )}
 
       {/* Pass / Selective / Quad controls — integrated inside TurnInfo */}
       {buildState && state.selectedPosition && (
-        <div className="control-group build-type-skip" style={{ marginTop: '10px' }}>
-          {hint && <p className="build-hint" style={{ margin: '0 0 6px', fontSize: '0.82rem', color: '#666' }}>{hint}</p>}
+        <div className="control-group build-type-skip">
+          {hint && <p className="build-hint">{hint}</p>}
           {showSelectiveConfirm && (
             <button
               type="button"

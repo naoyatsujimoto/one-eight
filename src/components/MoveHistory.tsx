@@ -34,7 +34,7 @@ export function MoveHistory({ history }: { history: MoveRecord[] }) {
   }
 
   return (
-    <section className="panel">
+    <section className="panel move-history-panel">
       <div className="move-history-header">
         <h2>Move History</h2>
         <button
