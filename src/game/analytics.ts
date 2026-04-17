@@ -53,7 +53,7 @@ function gatesFromMove(move: MoveRecord): GateId[] {
     return move.build.gate !== null ? [move.build.gate] : [];
   }
   if (move.build.type === 'selective') {
-    return [...move.build.gates];
+    return (move.build.gates as Array<0 | import('./types').GateId>).filter((g): g is import('./types').GateId => g !== 0);
   }
   if (move.build.type === 'quad') {
     return [...move.build.placedGateIds];

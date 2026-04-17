@@ -3,6 +3,7 @@ import {
   applyMassiveBuild,
   applyQuadBuild,
   applySelectiveBuild,
+  applySelectiveBuildSingle,
   selectPosition,
   skipTurn,
 } from './engine';
@@ -133,7 +134,7 @@ export function importRecord(text: string): ImportResult {
       continue;
     }
 
-    // ── Selective: s(N,M) ────────────────────────────────────
+    // ── Selective: s(N,M) or s(N,0) / s(0,N) ───────────────
     if (buildPart.startsWith('s(')) {
       if (!buildPart.endsWith(')')) {
         return {
@@ -149,8 +150,41 @@ export function importRecord(text: string): ImportResult {
           error: `${lineLabel}: Selective build requires exactly 2 gate IDs — got "${buildPart}"`,
         };
       }
-      const g1 = parseGateId(parts[0]!);
-      const g2 = parseGateId(parts[1]!);
+      const rawA = parts[0]!.trim();
+      const rawB = parts[1]!.trim();
+      const isZeroA = rawA === '0';
+      const isZeroB = rawB === '0';
+
+      if (isZeroA && isZeroB) {
+        // s(0,0) — both sides skipped; record as no-op (advance turn only)
+        // This shouldn't normally occur in valid play, but handle gracefully.
+        state = afterSelect;
+        continue;
+      }
+
+      if (isZeroA || isZeroB) {
+        // One side is 0 — single gate build
+        const activeRaw = isZeroA ? rawB : rawA;
+        const gateId = parseGateId(activeRaw);
+        if (gateId === null) {
+          return {
+            ok: false,
+            error: `${lineLabel}: Invalid gate ID "${activeRaw}" in "${buildPart}"`,
+          };
+        }
+        const next = applySelectiveBuildSingle(afterSelect, gateId);
+        if (next === afterSelect) {
+          return {
+            ok: false,
+            error: `${lineLabel}: Selective build at gate ${gateId} is not valid (not connected to "${posId}" or gate full)`,
+          };
+        }
+        state = next;
+        continue;
+      }
+
+      const g1 = parseGateId(rawA);
+      const g2 = parseGateId(rawB);
       if (g1 === null || g2 === null) {
         return {
           ok: false,

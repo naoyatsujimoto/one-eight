@@ -96,7 +96,7 @@ export function applySelectiveBuild(state: GameState, gates: [GateId, GateId]): 
 
 /**
  * Selective build with only one gate (used when the second gate has no open middle slot).
- * Records as s(gateId, gateId) to fit MoveRecord type, but only one piece is placed.
+ * Records as s(gateId, 0) — the "0" side had no available pocket and was skipped.
  */
 export function applySelectiveBuildSingle(state: GameState, gateId: GateId): GameState {
   if (!state.selectedPosition || state.gameEnded) return state;
@@ -118,7 +118,7 @@ export function applySelectiveBuildSingle(state: GameState, gateId: GateId): Gam
     moveNumber: state.moveNumber,
     player: state.currentPlayer,
     positioning: state.selectedPosition,
-    build: { type: 'selective', gates: [gateId, gateId], placed: result.placed }
+    build: { type: 'selective', gates: [gateId, 0], placed: result.placed }
   });
 }
 

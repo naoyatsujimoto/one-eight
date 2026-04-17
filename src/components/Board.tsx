@@ -475,7 +475,8 @@ export function Board({
       return { gateIds: new Set([last.build.gate]), pocketSize: 'large' };
     }
     if (last.build.type === 'selective') {
-      return { gateIds: new Set(last.build.gates), pocketSize: 'middle' };
+      const validGates = last.build.gates.filter((g): g is GateId => g !== 0);
+      return { gateIds: new Set(validGates), pocketSize: 'middle' };
     }
     if (last.build.type === 'quad') {
       return { gateIds: new Set(last.build.placedGateIds), pocketSize: 'small' };

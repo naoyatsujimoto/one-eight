@@ -25,7 +25,7 @@ export type MoveRecord = {
   positioning: PositionId | 'P';
   build:
     | { type: 'massive'; gate: GateId | null; placed: number }
-    | { type: 'selective'; gates: [GateId, GateId]; placed: number }
+    | { type: 'selective'; gates: [GateId | 0, GateId | 0]; placed: number }
     | { type: 'quad'; placedGateIds: GateId[]; placed: number }
     | { type: 'skip' };
 };
