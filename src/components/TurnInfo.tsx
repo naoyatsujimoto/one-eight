@@ -71,13 +71,13 @@ export function TurnInfo({
 
   return (
     <section className="panel">
-      <h2 style={{ marginTop: 0, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#555' }}>Turn Info</h2>
+      <h2 style={{ marginTop: 0, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#555', textAlign: 'center' }}>Turn Info</h2>
 
       {modeLabel && (
-        <div className="game-mode-label" style={{ textAlign: 'left', marginBottom: '8px' }}>{modeLabel}</div>
+        <div className="game-mode-label" style={{ textAlign: 'center', marginBottom: '8px' }}>{modeLabel}</div>
       )}
 
-      <div className="turn-info-player">
+      <div className="turn-info-player" style={{ justifyContent: 'center' }}>
         <span className={`player-chip player-chip-${state.currentPlayer}`} />
         <strong style={{ textTransform: 'capitalize', fontSize: '1.05rem' }}>
           {state.currentPlayer}
@@ -85,13 +85,13 @@ export function TurnInfo({
         <span style={{ color: '#888', fontSize: '0.85rem' }}>— Move {state.moveNumber}</span>
       </div>
 
-      <div className="turn-info-phase">
+      <div className="turn-info-phase" style={{ justifyContent: 'center' }}>
         <span className={`phase-badge phase-badge-${phase}`}>{PHASE_LABEL[phase]}</span>
         <span className="phase-hint">{PHASE_HINT[phase]}</span>
       </div>
 
       {state.selectedPosition !== null && (
-        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#555' }}>
+        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#555', textAlign: 'center' }}>
           Selected: <strong style={{ color: '#1a1a2e' }}>{state.selectedPosition}</strong>
         </p>
       )}
