@@ -43,4 +43,8 @@ export type GameState = {
   winner: Player | 'draw' | null;
   /** Which player (if any) is controlled by the CPU. null = Human vs Human. */
   cpuPlayer: Player | null;
+  /** ISO 8601 timestamp when the game started (first move or new game). */
+  startedAt: string | null;
+  /** ISO 8601 timestamp when the game ended (gameEnded became true). */
+  endedAt: string | null;
 };

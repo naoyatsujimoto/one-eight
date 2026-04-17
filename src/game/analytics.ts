@@ -19,9 +19,10 @@ export interface PlyRecord {
 
 export interface GameRecord {
   game_id: string;
-  played_at: string;
-  mode: 'human_vs_cpu';
-  human_color: Player;
+  started_at: string;
+  ended_at: string;
+  mode: 'human_vs_cpu' | 'human_vs_human';
+  human_color: Player | null;
   winner: Player | 'draw' | null;
   move_count: number;
   first_3_plies: PlyRecord[];
@@ -81,23 +82,29 @@ function emptyEntry(): AggregateEntry {
 
 function isWin(record: GameRecord, key: 'human' | 'cpu'): boolean {
   if (record.winner === null || record.winner === 'draw') return false;
+  // Human vs Human: no single "human" side — treat black as reference
+  if (record.human_color === null) return key === 'human' ? record.winner === 'black' : record.winner === 'white';
   if (key === 'human') return record.winner === record.human_color;
   return record.winner !== record.human_color;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/** CPU戦終了時に呼び出す。Human vs CPU のみ保存する。 */
+/** ゲーム終了時に呼び出す。Human vs CPU / Human vs Human 両方を保存する。 */
 export function saveGameRecord(state: GameState): GameRecord | null {
   if (!state.gameEnded) return null;
-  if (state.cpuPlayer === null) return null; // Human vs Human は対象外
 
-  const human_color: Player = state.cpuPlayer === 'white' ? 'black' : 'white';
+  const now = new Date().toISOString();
+  const mode: GameRecord['mode'] = state.cpuPlayer !== null ? 'human_vs_cpu' : 'human_vs_human';
+  const human_color: Player | null = state.cpuPlayer !== null
+    ? (state.cpuPlayer === 'white' ? 'black' : 'white')
+    : null;
 
   const record: GameRecord = {
     game_id: generateGameId(),
-    played_at: new Date().toISOString(),
-    mode: 'human_vs_cpu',
+    started_at: state.startedAt ?? now,
+    ended_at: state.endedAt ?? now,
+    mode,
     human_color,
     winner: state.winner,
     move_count: state.history.length,

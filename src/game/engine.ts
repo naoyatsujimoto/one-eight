@@ -53,7 +53,8 @@ function finalizeTurn(state: GameState, record: MoveRecord): GameState {
   };
   const ended = isGameEnded(interim);
   const winner = ended ? getWinner(interim) : null;
-  return { ...interim, gameEnded: ended, winner };
+  const endedAt = ended ? new Date().toISOString() : null;
+  return { ...interim, gameEnded: ended, winner, ...(ended ? { endedAt } : {}) };
 }
 
 export function applyMassiveBuild(state: GameState, gateId: GateId): GameState {

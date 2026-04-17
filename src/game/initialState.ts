@@ -29,5 +29,7 @@ export function createInitialState(cpuPlayer: GameState['cpuPlayer'] = null): Ga
     gameEnded: false,
     winner: null,
     cpuPlayer,
+    startedAt: new Date().toISOString(),
+    endedAt: null,
   };
 }

@@ -82,8 +82,8 @@ export default function App() {
   useEffect(() => {
     saveState(state);
     setHasSaved(true);
-    // Auto-save analytics when CPU game ends
-    if (state.gameEnded && state.cpuPlayer !== null) {
+    // Auto-save analytics when any game ends (Human vs CPU or Human vs Human)
+    if (state.gameEnded) {
       const record = saveGameRecord(state);
       if (record) updateAggregates(record);
     }

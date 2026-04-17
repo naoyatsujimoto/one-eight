@@ -17,7 +17,13 @@ export function loadState(): GameState {
     if (!raw) return createInitialState();
     const parsed = JSON.parse(raw) as unknown;
     if (!isValidGameState(parsed)) return createInitialState();
-    return parsed;
+    // Migrate: fill missing timestamp fields from older saves
+    const state = parsed as GameState;
+    return {
+      ...state,
+      startedAt: state.startedAt ?? new Date().toISOString(),
+      endedAt: state.endedAt ?? null,
+    };
   } catch {
     return createInitialState();
   }
