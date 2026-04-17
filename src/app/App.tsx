@@ -375,9 +375,9 @@ export default function App() {
             onSelectiveConfirm={handleSelectiveConfirm}
           />
           <MoveHistory history={state.history} />
-          <AnalyticsPanel />
           <ImportRecord onImport={handleImport} />
           <HowToPlay />
+          <AnalyticsPanel />
           <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
         </div>
       </main>

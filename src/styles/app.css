@@ -882,11 +882,13 @@ ol { padding-left: 20px; }
 .how-to-play-panel {
   padding: 0;
   overflow: hidden;
+  text-align: center;
 }
 
 .how-to-play-toggle {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   width: 100%;
   background: none;
@@ -897,7 +899,7 @@ ol { padding-left: 20px; }
   color: #555;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-align: left;
+  text-align: center;
 }
 .how-to-play-toggle:hover { background: #f7f5f2; }
 
@@ -920,6 +922,9 @@ ol { padding-left: 20px; }
 .how-to-play-content {
   padding: 4px 16px 14px;
   border-top: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .htp-list {
@@ -929,6 +934,9 @@ ol { padding-left: 20px; }
   grid-template-columns: auto 1fr;
   gap: 6px 12px;
   font-size: 0.82rem;
+  text-align: left;
+  width: 100%;
+  max-width: 420px;
 }
 .htp-list dt {
   font-weight: 700;
@@ -1118,7 +1126,7 @@ ol { padding-left: 20px; }
 }
 
 /* ─── Import Record ───────────────────────────────────── */
-.import-record-panel { margin-top: 0; }
+.import-record-panel { margin-top: 0; text-align: center; }
 
 .import-record-toggle {
   background: none;
@@ -1127,7 +1135,7 @@ ol { padding-left: 20px; }
   font-size: 0.78rem;
   cursor: pointer;
   padding: 2px 0;
-  text-align: left;
+  text-align: center;
   width: 100%;
 }
 .import-record-toggle:hover { color: var(--text-primary, #ccc); }
@@ -1136,11 +1144,13 @@ ol { padding-left: 20px; }
   margin-top: 8px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
 }
 
 .import-record-textarea {
   width: 100%;
+  max-width: 400px;
   box-sizing: border-box;
   background: #1a1a1a;
   color: #ccc;
@@ -1168,7 +1178,7 @@ ol { padding-left: 20px; }
 }
 
 .btn-import-record {
-  align-self: flex-start;
+  align-self: center;
   background: #333;
   color: #ccc;
   border: 1px solid #555;
