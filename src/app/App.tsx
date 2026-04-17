@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board';
-import { BuildControls } from '../components/BuildControls';
 import { HowToPlay } from '../components/HowToPlay';
 import { AnalyticsPanel } from '../components/AnalyticsPanel';
 import { ImportRecord } from '../components/ImportRecord';
@@ -367,9 +366,9 @@ export default function App() {
           />
         </div>
         <div className="right-column">
-          <TurnInfo state={state} modeLabel={modeLabel} />
-          <BuildControls
+          <TurnInfo
             state={state}
+            modeLabel={modeLabel}
             buildState={buildState}
             onSkip={handleSkip}
             onQuadConfirm={handleQuadConfirm}
