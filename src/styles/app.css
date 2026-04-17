@@ -13,14 +13,14 @@
 body { margin: 0; overflow-x: hidden; }
 button { cursor: pointer; }
 
-.app-shell { padding: 20px; }
+.app-shell { padding: 10px 20px; }
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
-.app-header h1 { font-size: 1.4rem; letter-spacing: 0.04em; }
+.app-header h1 { font-size: 0.85rem; letter-spacing: 0.04em; }
 .header-actions {
   display: flex;
   align-items: center;
@@ -70,10 +70,10 @@ button { cursor: pointer; }
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 5px;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  gap: 3px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: 1px solid #bbb;
   background: #fff;
   cursor: pointer;
@@ -81,20 +81,20 @@ button { cursor: pointer; }
 }
 .hamburger-btn span {
   display: block;
-  width: 20px;
+  width: 14px;
   height: 2px;
   background: #444;
   border-radius: 2px;
   transition: transform 0.2s, opacity 0.2s;
 }
 .hamburger-btn-open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
+  transform: translateY(5px) rotate(45deg);
 }
 .hamburger-btn-open span:nth-child(2) {
   opacity: 0;
 }
 .hamburger-btn-open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
+  transform: translateY(-5px) rotate(-45deg);
 }
 
 .hamburger-menu {
