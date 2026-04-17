@@ -1,13 +1,13 @@
 :root {
   font-family: Inter, system-ui, sans-serif;
   color: #111;
-  background: #ffffff;
+  background: #f5f3f0;
   --black-color: #1a1a2e;
   --white-color: #ffffff;
   --black-bg: #d6dff8;
   --white-bg: #b8b8b8;
   --empty-bg: #fff;
-  --accent: #4a90e2;
+  --accent: #6a8db5;
 }
 * { box-sizing: border-box; }
 body { margin: 0; overflow-x: hidden; }
@@ -20,7 +20,7 @@ button { cursor: pointer; }
   align-items: center;
   margin-bottom: 4px;
 }
-.app-header h1 { font-size: 0.85rem; letter-spacing: 0.04em; margin: 0; width: 100%; text-align: center; }
+.app-header h1 { font-size: 0.78rem; letter-spacing: 0.08em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #888; text-transform: uppercase; }
 .header-actions {
   display: flex;
   align-items: center;
@@ -80,12 +80,12 @@ button { cursor: pointer; }
   width: 32px;
   height: 60px;
   border-radius: 8px 0 0 8px;
-  border: 1px solid #bbb;
+  border: 1px solid #d8d4ce;
   border-right: none;
-  background: #fff;
+  background: #faf8f6;
   cursor: pointer;
   padding: 0;
-  box-shadow: -2px 0 8px rgba(0,0,0,0.08);
+  box-shadow: -1px 0 6px rgba(0,0,0,0.05);
 }
 .side-menu-btn span {
   display: block;
@@ -106,11 +106,11 @@ button { cursor: pointer; }
 }
 
 .side-menu-panel {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: #faf8f6;
+  border: 1px solid #e0dbd5;
   border-right: none;
   border-radius: 10px 0 0 10px;
-  box-shadow: -4px 0 16px rgba(0,0,0,0.12);
+  box-shadow: -2px 0 10px rgba(0,0,0,0.07);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -173,15 +173,16 @@ button { cursor: pointer; }
   gap: 16px;
 }
 .panel {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: #faf8f6;
+  border: 1px solid #e8e4df;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 /* ── Board ─────────────────────────────────────── */
-.board-title { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: #555; display: flex; align-items: baseline; gap: 8px; }
+.board-title { margin-top: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 400; color: #888; display: flex; align-items: baseline; gap: 8px; }
 
 /* Board inner: fixed-size coordinate canvas; all children are absolutely placed */
 .board-inner {
@@ -736,33 +737,34 @@ button { cursor: pointer; }
 }
 .phase-badge {
   display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   padding: 2px 8px;
   border-radius: 4px;
   min-width: 64px;
   text-align: center;
 }
 .phase-badge-select-position {
-  background: #e8f4ec;
-  color: #2d7a46;
-  border: 1px solid #b2d9bf;
+  background: #eef3ee;
+  color: #4a7a5a;
+  border: 1px solid #c8d8c8;
 }
 .phase-badge-select-build {
-  background: #eef2fc;
-  color: #2a5cbf;
-  border: 1px solid #b0c4ef;
+  background: #edf0f7;
+  color: #4a6090;
+  border: 1px solid #c0ccde;
 }
 .phase-badge-finished {
-  background: #f4f4f4;
-  color: #888;
-  border: 1px solid #ccc;
+  background: #f2f0ed;
+  color: #999;
+  border: 1px solid #d8d4ce;
 }
 .phase-hint {
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.82rem;
+  color: #888;
+  opacity: 0.85;
 }
 
 /* ── Build Controls ─────────────────────────────── */
@@ -778,10 +780,11 @@ button { cursor: pointer; }
 
 .build-controls-title {
   margin-top: 0;
-  font-size: 1rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #555;
+  letter-spacing: 0.06em;
+  font-weight: 400;
+  color: #888;
 }
 .build-hint {
   color: #888;
@@ -827,11 +830,11 @@ ol { padding-left: 20px; }
 
 .move-history-header h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #555;
-  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #888;
+  font-weight: 400;
 }
 
 .btn-copy-record {
@@ -1011,15 +1014,16 @@ ol { padding-left: 20px; }
 
 /* ── ResultModal ────────────────────────────────── */
 .result-panel {
-  border-color: #c8d8f0;
-  background: #ffffff;
+  border-color: #d8dfe8;
+  background: #faf8f6;
 }
 .result-panel h2 {
   margin-top: 0;
-  font-size: 1rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #555;
+  letter-spacing: 0.06em;
+  font-weight: 400;
+  color: #888;
 }
 .result-actions {
   display: flex;
@@ -1028,14 +1032,14 @@ ol { padding-left: 20px; }
 }
 .btn-new-game {
   padding: 6px 16px;
-  border-radius: 8px;
-  border: 1px solid #4a90e2;
-  background: #4a90e2;
+  border-radius: 6px;
+  border: 1px solid #7a9ab8;
+  background: #7a9ab8;
   color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 500;
 }
-.btn-new-game:hover { background: #3a7acc; border-color: #3a7acc; }
+.btn-new-game:hover { background: #6888a4; border-color: #6888a4; }
 
 /* ── CPU ─────────────────────────────────────────── */
 .cpu-thinking-banner {
@@ -1050,12 +1054,13 @@ ol { padding-left: 20px; }
 }
 
 .game-mode-label {
-  font-size: 0.78rem;
-  color: #888;
+  font-size: 0.72rem;
+  color: #aaa;
   text-align: center;
   margin-top: 0;
   margin-bottom: 4px;
   letter-spacing: 0.04em;
+  font-weight: 300;
 }
 
 /* ── Responsive ─────────────────────────────────── */
