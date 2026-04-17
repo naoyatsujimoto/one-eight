@@ -3,12 +3,14 @@
  *
  * Phase 1 upgrade: minimax with alpha-beta pruning.
  * Phase 2 upgrade: move ordering + strengthened evaluation.
+ * Phase 3 upgrade: very_hard difficulty with endgame extension.
  *
  * Difficulty levels:
- *   'normal' → depth 2
- *   'hard'   → depth 3
+ *   'normal'    → depth 2
+ *   'hard'      → depth 3
+ *   'very_hard' → depth 3 (base), depth 4 in endgame (≥8/13 positions owned)
  *
- * Evaluation factors:
+ * Evaluation factors (normal/hard):
  *   1. Position count difference (own - opponent)
  *   2. Immediate capture opportunity count (+bonus for CPU)
  *   3. Immediate vulnerability count (-penalty if opponent can capture ours)
@@ -16,6 +18,14 @@
  *   5. Per-position gate dominance (±30 per gate for owned positions)
  *   6. Grip on own positions (+15 per dominated gate on own positions)
  *   7. Recapture risk (-60 when opponent dominates ≥2 gates of our position)
+ *
+ * Additional evaluation factors for very_hard:
+ *   1. Position count weight: 70 (vs 50)
+ *   2. Capture opportunity bonus: 160 (vs 120)
+ *   3. Vulnerability penalty: 130 (vs 100)
+ *   6. Grip bonus: 22 (vs 15)
+ *   7. Recapture risk penalty: 90 (vs 60)
+ *   8. Territory pressure: +8/-8 per gate dominated on unowned positions
  */
 
 import { POSITION_IDS, POSITION_TO_GATES, GATE_IDS } from './constants';
@@ -29,12 +39,29 @@ import type { GameState, GateId, Player, PositionId } from './types';
 // Difficulty configuration
 // ---------------------------------------------------------------------------
 
-export type CpuDifficulty = 'normal' | 'hard';
+export type CpuDifficulty = 'normal' | 'hard' | 'very_hard';
 
 const DEPTH_MAP: Record<CpuDifficulty, number> = {
   normal: 2,
   hard: 3,
+  very_hard: 3,
 };
+
+// ---------------------------------------------------------------------------
+// Endgame detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true when the board is in endgame phase:
+ * at least 8 of 13 positions are owned by either player.
+ */
+export function isEndgame(state: GameState): boolean {
+  let owned = 0;
+  for (const posId of POSITION_IDS) {
+    if (state.positions[posId].owner !== null) owned++;
+  }
+  return owned >= 8;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -205,12 +232,21 @@ function simulateMove(state: GameState, player: Player, move: CpuMove): GameStat
  *   3. Immediate vulnerability count
  *   4. Gate value pressure (own value - opponent value summed across all gates)
  *   5. Per-position gate dominance (±30 per gate for owned positions)
- *   6. Grip on own positions (+15 per gate player dominates on own positions)
- *   7. Recapture risk (-60 if opponent dominates ≥2 of our position's gates)
+ *   6. Grip on own positions (+15/+22 per gate player dominates on own positions)
+ *   7. Recapture risk (-60/-90 if opponent dominates ≥2 of our position's gates)
+ *   8. [very_hard only] Territory pressure (±8 per gate dominated on unowned positions)
+ *
+ * @param veryHard  When true, uses strengthened weights for very_hard difficulty.
  */
-export function evaluateState(state: GameState, player: Player): number {
+export function evaluateState(state: GameState, player: Player, veryHard = false): number {
   const opponent: Player = player === 'black' ? 'white' : 'black';
   let score = 0;
+
+  const posWeight       = veryHard ? 70  : 50;
+  const captureBonus    = veryHard ? 160 : 120;
+  const vulnPenalty     = veryHard ? 130 : 100;
+  const gripBonus       = veryHard ? 22  : 15;
+  const recaptureRisk   = veryHard ? 90  : 60;
 
   // 1. Position count difference
   let ownPositions = 0;
@@ -220,19 +256,19 @@ export function evaluateState(state: GameState, player: Player): number {
     if (owner === player)   ownPositions++;
     if (owner === opponent) oppPositions++;
   }
-  score += (ownPositions - oppPositions) * 50;
+  score += (ownPositions - oppPositions) * posWeight;
 
   // 2. Immediate capture opportunities for player
   for (const posId of POSITION_IDS) {
     if (state.positions[posId].owner === opponent) {
-      if (canCapturePosition(state, player, posId)) score += 120;
+      if (canCapturePosition(state, player, posId)) score += captureBonus;
     }
   }
 
   // 3. Immediate vulnerability: opponent can capture our positions
   for (const posId of POSITION_IDS) {
     if (state.positions[posId].owner === player) {
-      if (canCapturePosition(state, opponent, posId)) score -= 100;
+      if (canCapturePosition(state, opponent, posId)) score -= vulnPenalty;
     }
   }
 
@@ -250,41 +286,51 @@ export function evaluateState(state: GameState, player: Player): number {
   // 7. Recapture risk
   for (const posId of POSITION_IDS) {
     const posOwner = state.positions[posId].owner;
-    if (posOwner === null) continue;
 
     const posGates = POSITION_TO_GATES[posId] as GateId[];
 
-    for (const gId of posGates) {
-      const gate = state.gates[gId];
-      const ownVal = gatePlayerValue(gate, player);
-      const oppVal = gatePlayerValue(gate, opponent);
-
-      // Factor 5: per-position gate dominance
-      if (ownVal > oppVal) score += 30;
-      else if (oppVal > ownVal) score -= 30;
-    }
-
-    // Factors 6 & 7: apply only to player's own positions
-    if (posOwner === player) {
-      let playerDominatedGates = 0;
-      let opponentDominatedGates = 0;
-
+    if (posOwner !== null) {
       for (const gId of posGates) {
         const gate = state.gates[gId];
         const ownVal = gatePlayerValue(gate, player);
         const oppVal = gatePlayerValue(gate, opponent);
 
-        if (ownVal > oppVal) {
-          playerDominatedGates++;
-          score += 15; // Factor 6: grip on own positions
-        } else if (oppVal > ownVal) {
-          opponentDominatedGates++;
-        }
+        // Factor 5: per-position gate dominance
+        if (ownVal > oppVal) score += 30;
+        else if (oppVal > ownVal) score -= 30;
       }
 
-      // Factor 7: recapture risk
-      if (opponentDominatedGates >= 2) {
-        score -= 60;
+      // Factors 6 & 7: apply only to player's own positions
+      if (posOwner === player) {
+        let playerDominatedGates = 0;
+        let opponentDominatedGates = 0;
+
+        for (const gId of posGates) {
+          const gate = state.gates[gId];
+          const ownVal = gatePlayerValue(gate, player);
+          const oppVal = gatePlayerValue(gate, opponent);
+
+          if (ownVal > oppVal) {
+            playerDominatedGates++;
+            score += gripBonus; // Factor 6: grip on own positions
+          } else if (oppVal > ownVal) {
+            opponentDominatedGates++;
+          }
+        }
+
+        // Factor 7: recapture risk
+        if (opponentDominatedGates >= 2) {
+          score -= recaptureRisk;
+        }
+      }
+    } else if (veryHard) {
+      // Factor 8 (very_hard only): territory pressure on unowned positions
+      for (const gId of posGates) {
+        const gate = state.gates[gId];
+        const ownVal = gatePlayerValue(gate, player);
+        const oppVal = gatePlayerValue(gate, opponent);
+        if (ownVal > oppVal) score += 8;
+        else if (oppVal > ownVal) score -= 8;
       }
     }
   }
@@ -310,9 +356,10 @@ function minimax(
   beta: number,
   currentPlayer: Player,
   maximizingPlayer: Player,
+  veryHard: boolean,
 ): number {
   if (depth === 0 || state.gameEnded) {
-    return evaluateState(state, maximizingPlayer);
+    return evaluateState(state, maximizingPlayer, veryHard);
   }
 
   const moves = enumerateLegalMoves(state, currentPlayer);
@@ -320,7 +367,7 @@ function minimax(
   if (moves.length === 0) {
     // No legal moves → treat as pass, switch player
     const opponent: Player = currentPlayer === 'black' ? 'white' : 'black';
-    return minimax(state, depth - 1, alpha, beta, opponent, maximizingPlayer);
+    return minimax(state, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard);
   }
 
   const isMaximizing = currentPlayer === maximizingPlayer;
@@ -335,7 +382,7 @@ function minimax(
     let best = -INF;
     for (const move of orderedMoves) {
       const next = simulateMove(state, currentPlayer, move);
-      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer);
+      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard);
       if (score > best) best = score;
       if (score > alpha) alpha = score;
       if (beta <= alpha) break; // beta cutoff
@@ -345,7 +392,7 @@ function minimax(
     let best = INF;
     for (const move of orderedMoves) {
       const next = simulateMove(state, currentPlayer, move);
-      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer);
+      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard);
       if (score < best) best = score;
       if (score < beta) beta = score;
       if (beta <= alpha) break; // alpha cutoff
@@ -365,9 +412,10 @@ function pickRandom<T>(arr: T[]): T {
 /**
  * Select one move for the CPU player using minimax search.
  *
- * @param state   Current game state
- * @param player  CPU player color
- * @param difficulty  'normal' (depth 2) or 'hard' (depth 3). Defaults to 'normal'.
+ * @param state       Current game state
+ * @param player      CPU player color
+ * @param difficulty  'normal' (depth 2), 'hard' (depth 3), or 'very_hard' (depth 3, +1 in endgame).
+ *                    Defaults to 'normal'.
  */
 export function selectCpuMove(
   state: GameState,
@@ -380,7 +428,14 @@ export function selectCpuMove(
     return { type: 'pass' };
   }
 
-  const depth = DEPTH_MAP[difficulty];
+  const veryHard = difficulty === 'very_hard';
+
+  // Phase 3: endgame extension for very_hard
+  let depth = DEPTH_MAP[difficulty];
+  if (veryHard && isEndgame(state)) {
+    depth = 4;
+  }
+
   const opponent: Player = player === 'black' ? 'white' : 'black';
 
   // Phase 2: apply move ordering at root for better pruning
@@ -393,7 +448,7 @@ export function selectCpuMove(
 
   for (const move of orderedLegal) {
     const next = simulateMove(state, player, move);
-    const score = minimax(next, depth - 1, -INF, INF, opponent, player);
+    const score = minimax(next, depth - 1, -INF, INF, opponent, player, veryHard);
     if (score > bestScore) {
       bestScore = score;
       bestMoves.length = 0;

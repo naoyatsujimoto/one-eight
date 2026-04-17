@@ -20,12 +20,16 @@ const PHASE_HINT: Record<Phase, string> = {
   'finished': 'Game finished',
 };
 
-export function TurnInfo({ state }: { state: GameState }) {
+export function TurnInfo({ state, modeLabel }: { state: GameState; modeLabel?: string }) {
   const phase = derivePhase(state);
 
   return (
     <section className="panel">
       <h2 style={{ marginTop: 0, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#555' }}>Turn Info</h2>
+
+      {modeLabel && (
+        <div className="game-mode-label" style={{ textAlign: 'left', marginBottom: '8px' }}>{modeLabel}</div>
+      )}
 
       <div className="turn-info-player">
         <span className={`player-chip player-chip-${state.currentPlayer}`} />
