@@ -20,7 +20,7 @@ button { cursor: pointer; }
   align-items: center;
   margin-bottom: 2px;
 }
-.app-header h1 { font-size: 0.65rem; letter-spacing: 0.1em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #bbb; text-transform: uppercase; }
+.app-header h1 { font-size: 0.72rem; letter-spacing: 0.1em; font-weight: 300; margin: 0; width: 100%; text-align: center; color: #999; text-transform: uppercase; }
 .header-actions {
   display: flex;
   align-items: center;
@@ -170,7 +170,8 @@ button { cursor: pointer; }
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 10px;
+  gap: 14px;
+  align-items: start;
 }
 .panel {
   background: #faf8f6;
@@ -674,42 +675,57 @@ button { cursor: pointer; }
 
 /* ── Turn Info ──────────────────────────────────── */
 .turn-info-panel {
-  padding: 6px 10px !important;
-  margin-bottom: 6px !important;
+  padding: 8px 12px 6px !important;
+  margin-bottom: 8px !important;
 }
-/* Single-line summary bar */
-.turn-info-bar {
+
+/* Row 1: Player + Move — primary */
+.turn-info-row1 {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  min-height: 28px;
+  margin-bottom: 4px;
 }
 .turn-info-name {
   text-transform: capitalize;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: #1a1a2e;
 }
+.turn-info-move-sep {
+  color: #ccc;
+  font-weight: 300;
+  font-size: 0.8rem;
+}
 .turn-info-move {
-  color: #bbb;
-  font-size: 0.72rem;
+  color: #aaa;
+  font-size: 0.78rem;
   font-weight: 300;
 }
-.turn-info-bar-sep {
-  flex: 1;
+
+/* Row 2: Phase badge + hint — secondary */
+.turn-info-row2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.turn-info-phase-hint {
+  font-size: 0.78rem;
+  color: #888;
 }
 .turn-info-pos-tag {
-  font-size: 0.72rem;
-  color: #888;
-  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+  color: #aaa;
 }
+
+/* Row 3: mode label — auxiliary */
 .turn-info-mode {
   font-size: 0.65rem;
   color: #ccc;
-  margin-left: auto;
-  white-space: nowrap;
+  margin-top: 3px;
+  letter-spacing: 0.02em;
 }
+
 /* legacy — keep for mobile fallback */
 .turn-info-player {
   display: flex;
@@ -868,32 +884,38 @@ button { cursor: pointer; }
 .collapsible-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   background: none;
   border: none;
-  padding: 6px 10px;
+  padding: 7px 12px;
   cursor: pointer;
   text-align: left;
-  min-height: 30px;
+  min-height: 32px;
+  box-sizing: border-box;
 }
 .collapsible-toggle:hover { background: #f2f0ec; }
 .collapsible-arrow {
-  font-size: 0.6rem;
-  color: #ccc;
+  font-size: 0.58rem;
+  color: #c8c4be;
   flex-shrink: 0;
+  width: 10px;        /* 幅固定で矢印をそろえる */
+  text-align: center;
 }
 .collapsible-label {
   font-size: 0.68rem;
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #aaa;
+  letter-spacing: 0.07em;
+  color: #999;
+  flex: 1;
 }
 .collapsible-count {
   font-size: 0.62rem;
   color: #ccc;
-  margin-left: 2px;
+  margin-left: auto;
+  min-width: 16px;
+  text-align: right;
 }
 
 /* ── Move History ────────────────────────────────── */
@@ -922,9 +944,10 @@ ol { padding-left: 20px; }
   border: 1px solid #d8d4ce;
   border-radius: 3px;
   background: transparent;
-  color: #aaa;
+  color: #bbb;
   cursor: pointer;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .btn-copy-record:disabled {

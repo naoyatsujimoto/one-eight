@@ -71,20 +71,28 @@ export function TurnInfo({
 
   return (
     <section className="panel turn-info-panel">
-      {/* Slim summary bar */}
-      <div className="turn-info-bar">
+
+      {/* Row 1: Player + Move number (primary) */}
+      <div className="turn-info-row1">
         <span className={`player-chip player-chip-${state.currentPlayer}`} />
         <strong className="turn-info-name">{state.currentPlayer}</strong>
+        <span className="turn-info-move-sep">—</span>
         <span className="turn-info-move">Move {state.moveNumber}</span>
-        <span className="turn-info-bar-sep" />
+      </div>
+
+      {/* Row 2: Phase + hint (secondary) */}
+      <div className="turn-info-row2">
         <span className={`phase-badge phase-badge-${phase}`}>{PHASE_LABEL[phase]}</span>
+        <span className="turn-info-phase-hint">{PHASE_HINT[phase]}</span>
         {state.selectedPosition !== null && (
-          <span className="turn-info-pos-tag">→ {state.selectedPosition}</span>
-        )}
-        {modeLabel && (
-          <span className="turn-info-mode">{modeLabel}</span>
+          <span className="turn-info-pos-tag">· {state.selectedPosition}</span>
         )}
       </div>
+
+      {/* Row 3: mode label (auxiliary, quiet) */}
+      {modeLabel && (
+        <div className="turn-info-mode">{modeLabel}</div>
+      )}
 
       {/* Pass / Selective / Quad controls */}
       {buildState && state.selectedPosition && (
