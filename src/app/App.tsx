@@ -367,7 +367,6 @@ export default function App() {
           />
         </div>
         <div className="right-column">
-          <HowToPlay />
           <TurnInfo state={state} modeLabel={modeLabel} />
           <BuildControls
             state={state}
@@ -379,6 +378,7 @@ export default function App() {
           <MoveHistory history={state.history} />
           <AnalyticsPanel />
           <ImportRecord onImport={handleImport} />
+          <HowToPlay />
           <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
         </div>
       </main>
