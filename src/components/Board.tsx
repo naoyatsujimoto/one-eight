@@ -587,9 +587,6 @@ export function Board({
 
   return (
     <section className="panel board-panel">
-      {relatedGates.length > 0 && (
-        <p className="board-title"><span className="gates-related-hint">related: {relatedGates.join(', ')}</span></p>
-      )}
 
       <div className="board-inner-scaler" ref={scalerRef}>
       <div className="board-inner" ref={containerRef}>
