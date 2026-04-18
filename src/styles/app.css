@@ -46,7 +46,9 @@ html, body {
   padding: 22px 32px 18px;
   border-bottom: 1px solid var(--rule);
   position: sticky; top: 0;
-  background: #ffffff;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 50;
 }
 .wordmark {
@@ -116,7 +118,7 @@ html, body {
 .panel-col {
   border-left: 1px solid var(--rule);
   display: flex; flex-direction: column;
-  background: #ffffff;
+  background: rgba(255,255,255,0.88);
   min-height: calc(100vh - 64px);
 }
 .panel-section {
@@ -640,7 +642,8 @@ html, body {
 /* Diamond pip: square rotated 45° to form a diamond */
 .diamond-pip {
   display: inline-block;
-  border: 1px solid #ccc;
+  border: 1px solid rgba(255,255,255,0.38);
+  background: rgba(255,255,255,0.26);
   transform: rotate(45deg);
   flex-shrink: 0;
 }
