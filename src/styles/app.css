@@ -356,6 +356,7 @@ html, body {
   padding: 0;
   transition: all .2s;
   position: relative;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.18);
 }
 .position-btn:hover { border-color: rgba(60,40,22,0.55); }
 /* Subtle highlight for the last opponent's positioned move */
@@ -375,7 +376,9 @@ html, body {
 .position-btn.selected {
   border: 1px solid #2a1a0a;
   background: rgba(255,255,255,0.32);
-  box-shadow: 0 0 0 2px rgba(232,217,168,0.12);
+  box-shadow:
+    inset 2px 2px 0 rgba(0,0,0,0.18),
+    0 0 0 2px rgba(232,217,168,0.12);
 }
 
 .pos-id {
@@ -428,7 +431,7 @@ html, body {
     ),
     radial-gradient(ellipse at 38% 30%, #7a4a1e 0%, #4a2c0e 55%, #2e1808 100%);
   border-color: #a0a8b0;
-  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.12);
+  box-shadow: 3px 3px 0 0 rgba(0,0,0,0.55);
 }
 /* White dot: メープル木目調 + 銀アウトライン */
 .owner-dot-white {
@@ -449,7 +452,7 @@ html, body {
     ),
     radial-gradient(ellipse at 38% 30%, #f5e8cc 0%, #e0c898 55%, #c8a870 100%);
   border-color: #a0a8b0;
-  box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.15);
+  box-shadow: 3px 3px 0 0 rgba(0,0,0,0.45);
 }
 /* Empty dot: 点線のみ */
 .owner-dot-none  { background: transparent; border: 1px dashed rgba(60,40,22,0.22); }
@@ -643,7 +646,15 @@ html, body {
 .diamond-pip {
   display: inline-block;
   border: 1px solid rgba(255,255,255,0.38);
-  background: rgba(255,255,255,0.26);
+  background:
+    repeating-linear-gradient(32deg,
+      rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px,
+      rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 3.5px,
+      rgba(0,0,0,0) 3.5px, rgba(0,0,0,0) 6px,
+      rgba(255,255,255,0.12) 6px, rgba(255,255,255,0.12) 6.5px,
+      rgba(0,0,0,0) 6.5px, rgba(0,0,0,0) 10px),
+    rgba(255,255,255,0.26);
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.22);
   transform: rotate(45deg);
   flex-shrink: 0;
 }
