@@ -82,32 +82,20 @@ export default function App() {
     if (idx < SCREENS.length - 1 && next) goTo(next);
   }
 
-  function goPrev() {
-    const idx = SCREENS.indexOf(screen);
-    const prev = SCREENS[idx - 1];
-    if (idx > 0 && prev) goTo(prev);
-  }
-
-  // Touch swipe (vertical on mobile, horizontal on PC)
-  function handleTouchStart(e: React.TouchEvent) {
+  // Title: vertical swipe-up or click → tutorial
+  function handleTitleTouchStart(e: React.TouchEvent) {
     const t = e.touches[0];
     if (t) { touchStartY.current = t.clientY; touchStartX.current = t.clientX; }
   }
 
-  function handleTouchEnd(e: React.TouchEvent) {
-    if (touchStartY.current === null || touchStartX.current === null) return;
+  function handleTitleTouchEnd(e: React.TouchEvent) {
+    if (touchStartY.current === null) return;
     const t = e.changedTouches[0];
     if (!t) return;
     const dy = t.clientY - touchStartY.current;
-    const dx = t.clientX - touchStartX.current;
-    const isVertical = Math.abs(dy) > Math.abs(dx);
-    const threshold = 60;
-    if (isVertical) {
-        if (dy < -threshold) goNext(); // swipe up → next
-      if (dy > threshold) goPrev();  // swipe down → prev
-    }
     touchStartY.current = null;
     touchStartX.current = null;
+    if (dy < -50) goNext();
   }
 
   const [state, setState] = useState<GameState>(() => {
@@ -380,8 +368,8 @@ export default function App() {
     return (
       <div
         className={`screen-wrapper${screenTransition ? ' screen-out' : ''}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        onTouchStart={handleTitleTouchStart}
+        onTouchEnd={handleTitleTouchEnd}
         onClick={goNext}
       >
         <TitleScreen />
@@ -391,11 +379,7 @@ export default function App() {
 
   if (screen === 'tutorial') {
     return (
-      <div
-        className={`screen-wrapper${screenTransition ? ' screen-out' : ''}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
+      <div className={`screen-wrapper${screenTransition ? ' screen-out' : ''}`}>
         <TutorialScreen
           onComplete={() => goTo('main')}
           onSkip={() => goTo('main')}
@@ -408,11 +392,9 @@ export default function App() {
     <div
       className={`app-shell${screenTransition ? ' screen-out' : ''}`}
       style={{background:'#ffffff', minHeight:'100vh'}}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       <header className="topbar">
-        <div className="wordmark">
+        <div className="wordmark" style={{cursor:'pointer'}} onClick={() => goTo('title')}>
           ONE EIGHT
         </div>
         <div className="meta-center">{modeLabel}</div>

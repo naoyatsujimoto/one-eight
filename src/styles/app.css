@@ -1887,3 +1887,20 @@ ol { padding-left: 20px; }
 }
 .tut-dot-nav.active { background: var(--ink); }
 .tut-dot-nav.done { background: var(--ink-3); }
+
+/* Tutorial click area hints */
+.tut-click-prev,
+.tut-click-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  color: var(--ink-4);
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.2s;
+}
+.tut-click-prev { left: 12px; }
+.tut-click-next { right: 12px; }
+.tutorial-screen:hover .tut-click-prev,
+.tutorial-screen:hover .tut-click-next { color: var(--ink-3); }

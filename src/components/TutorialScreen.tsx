@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { Board } from './Board';
 import { createInitialState } from '../game/initialState';
 import {
@@ -180,38 +180,65 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
   const states = useMemo(() => buildStates(), []);
   const [step, setStep] = useState(0);
   const [fade, setFade] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (step >= STEPS.length) {
-      onComplete();
-      return;
-    }
-    const s = STEPS[step]!;
-    timerRef.current = setTimeout(() => {
-      setFade(false);
-      setTimeout(() => {
-        setStep(prev => prev + 1);
-        setFade(true);
-      }, 350);
-    }, s.duration);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [step, onComplete]);
+  function advance(dir: 'next' | 'prev') {
+    setFade(false);
+    setTimeout(() => {
+      setStep(prev => {
+        const next = dir === 'next' ? prev + 1 : Math.max(0, prev - 1);
+        if (next >= STEPS.length) { onComplete(); return prev; }
+        return next;
+      });
+      setFade(true);
+    }, 300);
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    if (t) touchStartX.current = t.clientX;
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (dx < -50) advance('next');
+    else if (dx > 50) advance('prev');
+  }
+
+  // PC: click left half = prev, right half = next
+  function handleClick(e: React.MouseEvent) {
+    const half = window.innerWidth / 2;
+    if (e.clientX > half) advance('next');
+    else advance('prev');
+  }
 
   const currentStep = STEPS[Math.min(step, STEPS.length - 1)]!;
   const gameState = states[currentStep.stateIdx] ?? states[0]!;
   const buildState: BoardBuildState = currentStep.buildOverride ?? EMPTY_BUILD;
-  const progress = step / STEPS.length;
+  const progress = (step + 1) / STEPS.length;
 
   return (
-    <div className="tutorial-screen">
+    <div
+      className="tutorial-screen"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onClick={handleClick}
+    >
       {/* Progress bar */}
       <div className="tut-progress-bar">
         <div className="tut-progress-fill" style={{ width: `${progress * 100}%` }} />
       </div>
 
       {/* Skip */}
-      <button type="button" className="tut-skip" onClick={onSkip}>Skip</button>
+      <button type="button" className="tut-skip" onClick={e => { e.stopPropagation(); onSkip(); }}>Skip</button>
+
+      {/* Click area hints */}
+      <div className="tut-click-prev" aria-hidden="true">‹</div>
+      <div className="tut-click-next" aria-hidden="true">›</div>
 
       {/* Real board — read-only (no handlers) */}
       <div className="tut-board-area">
