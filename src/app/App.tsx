@@ -301,61 +301,33 @@ export default function App() {
     setBuildState(EMPTY_BUILD_STATE);
   }
 
-  const [menuOpen, setMenuOpen] = useState(false);
-
   const modeLabel = state.cpuPlayer === null
-    ? 'Human vs Human'
-    : `Human (Black) vs CPU (White)`;
+    ? 'Human × Human'
+    : 'Human × CPU';
+
+  function handleClearSelection() {
+    setState(prev => ({ ...prev, selectedPosition: null }));
+    setBuildState(EMPTY_BUILD_STATE);
+  }
 
   return (
-    <div className="app-shell" onClick={() => setMenuOpen(false)}>
-      <header className="app-header">
-        <h1>ONE EIGHT</h1>
+    <div className="app-shell" style={{background:'#ffffff', minHeight:'100vh'}}>
+      <header className="topbar">
+        <div className="wordmark">
+          ONE EIGHT<span className="wordmark-num">18</span>
+        </div>
+        <div className="meta-center">{modeLabel}</div>
+        <div className="topbar-actions">
+          <button type="button" className="top-btn" onClick={handleUndo} disabled={!canUndo}>Undo</button>
+          <div className="top-divider" />
+          <button type="button" className="top-btn" onClick={() => handleNewGame(state.cpuPlayer)}>New Game</button>
+        </div>
       </header>
 
-      {/* Right-side fixed hamburger menu */}
-      <div className="side-menu-wrapper" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          className={`side-menu-btn${menuOpen ? ' side-menu-btn-open' : ''}`}
-          aria-label="Menu"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <span /><span /><span />
-        </button>
-        {menuOpen && (
-          <div className="side-menu-panel">
-            {hasSaved && <span className="saved-badge menu-saved-badge">Saved</span>}
-            {hasSaved && (
-              <button type="button" className="btn-clear-saved menu-item" onClick={() => { handleClearSaved(); setMenuOpen(false); }}>
-                Clear save
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn-undo menu-item"
-              onClick={() => { handleUndo(); setMenuOpen(false); }}
-              disabled={!canUndo}
-            >
-              ↩ Undo
-            </button>
-            <hr className="menu-divider" />
-            <button type="button" className="menu-item" onClick={() => { handleNewGame(null); setMenuOpen(false); }}>
-              Human vs Human
-            </button>
-            <button type="button" className="menu-item" onClick={() => { handleNewGame('white'); setMenuOpen(false); }}>
-              vs CPU
-            </button>
-          </div>
-        )}
-      </div>
-
-      {isCpuTurn && (
-        <div className="cpu-thinking-banner">CPU is thinking…</div>
-      )}
+      {isCpuTurn && <div className="cpu-thinking-banner">CPU is thinking…</div>}
 
       <main className="layout">
-        <div className="left-column">
+        <div className="board-stage">
           <Board
             state={state}
             buildState={buildState}
@@ -365,7 +337,7 @@ export default function App() {
             onSmallPocketClick={handleSmallPocketClick}
           />
         </div>
-        <div className="right-column">
+        <aside className="panel-col">
           <TurnInfo
             state={state}
             modeLabel={modeLabel}
@@ -373,14 +345,15 @@ export default function App() {
             onSkip={handleSkip}
             onQuadConfirm={handleQuadConfirm}
             onSelectiveConfirm={handleSelectiveConfirm}
+            onClear={handleClearSelection}
           />
           <MoveHistory history={state.history} />
-          <ImportRecord onImport={handleImport} />
           <HowToPlay />
+          <ImportRecord onImport={handleImport} />
           <AnalyticsPanel />
-          <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
-        </div>
+        </aside>
       </main>
+      <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
     </div>
   );
 }
