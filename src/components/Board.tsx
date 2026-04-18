@@ -604,13 +604,24 @@ export function Board({
               <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(255,255,255,0.09)" strokeWidth="0.5"/>
               <line x1="1.5" y1="0" x2="1.5" y2="3" stroke="rgba(0,0,0,0.07)" strokeWidth="0.5"/>
             </pattern>
+            <filter id="woodGrain" x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.018 1.4" numOctaves="2" seed="4" stitchTiles="stitch"/>
+              <feColorMatrix values="0 0 0 0 0.18  0 0 0 0 0.09  0 0 0 0 0.02  0 0 0 0.55 0"/>
+              <feComposite in2="SourceGraphic" operator="in"/>
+            </filter>
           </defs>
           <polygon
             points="72,0 608,0 680,72 680,608 608,680 72,680 0,608 0,72"
             className="board-octagon-outer"
           />
           <polygon
-            points="78,6 602,6 674,78 674,602 602,674 78,674 6,602 6,78"
+            points="72,0 608,0 680,72 680,608 608,680 72,680 0,608 0,72"
+            filter="url(#woodGrain)"
+            opacity="0.9"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+          <polygon
+            points="73.66,4 606.34,4 676,73.66 676,606.34 606.34,676 73.66,676 4,606.34 4,73.66"
             className="board-octagon-inner"
           />
           <polygon

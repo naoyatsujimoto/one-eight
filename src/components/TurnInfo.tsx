@@ -72,7 +72,7 @@ export function TurnInfo({
           </div>
         </div>
         <div className="phase-line">
-          <span className={`phase-dot${phase === 'finished' ? ' phase-dot-finished' : ''}`} />
+          <span className={`phase-dot${phase === 'finished' ? ' phase-dot-finished' : phase === 'select-build' ? ' phase-dot-build' : ''}`} />
           <span className="phase-label-text">{PHASE_LABEL[phase]}</span>
           {state.selectedPosition && (
             <span className="phase-pos-tag">{state.selectedPosition}</span>

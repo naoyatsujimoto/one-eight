@@ -13,8 +13,12 @@ export function ResultModal({
 
   if (!state.gameEnded) return null;
 
-  const resultLabel =
-    state.winner === 'draw' ? '引き分け / Draw' : `Winner: ${state.winner}`;
+  const winnerLabel =
+    state.winner === 'draw'
+      ? 'Draw'
+      : `${state.winner ? state.winner.charAt(0).toUpperCase() + state.winner.slice(1) : ''} Wins`;
+
+  const subLabel = `Game ended after ${state.history.length} moves`;
 
   function handleCopy() {
     const text = generateRecordText(state.history);
@@ -25,24 +29,25 @@ export function ResultModal({
   }
 
   return (
-    <section className="panel result-panel">
-      <h2>Result</h2>
-      <p>
-        <strong>{resultLabel}</strong>
-      </p>
-      <div className="result-actions">
-        <button
-          type="button"
-          className="btn-copy-record"
-          onClick={handleCopy}
-          disabled={state.history.length === 0}
-        >
-          {copied ? 'Copied' : 'Copy record'}
-        </button>
-        <button type="button" className="btn-new-game" onClick={onReset}>
-          New Game
-        </button>
+    <div className="result-modal">
+      <div className="result-card">
+        <div className="result-eyebrow">Game Finished</div>
+        <div className="result-title">{winnerLabel}</div>
+        <div className="result-sub">{subLabel}</div>
+        <div className="result-actions">
+          <button type="button" className="result-btn result-btn-primary" onClick={onReset}>
+            New Game
+          </button>
+          <button
+            type="button"
+            className="result-btn"
+            onClick={handleCopy}
+            disabled={state.history.length === 0}
+          >
+            {copied ? 'Copied' : 'Copy record'}
+          </button>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
