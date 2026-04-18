@@ -727,8 +727,6 @@ export function Board({
         </div>
       </div>
       </div>{/* board-inner-scaler */}
-      <span className="stage-label bl">MOVE {state.moveNumber}</span>
-      <span className="stage-label br">TURN / {state.currentPlayer.toUpperCase()}</span>
     </section>
   );
 }

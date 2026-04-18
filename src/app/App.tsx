@@ -316,7 +316,7 @@ export default function App() {
     <div className="app-shell" style={{background:'#ffffff', minHeight:'100vh'}}>
       <header className="topbar">
         <div className="wordmark">
-          ONE EIGHT<span className="wordmark-num">18</span>
+          ONE EIGHT
         </div>
         <div className="meta-center">{modeLabel}</div>
         <div className="topbar-actions">
