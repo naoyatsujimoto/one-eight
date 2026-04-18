@@ -1746,19 +1746,23 @@ ol { padding-left: 20px; }
 }
 .tut-skip:hover { color: var(--ink); }
 
-/* Board area */
+/* Board area — real Board component */
 .tut-board-area {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 60px 24px 0;
+  padding: 48px 0 0;
+  min-height: 0;
+  overflow: hidden;
 }
-.tut-board-wrap {
+/* board-section inside tutorial: no extra padding */
+.tut-board-area .board-section {
+  width: 100%;
   display: flex;
-  gap: 24px;
   align-items: center;
+  justify-content: center;
 }
 
 /* Position grid */

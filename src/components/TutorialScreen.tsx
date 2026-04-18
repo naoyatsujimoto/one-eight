@@ -1,150 +1,175 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { Board } from './Board';
+import { createInitialState } from '../game/initialState';
+import {
+  selectPosition,
+  applyMassiveBuild,
+  applySelectiveBuild,
+  applyQuadBuildForGates,
+} from '../game/engine';
+import type { GameState } from '../game/types';
+import type { BoardBuildState } from '../app/App';
 
-interface Step {
-  caption: string;
-  sub?: string;
-  duration: number; // ms
-  highlight?: string; // CSS class suffix for highlighted element
+// ── Build scripted game states ────────────────────────────────────────────────
+
+function buildStates(): GameState[] {
+  const s0 = createInitialState();
+  const states: GameState[] = [s0];
+
+  // Step 1: Black selects position G
+  const s1 = selectPosition(s0, 'G');
+  states.push(s1);
+
+  // Step 2: Black massive @ gate 1
+  const s2 = applyMassiveBuild(s1, 1);
+  states.push(s2);
+
+  // Step 3: White selects position H
+  const s3 = selectPosition(s2, 'H');
+  states.push(s3);
+
+  // Step 4: White massive @ gate 2
+  const s4 = applyMassiveBuild(s3, 2);
+  states.push(s4);
+
+  // Step 5: Black selects position A → selective @ gates 2,7
+  const s5 = selectPosition(s4, 'A');
+  states.push(s5);
+
+  // Step 6: Black selective @ gates 2,7
+  const s6 = applySelectiveBuild(s5, [2, 7]);
+  states.push(s6);
+
+  // Step 7: White selects position C → quad @ gates 3,4,5,10
+  const s7 = selectPosition(s6, 'C');
+  states.push(s7);
+
+  // Step 8: White quad @ gates 3,4,5,10
+  const s8 = applyQuadBuildForGates(s7, [3, 4, 5, 10]);
+  states.push(s8);
+
+  // Step 9: Black selects position G again (already owns it — re-builds)
+  // Actually try to capture H: Black needs to dominate gate 2
+  // Black already has middle@2 from selective. White has large@2.
+  // Let's build Black quad on gates shared with H to show dominance attempt
+  const s9 = selectPosition(s8, 'G');
+  states.push(s9);
+
+  // Step 10: Black selective @ gates 1,4 (G's gates: 1,4,7,10)
+  const s10 = applySelectiveBuild(s9, [1, 4]);
+  states.push(s10);
+
+  // Step 11: highlight — Black tries to capture H
+  const s11 = selectPosition(s10, 'H');
+  states.push(s11);
+
+  // Step 12: Black massive @ gate 9 (H's gates: 2,5,6,9) — building toward capture
+  const s12 = applyMassiveBuild(s11, 9);
+  states.push(s12);
+
+  return states;
 }
 
-const STEPS: Step[] = [
+// ── Step definitions ──────────────────────────────────────────────────────────
+
+interface StepDef {
+  stateIdx: number;
+  caption: string;
+  sub: string;
+  duration: number;
+  buildOverride?: BoardBuildState;
+}
+
+const EMPTY_BUILD: BoardBuildState = {
+  mode: 'none',
+  selectiveFirst: null,
+  selectiveCanConfirm: false,
+  quadSelected: [],
+  quadMax: 4,
+};
+
+const STEPS: StepDef[] = [
   {
+    stateIdx: 0,
+    caption: 'The Board',
+    sub: '13 positions (A–M) connected to 12 gates. Each turn: select a position, then build.',
+    duration: 3000,
+  },
+  {
+    stateIdx: 1,
     caption: 'Select a Position',
-    sub: 'Choose any empty square on the board.',
-    duration: 2200,
+    sub: 'Black selects position G. The 4 linked gates light up.',
+    duration: 2500,
   },
   {
-    caption: 'Build at a Gate',
-    sub: 'Place assets at one of the 4 gates linked to your position.',
-    duration: 2200,
-  },
-  {
+    stateIdx: 2,
     caption: 'MASSIVE — Large pocket',
-    sub: 'Fill the large diamond once. Powerful, but slow.',
-    duration: 2400,
+    sub: 'Black places on the large diamond at Gate 1. Powerful, but only once per gate.',
+    duration: 2800,
   },
   {
-    caption: 'SELECTIVE — Middle × 2 gates',
-    sub: 'Place in the middle pockets of two gates simultaneously.',
-    duration: 2400,
+    stateIdx: 3,
+    caption: 'White\'s turn',
+    sub: 'White selects position H — an adjacent square sharing Gate 2.',
+    duration: 2500,
   },
   {
-    caption: 'QUAD — Small × up to 4 gates',
-    sub: 'Spread small assets across up to 4 gates at once.',
-    duration: 2400,
+    stateIdx: 4,
+    caption: 'White builds at Gate 2',
+    sub: 'White plays Massive at Gate 2. Both players now share that gate.',
+    duration: 2800,
   },
   {
-    caption: 'Capture a Position',
-    sub: "If you dominate the most-built gate on an opponent's position — you can take it.",
+    stateIdx: 5,
+    caption: 'SELECTIVE — Middle × 2',
+    sub: 'Black selects A. Selective places in middle pockets at two gates simultaneously.',
+    duration: 2800,
+  },
+  {
+    stateIdx: 6,
+    caption: 'Gates 2 & 7 built',
+    sub: 'Black\'s middle assets at 2 & 7 increase dominance over those gates.',
+    duration: 2800,
+  },
+  {
+    stateIdx: 7,
+    caption: 'QUAD — Small × up to 4',
+    sub: 'White selects C. Quad spreads small assets across up to 4 gates at once.',
+    duration: 2800,
+  },
+  {
+    stateIdx: 8,
+    caption: 'White spreads wide',
+    sub: 'Small assets at Gates 3, 4, 5, 10 — covering many positions at once.',
+    duration: 2800,
+  },
+  {
+    stateIdx: 9,
+    caption: 'Can you Capture?',
+    sub: 'To take an opponent\'s position, you must dominate the most-built gate linked to it.',
+    duration: 3200,
+  },
+  {
+    stateIdx: 10,
+    caption: 'Black builds toward H',
+    sub: 'More assets at shared gates tips the dominance balance.',
+    duration: 2800,
+  },
+  {
+    stateIdx: 11,
+    caption: 'Challenge — select H',
+    sub: 'Black selects White\'s position H. If dominant on the highest gate — capture succeeds.',
     duration: 3000,
   },
   {
-    caption: 'Can you capture?',
-    sub: 'Your assets must outnumber the opponent\'s on the highest-value gate.',
-    duration: 3000,
-  },
-  {
+    stateIdx: 12,
     caption: 'Control the board',
-    sub: 'The player who dominates the most positions wins.',
-    duration: 2600,
+    sub: 'Every build, every position matters. Dominate the gates. Win the board.',
+    duration: 3200,
   },
 ];
 
-// Simple animated board illustration — pure CSS/SVG
-function TutorialBoard({ step }: { step: number }) {
-  // Positions to highlight per step
-  const posHighlight: Record<number, string[]> = {
-    0: ['G'],
-    1: ['G'],
-    2: ['G'],
-    3: ['G', 'A'],
-    4: ['G', 'A', 'C', 'M'],
-    5: ['G', 'H'],
-    6: ['G', 'H'],
-    7: ['A', 'B', 'C', 'D', 'G', 'H', 'I', 'J'],
-  };
-  const highlighted = posHighlight[step] ?? [];
-
-  // Gate to highlight per step
-  const gateHighlight: Record<number, number[]> = {
-    1: [1],
-    2: [1],
-    3: [2, 12],
-    4: [1, 4, 7, 10],
-    5: [1],
-    6: [1],
-  };
-  const hlGates = gateHighlight[step] ?? [];
-
-  // Simple 3x5 grid positions
-  const positions = [
-    ['A','B','C'],
-    ['D','E','F'],
-    ['G','H','I'],
-    ['J','K','L'],
-    ['','M',''],
-  ];
-
-  // Black-owned positions
-  const blackOwned = new Set(
-    step >= 2 ? ['G'] :
-    step >= 0 ? [] : []
-  );
-  const whiteOwned = new Set(
-    step >= 5 ? ['H'] :
-    step >= 0 ? [] : []
-  );
-  // Capture state
-  const captured = step >= 6 ? new Set(['H']) : new Set<string>();
-  const capturedBy = 'black';
-
-  return (
-    <div className="tut-board-wrap">
-      {/* Position grid */}
-      <div className="tut-pos-grid">
-        {positions.map((row, ri) =>
-          row.map((id, ci) => {
-            if (!id) return <div key={`${ri}-${ci}`} className="tut-pos-empty" />;
-            const isHighlighted = highlighted.includes(id);
-            const isBlack = blackOwned.has(id) || (captured.has(id) && capturedBy === 'black');
-            const isWhite = whiteOwned.has(id) && !captured.has(id);
-            return (
-              <div
-                key={id}
-                className={[
-                  'tut-pos',
-                  isHighlighted ? 'tut-pos-hl' : '',
-                  isBlack ? 'tut-pos-black' : '',
-                  isWhite ? 'tut-pos-white' : '',
-                  captured.has(id) ? 'tut-pos-captured' : '',
-                ].filter(Boolean).join(' ')}
-              >
-                <span className="tut-pos-id">{id}</span>
-                {isBlack && <span className="tut-dot tut-dot-black" />}
-                {isWhite && <span className="tut-dot tut-dot-white" />}
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* Gate indicators */}
-      <div className="tut-gates">
-        {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => (
-          <div
-            key={g}
-            className={[
-              'tut-gate',
-              hlGates.includes(g) ? 'tut-gate-hl' : '',
-            ].filter(Boolean).join(' ')}
-          >
-            {g}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface TutorialScreenProps {
   onComplete: () => void;
@@ -152,6 +177,7 @@ interface TutorialScreenProps {
 }
 
 export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
+  const states = useMemo(() => buildStates(), []);
   const [step, setStep] = useState(0);
   const [fade, setFade] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -167,14 +193,15 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       setTimeout(() => {
         setStep(prev => prev + 1);
         setFade(true);
-      }, 400);
+      }, 350);
     }, s.duration);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [step, onComplete]);
 
-  const currentIdx = Math.min(step, STEPS.length - 1);
-  const current = STEPS[currentIdx]!
-  const progress = Math.min(step / STEPS.length, 1);
+  const currentStep = STEPS[Math.min(step, STEPS.length - 1)]!;
+  const gameState = states[currentStep.stateIdx] ?? states[0]!;
+  const buildState: BoardBuildState = currentStep.buildOverride ?? EMPTY_BUILD;
+  const progress = step / STEPS.length;
 
   return (
     <div className="tutorial-screen">
@@ -186,15 +213,22 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       {/* Skip */}
       <button type="button" className="tut-skip" onClick={onSkip}>Skip</button>
 
-      {/* Board */}
+      {/* Real board — read-only (no handlers) */}
       <div className="tut-board-area">
-        <TutorialBoard step={Math.min(step, STEPS.length - 1)} />
+        <Board
+          state={gameState}
+          buildState={buildState}
+          onSelectPosition={() => {}}
+          onLargePocketClick={() => {}}
+          onMiddlePocketClick={() => {}}
+          onSmallPocketClick={() => {}}
+        />
       </div>
 
       {/* Caption */}
       <div className={`tut-caption${fade ? '' : ' tut-caption-fade'}`}>
-        <div className="tut-caption-title">{current?.caption}</div>
-        {current?.sub && <div className="tut-caption-sub">{current.sub}</div>}
+        <div className="tut-caption-title">{currentStep.caption}</div>
+        <div className="tut-caption-sub">{currentStep.sub}</div>
       </div>
 
       {/* Step dots */}
