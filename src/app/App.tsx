@@ -310,6 +310,8 @@ export default function App() {
     setBuildState(EMPTY_BUILD_STATE);
   }
 
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   return (
     <div className="app-shell" style={{background:'#ffffff', minHeight:'100vh'}}>
       <header className="topbar">
@@ -319,6 +321,9 @@ export default function App() {
         <div className="meta-center">{modeLabel}</div>
         <div className="topbar-actions">
           <button type="button" className="top-btn" onClick={handleUndo} disabled={!canUndo}>Undo</button>
+          <button type="button" className="top-btn" onClick={() => setDrawerOpen(true)}>
+            History <span>{state.history.length}</span>
+          </button>
           <div className="top-divider" />
           <button type="button" className="top-btn" onClick={() => handleNewGame(state.cpuPlayer)}>New Game</button>
         </div>
@@ -347,12 +352,24 @@ export default function App() {
             onSelectiveConfirm={handleSelectiveConfirm}
             onClear={handleClearSelection}
           />
-          <MoveHistory history={state.history} />
           <HowToPlay />
           <ImportRecord onImport={handleImport} />
           <AnalyticsPanel />
         </aside>
       </main>
+
+      {/* History Drawer */}
+      <div className={`backdrop${drawerOpen ? ' open' : ''}`} onClick={() => setDrawerOpen(false)} />
+      <aside className={`drawer${drawerOpen ? ' open' : ''}`}>
+        <div className="drawer-head">
+          <span className="drawer-title">Move History</span>
+          <button type="button" className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
+        </div>
+        <div className="drawer-body">
+          <MoveHistory history={state.history} />
+        </div>
+      </aside>
+
       <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
     </div>
   );

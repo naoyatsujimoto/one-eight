@@ -449,6 +449,8 @@ export function Board({
   onLargePocketClick: (gateId: GateId) => void;
   onMiddlePocketClick: (gateId: GateId) => void;
   onSmallPocketClick: (gateId: GateId) => void;
+  moveNumber?: number;
+  currentPlayer?: string;
 }) {
   const selectedId = state.selectedPosition;
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
@@ -591,12 +593,18 @@ export function Board({
   }, [selectedId, relatedGates]);
 
   return (
-    <section className="panel board-panel">
+    <section className="board-section">
 
       <div className="board-inner-scaler" ref={scalerRef}>
       <div className="board-inner" ref={containerRef}>
         {/* Octagonal board outline */}
         <svg className="board-octagon-svg" aria-hidden="true">
+          <defs>
+            <pattern id="boardHair" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+              <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(255,255,255,0.09)" strokeWidth="0.5"/>
+              <line x1="1.5" y1="0" x2="1.5" y2="3" stroke="rgba(0,0,0,0.07)" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
           <polygon
             points="72,0 608,0 680,72 680,608 608,680 72,680 0,608 0,72"
             className="board-octagon-outer"
@@ -604,7 +612,10 @@ export function Board({
           <polygon
             points="78,6 602,6 674,78 674,602 602,674 78,674 6,602 6,78"
             className="board-octagon-inner"
-
+          />
+          <polygon
+            points="73.66,4 606.34,4 676,73.66 676,606.34 606.34,676 73.66,676 4,606.34 4,73.66"
+            fill="url(#boardHair)"
           />
         </svg>
 
@@ -679,6 +690,8 @@ export function Board({
         </div>
       </div>
       </div>{/* board-inner-scaler */}
+      <span className="stage-label bl">MOVE {state.moveNumber}</span>
+      <span className="stage-label br">TURN / {state.currentPlayer.toUpperCase()}</span>
     </section>
   );
 }

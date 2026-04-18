@@ -1264,9 +1264,9 @@ ol { padding-left: 20px; }
 
 /* ─── Mobile (≤ 600px): scale board + compact UI ── */
 @media (max-width: 600px) {
-  /* Board panel: strip all horizontal spacing on mobile so the
+  /* Board section: strip all horizontal spacing on mobile so the
      scaler gets the full viewport width with no wasted pixels. */
-  .board-panel {
+  .board-section {
     padding: 4px 0;
     overflow: hidden;
     min-width: 0;
@@ -1430,3 +1430,79 @@ ol { padding-left: 20px; }
 }
 .analytics-table th { color: #666; font-weight: normal; }
 .analytics-table td { color: #bbb; }
+
+/* ── Board section (panel ラップ除去) ── */
+.board-section {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── Stage labels (盤面四隅) ── */
+.stage-label {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  pointer-events: none;
+}
+.stage-label.bl { bottom: 8px; left: 8px; }
+.stage-label.br { bottom: 8px; right: 8px; }
+
+/* ── History Drawer ── */
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(20,20,26,0.3);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+  z-index: 99;
+}
+.backdrop.open { opacity: 1; pointer-events: auto; }
+
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 360px; max-width: 90vw;
+  background: #ffffff;
+  border-left: 1px solid var(--rule);
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  z-index: 100;
+  overflow-y: auto;
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 24px; border-bottom: 1px solid var(--rule);
+  position: sticky; top: 0; background: #ffffff;
+}
+.drawer-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.drawer-close {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink-2);
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.drawer-body { padding: 22px 24px; }
+
+/* mobile: board-section */
+@media (max-width: 600px) {
+  .board-section {
+    padding: 4px 0;
+    overflow: hidden;
+    min-width: 0;
+  }
+}
