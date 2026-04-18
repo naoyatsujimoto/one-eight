@@ -562,7 +562,7 @@ export function Board({
       const centerX = (gRect.left + gRect.width / 2 - cRect.left) / scale;
       const centerY = (gRect.top + gRect.height / 2 - cRect.top) / scale;
       // Edge gates: target the midpoint of the position-facing edge.
-      // Corner gates: use center, then shrink toward the position to stop before the gate.
+      // Corner gates: target the position-facing corner of the bounding rect.
       let tx: number;
       let ty: number;
       switch (gateType) {
@@ -582,16 +582,35 @@ export function Board({
           tx = (gRect.left - cRect.left) / scale;
           ty = centerY;
           break;
+        case 'corner-tl':
+          // Gate 1: board top-left — position-facing corner = bottom-right
+          tx = (gRect.right - cRect.left) / scale;
+          ty = (gRect.bottom - cRect.top) / scale;
+          break;
+        case 'corner-tr':
+          // Gate 4: board top-right — position-facing corner = bottom-left
+          tx = (gRect.left - cRect.left) / scale;
+          ty = (gRect.bottom - cRect.top) / scale;
+          break;
+        case 'corner-br':
+          // Gate 7: board bottom-right — position-facing corner = top-left
+          tx = (gRect.left - cRect.left) / scale;
+          ty = (gRect.top - cRect.top) / scale;
+          break;
+        case 'corner-bl':
+          // Gate 10: board bottom-left — position-facing corner = top-right
+          tx = (gRect.right - cRect.left) / scale;
+          ty = (gRect.top - cRect.top) / scale;
+          break;
         default:
-          // Corner gates: aim at center
           tx = centerX;
           ty = centerY;
       }
-      // Shorten line so it stops just before reaching the gate (applies to all types)
+      // Shorten line so it stops just before reaching the gate
       const dx = tx - posX;
       const dy = ty - posY;
       const len = Math.sqrt(dx * dx + dy * dy);
-      const shrink = 22;
+      const shrink = 18;
       const x2 = len > shrink ? tx - (dx / len) * shrink : tx;
       const y2 = len > shrink ? ty - (dy / len) * shrink : ty;
       newLines.push({ x1: posX, y1: posY, x2, y2 });
