@@ -6,6 +6,10 @@ import { ImportRecord } from '../components/ImportRecord';
 import { MoveHistory } from '../components/MoveHistory';
 import { ResultModal } from '../components/ResultModal';
 import { TurnInfo } from '../components/TurnInfo';
+import { TitleScreen } from '../components/TitleScreen';
+import { TutorialScreen } from '../components/TutorialScreen';
+
+type Screen = 'title' | 'tutorial' | 'main';
 import {
   applyMassiveBuild,
   applyQuadBuildForGates,
@@ -56,7 +60,56 @@ function calcQuadMax(state: GameState): number {
 /** Delay (ms) before CPU executes its move — gives the player a moment to see the board */
 const CPU_MOVE_DELAY_MS = 600;
 
+const SCREENS: Screen[] = ['title', 'tutorial', 'main'];
+
 export default function App() {
+  const [screen, setScreen] = useState<Screen>('title');
+  const [screenTransition, setScreenTransition] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  function goTo(next: Screen) {
+    setScreenTransition(true);
+    setTimeout(() => {
+      setScreen(next);
+      setScreenTransition(false);
+    }, 300);
+  }
+
+  function goNext() {
+    const idx = SCREENS.indexOf(screen);
+    const next = SCREENS[idx + 1];
+    if (idx < SCREENS.length - 1 && next) goTo(next);
+  }
+
+  function goPrev() {
+    const idx = SCREENS.indexOf(screen);
+    const prev = SCREENS[idx - 1];
+    if (idx > 0 && prev) goTo(prev);
+  }
+
+  // Touch swipe (vertical on mobile, horizontal on PC)
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    if (t) { touchStartY.current = t.clientY; touchStartX.current = t.clientX; }
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartY.current === null || touchStartX.current === null) return;
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const dy = t.clientY - touchStartY.current;
+    const dx = t.clientX - touchStartX.current;
+    const isVertical = Math.abs(dy) > Math.abs(dx);
+    const threshold = 60;
+    if (isVertical) {
+        if (dy < -threshold) goNext(); // swipe up → next
+      if (dy > threshold) goPrev();  // swipe down → prev
+    }
+    touchStartY.current = null;
+    touchStartX.current = null;
+  }
+
   const [state, setState] = useState<GameState>(() => {
     const saved = loadState();
     // Migrate saved state that lacks cpuPlayer field
@@ -322,8 +375,42 @@ export default function App() {
     handleNewGame(cpuPlayer);
   }
 
+  // Title / Tutorial screens
+  if (screen === 'title') {
+    return (
+      <div
+        className={`screen-wrapper${screenTransition ? ' screen-out' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={goNext}
+      >
+        <TitleScreen />
+      </div>
+    );
+  }
+
+  if (screen === 'tutorial') {
+    return (
+      <div
+        className={`screen-wrapper${screenTransition ? ' screen-out' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <TutorialScreen
+          onComplete={() => goTo('main')}
+          onSkip={() => goTo('main')}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="app-shell" style={{background:'#ffffff', minHeight:'100vh'}}>
+    <div
+      className={`app-shell${screenTransition ? ' screen-out' : ''}`}
+      style={{background:'#ffffff', minHeight:'100vh'}}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <header className="topbar">
         <div className="wordmark">
           ONE EIGHT
