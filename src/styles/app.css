@@ -351,8 +351,8 @@ html, body {
   display: grid;
   align-items: center;
   justify-items: center;
-  padding: 8px;
-  transition: border-color 0.1s;
+  padding: 0;
+  transition: all .2s;
   position: relative;
 }
 .position-btn:hover { border-color: rgba(60,40,22,0.55); }
@@ -378,12 +378,17 @@ html, body {
 
 .pos-id {
   position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 0.65rem;
+  top: 6px;
+  left: 8px;
+  font-family: var(--mono);
+  font-size: 9px;
   font-weight: 400;
+  letter-spacing: 0.12em;
   line-height: 1;
-  color: #888;
+  color: rgba(255,255,255,0.3);
+}
+.position-btn.selected .pos-id {
+  color: #2a1a0a;
 }
 .pos-gates {
   font-size: 0.5rem;
@@ -445,7 +450,7 @@ html, body {
   box-shadow: 0 0 0 1px #c8d0d8, inset 0 1px 4px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.15);
 }
 /* Empty dot: 点線のみ */
-.owner-dot-none  { background: transparent; border-color: rgba(255,255,255,0.75); border-style: dashed; }
+.owner-dot-none  { background: transparent; border: 1px dashed rgba(60,40,22,0.22); }
 
 /* ── Gates ─────────────────────────────────────── */
 .gates-related-hint { font-size: 0.65rem; text-transform: none; letter-spacing: 0; color: var(--accent); font-weight: 600; }
