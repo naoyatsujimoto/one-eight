@@ -1570,3 +1570,46 @@ ol { padding-left: 20px; }
     min-width: 0;
   }
 }
+
+/* ── Mode Select Modal ── */
+.mode-modal {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 310;
+}
+.mode-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--rule-strong);
+  padding: 44px 52px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+.mode-modal-title {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 28px;
+  color: var(--ink);
+}
+.mode-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.mode-modal-cancel {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.mode-modal-cancel:hover { color: var(--ink-2); }

@@ -311,6 +311,16 @@ export default function App() {
   }
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [modeModalOpen, setModeModalOpen] = useState(false);
+
+  function handleNewGameRequest() {
+    setModeModalOpen(true);
+  }
+
+  function handleModeSelect(cpuPlayer: Player | null) {
+    setModeModalOpen(false);
+    handleNewGame(cpuPlayer);
+  }
 
   return (
     <div className="app-shell" style={{background:'#ffffff', minHeight:'100vh'}}>
@@ -325,7 +335,7 @@ export default function App() {
             History <span>{state.history.length}</span>
           </button>
           <div className="top-divider" />
-          <button type="button" className="top-btn" onClick={() => handleNewGame(state.cpuPlayer)}>New Game</button>
+          <button type="button" className="top-btn" onClick={handleNewGameRequest}>New Game</button>
         </div>
       </header>
 
@@ -370,7 +380,31 @@ export default function App() {
         </div>
       </aside>
 
-      <ResultModal state={state} onReset={() => handleNewGame(state.cpuPlayer)} />
+      <ResultModal state={state} onReset={handleNewGameRequest} />
+
+      {/* Mode select modal */}
+      {modeModalOpen && (
+        <>
+          <div className="backdrop open" onClick={() => setModeModalOpen(false)} />
+          <div className="mode-modal">
+            <div className="mode-modal-card">
+              <div className="result-eyebrow">New Game</div>
+              <div className="mode-modal-title">Select Mode</div>
+              <div className="mode-modal-actions">
+                <button type="button" className="result-btn result-btn-primary" onClick={() => handleModeSelect(null)}>
+                  Human × Human
+                </button>
+                <button type="button" className="result-btn" onClick={() => handleModeSelect('white')}>
+                  Human × CPU
+                </button>
+              </div>
+              <button type="button" className="mode-modal-cancel" onClick={() => setModeModalOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
