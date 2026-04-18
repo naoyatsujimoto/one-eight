@@ -486,6 +486,7 @@ export function Board({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scalerRef = useRef<HTMLDivElement>(null);
+  const lastScaleRef = useRef<number>(-1);
   const [lines, setLines] = useState<LineCoord[]>([]);
 
   // ── Responsive board scaling ──────────────────────────────────────────────
@@ -495,35 +496,39 @@ export function Board({
   const applyScale = useCallback(() => {
     const scaler = scalerRef.current;
     if (!scaler) return;
-    const parent = scaler.parentElement;
-    if (!parent) return;
+    // Measure the board-stage (grandparent of scaler) to get stable available width.
+    // Measuring scaler's direct parent (board-panel section) causes a feedback loop
+    // because applyScale itself changes the scaler's height, which can resize the parent.
+    const stage = scaler.parentElement?.parentElement ?? scaler.parentElement;
+    if (!stage) return;
     const isMobile = window.innerWidth <= 600;
-    const safetyMargin = isMobile ? 8 : 8;
     const scaleCap = isMobile ? 0.60 : 1;
-    // Use parent.clientWidth for available space.
-    // This avoids measuring the scaler itself (whose width JS is about to override)
-    // and correctly reflects the panel's content width.
-    const raw = parent.clientWidth > 0 ? parent.clientWidth : 320;
-    const available = Math.max(0, raw - safetyMargin);
+    const padH = isMobile ? 16 : 64; // account for board-stage padding (32px each side)
+    const raw = stage.clientWidth > 0 ? stage.clientWidth : 320;
+    const available = Math.max(0, raw - padH);
     const scale = Math.min(scaleCap, available / BOARD_W);
+    // Bail out early if scale hasn't changed (prevents ResizeObserver feedback loop)
+    if (Math.abs(scale - lastScaleRef.current) < 0.001) return;
+    lastScaleRef.current = scale;
     scaler.style.setProperty('--board-scale', String(scale));
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;
     if (isMobile) {
-      // Shrink scaler to the post-scale visual width so CSS `margin: 0 auto`
-      // can center it inside the panel — no margin-left math needed on board-inner.
       scaler.style.width = `${Math.ceil(BOARD_W * scale)}px`;
     } else {
       scaler.style.removeProperty('width');
     }
-    // Remove legacy left-offset variable (centering is now done via scaler width + margin auto)
     scaler.style.removeProperty('--board-left-offset');
   }, []);
 
   useEffect(() => {
     applyScale();
+    // Observe the board-stage (grandparent) — stable container whose size is not
+    // affected by applyScale, so no feedback loop is triggered.
+    const stage = scalerRef.current?.parentElement?.parentElement ?? scalerRef.current?.parentElement;
     const ro = new ResizeObserver(applyScale);
-    if (scalerRef.current?.parentElement) ro.observe(scalerRef.current.parentElement);
-    return () => ro.disconnect();
+    if (stage) ro.observe(stage);
+    window.addEventListener('resize', applyScale);
+    return () => { ro.disconnect(); window.removeEventListener('resize', applyScale); };
   }, [applyScale]);
 
   useEffect(() => {
