@@ -91,81 +91,81 @@ const EMPTY_BUILD: BoardBuildState = {
 const STEPS: StepDef[] = [
   {
     stateIdx: 0,
-    caption: 'The Board',
-    sub: '13 positions (A–M) connected to 12 gates. Each turn: select a position, then build.',
+    caption: 'WIN THE POSITIONS',
+    sub: 'このゲームは Position の取り合い。最後に多くの Position を持つ方が勝ち。',
+    duration: 3000,
+  },
+  {
+    stateIdx: 0,
+    caption: 'THE BOARD',
+    sub: '盤面には 13 の Position と 12 の Gate がある。各 Position は 4つの Gate とつながっている。',
+    duration: 3000,
+  },
+  {
+    stateIdx: 0,
+    caption: 'EACH TURN',
+    sub: '1ターンは「Position を選ぶ」→「Build up を行う」の 2段階。',
     duration: 3000,
   },
   {
     stateIdx: 1,
-    caption: 'Select a Position',
-    sub: 'Black selects position G. The 4 linked gates light up.',
-    duration: 2500,
+    caption: 'SELECT A POSITION',
+    sub: 'Position を選ぶと、関係する 4つの Gate が光る。その4つがそのターンの対象になる。',
+    duration: 3000,
   },
   {
     stateIdx: 2,
-    caption: 'MASSIVE — Large pocket',
-    sub: 'Black places on the large diamond at Gate 1. Powerful, but only once per gate.',
-    duration: 2800,
-  },
-  {
-    stateIdx: 3,
-    caption: 'White\'s turn',
-    sub: 'White selects position H — an adjacent square sharing Gate 2.',
-    duration: 2500,
-  },
-  {
-    stateIdx: 4,
-    caption: 'White builds at Gate 2',
-    sub: 'White plays Massive at Gate 2. Both players now share that gate.',
-    duration: 2800,
-  },
-  {
-    stateIdx: 5,
-    caption: 'SELECTIVE — Middle × 2',
-    sub: 'Black selects A. Selective places in middle pockets at two gates simultaneously.',
-    duration: 2800,
+    caption: 'MASSIVE',
+    sub: 'Massive は Large を1つ置く build up。1つの Gate に強く投資する。',
+    duration: 3000,
   },
   {
     stateIdx: 6,
-    caption: 'Gates 2 & 7 built',
-    sub: 'Black\'s middle assets at 2 & 7 increase dominance over those gates.',
-    duration: 2800,
-  },
-  {
-    stateIdx: 7,
-    caption: 'QUAD — Small × up to 4',
-    sub: 'White selects C. Quad spreads small assets across up to 4 gates at once.',
-    duration: 2800,
+    caption: 'SELECTIVE',
+    sub: 'Selective は Middle を2つ置く build up。2つの Gate に分けて配置する。',
+    duration: 3000,
   },
   {
     stateIdx: 8,
-    caption: 'White spreads wide',
-    sub: 'Small assets at Gates 3, 4, 5, 10 — covering many positions at once.',
-    duration: 2800,
+    caption: 'QUAD',
+    sub: 'Quad は Small を最大4つ置く build up。最大4つの Gate に広く展開できる。',
+    duration: 3000,
   },
   {
-    stateIdx: 9,
-    caption: 'Can you Capture?',
-    sub: 'To take an opponent\'s position, you must dominate the most-built gate linked to it.',
-    duration: 3200,
+    stateIdx: 8,
+    caption: 'SIZE VALUES',
+    sub: 'Small = 1 / Middle = 8 / Large = 64。大きい asset ほど Gate での支配力が強い。',
+    duration: 3000,
   },
   {
-    stateIdx: 10,
-    caption: 'Black builds toward H',
-    sub: 'More assets at shared gates tips the dominance balance.',
-    duration: 2800,
+    stateIdx: 8,
+    caption: 'SHARED GATES',
+    sub: '同じ Gate を両者が使うことがある。Gate は競り合いの場になる。',
+    duration: 3000,
   },
   {
     stateIdx: 11,
-    caption: 'Challenge — select H',
-    sub: 'Black selects White\'s position H. If dominant on the highest gate — capture succeeds.',
+    caption: 'CAPTURE',
+    sub: '相手の Position を奪えることがある。判定は、その Position につながる Gate を見る。',
+    duration: 3000,
+  },
+  {
+    stateIdx: 11,
+    caption: 'MOST-BUILT GATE',
+    sub: '奪取では、まず最も built-up な Gate を見る。そこで優勢なら奪取できる。',
     duration: 3000,
   },
   {
     stateIdx: 12,
-    caption: 'Control the board',
-    sub: 'Every build, every position matters. Dominate the gates. Win the board.',
-    duration: 3200,
+    caption: 'END OF GAME',
+    sub: '12個の Gate がすべて埋まったら終了。Position が多い方が勝ち。',
+    duration: 3000,
+  },
+  {
+    stateIdx: 0,
+    caption: 'START PLAYING',
+    sub: 'まずは1局やってみる。実際に触るのが一番早い。',
+    duration: 3000,
   },
 ];
 
@@ -256,6 +256,15 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       <div className={`tut-caption${fade ? '' : ' tut-caption-fade'}`}>
         <div className="tut-caption-title">{currentStep.caption}</div>
         <div className="tut-caption-sub">{currentStep.sub}</div>
+        {step === STEPS.length - 1 && (
+          <button
+            type="button"
+            className="tut-start-btn"
+            onClick={e => { e.stopPropagation(); onComplete(); }}
+          >
+            Start Playing →
+          </button>
+        )}
       </div>
 
       {/* Step dots */}

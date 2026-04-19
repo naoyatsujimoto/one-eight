@@ -1872,6 +1872,22 @@ ol { padding-left: 20px; }
   max-width: 360px;
   margin: 0 auto;
 }
+.tut-start-btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 32px;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.tut-start-btn:hover { opacity: 0.82; }
 
 /* Step dots */
 .tut-dots {
