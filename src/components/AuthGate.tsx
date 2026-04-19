@@ -7,11 +7,12 @@ interface Props {
 }
 
 export function AuthGate({ children }: Props) {
-  const { user, loading, signInWithMagicLink, signOut } = useAuth();
+  const { user, loading, signInWithMagicLink, signInAsAI, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   if (loading) {
     return (
@@ -34,6 +35,14 @@ export function AuthGate({ children }: Props) {
       } else {
         setSent(true);
       }
+    }
+
+    async function handleAILogin() {
+      setAiLoading(true);
+      setError(null);
+      const { error: err } = await signInAsAI();
+      setAiLoading(false);
+      if (err) setError(err);
     }
 
     return (
@@ -60,6 +69,15 @@ export function AuthGate({ children }: Props) {
               {error && <p style={styles.error}>{error}</p>}
               <button type="submit" disabled={submitting} style={styles.button}>
                 {submitting ? '送信中…' : 'Magic Link を送信'}
+              </button>
+              <div style={styles.divider}>または</div>
+              <button
+                type="button"
+                onClick={handleAILogin}
+                disabled={aiLoading}
+                style={styles.aiButton}
+              >
+                {aiLoading ? 'ログイン中…' : '🤖 AI Login'}
               </button>
             </form>
           )}
@@ -161,5 +179,20 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.2rem 0.6rem',
     cursor: 'pointer',
     fontSize: '0.78rem',
+  },
+  divider: {
+    textAlign: 'center' as const,
+    color: '#aaa',
+    fontSize: '0.75rem',
+    margin: '0.25rem 0',
+  },
+  aiButton: {
+    padding: '0.65rem',
+    fontSize: '0.95rem',
+    background: '#6941C6',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
   },
 };
