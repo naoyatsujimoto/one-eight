@@ -506,6 +506,18 @@ html, body {
   filter: drop-shadow(0 0 20px rgba(123,94,167,1.0));
 }
 
+/* Tutorial gate highlight */
+.gate-card-tutorial-hl {
+  filter: drop-shadow(0 0 14px rgba(255,180,0,0.95));
+  outline: 2px solid rgba(255,180,0,0.85);
+  outline-offset: 2px;
+}
+
+/* Tutorial position highlight */
+.position-btn-tutorial-hl {
+  box-shadow: 0 0 0 3px rgba(255,180,0,0.9), 0 0 12px rgba(255,180,0,0.6);
+}
+
 .gate-card-id {
   position: absolute;
   top: 0;

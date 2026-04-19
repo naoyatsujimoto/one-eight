@@ -348,6 +348,7 @@ function GateCard({
   gateType,
   ps,
   lastOpponentPocketSize,
+  tutorialHighlight,
   onLarge,
   onMiddle,
   onSmall,
@@ -359,6 +360,7 @@ function GateCard({
   gateType: GateType;
   ps: PocketStates;
   lastOpponentPocketSize?: AssetSize | null;
+  tutorialHighlight?: boolean;
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
@@ -368,6 +370,7 @@ function GateCard({
     'gate-card',
     hasPosition ? (isRelated ? 'gate-card-active' : 'gate-card-inactive') : '',
     anySelected ? 'gate-card-selected' : '',
+    tutorialHighlight ? 'gate-card-tutorial-hl' : '',
   ].filter(Boolean).join(' ');
 
   const isCorner = gateType.startsWith('corner');
@@ -442,6 +445,8 @@ export function Board({
   onLargePocketClick,
   onMiddlePocketClick,
   onSmallPocketClick,
+  tutorialGateHighlights,
+  tutorialHighlightAllPositions,
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -449,6 +454,8 @@ export function Board({
   onLargePocketClick: (gateId: GateId) => void;
   onMiddlePocketClick: (gateId: GateId) => void;
   onSmallPocketClick: (gateId: GateId) => void;
+  tutorialGateHighlights?: Set<GateId>;
+  tutorialHighlightAllPositions?: boolean;
   moveNumber?: number;
   currentPlayer?: string;
 }) {
@@ -690,6 +697,7 @@ export function Board({
                 gateType={gateType}
                 ps={ps}
                 lastOpponentPocketSize={lastOpponentBuild.gateIds.has(gateId) ? lastOpponentBuild.pocketSize : null}
+                tutorialHighlight={tutorialGateHighlights?.has(gateId)}
                 onLarge={() => onLargePocketClick(gateId)}
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}
@@ -713,6 +721,7 @@ export function Board({
                 className={[
                   'position-btn',
                   isSelected ? 'selected' : '',
+                  tutorialHighlightAllPositions ? 'position-btn-tutorial-hl' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
                 type="button"

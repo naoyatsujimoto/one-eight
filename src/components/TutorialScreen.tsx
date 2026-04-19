@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 import { Board } from './Board';
 import { createInitialState } from '../game/initialState';
 import {
@@ -7,7 +7,7 @@ import {
   applySelectiveBuild,
   applyQuadBuildForGates,
 } from '../game/engine';
-import type { GameState } from '../game/types';
+import type { GameState, GateId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
 
@@ -17,61 +17,58 @@ function buildStates(): GameState[] {
   const s0 = createInitialState();
   const states: GameState[] = [s0];
 
-  // Step 1: Black selects position G
+  // s1: Black selects G
   const s1 = selectPosition(s0, 'G');
   states.push(s1);
 
-  // Step 2: Black massive @ gate 1
+  // s2: Black massive @ gate 1
   const s2 = applyMassiveBuild(s1, 1);
   states.push(s2);
 
-  // Step 3: White selects position H
+  // s3: White selects H
   const s3 = selectPosition(s2, 'H');
   states.push(s3);
 
-  // Step 4: White massive @ gate 2
+  // s4: White massive @ gate 2
   const s4 = applyMassiveBuild(s3, 2);
   states.push(s4);
 
-  // Step 5: Black selects position A → selective @ gates 2,7
+  // s5: Black selects A (for selective)
   const s5 = selectPosition(s4, 'A');
   states.push(s5);
 
-  // Step 6: Black selective @ gates 2,7
+  // s6: Black selective @ gates 2,7
   const s6 = applySelectiveBuild(s5, [2, 7]);
   states.push(s6);
 
-  // Step 7: White selects position C → quad @ gates 3,4,5,10
+  // s7: White selects C (for quad)
   const s7 = selectPosition(s6, 'C');
   states.push(s7);
 
-  // Step 8: White quad @ gates 3,4,5,10
+  // s8: White quad @ gates 3,4,5,10
   const s8 = applyQuadBuildForGates(s7, [3, 4, 5, 10]);
   states.push(s8);
 
-  // Step 9: Black selects position G again (already owns it — re-builds)
-  // Actually try to capture H: Black needs to dominate gate 2
-  // Black already has middle@2 from selective. White has large@2.
-  // Let's build Black quad on gates shared with H to show dominance attempt
+  // s9: Black selects G
   const s9 = selectPosition(s8, 'G');
   states.push(s9);
 
-  // Step 10: Black selective @ gates 1,4 (G's gates: 1,4,7,10)
+  // s10: Black selective @ gates 1,4
   const s10 = applySelectiveBuild(s9, [1, 4]);
   states.push(s10);
 
-  // Step 11: highlight — Black tries to capture H
+  // s11: Black selects H (capture attempt)
   const s11 = selectPosition(s10, 'H');
   states.push(s11);
 
-  // Step 12: Black massive @ gate 9 (H's gates: 2,5,6,9) — building toward capture
+  // s12: Black massive @ gate 9
   const s12 = applyMassiveBuild(s11, 9);
   states.push(s12);
 
   return states;
 }
 
-// ── Step definitions ──────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const EMPTY_BUILD: BoardBuildState = {
   mode: 'none',
@@ -81,8 +78,33 @@ const EMPTY_BUILD: BoardBuildState = {
   quadMax: 4,
 };
 
-// State index for each of the 13 tutorial steps (matches tutSteps array order)
-const STEP_STATE_INDICES = [0, 0, 0, 1, 2, 6, 8, 8, 8, 11, 11, 12, 0];
+// State index for each of the 13 tutorial steps
+// 0:WIN_POS 1:BOARD 2:EACH_TURN 3:SELECT_POS 4:MASSIVE 5:SELECTIVE
+// 6:QUAD 7:SIZE 8:SHARED 9:CAPTURE 10:MOST_BUILT 11:END 12:START
+const STEP_STATE_INDICES = [4, 0, 0, 1, 2, 5, 7, 8, 8, 11, 11, 12, 0];
+
+// Gate highlights per step (null = none)
+const STEP_GATE_HIGHLIGHTS: (GateId[] | null)[] = [
+  null,        // 0: WIN_POS — show positions
+  null,        // 1: BOARD
+  null,        // 2: EACH_TURN (interactive)
+  [1, 4, 7, 10], // 3: SELECT_POS — G's gates
+  [1],         // 4: MASSIVE — gate 1 built
+  [2, 7],      // 5: SELECTIVE — gates 2,7
+  [3, 4, 5, 10], // 6: QUAD — white's quad gates
+  null,        // 7: SIZE
+  [2],         // 8: SHARED — gate 2 is shared by both
+  [2, 5, 6, 9], // 9: CAPTURE — H's gates
+  [2],         // 10: MOST_BUILT — gate 2 is most built
+  null,        // 11: END
+  null,        // 12: START
+];
+
+// Which steps highlight all positions
+const STEP_HIGHLIGHT_ALL_POSITIONS = new Set([0]); // WIN_POS
+
+// Which steps are interactive (user can click board)
+const STEP_INTERACTIVE = new Set([2]); // EACH_TURN
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -92,12 +114,17 @@ interface TutorialScreenProps {
 }
 
 export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const steps = t.tutSteps;
-  const states = useMemo(() => buildStates(), []);
+  const scriptedStates = useMemo(() => buildStates(), []);
+
   const [step, setStep] = useState(0);
   const [fade, setFade] = useState(true);
   const touchStartX = useRef<number | null>(null);
+
+  // Interactive board state (used only on step 2: EACH_TURN)
+  const [interactiveState, setInteractiveState] = useState<GameState>(() => createInitialState());
+  const [interactiveBuild, setInteractiveBuild] = useState<BoardBuildState>(EMPTY_BUILD);
 
   function advance(dir: 'next' | 'prev') {
     setFade(false);
@@ -126,17 +153,66 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
     else if (dx > 50) advance('prev');
   }
 
-  // PC: click left half = prev, right half = next
   function handleClick(e: React.MouseEvent) {
+    if (STEP_INTERACTIVE.has(step)) return; // don't advance on interactive steps
     const half = window.innerWidth / 2;
     if (e.clientX > half) advance('next');
     else advance('prev');
   }
 
-  const currentStep = steps[Math.min(step, steps.length - 1)]!;
+  // Interactive handlers for EACH_TURN step
+  const handleSelectPosition = useCallback((posId: import('../game/types').PositionId) => {
+    setInteractiveState(prev => selectPosition(prev, posId));
+    setInteractiveBuild(EMPTY_BUILD);
+  }, []);
+
+  const handleLargePocket = useCallback((gateId: GateId) => {
+    setInteractiveState(prev => {
+      const next = applyMassiveBuild(prev, gateId);
+      return next;
+    });
+    setInteractiveBuild(EMPTY_BUILD);
+  }, []);
+
+  const handleMiddlePocket = useCallback((gateId: GateId) => {
+    setInteractiveBuild(prev => {
+      if (prev.selectiveFirst === null) {
+        return { ...prev, mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: true };
+      }
+      if (prev.selectiveFirst === gateId) {
+        return EMPTY_BUILD;
+      }
+      const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
+      setInteractiveState(s => applySelectiveBuild(s, gates));
+      return EMPTY_BUILD;
+    });
+  }, []);
+
+  const handleSmallPocket = useCallback((gateId: GateId) => {
+    setInteractiveBuild(prev => {
+      if (prev.quadSelected.includes(gateId)) {
+        const next = prev.quadSelected.filter(id => id !== gateId);
+        return next.length === 0 ? EMPTY_BUILD : { ...prev, quadSelected: next };
+      }
+      const next = [...prev.quadSelected, gateId];
+      if (next.length >= 4) {
+        setInteractiveState(s => applyQuadBuildForGates(s, next as GateId[]));
+        return EMPTY_BUILD;
+      }
+      return { ...prev, mode: 'quad', quadSelected: next };
+    });
+  }, []);
+
   const stateIdx = STEP_STATE_INDICES[Math.min(step, STEP_STATE_INDICES.length - 1)] ?? 0;
-  const gameState = states[stateIdx] ?? states[0]!;
-  const buildState: BoardBuildState = EMPTY_BUILD;
+  const isInteractive = STEP_INTERACTIVE.has(step);
+  const gameState = isInteractive ? interactiveState : (scriptedStates[stateIdx] ?? scriptedStates[0]!);
+  const buildState = isInteractive ? interactiveBuild : EMPTY_BUILD;
+
+  const gateHlArray = STEP_GATE_HIGHLIGHTS[step] ?? null;
+  const tutorialGateHighlights = gateHlArray ? new Set<GateId>(gateHlArray) : undefined;
+  const tutorialHighlightAllPositions = STEP_HIGHLIGHT_ALL_POSITIONS.has(step);
+
+  const currentStep = steps[Math.min(step, steps.length - 1)]!;
   const progress = (step + 1) / steps.length;
 
   return (
@@ -152,21 +228,25 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       </div>
 
       {/* Skip */}
-      <button type="button" className="tut-skip" onClick={e => { e.stopPropagation(); onSkip(); }}>{t.tutSkip}</button>
+      <button type="button" className="tut-skip" onClick={e => { e.stopPropagation(); onSkip(); }}>
+        {t.tutSkip}
+      </button>
 
-      {/* Click area hints */}
-      <div className="tut-click-prev" aria-hidden="true">‹</div>
-      <div className="tut-click-next" aria-hidden="true">›</div>
+      {/* Click area hints (hidden on interactive step) */}
+      {!isInteractive && <div className="tut-click-prev" aria-hidden="true">‹</div>}
+      {!isInteractive && <div className="tut-click-next" aria-hidden="true">›</div>}
 
-      {/* Real board — read-only (no handlers) */}
-      <div className="tut-board-area">
+      {/* Board */}
+      <div className="tut-board-area" onClick={e => { if (isInteractive) e.stopPropagation(); }}>
         <Board
           state={gameState}
           buildState={buildState}
-          onSelectPosition={() => {}}
-          onLargePocketClick={() => {}}
-          onMiddlePocketClick={() => {}}
-          onSmallPocketClick={() => {}}
+          onSelectPosition={isInteractive ? handleSelectPosition : () => {}}
+          onLargePocketClick={isInteractive ? handleLargePocket : () => {}}
+          onMiddlePocketClick={isInteractive ? handleMiddlePocket : () => {}}
+          onSmallPocketClick={isInteractive ? handleSmallPocket : () => {}}
+          tutorialGateHighlights={tutorialGateHighlights}
+          tutorialHighlightAllPositions={tutorialHighlightAllPositions}
         />
       </div>
 
@@ -174,6 +254,16 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       <div className={`tut-caption${fade ? '' : ' tut-caption-fade'}`}>
         <div className="tut-caption-title">{currentStep.caption}</div>
         <div className="tut-caption-sub">{currentStep.sub}</div>
+        {isInteractive && (
+          <button
+            type="button"
+            className="tut-start-btn"
+            style={{ marginTop: 12, background: '#555', fontSize: 13 }}
+            onClick={e => { e.stopPropagation(); advance('next'); }}
+          >
+            {lang === 'ja' ? '次へ →' : 'Next →'}
+          </button>
+        )}
         {step === steps.length - 1 && (
           <button
             type="button"
