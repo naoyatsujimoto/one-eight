@@ -78,33 +78,34 @@ const EMPTY_BUILD: BoardBuildState = {
   quadMax: 4,
 };
 
-// State index for each of the 13 tutorial steps
-// 0:WIN_POS 1:BOARD 2:EACH_TURN 3:SELECT_POS 4:MASSIVE 5:SELECTIVE
-// 6:QUAD 7:SIZE 8:SHARED 9:CAPTURE 10:MOST_BUILT 11:END 12:START
-const STEP_STATE_INDICES = [4, 0, 0, 1, 2, 5, 7, 8, 8, 11, 11, 12, 0];
+// State index for each of the 14 tutorial steps
+// 0:WIN_POS 1:BUILD_UP 2:BOARD 3:EACH_TURN 4:SELECT_POS 5:MASSIVE
+// 6:SELECTIVE 7:QUAD 8:SIZE 9:SHARED 10:CAPTURE 11:MOST_BUILT 12:END 13:START
+const STEP_STATE_INDICES = [4, 2, 0, 0, 1, 2, 6, 8, 8, 8, 11, 11, 12, 0];
 
 // Gate highlights per step (null = none)
 const STEP_GATE_HIGHLIGHTS: (GateId[] | null)[] = [
-  null,        // 0: WIN_POS — show positions
-  null,        // 1: BOARD
-  null,        // 2: EACH_TURN (interactive)
-  [1, 4, 7, 10], // 3: SELECT_POS — G's gates
-  [1],         // 4: MASSIVE — gate 1 built
-  [2, 7],      // 5: SELECTIVE — gates 2,7
-  [3, 4, 5, 10], // 6: QUAD — white's quad gates
-  null,        // 7: SIZE
-  [2],         // 8: SHARED — gate 2 is shared by both
-  [2, 5, 6, 9], // 9: CAPTURE — H's gates
-  [2],         // 10: MOST_BUILT — gate 2 is most built
-  null,        // 11: END
-  null,        // 12: START
+  null,          // 0: WIN_POS — show positions
+  [1],           // 1: BUILD_UP — gate 1 has a Large asset
+  null,          // 2: BOARD
+  null,          // 3: EACH_TURN (interactive)
+  [1, 4, 7, 10], // 4: SELECT_POS — G's gates
+  [1],           // 5: MASSIVE — gate 1 built
+  [2, 7],        // 6: SELECTIVE — gates 2,7 have Middle assets
+  [3, 4, 5, 10], // 7: QUAD — white's quad gates
+  null,          // 8: SIZE
+  [2],           // 9: SHARED — gate 2 shared by both
+  [2, 5, 6, 9],  // 10: CAPTURE — H's gates
+  [2],           // 11: MOST_BUILT — gate 2 most built
+  null,          // 12: END
+  null,          // 13: START
 ];
 
 // Which steps highlight all positions
 const STEP_HIGHLIGHT_ALL_POSITIONS = new Set([0]); // WIN_POS
 
 // Which steps are interactive (user can click board)
-const STEP_INTERACTIVE = new Set([2]); // EACH_TURN
+const STEP_INTERACTIVE = new Set([3]); // EACH_TURN
 
 // ── Component ─────────────────────────────────────────────────────────────────
 

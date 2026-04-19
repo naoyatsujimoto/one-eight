@@ -16,8 +16,9 @@ export const T = {
     // Tutorial steps
     tutSteps: [
       { caption: 'WIN THE POSITIONS', sub: 'This game is a battle over Positions. The player who holds more Positions at the end wins.' },
+      { caption: 'BUILD UP GATES', sub: 'Stack Assets onto Gates to increase your dominance over Positions. Gates are the battlefield.' },
       { caption: 'THE BOARD', sub: 'The board has 13 Positions and 12 Gates. Each Position is connected to 4 Gates.' },
-      { caption: 'EACH TURN', sub: 'Each turn has two steps: select a Position, then perform a Build up.' },
+      { caption: 'EACH TURN', sub: 'Select a Position, then Build up a Gate. Try it now — tap a Position on the board.' },
       { caption: 'SELECT A POSITION', sub: 'Selecting a Position lights up its 4 connected Gates. Those 4 Gates are your targets for that turn.' },
       { caption: 'MASSIVE', sub: 'Massive places 1 Large asset into a Gate. A strong, focused investment.' },
       { caption: 'SELECTIVE', sub: 'Selective places 1 Middle asset into each of 2 Gates. Split your build across two Gates.' },
@@ -80,8 +81,9 @@ export const T = {
     // Tutorial steps
     tutSteps: [
       { caption: 'POSITION を制する', sub: 'このゲームは Position の取り合い。最後に多くの Position を持つ方が勝ち。' },
+      { caption: 'GATE に積み上げる', sub: 'Gate に Asset を積み上げて、Position への支配力を高める。Gate が勝負の場になる。' },
       { caption: 'ボードの構造', sub: '盤面には 13 の Position と 12 の Gate がある。各 Position は 4つの Gate とつながっている。' },
-      { caption: '1ターンの流れ', sub: '1ターンは「Position を選ぶ」→「Build up を行う」の 2段階。' },
+      { caption: '1ターンの流れ', sub: 'Position を選んで、Gate に Build up する。実際に触ってみよう — ボードの Position をタップして。' },
       { caption: 'POSITION を選ぶ', sub: 'Position を選ぶと、関係する 4つの Gate が光る。その4つがそのターンの対象になる。' },
       { caption: 'MASSIVE', sub: 'Massive は Large を1つ置く Build up。1つの Gate に強く集中投資する。' },
       { caption: 'SELECTIVE', sub: 'Selective は Middle を2つ置く Build up。2つの Gate に分けて配置する。' },
