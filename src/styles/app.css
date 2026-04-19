@@ -1665,6 +1665,32 @@ ol { padding-left: 20px; }
   text-transform: uppercase;
   color: var(--ink-3);
 }
+.title-lang-switcher {
+  display: flex;
+  gap: 8px;
+  margin-top: 28px;
+}
+.title-lang-btn {
+  padding: 6px 20px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--ink-4);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.title-lang-btn.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.title-lang-btn:not(.active):hover {
+  border-color: var(--ink-2);
+  color: var(--ink-2);
+}
 .title-version {
   position: absolute;
   bottom: 32px;

@@ -2,12 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AuthGate } from '../components/AuthGate';
+import { LangProvider } from '../lib/lang';
 import '../styles/app.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthGate>
-      <App />
-    </AuthGate>
+    <LangProvider>
+      <AuthGate>
+        <App />
+      </AuthGate>
+    </LangProvider>
   </React.StrictMode>
 );

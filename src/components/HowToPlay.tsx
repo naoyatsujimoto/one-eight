@@ -1,11 +1,14 @@
+import { useLang } from '../lib/lang';
+
 export function HowToPlay() {
+  const { t } = useLang();
   return (
     <div className="panel-section">
-      <div className="section-eyebrow">Rules / Build Types</div>
+      <div className="section-eyebrow">{t.rulesTitle}</div>
       <dl className="rules-list-new">
-        <dt>Massive</dt><dd>Large pocket — click once</dd>
-        <dt>Selective</dt><dd>Middle × 2 gates</dd>
-        <dt>Quad</dt><dd>Small × up to 4 gates</dd>
+        <dt>{t.massive}</dt><dd>{t.massiveDesc}</dd>
+        <dt>{t.selective}</dt><dd>{t.selectiveDesc}</dd>
+        <dt>{t.quad}</dt><dd>{t.quadDesc}</dd>
       </dl>
     </div>
   );

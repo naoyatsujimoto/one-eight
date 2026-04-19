@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useLang } from '../lib/lang';
 
 interface Props {
   children: ReactNode;
@@ -10,6 +11,7 @@ type LoginMode = 'magic' | 'password';
 
 export function AuthGate({ children }: Props) {
   const { user, loading, signInWithMagicLink, signInWithPassword, signOut } = useAuth();
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [sent, setSent] = useState(false);
@@ -139,7 +141,7 @@ export function AuthGate({ children }: Props) {
       <div style={styles.signOutBar}>
         <span style={styles.emailLabel}>{user.email}</span>
         <button type="button" onClick={signOut} style={styles.signOutBtn}>
-          Sign out
+          {t.signOut}
         </button>
       </div>
       {children}

@@ -12,6 +12,7 @@ import { AuthGate } from '../components/AuthGate';
 import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
 import { saveMatchLog } from '../lib/matchLog';
+import { useLang } from '../lib/lang';
 
 type Screen = 'title' | 'tutorial' | 'main';
 import {
@@ -68,6 +69,7 @@ const SCREENS: Screen[] = ['title', 'tutorial', 'main'];
 
 export default function App() {
   const { user } = useAuth();
+  const { t } = useLang();
   const [statsOpen, setStatsOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>('title');
   const [screenTransition, setScreenTransition] = useState(false);
@@ -354,8 +356,8 @@ export default function App() {
   }
 
   const modeLabel = state.cpuPlayer === null
-    ? 'Human × Human'
-    : 'Human × CPU';
+    ? t.humanVsHuman
+    : t.humanVsCpu;
 
   function handleClearSelection() {
     setState(prev => ({ ...prev, selectedPosition: null }));
@@ -410,19 +412,19 @@ export default function App() {
         </div>
         <div className="meta-center">{modeLabel}</div>
         <div className="topbar-actions">
-          <button type="button" className="top-btn" onClick={handleUndo} disabled={!canUndo}>Undo</button>
+          <button type="button" className="top-btn" onClick={handleUndo} disabled={!canUndo}>{t.undo}</button>
           <button type="button" className="top-btn" onClick={() => setDrawerOpen(true)}>
-            History <span>{state.history.length}</span>
+            {t.history} <span>{state.history.length}</span>
           </button>
           <div className="top-divider" />
           {user && (
-            <button type="button" className="top-btn" onClick={() => setStatsOpen(true)}>Stats</button>
+            <button type="button" className="top-btn" onClick={() => setStatsOpen(true)}>{t.stats}</button>
           )}
-          <button type="button" className="top-btn" onClick={handleNewGameRequest}>New Game</button>
+          <button type="button" className="top-btn" onClick={handleNewGameRequest}>{t.newGame}</button>
         </div>
       </header>
 
-      {isCpuTurn && <div className="cpu-thinking-banner">CPU is thinking…</div>}
+      {isCpuTurn && <div className="cpu-thinking-banner">{t.cpuThinking}</div>}
 
       <main className="layout">
         <div className="board-stage">
@@ -455,7 +457,7 @@ export default function App() {
       <div className={`backdrop${drawerOpen ? ' open' : ''}`} onClick={() => setDrawerOpen(false)} />
       <aside className={`drawer${drawerOpen ? ' open' : ''}`}>
         <div className="drawer-head">
-          <span className="drawer-title">Move History</span>
+          <span className="drawer-title">{t.moveHistory}</span>
           <button type="button" className="drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
         </div>
         <div className="drawer-body">
@@ -477,17 +479,17 @@ export default function App() {
           <div className="mode-modal">
             <div className="mode-modal-card">
               <div className="result-eyebrow">New Game</div>
-              <div className="mode-modal-title">Select Mode</div>
+              <div className="mode-modal-title">{t.selectMode}</div>
               <div className="mode-modal-actions">
                 <button type="button" className="result-btn result-btn-primary" onClick={() => handleModeSelect(null)}>
-                  Human × Human
+                  {t.humanVsHuman}
                 </button>
                 <button type="button" className="result-btn" onClick={() => handleModeSelect('white')}>
-                  Human × CPU
+                  {t.humanVsCpu}
                 </button>
               </div>
               <button type="button" className="mode-modal-cancel" onClick={() => setModeModalOpen(false)}>
-                Cancel
+                {t.cancel}
               </button>
             </div>
           </div>

@@ -9,6 +9,7 @@ import {
 } from '../game/engine';
 import type { GameState } from '../game/types';
 import type { BoardBuildState } from '../app/App';
+import { useLang } from '../lib/lang';
 
 // ── Build scripted game states ────────────────────────────────────────────────
 
@@ -72,14 +73,6 @@ function buildStates(): GameState[] {
 
 // ── Step definitions ──────────────────────────────────────────────────────────
 
-interface StepDef {
-  stateIdx: number;
-  caption: string;
-  sub: string;
-  duration: number;
-  buildOverride?: BoardBuildState;
-}
-
 const EMPTY_BUILD: BoardBuildState = {
   mode: 'none',
   selectiveFirst: null,
@@ -88,86 +81,8 @@ const EMPTY_BUILD: BoardBuildState = {
   quadMax: 4,
 };
 
-const STEPS: StepDef[] = [
-  {
-    stateIdx: 0,
-    caption: 'WIN THE POSITIONS',
-    sub: 'This game is a battle over Positions. The player who holds more Positions at the end wins.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 0,
-    caption: 'THE BOARD',
-    sub: 'The board has 13 Positions and 12 Gates. Each Position is connected to 4 Gates.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 0,
-    caption: 'EACH TURN',
-    sub: 'Each turn has two steps: select a Position, then perform a Build up.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 1,
-    caption: 'SELECT A POSITION',
-    sub: 'Selecting a Position lights up its 4 connected Gates. Those 4 Gates are your targets for that turn.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 2,
-    caption: 'MASSIVE',
-    sub: 'Massive places 1 Large asset into a Gate. A strong, focused investment.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 6,
-    caption: 'SELECTIVE',
-    sub: 'Selective places 1 Middle asset into each of 2 Gates. Split your build across two Gates.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 8,
-    caption: 'QUAD',
-    sub: 'Quad places up to 4 Small assets — one per Gate. Spread wide across the board.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 8,
-    caption: 'SIZE VALUES',
-    sub: 'Small = 1 · Middle = 8 · Large = 64. Larger assets dominate a Gate more powerfully.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 8,
-    caption: 'SHARED GATES',
-    sub: 'Both players can build in the same Gate. Gates become contested battlegrounds.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 11,
-    caption: 'CAPTURE',
-    sub: "You can take your opponent's Position. The outcome depends on the Gates connected to it.",
-    duration: 3000,
-  },
-  {
-    stateIdx: 11,
-    caption: 'MOST-BUILT GATE',
-    sub: 'To capture, look at the most built-up Gate linked to that Position. Dominate it — and the Position is yours.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 12,
-    caption: 'END OF GAME',
-    sub: 'The game ends when all 12 Gates are full. The player with more Positions wins.',
-    duration: 3000,
-  },
-  {
-    stateIdx: 0,
-    caption: 'START PLAYING',
-    sub: 'Play a game. The fastest way to learn is to play.',
-    duration: 3000,
-  },
-];
+// State index for each of the 13 tutorial steps (matches tutSteps array order)
+const STEP_STATE_INDICES = [0, 0, 0, 1, 2, 6, 8, 8, 8, 11, 11, 12, 0];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -177,6 +92,8 @@ interface TutorialScreenProps {
 }
 
 export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
+  const { t } = useLang();
+  const steps = t.tutSteps;
   const states = useMemo(() => buildStates(), []);
   const [step, setStep] = useState(0);
   const [fade, setFade] = useState(true);
@@ -187,7 +104,7 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
     setTimeout(() => {
       setStep(prev => {
         const next = dir === 'next' ? prev + 1 : Math.max(0, prev - 1);
-        if (next >= STEPS.length) { onComplete(); return prev; }
+        if (next >= steps.length) { onComplete(); return prev; }
         return next;
       });
       setFade(true);
@@ -216,10 +133,11 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
     else advance('prev');
   }
 
-  const currentStep = STEPS[Math.min(step, STEPS.length - 1)]!;
-  const gameState = states[currentStep.stateIdx] ?? states[0]!;
-  const buildState: BoardBuildState = currentStep.buildOverride ?? EMPTY_BUILD;
-  const progress = (step + 1) / STEPS.length;
+  const currentStep = steps[Math.min(step, steps.length - 1)]!;
+  const stateIdx = STEP_STATE_INDICES[Math.min(step, STEP_STATE_INDICES.length - 1)] ?? 0;
+  const gameState = states[stateIdx] ?? states[0]!;
+  const buildState: BoardBuildState = EMPTY_BUILD;
+  const progress = (step + 1) / steps.length;
 
   return (
     <div
@@ -234,7 +152,7 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       </div>
 
       {/* Skip */}
-      <button type="button" className="tut-skip" onClick={e => { e.stopPropagation(); onSkip(); }}>Skip</button>
+      <button type="button" className="tut-skip" onClick={e => { e.stopPropagation(); onSkip(); }}>{t.tutSkip}</button>
 
       {/* Click area hints */}
       <div className="tut-click-prev" aria-hidden="true">‹</div>
@@ -256,20 +174,20 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
       <div className={`tut-caption${fade ? '' : ' tut-caption-fade'}`}>
         <div className="tut-caption-title">{currentStep.caption}</div>
         <div className="tut-caption-sub">{currentStep.sub}</div>
-        {step === STEPS.length - 1 && (
+        {step === steps.length - 1 && (
           <button
             type="button"
             className="tut-start-btn"
             onClick={e => { e.stopPropagation(); onComplete(); }}
           >
-            Start Playing →
+            {t.tutStartBtn}
           </button>
         )}
       </div>
 
       {/* Step dots */}
       <div className="tut-dots">
-        {STEPS.map((_, i) => (
+        {steps.map((_, i) => (
           <span key={i} className={`tut-dot-nav${i === step ? ' active' : i < step ? ' done' : ''}`} />
         ))}
       </div>

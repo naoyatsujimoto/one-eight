@@ -1,6 +1,7 @@
 import { getBuildOptionsForSelected } from '../game/engine';
 import type { GameState } from '../game/types';
 import type { BoardBuildState } from '../app/App';
+import { useLang } from '../lib/lang';
 
 type Phase = 'select-position' | 'select-build' | 'finished';
 
@@ -9,12 +10,6 @@ function derivePhase(state: GameState): Phase {
   if (state.selectedPosition === null) return 'select-position';
   return 'select-build';
 }
-
-const PHASE_LABEL: Record<Phase, string> = {
-  'select-position': 'Position',
-  'select-build': 'Build',
-  'finished': 'Finished',
-};
 
 export function TurnInfo({
   state, modeLabel, buildState, onSkip, onQuadConfirm, onSelectiveConfirm, onClear,
@@ -27,7 +22,15 @@ export function TurnInfo({
   onSelectiveConfirm?: () => void;
   onClear?: () => void;
 }) {
+  const { t } = useLang();
   const phase = derivePhase(state);
+
+  const PHASE_LABEL: Record<Phase, string> = {
+    'select-position': t.phaseSelect,
+    'select-build': t.phaseBuild,
+    'finished': t.phaseFinished,
+  };
+
   const options = buildState ? getBuildOptionsForSelected(state) : null;
   const canSkip = !options?.hasAny;
   const mode = buildState?.mode ?? 'none';
@@ -37,17 +40,17 @@ export function TurnInfo({
   const quadMax = buildState?.quadMax ?? 4;
 
   function getHint(): string {
-    if (!state.selectedPosition) return 'Select a position on the board';
-    if (mode === 'none') return 'Large → Massive · Middle → Selective · Small → Quad';
+    if (!state.selectedPosition) return t.hintSelectPos;
+    if (mode === 'none') return t.hintBuildMode;
     if (mode === 'selective') {
-      if (selectiveFirst === null) return 'Selective — pick first middle pocket';
-      if (selectiveCanConfirm) return `Selective: Gate ${selectiveFirst} — Confirm or pick 2nd`;
-      return `Selective: Gate ${selectiveFirst} selected — pick second`;
+      if (selectiveFirst === null) return t.hintSelectiveFirst;
+      if (selectiveCanConfirm) return t.hintSelectiveConfirm(selectiveFirst);
+      return t.hintSelectiveSecond(selectiveFirst);
     }
     if (mode === 'quad') {
       return quadSelected.length
-        ? `Quad: ${quadSelected.length}/${quadMax} — Confirm to commit`
-        : 'Quad — pick small pockets';
+        ? t.hintQuadConfirm(quadSelected.length, quadMax)
+        : t.hintQuadPick;
     }
     return '';
   }
@@ -59,13 +62,13 @@ export function TurnInfo({
   return (
     <>
       <div className="panel-section">
-        <div className="section-eyebrow">Current Turn</div>
+        <div className="section-eyebrow">{t.currentTurn}</div>
         <div className="turn-row">
           <span className={`turn-chip turn-chip-${state.currentPlayer}`} />
           <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
             <div className="turn-name">{state.currentPlayer}</div>
             <div className="turn-meta">
-              Move {state.moveNumber}
+              {t.move} {state.moveNumber}
               <span style={{color:'var(--ink-4)'}}> · </span>
               {modeLabel ?? 'Human'}
             </div>
@@ -82,30 +85,30 @@ export function TurnInfo({
       </div>
 
       <div className="panel-section">
-        <div className="section-eyebrow">Actions</div>
+        <div className="section-eyebrow">{t.actions}</div>
         <div className="actions-row">
           {showSelectiveConfirm && (
             <button type="button" className="action-btn action-btn-primary" onClick={onSelectiveConfirm}>
-              Confirm
+              {t.confirm}
             </button>
           )}
           {showQuadConfirm && (
             <button type="button" className="action-btn action-btn-primary" onClick={onQuadConfirm}>
-              Confirm ({quadSelected.length}/{quadMax})
+              {t.confirm} ({quadSelected.length}/{quadMax})
             </button>
           )}
           <button type="button" className="action-btn" onClick={onSkip} disabled={!canSkip}>
-            Pass
+            {t.pass}
           </button>
           {state.selectedPosition && (
             <button type="button" className="action-btn action-btn-ghost" onClick={onClear}>
-              Clear
+              {t.clear}
             </button>
           )}
         </div>
         {!canSkip && state.selectedPosition && (
           <span style={{fontSize:'11px', color:'#e06c26', marginTop:'6px', display:'block'}}>
-            Build available — pass not allowed
+            {t.buildAvailable}
           </span>
         )}
       </div>
