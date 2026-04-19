@@ -10,7 +10,7 @@ export interface AuthState {
 
 export function useAuth(): AuthState & {
   signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
-  signInAsAI: () => Promise<{ error: string | null }>;
+  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 } {
   const [session, setSession] = useState<Session | null>(null);
@@ -39,9 +39,7 @@ export function useAuth(): AuthState & {
     return { error: error ? error.message : null };
   }
 
-  async function signInAsAI() {
-    const email = import.meta.env.VITE_AI_EMAIL as string;
-    const password = import.meta.env.VITE_AI_PASSWORD as string;
+  async function signInWithPassword(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error ? error.message : null };
   }
@@ -55,7 +53,7 @@ export function useAuth(): AuthState & {
     user: session?.user ?? null,
     loading,
     signInWithMagicLink,
-    signInAsAI,
+    signInWithPassword,
     signOut,
   };
 }

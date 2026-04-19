@@ -6,13 +6,16 @@ interface Props {
   children: ReactNode;
 }
 
+type LoginMode = 'magic' | 'password';
+
 export function AuthGate({ children }: Props) {
-  const { user, loading, signInWithMagicLink, signInAsAI, signOut } = useAuth();
+  const { user, loading, signInWithMagicLink, signInWithPassword, signOut } = useAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [mode, setMode] = useState<LoginMode>('magic');
 
   if (loading) {
     return (
@@ -23,40 +26,86 @@ export function AuthGate({ children }: Props) {
   }
 
   if (!user) {
-    async function handleSubmit(e: React.FormEvent) {
+    async function handleMagicLink(e: React.FormEvent) {
       e.preventDefault();
       if (!email.trim()) return;
       setSubmitting(true);
       setError(null);
       const { error: err } = await signInWithMagicLink(email.trim());
       setSubmitting(false);
-      if (err) {
-        setError(err);
-      } else {
-        setSent(true);
-      }
+      if (err) setError(err);
+      else setSent(true);
     }
 
-    async function handleAILogin() {
-      setAiLoading(true);
+    async function handlePassword(e: React.FormEvent) {
+      e.preventDefault();
+      if (!email.trim() || !password) return;
+      setSubmitting(true);
       setError(null);
-      const { error: err } = await signInAsAI();
-      setAiLoading(false);
+      const { error: err } = await signInWithPassword(email.trim(), password);
+      setSubmitting(false);
       if (err) setError(err);
+    }
+
+    function switchMode(next: LoginMode) {
+      setMode(next);
+      setError(null);
+      setSent(false);
+      setPassword('');
     }
 
     return (
       <div style={styles.center}>
         <div style={styles.card}>
           <h1 style={styles.title}>ONE EIGHT</h1>
-          {sent ? (
-            <p style={styles.info}>
-              ✉️ メールを送信しました。<br />
-              受信ボックスのリンクをクリックしてください。
-            </p>
-          ) : (
-            <form onSubmit={handleSubmit} style={styles.form}>
-              <p style={styles.label}>メールアドレスでログイン</p>
+
+          {/* Tab switcher */}
+          <div style={styles.tabs}>
+            <button
+              type="button"
+              style={{ ...styles.tab, ...(mode === 'magic' ? styles.tabActive : {}) }}
+              onClick={() => switchMode('magic')}
+            >
+              Magic Link
+            </button>
+            <button
+              type="button"
+              style={{ ...styles.tab, ...(mode === 'password' ? styles.tabActive : {}) }}
+              onClick={() => switchMode('password')}
+            >
+              Password Login
+            </button>
+          </div>
+
+          {/* Magic Link form */}
+          {mode === 'magic' && (
+            sent ? (
+              <p style={styles.info}>
+                ✉️ メールを送信しました。<br />
+                受信ボックスのリンクをクリックしてください。
+              </p>
+            ) : (
+              <form onSubmit={handleMagicLink} style={styles.form}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  style={styles.input}
+                  autoFocus
+                />
+                {error && <p style={styles.error}>{error}</p>}
+                <button type="submit" disabled={submitting} style={styles.button}>
+                  {submitting ? '送信中…' : 'Magic Link を送信'}
+                </button>
+              </form>
+            )
+          )}
+
+          {/* Password form */}
+          {mode === 'password' && (
+            <form onSubmit={handlePassword} style={styles.form}>
               <input
                 type="email"
                 value={email}
@@ -66,18 +115,17 @@ export function AuthGate({ children }: Props) {
                 style={styles.input}
                 autoFocus
               />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+                style={styles.input}
+              />
               {error && <p style={styles.error}>{error}</p>}
               <button type="submit" disabled={submitting} style={styles.button}>
-                {submitting ? '送信中…' : 'Magic Link を送信'}
-              </button>
-              <div style={styles.divider}>または</div>
-              <button
-                type="button"
-                onClick={handleAILogin}
-                disabled={aiLoading}
-                style={styles.aiButton}
-              >
-                {aiLoading ? 'ログイン中…' : '🤖 AI Login'}
+                {submitting ? 'ログイン中…' : 'Password Login'}
               </button>
             </form>
           )}
@@ -119,15 +167,31 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.15em',
     marginBottom: '1.5rem',
   },
+  tabs: {
+    display: 'flex',
+    borderBottom: '1px solid #e0e0e0',
+    marginBottom: '1.25rem',
+  },
+  tab: {
+    flex: 1,
+    padding: '0.5rem',
+    background: 'none',
+    border: 'none',
+    borderBottom: '2px solid transparent',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    color: '#888',
+    transition: 'all 0.15s',
+  },
+  tabActive: {
+    color: '#111',
+    borderBottom: '2px solid #111',
+    fontWeight: 600,
+  },
   form: {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
-  },
-  label: {
-    fontSize: '0.85rem',
-    color: '#555',
-    margin: 0,
   },
   input: {
     padding: '0.6rem 0.8rem',
@@ -179,20 +243,5 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.2rem 0.6rem',
     cursor: 'pointer',
     fontSize: '0.78rem',
-  },
-  divider: {
-    textAlign: 'center' as const,
-    color: '#aaa',
-    fontSize: '0.75rem',
-    margin: '0.25rem 0',
-  },
-  aiButton: {
-    padding: '0.65rem',
-    fontSize: '0.95rem',
-    background: '#6941C6',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
   },
 };
