@@ -8,6 +8,10 @@ import { ResultModal } from '../components/ResultModal';
 import { TurnInfo } from '../components/TurnInfo';
 import { TitleScreen } from '../components/TitleScreen';
 import { TutorialScreen } from '../components/TutorialScreen';
+import { AuthGate } from '../components/AuthGate';
+import { MyStats } from '../components/MyStats';
+import { useAuth } from '../hooks/useAuth';
+import { saveMatchLog } from '../lib/matchLog';
 
 type Screen = 'title' | 'tutorial' | 'main';
 import {
@@ -63,6 +67,8 @@ const CPU_MOVE_DELAY_MS = 600;
 const SCREENS: Screen[] = ['title', 'tutorial', 'main'];
 
 export default function App() {
+  const { user } = useAuth();
+  const [statsOpen, setStatsOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>('title');
   const [screenTransition, setScreenTransition] = useState(false);
   const touchStartY = useRef<number | null>(null);
@@ -126,7 +132,12 @@ export default function App() {
     // Auto-save analytics when any game ends (Human vs CPU or Human vs Human)
     if (state.gameEnded) {
       const record = saveGameRecord(state);
-      if (record) updateAggregates(record);
+      if (record) {
+        updateAggregates(record);
+        if (user) {
+          saveMatchLog(record, user.id).catch(() => {/* silent */});
+        }
+      }
     }
   }, [state]);
 
@@ -404,6 +415,9 @@ export default function App() {
             History <span>{state.history.length}</span>
           </button>
           <div className="top-divider" />
+          {user && (
+            <button type="button" className="top-btn" onClick={() => setStatsOpen(true)}>Stats</button>
+          )}
           <button type="button" className="top-btn" onClick={handleNewGameRequest}>New Game</button>
         </div>
       </header>
@@ -450,6 +464,11 @@ export default function App() {
       </aside>
 
       <ResultModal state={state} onReset={handleNewGameRequest} />
+
+      {/* My Stats modal */}
+      {statsOpen && user && (
+        <MyStats userId={user.id} onClose={() => setStatsOpen(false)} />
+      )}
 
       {/* Mode select modal */}
       {modeModalOpen && (
