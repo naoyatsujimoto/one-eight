@@ -13,6 +13,8 @@ import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
 import { saveMatchLog } from '../lib/matchLog';
 import { useLang } from '../lib/lang';
+import { OnlineLobby } from '../components/OnlineLobby';
+import { OnlineBoard } from '../components/OnlineBoard';
 
 type Screen = 'title' | 'tutorial' | 'main';
 import {
@@ -366,6 +368,8 @@ export default function App() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
+  const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
 
   function handleNewGameRequest() {
     setModeModalOpen(true);
@@ -374,6 +378,22 @@ export default function App() {
   function handleModeSelect(cpuPlayer: Player | null) {
     setModeModalOpen(false);
     handleNewGame(cpuPlayer);
+  }
+
+  function handleOnlineGameReady(gameId: string, _color: 'black' | 'white') {
+    setOnlineLobbyOpen(false);
+    setOnlineGameId(gameId);
+  }
+
+  // オンライン対戦中は OnlineBoard を表示
+  if (onlineGameId && user) {
+    return (
+      <OnlineBoard
+        gameId={onlineGameId}
+        myUserId={user.id}
+        onExit={() => setOnlineGameId(null)}
+      />
+    );
   }
 
   // Title / Tutorial screens
@@ -419,6 +439,9 @@ export default function App() {
           <div className="top-divider" />
           {user && (
             <button type="button" className="top-btn" onClick={() => setStatsOpen(true)}>{t.stats}</button>
+          )}
+          {user && (
+            <button type="button" className="top-btn" onClick={() => setOnlineLobbyOpen(true)}>{t.onlinePlay}</button>
           )}
           <button type="button" className="top-btn" onClick={handleNewGameRequest}>{t.newGame}</button>
         </div>
@@ -466,6 +489,15 @@ export default function App() {
       </aside>
 
       <ResultModal state={state} onReset={handleNewGameRequest} />
+
+      {/* Online lobby modal */}
+      {onlineLobbyOpen && user && (
+        <OnlineLobby
+          userId={user.id}
+          onGameReady={handleOnlineGameReady}
+          onCancel={() => setOnlineLobbyOpen(false)}
+        />
+      )}
 
       {/* My Stats modal */}
       {statsOpen && user && (

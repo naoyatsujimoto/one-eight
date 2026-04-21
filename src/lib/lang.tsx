@@ -76,6 +76,28 @@ export const T = {
     decisiveMove: 'Decisive Move',
     topLosses: 'Top Losses (Black)',
     noAnalysis: 'Not enough data',
+    onlinePlay: 'Online Play',
+    onlineCreate: 'Create',
+    onlineJoin: 'Join',
+    onlineCreateDesc: 'Create a room and share the code with your opponent.',
+    onlineCreateBtn: 'Create Room',
+    onlineCreating: 'Creating…',
+    onlineJoinDesc: 'Enter the 6-character room code to join.',
+    onlineJoinBtn: 'Join',
+    onlineJoining: 'Joining…',
+    onlineRoomCode: 'Room Code',
+    onlineShareCode: 'Share this code with your opponent.',
+    onlineWaitingForOpponent: 'Waiting for opponent…',
+    onlineYourTurn: 'Your turn',
+    onlineOpponentTurn: "Opponent's turn…",
+    onlineSending: 'Sending…',
+    onlineYouWin: 'You win!',
+    onlineYouLose: 'You lose.',
+    onlineDraw: 'Draw.',
+    onlineExit: 'Exit',
+    onlineBackToMenu: 'Back to Menu',
+    onlineRoomNotFound: 'Room not found or already started.',
+    onlineCannotJoinOwn: 'You cannot join your own room.',
   },
 
   ja: {
@@ -148,6 +170,28 @@ export const T = {
     decisiveMove: '決定的な一手',
     topLosses: '最大損失手（Black）',
     noAnalysis: 'データ不足',
+    onlinePlay: 'オンライン対戦',
+    onlineCreate: 'ルーム作成',
+    onlineJoin: '入室',
+    onlineCreateDesc: 'ルームを作成して、コードを相手に伝えてください。',
+    onlineCreateBtn: 'ルームを作成',
+    onlineCreating: '作成中…',
+    onlineJoinDesc: '6文字のルームコードを入力してください。',
+    onlineJoinBtn: '入室',
+    onlineJoining: '参加中…',
+    onlineRoomCode: 'ルームコード',
+    onlineShareCode: 'このコードを相手に伝えてください。',
+    onlineWaitingForOpponent: '相手を待っています…',
+    onlineYourTurn: 'あなたのターン',
+    onlineOpponentTurn: '相手のターン…',
+    onlineSending: '送信中…',
+    onlineYouWin: 'あなたの勝利！',
+    onlineYouLose: '敗北。',
+    onlineDraw: '引き分け。',
+    onlineExit: '退出',
+    onlineBackToMenu: 'メニューに戻る',
+    onlineRoomNotFound: 'ルームが見つからないか、すでに開始済みです。',
+    onlineCannotJoinOwn: '自分のルームには入室できません。',
   },
 } as const;
 
@@ -201,6 +245,28 @@ export type Translations = {
   decisiveMove: string;
   topLosses: string;
   noAnalysis: string;
+  onlinePlay: string;
+  onlineCreate: string;
+  onlineJoin: string;
+  onlineCreateDesc: string;
+  onlineCreateBtn: string;
+  onlineCreating: string;
+  onlineJoinDesc: string;
+  onlineJoinBtn: string;
+  onlineJoining: string;
+  onlineRoomCode: string;
+  onlineShareCode: string;
+  onlineWaitingForOpponent: string;
+  onlineYourTurn: string;
+  onlineOpponentTurn: string;
+  onlineSending: string;
+  onlineYouWin: string;
+  onlineYouLose: string;
+  onlineDraw: string;
+  onlineExit: string;
+  onlineBackToMenu: string;
+  onlineRoomNotFound: string;
+  onlineCannotJoinOwn: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
