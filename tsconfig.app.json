@@ -16,5 +16,6 @@
     "baseUrl": ".",
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/game/capture 2.ts", "src/game/constants 2.ts", "src/game/selectors 2.ts"]
 }

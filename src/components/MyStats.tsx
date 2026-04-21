@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { MyStats as MyStatsData, MatchLogRow } from '../lib/matchLog';
 import { fetchMyStats } from '../lib/matchLog';
+import { loadGameRecords, type GameRecord } from '../game/analytics';
+import { PostmortemModal } from './PostmortemModal';
+import { useLang } from '../lib/lang';
 
 interface Props {
   userId: string;
@@ -8,14 +11,18 @@ interface Props {
 }
 
 export function MyStats({ userId, onClose }: Props) {
+  const { t } = useLang();
   const [stats, setStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [localRecords, setLocalRecords] = useState<GameRecord[]>([]);
+  const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
 
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
       setStats(s);
       setLoading(false);
     });
+    setLocalRecords(loadGameRecords(10));
   }, [userId]);
 
   return (
@@ -63,7 +70,53 @@ export function MyStats({ userId, onClose }: Props) {
             )}
           </>
         )}
+
+        {/* ─── 対局履歴（ローカル）+ 分析ボタン ─────────────────────── */}
+        {localRecords.length > 0 && (
+          <div style={{ marginTop: '1.25rem' }}>
+            <div style={styles.sectionLabel}>{t.gameHistory}</div>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Mode</th>
+                  <th style={styles.th}>Winner</th>
+                  <th style={styles.th}>Moves</th>
+                  <th style={styles.th}>Date</th>
+                  <th style={styles.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {localRecords.map((r) => (
+                  <tr key={r.game_id}>
+                    <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
+                    <td style={styles.td}>{r.winner ?? '—'}</td>
+                    <td style={styles.td}>{r.move_count}</td>
+                    <td style={styles.td}>{new Date(r.ended_at).toLocaleDateString('ja-JP')}</td>
+                    <td style={styles.td}>
+                      <button
+                        type="button"
+                        style={styles.analyzeBtn}
+                        onClick={() => setPostmortemGame(r)}
+                      >
+                        {t.analyze}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* 分析ポップアップ */}
+      {postmortemGame && (
+        <PostmortemModal
+          history={postmortemGame.full_record}
+          gameId={postmortemGame.game_id}
+          onClose={() => setPostmortemGame(null)}
+        />
+      )}
     </div>
   );
 }
@@ -143,5 +196,23 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#999',
     textAlign: 'center',
     fontSize: '0.85rem',
+  },
+  sectionLabel: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    color: '#888',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  analyzeBtn: {
+    background: 'none',
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    fontSize: '0.72rem',
+    padding: '2px 8px',
+    cursor: 'pointer',
+    color: '#444',
+    whiteSpace: 'nowrap',
   },
 };

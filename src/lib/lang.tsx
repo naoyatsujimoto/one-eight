@@ -69,6 +69,13 @@ export const T = {
     selectMode: 'Select Mode',
     cancel: 'Cancel',
     signOut: 'Sign out',
+    gameHistory: 'Game History',
+    analyze: 'Analyze',
+    postmortem: 'Postmortem',
+    analyzing: 'Analyzing…',
+    decisiveMove: 'Decisive Move',
+    topLosses: 'Top Losses (Black)',
+    noAnalysis: 'Not enough data',
   },
 
   ja: {
@@ -134,6 +141,13 @@ export const T = {
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
     signOut: 'ログアウト',
+    gameHistory: '対局履歴',
+    analyze: '分析',
+    postmortem: '分析',
+    analyzing: '分析中…',
+    decisiveMove: '決定的な一手',
+    topLosses: '最大損失手（Black）',
+    noAnalysis: 'データ不足',
   },
 } as const;
 
@@ -180,6 +194,13 @@ export type Translations = {
   selectMode: string;
   cancel: string;
   signOut: string;
+  gameHistory: string;
+  analyze: string;
+  postmortem: string;
+  analyzing: string;
+  decisiveMove: string;
+  topLosses: string;
+  noAnalysis: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
