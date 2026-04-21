@@ -41,6 +41,7 @@ html, body {
 .app-shell { padding: 0; background: transparent; min-height: 100vh; }
 
 /* ── Topbar ── */
+/* 旧topbar（後方互換）*/
 .topbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -52,6 +53,30 @@ html, body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 50;
+}
+
+/* 2段ヘッダー */
+.topbar-2row {
+  position: sticky; top: 0;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+  z-index: 50;
+}
+.topbar-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.topbar-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  padding: 0 24px;
 }
 .wordmark {
   font-family: var(--display);
@@ -1332,9 +1357,11 @@ ol { padding-left: 20px; }
 /* ─── Mobile (≤ 640px): compact UI ── */
 @media (max-width: 640px) {
   .topbar { padding: 12px 14px; grid-template-columns: auto 1fr auto; gap: 8px; }
+  .topbar-row1 { padding: 10px 14px 6px; }
+  .topbar-row2 { padding: 0 8px; }
   .wordmark { font-size: 14px; }
   .top-btn { padding: 6px 8px; font-size: 9px; }
-  .meta-center { display: none; }
+  .meta-center { font-size: 9px; }
   .board-stage { padding: 18px 8px; }
 }
 

@@ -426,12 +426,16 @@ export default function App() {
       className={`app-shell${screenTransition ? ' screen-out' : ''}`}
       style={{background:'#ffffff', minHeight:'100vh'}}
     >
-      <header className="topbar">
-        <div className="wordmark" style={{cursor:'pointer'}} onClick={() => goTo('title')}>
-          ONE EIGHT
+      <header className="topbar-2row">
+        {/* 1段目: タイトル + モード */}
+        <div className="topbar-row1">
+          <div className="wordmark" style={{cursor:'pointer'}} onClick={() => goTo('title')}>
+            ONE EIGHT
+          </div>
+          <div className="meta-center">{modeLabel}</div>
         </div>
-        <div className="meta-center">{modeLabel}</div>
-        <div className="topbar-actions">
+        {/* 2段目: メニューボタン */}
+        <div className="topbar-row2">
           <button type="button" className="top-btn" onClick={handleUndo} disabled={!canUndo}>{t.undo}</button>
           <button type="button" className="top-btn" onClick={() => setDrawerOpen(true)}>
             {t.history} <span>{state.history.length}</span>
