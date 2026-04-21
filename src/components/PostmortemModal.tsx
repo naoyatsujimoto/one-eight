@@ -3,6 +3,7 @@
  */
 import { useEffect, useState } from 'react';
 import { runPostmortem, type PostmortemResult } from '../game/postmortem';
+import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
 import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
 
@@ -18,11 +19,19 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
   const [analyzing, setAnalyzing] = useState(true);
 
   useEffect(() => {
+    // キャッシュヒット確認
+    const cached = loadPostmortemCache(gameId);
+    if (cached) {
+      setResult(cached);
+      setAnalyzing(false);
+      return;
+    }
     setAnalyzing(true);
     setResult(null);
     // 非同期でレンダリングさせてからminimaxを実行
     const timer = setTimeout(() => {
       const r = runPostmortem(history);
+      savePostmortemCache(gameId, r);
       setResult(r);
       setAnalyzing(false);
     }, 30);
