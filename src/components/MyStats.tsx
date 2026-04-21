@@ -14,7 +14,7 @@ export function MyStats({ userId, onClose }: Props) {
   const { t } = useLang();
   const [stats, setStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [localRecords, setLocalRecords] = useState<GameRecord[]>([]);
+  const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
 
   useEffect(() => {
@@ -22,8 +22,17 @@ export function MyStats({ userId, onClose }: Props) {
       setStats(s);
       setLoading(false);
     });
-    setLocalRecords(loadGameRecords(10));
+    // game_id → GameRecord のマップを作成
+    const records = loadGameRecords(20);
+    const map = new Map<string, GameRecord>();
+    for (const r of records) map.set(r.game_id, r);
+    setLocalMap(map);
   }, [userId]);
+
+  // Supabase記録にない場合はローカルのみのリストを補完表示
+  const localOnlyRecords = Array.from(localMap.values()).filter(
+    (r) => !stats?.recent.some((s) => s.game_id === r.game_id),
+  );
 
   return (
     <div style={styles.overlay} onClick={onClose}>
@@ -44,68 +53,72 @@ export function MyStats({ userId, onClose }: Props) {
               <StatItem label="Draws" value={stats.draws} />
             </div>
 
-            {stats.recent.length === 0 ? (
+            {stats.recent.length === 0 && localOnlyRecords.length === 0 && (
               <p style={styles.muted}>対戦記録がありません</p>
-            ) : (
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>Mode</th>
-                    <th style={styles.th}>Winner</th>
-                    <th style={styles.th}>Moves</th>
-                    <th style={styles.th}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.recent.map((r: MatchLogRow) => (
-                    <tr key={r.game_id}>
-                      <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
-                      <td style={styles.td}>{r.winner ?? '—'}</td>
-                      <td style={styles.td}>{r.move_count}</td>
-                      <td style={styles.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '—'}</td>
+            )}
+
+            {(stats.recent.length > 0 || localOnlyRecords.length > 0) && (
+              <>
+                <div style={styles.sectionLabel}>{t.gameHistory}</div>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Mode</th>
+                      <th style={styles.th}>Winner</th>
+                      <th style={styles.th}>Moves</th>
+                      <th style={styles.th}>Date</th>
+                      <th style={styles.th}></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {/* Supabase記録（ローカルが一致すれば分析ボタン付き） */}
+                    {stats.recent.map((r: MatchLogRow) => {
+                      const local = localMap.get(r.game_id);
+                      return (
+                        <tr key={r.game_id}>
+                          <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
+                          <td style={styles.td}>{r.winner ?? '—'}</td>
+                          <td style={styles.td}>{r.move_count}</td>
+                          <td style={styles.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '—'}</td>
+                          <td style={styles.td}>
+                            {local ? (
+                              <button
+                                type="button"
+                                style={styles.analyzeBtn}
+                                onClick={() => setPostmortemGame(local)}
+                              >
+                                {t.analyze}
+                              </button>
+                            ) : (
+                              <span style={styles.noData}>—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* ローカルのみの記録（Supabaseに未登録） */}
+                    {localOnlyRecords.map((r) => (
+                      <tr key={r.game_id}>
+                        <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
+                        <td style={styles.td}>{r.winner ?? '—'}</td>
+                        <td style={styles.td}>{r.move_count}</td>
+                        <td style={styles.td}>{new Date(r.ended_at).toLocaleDateString('ja-JP')}</td>
+                        <td style={styles.td}>
+                          <button
+                            type="button"
+                            style={styles.analyzeBtn}
+                            onClick={() => setPostmortemGame(r)}
+                          >
+                            {t.analyze}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             )}
           </>
-        )}
-
-        {/* ─── 対局履歴（ローカル）+ 分析ボタン ─────────────────────── */}
-        {localRecords.length > 0 && (
-          <div style={{ marginTop: '1.25rem' }}>
-            <div style={styles.sectionLabel}>{t.gameHistory}</div>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Mode</th>
-                  <th style={styles.th}>Winner</th>
-                  <th style={styles.th}>Moves</th>
-                  <th style={styles.th}>Date</th>
-                  <th style={styles.th}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {localRecords.map((r) => (
-                  <tr key={r.game_id}>
-                    <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
-                    <td style={styles.td}>{r.winner ?? '—'}</td>
-                    <td style={styles.td}>{r.move_count}</td>
-                    <td style={styles.td}>{new Date(r.ended_at).toLocaleDateString('ja-JP')}</td>
-                    <td style={styles.td}>
-                      <button
-                        type="button"
-                        style={styles.analyzeBtn}
-                        onClick={() => setPostmortemGame(r)}
-                      >
-                        {t.analyze}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         )}
       </div>
 
@@ -176,6 +189,14 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#f8f8f8',
     borderRadius: 8,
   },
+  sectionLabel: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    color: '#888',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
@@ -197,14 +218,6 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     fontSize: '0.85rem',
   },
-  sectionLabel: {
-    fontSize: '0.72rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    color: '#888',
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
   analyzeBtn: {
     background: 'none',
     border: '1px solid #ddd',
@@ -214,5 +227,9 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     color: '#444',
     whiteSpace: 'nowrap',
+  },
+  noData: {
+    color: '#ccc',
+    fontSize: '0.8rem',
   },
 };
