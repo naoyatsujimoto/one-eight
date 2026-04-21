@@ -7,7 +7,7 @@ import { useLang } from '../lib/lang';
 
 interface Props {
   userId: string;
-  onGameReady: (gameId: string, color: 'black' | 'white') => void;
+  onGameReady: (gameId: string, color: 'black' | 'white', roomCode?: string) => void;
   onCancel: () => void;
 }
 
@@ -30,7 +30,7 @@ export function OnlineLobby({ userId, onGameReady, onCancel }: Props) {
       setError(result.error);
     } else {
       setCreatedRoomCode(result.roomCode);
-      onGameReady(result.gameId, 'black');
+      onGameReady(result.gameId, 'black', result.roomCode);
     }
   }
 

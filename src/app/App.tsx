@@ -370,6 +370,7 @@ export default function App() {
   const [modeModalOpen, setModeModalOpen] = useState(false);
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
   const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
+  const [onlineRoomCode, setOnlineRoomCode] = useState<string | undefined>(undefined);
 
   function handleNewGameRequest() {
     setModeModalOpen(true);
@@ -380,9 +381,10 @@ export default function App() {
     handleNewGame(cpuPlayer);
   }
 
-  function handleOnlineGameReady(gameId: string, _color: 'black' | 'white') {
+  function handleOnlineGameReady(gameId: string, _color: 'black' | 'white', roomCode?: string) {
     setOnlineLobbyOpen(false);
     setOnlineGameId(gameId);
+    setOnlineRoomCode(roomCode);
   }
 
   // オンライン対戦中は OnlineBoard を表示
@@ -391,7 +393,8 @@ export default function App() {
       <OnlineBoard
         gameId={onlineGameId}
         myUserId={user.id}
-        onExit={() => setOnlineGameId(null)}
+        roomCode={onlineRoomCode}
+        onExit={() => { setOnlineGameId(null); setOnlineRoomCode(undefined); }}
       />
     );
   }

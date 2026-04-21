@@ -45,10 +45,11 @@ function calcQuadMax(state: GameState): number {
 interface Props {
   gameId: string;
   myUserId: string;
+  roomCode?: string;
   onExit: () => void;
 }
 
-export function OnlineBoard({ gameId, myUserId, onExit }: Props) {
+export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   const { t } = useLang();
   const { gameRow, myColor, isMyTurn, onlineStatus, errorMsg, submitMove } = useOnlineGame(gameId, myUserId);
   const [localState, setLocalState] = useState<GameState | null>(null);
@@ -177,7 +178,14 @@ export function OnlineBoard({ gameId, myUserId, onExit }: Props) {
 
       {/* ステータスバナー */}
       {onlineStatus === 'waiting' && (
-        <div style={styles.banner}>{t.onlineWaitingForOpponent}</div>
+        <div style={styles.waitingBanner}>
+          <span>{t.onlineWaitingForOpponent}</span>
+          {roomCode && (
+            <span style={styles.roomCodeInline}>
+              {t.onlineRoomCode}:&nbsp;<strong style={styles.roomCodeText}>{roomCode}</strong>
+            </span>
+          )}
+        </div>
       )}
       {onlineStatus === 'playing' && (
         <div style={{ ...styles.banner, background: isMyTurn ? '#e8f5e9' : '#f5f5f5', color: isMyTurn ? '#2e7d32' : '#555' }}>
@@ -256,6 +264,28 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#f5f5f5',
     color: '#555',
     borderBottom: '1px solid #eee',
+  },
+  waitingBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '1.5rem',
+    padding: '0.6rem 1rem',
+    fontSize: '0.85rem',
+    background: '#f5f5f5',
+    color: '#555',
+    borderBottom: '1px solid #eee',
+    flexWrap: 'wrap' as const,
+  },
+  roomCodeInline: {
+    fontSize: '0.85rem',
+    color: '#555',
+  },
+  roomCodeText: {
+    fontFamily: 'monospace',
+    fontSize: '1.1rem',
+    letterSpacing: '0.25em',
+    color: '#111',
   },
   exitOverlay: {
     position: 'fixed',
