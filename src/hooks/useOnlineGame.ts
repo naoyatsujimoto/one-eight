@@ -63,7 +63,19 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
           }
         },
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const fresh = await fetchOnlineGame(gameId);
+          if (fresh) {
+            setGameRow(fresh);
+            setOnlineStatus(
+              fresh.status === 'finished' ? 'finished'
+              : fresh.status === 'playing' ? 'playing'
+              : 'waiting'
+            );
+          }
+        }
+      });
 
     channelRef.current = channel;
 
