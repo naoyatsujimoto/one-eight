@@ -511,8 +511,8 @@ export function Board({
     const stage = scaler.parentElement?.parentElement ?? scaler.parentElement;
     if (!stage) return;
     const isMobile = window.innerWidth <= 600;
-    const scaleCap = isMobile ? 0.60 : 1;
-    const padH = isMobile ? 16 : 64; // account for board-stage padding (32px each side)
+    const scaleCap = isMobile ? 0.55 : 1;
+    const padH = isMobile ? 24 : 64; // account for board-stage padding + safety margin
     const raw = stage.clientWidth > 0 ? stage.clientWidth : 320;
     const available = Math.max(0, raw - padH);
     const scale = Math.min(scaleCap, available / BOARD_W);
@@ -531,13 +531,16 @@ export function Board({
 
   useEffect(() => {
     applyScale();
+    // Re-apply after first paint to ensure DOM dimensions are settled
+    // (mobile Safari may report clientWidth=0 during the initial synchronous render).
+    const rafId = requestAnimationFrame(applyScale);
     // Observe the board-stage (grandparent) — stable container whose size is not
     // affected by applyScale, so no feedback loop is triggered.
     const stage = scalerRef.current?.parentElement?.parentElement ?? scalerRef.current?.parentElement;
     const ro = new ResizeObserver(applyScale);
     if (stage) ro.observe(stage);
     window.addEventListener('resize', applyScale);
-    return () => { ro.disconnect(); window.removeEventListener('resize', applyScale); };
+    return () => { cancelAnimationFrame(rafId); ro.disconnect(); window.removeEventListener('resize', applyScale); };
   }, [applyScale]);
 
   useEffect(() => {
