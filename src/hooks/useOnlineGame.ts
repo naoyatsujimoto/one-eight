@@ -105,27 +105,16 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   }, [onlineStatus, gameId]);
 
   // playing 中のフォールバックポーリング（iOS Safari 対策: 相手手番更新の Realtime 漏れ対策）
-  const gameRowRef = useRef<OnlineGameRow | null>(null);
-  useEffect(() => {
-    gameRowRef.current = gameRow;
-  }, [gameRow]);
-
+  // Realtime が届かない環境でも確実に同期するため、常に DB から最新状態を取得する
   useEffect(() => {
     if (onlineStatus !== 'playing' || !gameId) return;
 
     const id = setInterval(async () => {
       const fresh = await fetchOnlineGame(gameId);
       if (!fresh) return;
-      const current = gameRowRef.current;
-      // move_number が進んでいる、またはstatusが変わっていたら更新
-      if (
-        fresh.status === 'finished' ||
-        (current && fresh.move_number > current.move_number)
-      ) {
-        setGameRow(fresh);
-        if (fresh.status === 'finished') {
-          setOnlineStatus('finished');
-        }
+      setGameRow(fresh);
+      if (fresh.status === 'finished') {
+        setOnlineStatus('finished');
       }
     }, 3000);
 
