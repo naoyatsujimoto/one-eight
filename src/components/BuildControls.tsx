@@ -22,7 +22,7 @@ export function BuildControls({
 
   function getHint(): string {
     if (!state.selectedPosition) return 'ポジションを選択してください。';
-    if (mode === 'none') return 'Gate のポケットをクリックしてください。Large → Massive / Middle → Selective / Small → Quad';
+    if (mode === 'none') return 'Gate のポケットをクリックしてください。Massive → Large Asset / Selective → Middle Asset / Quad → Small Asset';
     if (mode === 'selective') {
       if (selectiveFirst === null) return 'Selective: 1つ目の Gate を選択中…';
       if (selectiveCanConfirm) return `Selective: Gate ${selectiveFirst} 選択済み — 他に空き Middle なし。Confirm で確定してください。`;
