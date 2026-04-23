@@ -37,6 +37,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   useEffect(() => {
     if (!gameId) return;
     fetchOnlineGame(gameId).then((row) => {
+      console.log('[initial fetch] gameId:', gameId, 'row:', row);
       if (row) {
         setGameRow(row);
         setOnlineStatus(row.status === 'finished' ? 'finished' : row.status === 'playing' ? 'playing' : 'waiting');
@@ -54,6 +55,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'online_games', filter: `id=eq.${gameId}` },
         (payload) => {
+          console.log('[realtime] UPDATE received:', payload);
           const updated = payload.new as OnlineGameRow;
           setGameRow(updated);
           if (updated.status === 'finished') {
@@ -64,8 +66,10 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         },
       )
       .subscribe(async (status) => {
+        console.log('[realtime] subscribe status:', status);
         if (status === 'SUBSCRIBED') {
           const fresh = await fetchOnlineGame(gameId);
+          console.log('[realtime] SUBSCRIBED fetch:', fresh);
           if (fresh) {
             setGameRow(fresh);
             setOnlineStatus(
@@ -91,6 +95,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
 
     const id = setInterval(async () => {
       const fresh = await fetchOnlineGame(gameId);
+      console.log('[polling] gameId:', gameId, 'fresh:', fresh);
       if (fresh?.status === 'playing') {
         setGameRow(fresh);
         setOnlineStatus('playing');
