@@ -85,6 +85,22 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
     };
   }, [gameId]);
 
+  // waiting 中のフォールバックポーリング（Realtime 漏れ対策）
+  useEffect(() => {
+    if (onlineStatus !== 'waiting' || !gameId) return;
+
+    const id = setInterval(async () => {
+      const fresh = await fetchOnlineGame(gameId);
+      if (fresh?.status === 'playing') {
+        setGameRow(fresh);
+        setOnlineStatus('playing');
+        clearInterval(id);
+      }
+    }, 3000);
+
+    return () => clearInterval(id);
+  }, [onlineStatus, gameId]);
+
   // 自分の色を決定
   const myColor: Player | null = gameRow
     ? gameRow.black_player_id === myUserId
