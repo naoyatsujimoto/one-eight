@@ -4,6 +4,9 @@
  * - Supabase Realtime で online_games の変更を購読
  * - apply_online_move RPC 経由でのみ game_state を更新
  * - 競合（conflict）時は自動で再取得
+ * - iOS Safari 対策: Realtime が届かない場合のフォールバックポーリング
+ *   - waiting 中: 3秒ごとに status を確認
+ *   - playing 中: 3秒ごとに move_number を確認（相手の手番更新を検知）
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -37,7 +40,6 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   useEffect(() => {
     if (!gameId) return;
     fetchOnlineGame(gameId).then((row) => {
-      console.log('[initial fetch] gameId:', gameId, 'row:', row);
       if (row) {
         setGameRow(row);
         setOnlineStatus(row.status === 'finished' ? 'finished' : row.status === 'playing' ? 'playing' : 'waiting');
@@ -55,7 +57,6 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'online_games', filter: `id=eq.${gameId}` },
         (payload) => {
-          console.log('[realtime] UPDATE received:', payload);
           const updated = payload.new as OnlineGameRow;
           setGameRow(updated);
           if (updated.status === 'finished') {
@@ -66,10 +67,8 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         },
       )
       .subscribe(async (status) => {
-        console.log('[realtime] subscribe status:', status);
         if (status === 'SUBSCRIBED') {
           const fresh = await fetchOnlineGame(gameId);
-          console.log('[realtime] SUBSCRIBED fetch:', fresh);
           if (fresh) {
             setGameRow(fresh);
             setOnlineStatus(
@@ -89,17 +88,44 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
     };
   }, [gameId]);
 
-  // waiting 中のフォールバックポーリング（Realtime 漏れ対策）
+  // waiting 中のフォールバックポーリング（iOS Safari 対策: Realtime 漏れ対策）
   useEffect(() => {
     if (onlineStatus !== 'waiting' || !gameId) return;
 
     const id = setInterval(async () => {
       const fresh = await fetchOnlineGame(gameId);
-      console.log('[polling] gameId:', gameId, 'fresh:', fresh);
       if (fresh?.status === 'playing') {
         setGameRow(fresh);
         setOnlineStatus('playing');
         clearInterval(id);
+      }
+    }, 3000);
+
+    return () => clearInterval(id);
+  }, [onlineStatus, gameId]);
+
+  // playing 中のフォールバックポーリング（iOS Safari 対策: 相手手番更新の Realtime 漏れ対策）
+  const gameRowRef = useRef<OnlineGameRow | null>(null);
+  useEffect(() => {
+    gameRowRef.current = gameRow;
+  }, [gameRow]);
+
+  useEffect(() => {
+    if (onlineStatus !== 'playing' || !gameId) return;
+
+    const id = setInterval(async () => {
+      const fresh = await fetchOnlineGame(gameId);
+      if (!fresh) return;
+      const current = gameRowRef.current;
+      // move_number が進んでいる、またはstatusが変わっていたら更新
+      if (
+        fresh.status === 'finished' ||
+        (current && fresh.move_number > current.move_number)
+      ) {
+        setGameRow(fresh);
+        if (fresh.status === 'finished') {
+          setOnlineStatus('finished');
+        }
       }
     }, 3000);
 
