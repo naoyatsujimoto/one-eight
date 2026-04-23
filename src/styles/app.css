@@ -510,8 +510,12 @@ html, body {
 }
 
 /* Position 選択中で関連Gate: active (フォーカス可能な状態) */
-/* drop-shadow を owner-dot 2.5× スケールに合わせて拡大 (3px → 8px) */
-.gate-card-active {
+/* [修正] drop-shadow を gate-card ではなく gate-cluster に適用する。
+   角ゲートのクラスターは rotate+scale で gate-card のレイアウトボックスを超えて
+   はみ出すため、gate-card に filter を置くとブラウザが filter コンテキストの
+   境界でポケットをクリッピングする。gate-cluster に filter を移動することで
+   トランスフォーム後に glow が正しく表示される。 */
+.gate-card-active .gate-cluster {
   filter: drop-shadow(0 0 8px rgba(74,144,226,0.75));
 }
 /* 関連外Gate */
@@ -520,22 +524,26 @@ html, body {
 }
 
 /* 選択済み (Selective 1st, Quad 選択中) */
-/* drop-shadow を owner-dot 2.5× スケールに合わせて拡大 (6px → 15px) */
+/* 同様に filter を gate-cluster に移動し、outline は gate-card レベルに残す */
 .gate-card-selected {
   cursor: pointer;
-  filter: drop-shadow(0 0 15px rgba(123,94,167,0.9));
   outline: 2px solid rgba(123,94,167,0.7);
   outline-offset: 2px;
 }
-.gate-card-selected:hover:not(:disabled) {
+.gate-card-selected .gate-cluster {
+  filter: drop-shadow(0 0 15px rgba(123,94,167,0.9));
+}
+.gate-card-selected:hover:not(:disabled) .gate-cluster {
   filter: drop-shadow(0 0 20px rgba(123,94,167,1.0));
 }
 
 /* Tutorial gate highlight */
 .gate-card-tutorial-hl {
-  filter: drop-shadow(0 0 14px rgba(255,180,0,0.95));
   outline: 2px solid rgba(255,180,0,0.85);
   outline-offset: 2px;
+}
+.gate-card-tutorial-hl .gate-cluster {
+  filter: drop-shadow(0 0 14px rgba(255,180,0,0.95));
 }
 
 /* Tutorial position highlight */
