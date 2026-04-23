@@ -32,7 +32,6 @@ html, body {
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  overscroll-behavior: none;
   background-image:
     radial-gradient(ellipse at 20% 10%, rgba(0,0,0,0.006) 0%, transparent 60%),
     radial-gradient(ellipse at 85% 90%, rgba(0,0,0,0.006) 0%, transparent 60%),

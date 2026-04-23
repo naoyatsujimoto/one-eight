@@ -103,9 +103,9 @@ export default function App() {
     }
 
     function handlePopState() {
-      // Swipe-back or browser back pressed — re-push to stay in place
+      // Swipe-back or browser back pressed — reload the current page in place
       if (screen !== 'title') {
-        history.pushState({ oneEightScreen: screen }, '');
+        window.location.reload();
       }
     }
 
