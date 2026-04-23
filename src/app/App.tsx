@@ -73,18 +73,45 @@ export default function App() {
   const { user } = useAuth();
   const { t } = useLang();
   const [statsOpen, setStatsOpen] = useState(false);
-  const [screen, setScreen] = useState<Screen>('title');
+  const [screen, setScreen] = useState<Screen>(() => {
+    // Restore screen from sessionStorage to survive reloads
+    try {
+      const saved = sessionStorage.getItem('one_eight_screen');
+      if (saved === 'main' || saved === 'tutorial') return saved as Screen;
+    } catch { /* sessionStorage unavailable */ }
+    return 'title';
+  });
   const [screenTransition, setScreenTransition] = useState(false);
   const touchStartY = useRef<number | null>(null);
   const touchStartX = useRef<number | null>(null);
 
   function goTo(next: Screen) {
+    // Persist screen so reloads restore the correct screen
+    try { sessionStorage.setItem('one_eight_screen', next); } catch { /* ignore */ }
     setScreenTransition(true);
     setTimeout(() => {
       setScreen(next);
       setScreenTransition(false);
     }, 300);
   }
+
+  // Prevent browser swipe-back / history navigation from returning to title
+  useEffect(() => {
+    if (screen !== 'title') {
+      // Push a sentinel history entry so browser back is absorbed
+      history.pushState({ oneEightScreen: screen }, '');
+    }
+
+    function handlePopState() {
+      // Swipe-back or browser back pressed — re-push to stay in place
+      if (screen !== 'title') {
+        history.pushState({ oneEightScreen: screen }, '');
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [screen]);
 
   function goNext() {
     const idx = SCREENS.indexOf(screen);
