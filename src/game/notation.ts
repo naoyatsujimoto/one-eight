@@ -17,5 +17,7 @@ export function toNotation(record: MoveRecord): string {
       return `${prefix}q`;
     case 'skip':
       return `${record.moveNumber}. P`;
+    case 'no-build':
+      return `${prefix}nb`;
   }
 }

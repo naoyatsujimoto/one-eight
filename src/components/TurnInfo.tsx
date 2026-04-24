@@ -12,12 +12,13 @@ function derivePhase(state: GameState): Phase {
 }
 
 export function TurnInfo({
-  state, modeLabel, buildState, onSkip, onQuadConfirm, onSelectiveConfirm, onClear,
+  state, modeLabel, buildState, onSkip, onConfirmPosition, onQuadConfirm, onSelectiveConfirm, onClear,
 }: {
   state: GameState;
   modeLabel?: string;
   buildState?: BoardBuildState;
   onSkip?: () => void;
+  onConfirmPosition?: () => void;
   onQuadConfirm?: () => void;
   onSelectiveConfirm?: () => void;
   onClear?: () => void;
@@ -33,6 +34,8 @@ export function TurnInfo({
 
   const options = buildState ? getBuildOptionsForSelected(state) : null;
   const canSkip = !options?.hasAny;
+  // "Confirm Position" is shown when a position is selected and no build options exist
+  const canConfirmPosition = !!state.selectedPosition && canSkip;
   const mode = buildState?.mode ?? 'none';
   const selectiveFirst = buildState?.selectiveFirst ?? null;
   const selectiveCanConfirm = buildState?.selectiveCanConfirm ?? false;
@@ -97,7 +100,12 @@ export function TurnInfo({
               {t.confirm} ({quadSelected.length}/{quadMax})
             </button>
           )}
-          <button type="button" className="action-btn" onClick={onSkip} disabled={!canSkip}>
+          {canConfirmPosition && (
+            <button type="button" className="action-btn action-btn-primary" onClick={onConfirmPosition}>
+              Confirm Position
+            </button>
+          )}
+          <button type="button" className="action-btn" onClick={onSkip} disabled={!canSkip || !!state.selectedPosition}>
             {t.pass}
           </button>
           {state.selectedPosition && (

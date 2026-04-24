@@ -22,6 +22,7 @@ import {
   applyQuadBuildForGates,
   applySelectiveBuild,
   applySelectiveBuildSingle,
+  confirmPositionOnly,
   resetGame,
   selectPosition,
   skipTurn,
@@ -384,6 +385,13 @@ export default function App() {
     setBuildState(EMPTY_BUILD_STATE);
   }
 
+  function handleConfirmPosition() {
+    if (isCpuTurn) return;
+    setUndoStack((s) => [...s, state]);
+    setState((prev) => confirmPositionOnly(prev));
+    setBuildState(EMPTY_BUILD_STATE);
+  }
+
   const modeLabel = state.cpuPlayer === null
     ? t.humanVsHuman
     : t.humanVsCpu;
@@ -500,6 +508,7 @@ export default function App() {
             modeLabel={modeLabel}
             buildState={buildState}
             onSkip={handleSkip}
+            onConfirmPosition={handleConfirmPosition}
             onQuadConfirm={handleQuadConfirm}
             onSelectiveConfirm={handleSelectiveConfirm}
             onClear={handleClearSelection}

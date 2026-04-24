@@ -6,17 +6,20 @@ export function BuildControls({
   state,
   buildState,
   onSkip,
+  onConfirmPosition,
   onQuadConfirm,
   onSelectiveConfirm,
 }: {
   state: GameState;
   buildState: BoardBuildState;
   onSkip: () => void;
+  onConfirmPosition?: () => void;
   onQuadConfirm: () => void;
   onSelectiveConfirm: () => void;
 }) {
   const options = getBuildOptionsForSelected(state);
   const canSkip = !options?.hasAny;
+  const canConfirmPosition = !!state.selectedPosition && canSkip;
 
   const { mode, selectiveFirst, selectiveCanConfirm, quadSelected, quadMax } = buildState;
 
@@ -64,10 +67,19 @@ export function BuildControls({
               Confirm ({quadSelected.length}/{quadMax})
             </button>
           )}
+          {canConfirmPosition && (
+            <button
+              type="button"
+              onClick={onConfirmPosition}
+              className="build-btn build-btn-confirm"
+            >
+              Confirm Position
+            </button>
+          )}
           <button
             type="button"
             onClick={onSkip}
-            disabled={!canSkip}
+            disabled={!canSkip || !!state.selectedPosition}
             className="build-btn build-btn-skip"
           >
             Pass

@@ -6,7 +6,7 @@ export type PositionId =
 
 export type GateId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export type AssetSize = 'large' | 'middle' | 'small';
-export type BuildType = 'massive' | 'selective' | 'quad';
+export type BuildType = 'massive' | 'selective' | 'quad' | 'no-build';
 
 export type Asset = { size: AssetSize; owner: Player };
 
@@ -27,7 +27,8 @@ export type MoveRecord = {
     | { type: 'massive'; gate: GateId | null; placed: number }
     | { type: 'selective'; gates: [GateId | 0, GateId | 0]; placed: number }
     | { type: 'quad'; placedGateIds: GateId[]; placed: number }
-    | { type: 'skip' };
+    | { type: 'skip' }
+    | { type: 'no-build' };
 };
 
 export type GameState = {

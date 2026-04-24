@@ -167,6 +167,27 @@ export function applyQuadBuildForGates(state: GameState, selectedGateIds: GateId
   });
 }
 
+/**
+ * Confirm positioning without any build.
+ * Used in the endgame when all related Gates are full and no build option is available.
+ * Capture rules are unchanged — only valid when the position is selectable
+ * (empty, owned by the current player, or capturable).
+ * Returns the state unchanged if:
+ *   - no position is selected, or
+ *   - build options are still available (player must build first).
+ */
+export function confirmPositionOnly(state: GameState): GameState {
+  if (!state.selectedPosition || state.gameEnded) return state;
+  const options = getAvailableBuildOptions(state, state.selectedPosition);
+  if (options.hasAny) return state; // build is still required
+  return finalizeTurn(state, {
+    moveNumber: state.moveNumber,
+    player: state.currentPlayer,
+    positioning: state.selectedPosition,
+    build: { type: 'no-build' },
+  });
+}
+
 export function skipTurn(state: GameState): GameState {
   if (state.selectedPosition) {
     const options = getAvailableBuildOptions(state, state.selectedPosition);
