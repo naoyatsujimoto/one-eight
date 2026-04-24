@@ -17,7 +17,7 @@ export const T = {
     tutSteps: [
       { caption: 'WIN THE POSITIONS', sub: 'This game is a battle over Positions. The player who holds more Positions at the end wins.' },
       { caption: 'BUILD UP GATES', sub: 'Stack Assets onto Gates to increase your dominance over Positions. Gates are the battlefield.' },
-      { caption: 'THE BOARD', sub: 'The board has 13 Positions and 12 Gates. Each Position is connected to 4 Gates.' },
+      { caption: 'THE BOARD', sub: 'The board has 13 Positions and 12 Gates. Each Position is diagonally connected to 4 Gates.' },
       { caption: 'EACH TURN', sub: 'Select a Position, then Build up a Gate. Try it now — tap a Position on the board.' },
       { caption: 'SELECT A POSITION', sub: 'Selecting a Position lights up its 4 connected Gates. Those 4 Gates are your targets for that turn.' },
       { caption: 'MASSIVE', sub: 'Massive places 1 Large Asset into a Gate. A strong, focused investment.' },
