@@ -35,6 +35,12 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>('waiting');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const gameRowRef = useRef<OnlineGameRow | null>(null);
+
+  // gameRowRef を gameRow と同期
+  useEffect(() => {
+    gameRowRef.current = gameRow;
+  }, [gameRow]);
 
   // 初回フェッチ
   useEffect(() => {
@@ -105,16 +111,18 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   }, [onlineStatus, gameId]);
 
   // playing 中のフォールバックポーリング（iOS Safari 対策: 相手手番更新の Realtime 漏れ対策）
-  // Realtime が届かない環境でも確実に同期するため、常に DB から最新状態を取得する
+  // move_number が変化した時だけ適用（自分のターン中の操作をリセットしない）
   useEffect(() => {
     if (onlineStatus !== 'playing' || !gameId) return;
 
     const id = setInterval(async () => {
       const fresh = await fetchOnlineGame(gameId);
       if (!fresh) return;
-      setGameRow(fresh);
-      if (fresh.status === 'finished') {
-        setOnlineStatus('finished');
+      if (fresh.move_number !== gameRowRef.current?.move_number) {
+        setGameRow(fresh);
+        if (fresh.status === 'finished') {
+          setOnlineStatus('finished');
+        }
       }
     }, 3000);
 
