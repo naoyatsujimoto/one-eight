@@ -57,13 +57,6 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
 
-  // pull-to-refresh / overscroll 無効化（対戦中に誤って退出しないように）
-  useEffect(() => {
-    const prev = document.body.style.overscrollBehavior;
-    document.body.style.overscrollBehavior = 'none';
-    return () => { document.body.style.overscrollBehavior = prev; };
-  }, []);
-
   // gameRow が更新されたら localState も同期
   useEffect(() => {
     if (gameRow) {
