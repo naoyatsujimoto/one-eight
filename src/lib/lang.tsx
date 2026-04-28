@@ -110,6 +110,32 @@ export const T = {
     onlineComingSoon: 'Coming Soon',
     onlineRandomSearching: 'Searching for opponent…',
     onlineRandomCancel: 'Cancel',
+    // User Page
+    userPage: 'User Page',
+    userProfile: 'Profile',
+    userJoined: 'Joined',
+    userRating: 'Rating',
+    userDomesticRank: 'Domestic Rank',
+    userSeasonRank: 'Season Rank',
+    userTotalGames: 'Total Games',
+    userWinRate: 'Win Rate',
+    userBlackWinRate: 'Black Win Rate',
+    userWhiteWinRate: 'White Win Rate',
+    userCpuWinRate: 'vs CPU',
+    userPvpWinRate: 'vs Human',
+    userRecent20: 'Last 20 Games',
+    userRatingHistory: 'Rating History',
+    userTrends: 'Play Trends',
+    userRecentGames: 'Recent Games',
+    userFeaturedGames: 'Featured Games',
+    userTournamentHistory: 'Tournament History',
+    userBadges: 'Badges',
+    userBestWin: 'Best Win',
+    userLongestGame: 'Longest Game',
+    userUpsetWin: 'Upset Win',
+    userTournamentGame: 'Tournament Game',
+    userPinnedGame: 'Pinned Game',
+    userBack: '← Back',
   },
 
   ja: {
@@ -216,6 +242,32 @@ export const T = {
     onlineComingSoon: 'Coming Soon',
     onlineRandomSearching: '対戦相手を検索中…',
     onlineRandomCancel: 'キャンセル',
+    // User Page
+    userPage: 'ユーザーページ',
+    userProfile: 'プロフィール',
+    userJoined: '参加開始日',
+    userRating: '現在レート',
+    userDomesticRank: '国内順位',
+    userSeasonRank: 'シーズン順位',
+    userTotalGames: '総対局数',
+    userWinRate: '総勝率',
+    userBlackWinRate: '先手勝率',
+    userWhiteWinRate: '後手勝率',
+    userCpuWinRate: 'CPU戦勝率',
+    userPvpWinRate: '対人戦勝率',
+    userRecent20: '直近20局',
+    userRatingHistory: 'レーティング推移',
+    userTrends: 'プレイ傾向',
+    userRecentGames: '最近の対局',
+    userFeaturedGames: '代表棋譜',
+    userTournamentHistory: '大会実績',
+    userBadges: '称号 / バッジ',
+    userBestWin: '最高勝利',
+    userLongestGame: '最長対局',
+    userUpsetWin: 'アップセット勝利',
+    userTournamentGame: '大会対局',
+    userPinnedGame: 'ピン留め対局',
+    userBack: '← 戻る',
   },
 } as const;
 
@@ -302,6 +354,31 @@ export type Translations = {
   onlineComingSoon: string;
   onlineRandomSearching: string;
   onlineRandomCancel: string;
+  userPage: string;
+  userProfile: string;
+  userJoined: string;
+  userRating: string;
+  userDomesticRank: string;
+  userSeasonRank: string;
+  userTotalGames: string;
+  userWinRate: string;
+  userBlackWinRate: string;
+  userWhiteWinRate: string;
+  userCpuWinRate: string;
+  userPvpWinRate: string;
+  userRecent20: string;
+  userRatingHistory: string;
+  userTrends: string;
+  userRecentGames: string;
+  userFeaturedGames: string;
+  userTournamentHistory: string;
+  userBadges: string;
+  userBestWin: string;
+  userLongestGame: string;
+  userUpsetWin: string;
+  userTournamentGame: string;
+  userPinnedGame: string;
+  userBack: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────

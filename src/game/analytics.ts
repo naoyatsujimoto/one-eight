@@ -177,6 +177,16 @@ export function updateAggregates(record: GameRecord): void {
   }
 }
 
+/** 集計データをローカルストレージから返す */
+export function loadAggregates(): Aggregates | null {
+  try {
+    const raw = localStorage.getItem(AGGREGATES_KEY);
+    return raw ? (JSON.parse(raw) as Aggregates) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** ローカルストレージから直近N件のゲームレコードを返す */
 export function loadGameRecords(limit = 10): GameRecord[] {
   try {

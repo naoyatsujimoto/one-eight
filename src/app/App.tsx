@@ -15,8 +15,9 @@ import { saveMatchLog } from '../lib/matchLog';
 import { useLang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
+import { UserPage } from '../components/UserPage';
 
-type Screen = 'title' | 'tutorial' | 'main';
+type Screen = 'title' | 'tutorial' | 'main' | 'profile';
 import {
   applyMassiveBuild,
   applyQuadBuildForGates,
@@ -73,12 +74,12 @@ const SCREENS: Screen[] = ['title', 'tutorial', 'main'];
 export default function App() {
   const { user } = useAuth();
   const { t } = useLang();
-  const [statsOpen, setStatsOpen] = useState(false);
+  // statsOpen は UserPage 画面遷移に置き換え済み（削除）
   const [screen, setScreen] = useState<Screen>(() => {
     // Restore screen from sessionStorage to survive reloads
     try {
       const saved = sessionStorage.getItem('one_eight_screen');
-      if (saved === 'main' || saved === 'tutorial') return saved as Screen;
+      if (saved === 'main' || saved === 'tutorial' || saved === 'profile') return saved as Screen;
     } catch { /* sessionStorage unavailable */ }
     return 'title';
   });
@@ -448,6 +449,17 @@ export default function App() {
     setOnlineRoomCode(roomCode);
   }
 
+  // プロフィール画面
+  if (screen === 'profile' && user) {
+    return (
+      <UserPage
+        userId={user.id}
+        userEmail={user.email ?? null}
+        onBack={() => goTo('main')}
+      />
+    );
+  }
+
   // オンライン対戦中は OnlineBoard を表示
   if (onlineGameId && user) {
     return (
@@ -506,7 +518,7 @@ export default function App() {
           </button>
           <div className="top-divider" />
           {user && (
-            <button type="button" className="top-btn" onClick={() => setStatsOpen(true)}>{t.stats}</button>
+            <button type="button" className="top-btn" onClick={() => goTo('profile')}>{t.stats}</button>
           )}
           {user && (
             <button type="button" className="top-btn" onClick={() => setOnlineLobbyOpen(true)}>{t.onlinePlay}</button>
@@ -566,11 +578,6 @@ export default function App() {
           onGameReady={handleOnlineGameReady}
           onCancel={() => setOnlineLobbyOpen(false)}
         />
-      )}
-
-      {/* My Stats modal */}
-      {statsOpen && user && (
-        <MyStats userId={user.id} onClose={() => setStatsOpen(false)} />
       )}
 
       {/* Mode select modal */}
