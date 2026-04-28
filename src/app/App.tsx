@@ -404,8 +404,34 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
-  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
-  const [onlineRoomCode, setOnlineRoomCode] = useState<string | undefined>(undefined);
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(() => {
+    try { return sessionStorage.getItem('one_eight_online_game_id') || null; } catch { return null; }
+  });
+  const [onlineRoomCode, setOnlineRoomCode] = useState<string | undefined>(() => {
+    try { return sessionStorage.getItem('one_eight_online_room_code') || undefined; } catch { return undefined; }
+  });
+
+  // onlineGameId / onlineRoomCode を sessionStorage に同期（リロード後も復帰できるように）
+  useEffect(() => {
+    try {
+      if (onlineGameId) {
+        sessionStorage.setItem('one_eight_online_game_id', onlineGameId);
+      } else {
+        sessionStorage.removeItem('one_eight_online_game_id');
+        sessionStorage.removeItem('one_eight_online_room_code');
+      }
+    } catch { /* ignore */ }
+  }, [onlineGameId]);
+
+  useEffect(() => {
+    try {
+      if (onlineRoomCode) {
+        sessionStorage.setItem('one_eight_online_room_code', onlineRoomCode);
+      } else {
+        sessionStorage.removeItem('one_eight_online_room_code');
+      }
+    } catch { /* ignore */ }
+  }, [onlineRoomCode]);
 
   function handleNewGameRequest() {
     setModeModalOpen(true);
