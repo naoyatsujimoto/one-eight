@@ -243,7 +243,8 @@ function RandomMatch({
     if ('error' in result) {
       setError(result.error);
     } else {
-      onGameReady(result.gameId, result.color, result.roomCode);
+      // ランダムマッチはルームコードを渡さない（OnlineBoardに表示しない）
+      onGameReady(result.gameId, result.color);
     }
   }
 
