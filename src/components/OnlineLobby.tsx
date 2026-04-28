@@ -9,6 +9,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { createOnlineGame, joinOnlineGame, joinOrCreateRandomGame } from '../lib/onlineGame';
+import { createInitialState } from '../game/initialState';
 import { useLang } from '../lib/lang';
 
 interface Props {
@@ -235,7 +236,8 @@ function RandomMatch({
     cancelled.current = false;
     setSearching(true);
     setError(null);
-    const result = await joinOrCreateRandomGame(userId);
+    const initialState = createInitialState(null);
+    const result = await joinOrCreateRandomGame(userId, initialState);
     if (cancelled.current) return;
     setSearching(false);
     if ('error' in result) {

@@ -93,13 +93,16 @@ export async function fetchOnlineGame(gameId: string): Promise<OnlineGameRow | n
 /**
  * ランダムマッチング。
  * - waiting 状態の自分以外のゲームを検索 → あれば参加（白番）
- * - なければ新規作成して待機（黒番）
+ * - なければ initialState を渡して新規作成して待機（黒番）
+ * initialState はフロント側の createInitialState() で生成する
  */
 export async function joinOrCreateRandomGame(
   userId: string,
+  initialState: GameState,
 ): Promise<{ gameId: string; color: 'black' | 'white'; roomCode: string } | { error: string }> {
   const { data, error } = await supabase.rpc('join_or_create_random_game', {
     p_user_id: userId,
+    p_initial_state: initialState,
   });
   if (error) return { error: error.message };
   const result = data as { game_id: string; color: 'black' | 'white'; room_code: string };
