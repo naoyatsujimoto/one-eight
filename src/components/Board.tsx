@@ -443,10 +443,10 @@ const GATE_LABEL_OFFSET: Record<GateType, { left: number; top: number }> = {
   'bottom-edge': { left: 46, top: 108 },   // ゲート下辺の外（下方向）
   'left-edge':   { left: -18, top: 46 },   // ゲート左辺の外（左方向）
   'right-edge':  { left: 108, top: 46 },   // ゲート右辺の外（右方向）
-  'corner-tl':   { left: -18, top: -18 },  // 左上コーナーの外（左上方向）
-  'corner-tr':   { left: 108, top: -18 },  // 右上コーナーの外（右上方向）
-  'corner-br':   { left: 108, top: 108 },  // 右下コーナーの外（右下方向）
-  'corner-bl':   { left: -18, top: 108 },  // 左下コーナーの外（左下方向）
+  'corner-tl':   { left: -16, top: -16 },  // 左上コーナーの外（左上方向、中心へ+2px）
+  'corner-tr':   { left: 106, top: -16 },  // 右上コーナーの外（右上方向、中心へ+2px）
+  'corner-br':   { left: 106, top: 106 },  // 右下コーナーの外（右下方向、中心へ+2px）
+  'corner-bl':   { left: -16, top: 106 },  // 左下コーナーの外（左下方向、中心へ+2px）
 };
 
 // ── Board component ───────────────────────────────────────────────────────────
