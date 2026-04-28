@@ -129,7 +129,7 @@ export const T = {
     userTrends: 'Play Trends',
     userRecentGames: 'Recent Games',
     userFeaturedGames: 'Featured Games',
-    userTournamentHistory: 'Tournament History',
+    userTournamentHistory: 'Competition History',
     userBadges: 'Badges',
     userBestWin: 'Best Win',
     userLongestGame: 'Longest Game',
