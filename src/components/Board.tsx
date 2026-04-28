@@ -381,7 +381,6 @@ function GateCard({
       data-gate-id={gateId}
       aria-label={`Gate ${gateId}`}
     >
-      <div className="gate-card-id">{gateId}</div>
       {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge, onMiddle, onSmall })}
     </div>
   );
@@ -435,6 +434,20 @@ const GATE_COORDS: Record<number, { left: number; top: number }> = {
 };
 
 interface LineCoord { x1: number; y1: number; x2: number; y2: number }
+
+// ── Gate label offsets (外側ラベル位置: ゲートセル外周側) ─────────────────────
+// gate-card は padding:2px なので layout box ≈ 98×98px
+// ラベルはゲートセルと重ならないよう外周側に配置する
+const GATE_LABEL_OFFSET: Record<GateType, { left: number; top: number }> = {
+  'top-edge':    { left: 46, top: -18 },   // ゲート上辺の外（上方向）
+  'bottom-edge': { left: 46, top: 108 },   // ゲート下辺の外（下方向）
+  'left-edge':   { left: -18, top: 46 },   // ゲート左辺の外（左方向）
+  'right-edge':  { left: 108, top: 46 },   // ゲート右辺の外（右方向）
+  'corner-tl':   { left: -18, top: -18 },  // 左上コーナーの外（左上方向）
+  'corner-tr':   { left: 108, top: -18 },  // 右上コーナーの外（右上方向）
+  'corner-br':   { left: 108, top: 108 },  // 右下コーナーの外（右下方向）
+  'corner-bl':   { left: -18, top: 108 },  // 左下コーナーの外（左下方向）
+};
 
 // ── Board component ───────────────────────────────────────────────────────────
 
@@ -691,6 +704,7 @@ export function Board({
             state.gates,
             relatedGates,
           );
+          const labelOffset = GATE_LABEL_OFFSET[gateType];
           return (
             <div key={gateId} style={{ position: 'absolute', left: coord.left, top: coord.top }}>
               <GateCard
@@ -706,6 +720,12 @@ export function Board({
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}
               />
+              <div
+                className="gate-card-id"
+                style={{ position: 'absolute', left: labelOffset.left, top: labelOffset.top }}
+              >
+                {gateId}
+              </div>
             </div>
           );
         })}

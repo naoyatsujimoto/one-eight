@@ -555,16 +555,14 @@ html, body {
 
 .gate-card-id {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: 600;
-  font-size: 0.58rem;
+  font-weight: 700;
+  font-size: 0.62rem;
   color: #000000;
   opacity: 1;
   line-height: 1;
   pointer-events: none;
-  z-index: 2;
+  z-index: 10;
+  white-space: nowrap;
 }
 
 /* ── Gate cluster base layout ── */
