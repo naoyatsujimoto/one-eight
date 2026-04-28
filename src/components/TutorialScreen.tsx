@@ -248,6 +248,8 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
           onSmallPocketClick={isInteractive ? handleSmallPocket : () => {}}
           tutorialGateHighlights={tutorialGateHighlights}
           tutorialHighlightAllPositions={tutorialHighlightAllPositions}
+          showLabelToggle={false}
+          defaultLabels={false}
         />
       </div>
 

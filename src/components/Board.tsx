@@ -460,6 +460,8 @@ export function Board({
   onSmallPocketClick,
   tutorialGateHighlights,
   tutorialHighlightAllPositions,
+  showLabelToggle = true,
+  defaultLabels = true,
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -469,6 +471,8 @@ export function Board({
   onSmallPocketClick: (gateId: GateId) => void;
   tutorialGateHighlights?: Set<GateId>;
   tutorialHighlightAllPositions?: boolean;
+  showLabelToggle?: boolean;
+  defaultLabels?: boolean;
   moveNumber?: number;
   currentPlayer?: string;
 }) {
@@ -510,7 +514,7 @@ export function Board({
   const scalerRef = useRef<HTMLDivElement>(null);
   const lastScaleRef = useRef<number>(-1);
   const [lines, setLines] = useState<LineCoord[]>([]);
-  const [showLabels, setShowLabels] = useState(true);
+  const [showLabels, setShowLabels] = useState(defaultLabels);
 
   // ── Responsive board scaling ──────────────────────────────────────────────
   const BOARD_W = 680;
@@ -762,17 +766,19 @@ export function Board({
       </div>{/* board-inner-scaler */}
 
       {/* Label toggle button */}
-      <div className="board-label-toggle-wrap">
-        <button
-          type="button"
-          className={['board-label-toggle', showLabels ? '' : 'labels-off'].filter(Boolean).join(' ')}
-          onClick={() => setShowLabels(v => !v)}
-          aria-pressed={showLabels}
-        >
-          <span className="board-label-toggle-dot" />
-          {showLabels ? 'LABELS ON' : 'LABELS OFF'}
-        </button>
-      </div>
+      {showLabelToggle && (
+        <div className="board-label-toggle-wrap">
+          <button
+            type="button"
+            className={['board-label-toggle', showLabels ? '' : 'labels-off'].filter(Boolean).join(' ')}
+            onClick={() => setShowLabels(v => !v)}
+            aria-pressed={showLabels}
+          >
+            <span className="board-label-toggle-dot" />
+            {showLabels ? 'LABELS ON' : 'LABELS OFF'}
+          </button>
+        </div>
+      )}
     </section>
   );
 }
