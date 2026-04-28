@@ -555,9 +555,9 @@ html, body {
 
 .gate-card-id {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   font-weight: 600;
   font-size: 0.58rem;
   color: #000000;
