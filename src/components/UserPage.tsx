@@ -25,6 +25,7 @@ interface Props {
 
 export function UserPage({ userId, userEmail, onBack }: Props) {
   const { t } = useLang();
+  // t is also used in inline JSX below
   const [stats, setStats] = useState<UserPageStats | null>(null);
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,25 +121,25 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
         {/* ── Section 3: レーティング推移（Coming Soon）── */}
         <section style={s.section}>
           <SectionTitle title={t.userRatingHistory} soon />
-          <Muted text="Coming Soon" />
+          <Muted text={t.onlineComingSoon} />
         </section>
 
         {/* ── Section 4: プレイ傾向 ── */}
         <section style={s.section}>
           <SectionTitle title={t.userTrends} />
-          {agg ? <TrendSection agg={agg} /> : <Muted text="対局データなし" />}
+          {agg ? <TrendSection agg={agg} /> : <Muted text={t.userNoData} />}
         </section>
 
         {/* ── Section 5: 最近の対局 ── */}
         <section style={s.section}>
           <SectionTitle title={t.userRecentGames} />
-          {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? (
+          {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? ( // eslint-disable-line
             <RecentGamesTable
               games={stats.recentGames}
               localMap={localMap}
               onPostmortem={setPostmortemGame}
             />
-          ) : <Muted text="対局記録なし" />}
+          ) : <Muted text={t.userNoData} />}
         </section>
 
         {/* ── Section 6: 代表棋譜 ── */}
@@ -152,13 +153,13 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
         {/* ── Section 7: 大会実績（Coming Soon）── */}
         <section style={s.section}>
           <SectionTitle title={t.userTournamentHistory} soon />
-          <Muted text="Coming Soon" />
+          <Muted text={t.onlineComingSoon} />
         </section>
 
         {/* ── Section 8: 称号 / バッジ（Coming Soon）── */}
         <section style={s.section}>
           <SectionTitle title={t.userBadges} soon />
-          <Muted text="Coming Soon" />
+          <Muted text={t.onlineComingSoon} />
         </section>
 
       </div>
@@ -197,7 +198,7 @@ function ProfileItem({ label, value, muted }: { label: string; value: string; mu
 // ── プレイ傾向 ────────────────────────────────────────────────────────────────
 
 function TrendSection({ agg }: { agg: Aggregates }) {
-  // Build 使用率
+  const { t } = useLang();
   const buildTypes = ['massive', 'selective', 'quad', 'skip'];
   const buildTotals = buildTypes.map((bt) => ({
     label: bt.charAt(0).toUpperCase() + bt.slice(1),
@@ -205,12 +206,10 @@ function TrendSection({ agg }: { agg: Aggregates }) {
   }));
   const buildSum = buildTotals.reduce((a, b) => a + b.tries, 0);
 
-  // よく選ぶ Position 上位5
   const topPositions = Object.entries(agg.byPosition)
     .sort((a, b) => b[1].tries - a[1].tries)
     .slice(0, 5);
 
-  // 苦手な Position（tries >= 3 かつ winRate 下位）
   const weakPositions = Object.entries(agg.byPosition)
     .filter(([, v]) => v.tries >= 3)
     .map(([k, v]) => ({ pos: k, rate: v.tries > 0 ? v.wins / v.tries : 0, tries: v.tries }))
@@ -219,9 +218,8 @@ function TrendSection({ agg }: { agg: Aggregates }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Build 使用率 */}
       <div>
-        <div style={s.sectionLabel}>Build 使用率</div>
+        <div style={s.sectionLabel}>{t.userBuildUsage}</div>
         {buildTotals.filter((b) => b.tries > 0).map(({ label, tries }) => (
           <div key={label} style={s.barRow}>
             <div style={s.barLabel}>{label}</div>
@@ -234,33 +232,31 @@ function TrendSection({ agg }: { agg: Aggregates }) {
             <div style={s.barValue}>{buildSum > 0 ? `${Math.round((tries / buildSum) * 100)}%` : '—'}</div>
           </div>
         ))}
-        {buildSum === 0 && <Muted text="データなし" />}
+        {buildSum === 0 && <Muted text={t.userNoData} />}
       </div>
 
-      {/* よく選ぶ Position */}
       {topPositions.length > 0 && (
         <div>
-          <div style={s.sectionLabel}>よく選ぶ Position</div>
+          <div style={s.sectionLabel}>{t.userFavPositions}</div>
           <div style={s.posRow}>
             {topPositions.map(([pos, v]) => (
               <div key={pos} style={s.posChip}>
                 <span style={s.posLabel}>{pos}</span>
-                <span style={s.posCount}>{v.tries}回</span>
+                <span style={s.posCount}>{v.tries}{t.userTimes}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 苦手な Position */}
       {weakPositions.length > 0 && (
         <div>
-          <div style={s.sectionLabel}>苦手な Position</div>
+          <div style={s.sectionLabel}>{t.userWeakPositions}</div>
           <div style={s.posRow}>
             {weakPositions.map(({ pos, rate, tries }) => (
               <div key={pos} style={{ ...s.posChip, background: '#fff0f0' }}>
                 <span style={s.posLabel}>{pos}</span>
-                <span style={s.posCount}>{pct(rate)} ({tries}回)</span>
+                <span style={s.posCount}>{pct(rate)} ({tries}{t.userTimes})</span>
               </div>
             ))}
           </div>
@@ -281,16 +277,17 @@ function RecentGamesTable({
   localMap: Map<string, GameRecord>;
   onPostmortem: (r: GameRecord) => void;
 }) {
+  const { t } = useLang();
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={s.table}>
         <thead>
           <tr>
-            <th style={s.th}>日時</th>
-            <th style={s.th}>勝敗</th>
-            <th style={s.th}>先後</th>
-            <th style={s.th}>手数</th>
-            <th style={s.th}>種別</th>
+            <th style={s.th}>{t.userColDate}</th>
+            <th style={s.th}>{t.userColResult}</th>
+            <th style={s.th}>{t.userColSide}</th>
+            <th style={s.th}>{t.userColMoves}</th>
+            <th style={s.th}>{t.userColType}</th>
             <th style={s.th}></th>
           </tr>
         </thead>
@@ -300,19 +297,19 @@ function RecentGamesTable({
             const isDraw = r.winner === 'draw';
             const result = isDraw ? '△' : isWin ? '○' : '×';
             const resultColor = isDraw ? '#888' : isWin ? '#2e7d32' : '#c62828';
-            const side = r.human_color === 'black' ? '先手' : r.human_color === 'white' ? '後手' : '—';
-            const modeLabel = r.mode === 'human_vs_cpu' ? 'CPU戦' : r.mode === 'online_pvp' ? 'オンライン' : '対人戦';
+            const side = r.human_color === 'black' ? t.userSideBlack : r.human_color === 'white' ? t.userSideWhite : '—';
+            const modeLabel = r.mode === 'human_vs_cpu' ? t.userTypeCpu : r.mode === 'online_pvp' ? t.userTypeOnline : t.userTypeHuman;
             const local = localMap.get(r.game_id);
             return (
               <tr key={r.game_id}>
-                <td style={s.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '—'}</td>
+                <td style={s.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
                 <td style={{ ...s.td, fontWeight: 700, color: resultColor }}>{result}</td>
                 <td style={s.td}>{side}</td>
                 <td style={s.td}>{r.move_count}</td>
                 <td style={s.td}>{modeLabel}</td>
                 <td style={s.td}>
                   {local ? (
-                    <button type="button" style={s.analyzeBtn} onClick={() => onPostmortem(local)}>棋譜</button>
+                    <button type="button" style={s.analyzeBtn} onClick={() => onPostmortem(local)}>{t.analyze}</button>
                   ) : <span style={{ color: '#ccc' }}>—</span>}
                 </td>
               </tr>
@@ -348,14 +345,14 @@ function FeaturedGames({
         <div key={label} style={{ ...s.featuredCard, ...(soon || !game ? { opacity: 0.5 } : {}) }}>
           <div style={s.featuredLabel}>{label}</div>
           {soon ? (
-            <span style={s.soonBadge}>Coming Soon</span>
+            <span style={s.soonBadge}>{t.onlineComingSoon}</span>
           ) : game ? (
             <>
               <div style={s.featuredMeta}>{game.move_count} moves · {game.winner ?? '—'}</div>
-              <button type="button" style={s.analyzeBtn} onClick={() => onPostmortem(game)}>棋譜を見る</button>
+              <button type="button" style={s.analyzeBtn} onClick={() => onPostmortem(game)}>{t.userViewGame}</button>
             </>
           ) : (
-            <div style={{ color: '#bbb', fontSize: '0.78rem' }}>データなし</div>
+            <div style={{ color: '#bbb', fontSize: '0.78rem' }}>{t.userNoData}</div>
           )}
         </div>
       ))}

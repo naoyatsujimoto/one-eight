@@ -136,6 +136,22 @@ export const T = {
     userTournamentGame: 'Tournament Game',
     userPinnedGame: 'Pinned Game',
     userBack: '← Back',
+    userBuildUsage: 'Build Usage',
+    userFavPositions: 'Favorite Positions',
+    userWeakPositions: 'Weak Positions',
+    userTimes: 'x',
+    userNoData: 'No data',
+    userViewGame: 'View Game',
+    userColDate: 'Date',
+    userColResult: 'Result',
+    userColSide: 'Side',
+    userColMoves: 'Moves',
+    userColType: 'Type',
+    userSideBlack: 'Black',
+    userSideWhite: 'White',
+    userTypeHuman: 'H×H',
+    userTypeCpu: 'vs CPU',
+    userTypeOnline: 'Online',
   },
 
   ja: {
@@ -268,6 +284,22 @@ export const T = {
     userTournamentGame: '大会対局',
     userPinnedGame: 'ピン留め対局',
     userBack: '← 戻る',
+    userBuildUsage: 'Build 使用率',
+    userFavPositions: 'よく選ぶ Position',
+    userWeakPositions: '苦手な Position',
+    userTimes: '回',
+    userNoData: 'データなし',
+    userViewGame: '棋譜を見る',
+    userColDate: '日時',
+    userColResult: '勝敗',
+    userColSide: '先後',
+    userColMoves: '手数',
+    userColType: '種別',
+    userSideBlack: '先手',
+    userSideWhite: '後手',
+    userTypeHuman: '対人戦',
+    userTypeCpu: 'CPU戦',
+    userTypeOnline: 'オンライン',
   },
 } as const;
 
@@ -379,6 +411,22 @@ export type Translations = {
   userTournamentGame: string;
   userPinnedGame: string;
   userBack: string;
+  userBuildUsage: string;
+  userFavPositions: string;
+  userWeakPositions: string;
+  userTimes: string;
+  userNoData: string;
+  userViewGame: string;
+  userColDate: string;
+  userColResult: string;
+  userColSide: string;
+  userColMoves: string;
+  userColType: string;
+  userSideBlack: string;
+  userSideWhite: string;
+  userTypeHuman: string;
+  userTypeCpu: string;
+  userTypeOnline: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
