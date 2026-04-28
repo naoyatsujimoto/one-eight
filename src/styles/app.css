@@ -419,10 +419,10 @@ html, body {
   font-weight: 400;
   letter-spacing: 0.12em;
   line-height: 1;
-  color: #000000;
+  color: #5c5c5c;
 }
 .position-btn.selected .pos-id {
-  color: #000000;
+  color: #5c5c5c;
 }
 .pos-gates {
   font-size: 0.5rem;
@@ -557,7 +557,7 @@ html, body {
   position: absolute;
   font-weight: 700;
   font-size: 0.62rem;
-  color: #000000;
+  color: #5c5c5c;
   opacity: 1;
   line-height: 1;
   pointer-events: none;
