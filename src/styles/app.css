@@ -1993,3 +1993,7 @@ ol { padding-left: 20px; }
 .tut-click-next { right: 12px; }
 .tutorial-screen:hover .tut-click-prev,
 .tutorial-screen:hover .tut-click-next { color: var(--ink-3); }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

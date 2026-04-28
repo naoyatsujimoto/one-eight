@@ -88,6 +88,24 @@ export async function fetchOnlineGame(gameId: string): Promise<OnlineGameRow | n
   return data as OnlineGameRow;
 }
 
+// ─── ランダムマッチング ────────────────────────────────────────────────────────
+
+/**
+ * ランダムマッチング。
+ * - waiting 状態の自分以外のゲームを検索 → あれば参加（白番）
+ * - なければ新規作成して待機（黒番）
+ */
+export async function joinOrCreateRandomGame(
+  userId: string,
+): Promise<{ gameId: string; color: 'black' | 'white'; roomCode: string } | { error: string }> {
+  const { data, error } = await supabase.rpc('join_or_create_random_game', {
+    p_user_id: userId,
+  });
+  if (error) return { error: error.message };
+  const result = data as { game_id: string; color: 'black' | 'white'; room_code: string };
+  return { gameId: result.game_id, color: result.color, roomCode: result.room_code };
+}
+
 // ─── 手を送信 ─────────────────────────────────────────────────────────────────
 
 export async function submitOnlineMove(

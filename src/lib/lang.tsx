@@ -98,6 +98,18 @@ export const T = {
     onlineBackToMenu: 'Back to Menu',
     onlineRoomNotFound: 'Room not found or already started.',
     onlineCannotJoinOwn: 'You cannot join your own room.',
+    // Online mode select
+    onlineFriendMatch: 'Friend Match',
+    onlineFriendMatchDesc: 'Play with a friend using a private room code.',
+    onlineRandomMatch: 'Random Match',
+    onlineRandomMatchDesc: 'Be matched with a random opponent.',
+    onlineRanked: 'Ranked Match',
+    onlineRankedDesc: 'Rated games for subscribers only.',
+    onlineTournament: 'Tournament',
+    onlineTournamentDesc: 'Enter with an official tournament key.',
+    onlineComingSoon: 'Coming Soon',
+    onlineRandomSearching: 'Searching for opponent…',
+    onlineRandomCancel: 'Cancel',
   },
 
   ja: {
@@ -192,6 +204,18 @@ export const T = {
     onlineBackToMenu: 'メニューに戻る',
     onlineRoomNotFound: 'ルームが見つからないか、すでに開始済みです。',
     onlineCannotJoinOwn: '自分のルームには入室できません。',
+    // Online mode select
+    onlineFriendMatch: 'フレンドマッチ',
+    onlineFriendMatchDesc: 'ルームコードを使って友達と対戦。',
+    onlineRandomMatch: 'ランダムマッチ',
+    onlineRandomMatchDesc: 'ランダムに相手とマッチングして対戦。',
+    onlineRanked: '公式戦',
+    onlineRankedDesc: 'レーティングが変動する対戦。サブスク加入者限定。',
+    onlineTournament: '大会',
+    onlineTournamentDesc: '運営発行のキーで参加する公式大会。',
+    onlineComingSoon: 'Coming Soon',
+    onlineRandomSearching: '対戦相手を検索中…',
+    onlineRandomCancel: 'キャンセル',
   },
 } as const;
 
@@ -267,6 +291,17 @@ export type Translations = {
   onlineBackToMenu: string;
   onlineRoomNotFound: string;
   onlineCannotJoinOwn: string;
+  onlineFriendMatch: string;
+  onlineFriendMatchDesc: string;
+  onlineRandomMatch: string;
+  onlineRandomMatchDesc: string;
+  onlineRanked: string;
+  onlineRankedDesc: string;
+  onlineTournament: string;
+  onlineTournamentDesc: string;
+  onlineComingSoon: string;
+  onlineRandomSearching: string;
+  onlineRandomCancel: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
