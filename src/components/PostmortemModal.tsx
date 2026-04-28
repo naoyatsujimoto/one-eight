@@ -13,6 +13,11 @@ interface Props {
   onClose: () => void;
 }
 
+/** 手数ベースの所要時間推定（秒） depth=3 minimax: 1手あたり約0.15秒 */
+function estimateSec(moveCount: number): number {
+  return Math.max(5, Math.round(moveCount * 0.15));
+}
+
 export function PostmortemModal({ history, gameId, onClose }: Props) {
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
@@ -50,6 +55,7 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
           <div style={styles.center}>
             <div style={styles.spinner} />
             <p style={styles.muted}>{t.analyzing}</p>
+            <p style={styles.estimateText}>{t.analyzingEstimate(estimateSec(history.length))}</p>
           </div>
         )}
 
@@ -253,6 +259,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#999',
     textAlign: 'center',
     fontSize: '0.85rem',
+  },
+  estimateText: {
+    color: '#bbb',
+    textAlign: 'center',
+    fontSize: '0.75rem',
+    marginTop: -6,
   },
   section: {
     marginBottom: '1.2rem',

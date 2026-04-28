@@ -24,7 +24,8 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; overflow-x: hidden; }
+html { overflow-x: hidden; max-width: 100%; }
+body { margin: 0; overflow-x: hidden; max-width: 100%; }
 button { cursor: pointer; }
 
 html, body {
@@ -120,6 +121,7 @@ html, body {
 }
 .top-btn:hover:not(:disabled) { color: var(--ink); }
 .top-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
 .top-divider {
   width: 1px; height: 14px;
   background: var(--rule-strong);

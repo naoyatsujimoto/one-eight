@@ -73,6 +73,7 @@ export const T = {
     analyze: 'Analyze',
     postmortem: 'Postmortem',
     analyzing: 'Analyzing…',
+    analyzingEstimate: (sec: number) => sec < 60 ? `est. ~${sec}s` : `est. ~${Math.round(sec / 60)}min`,
     decisiveMove: 'Decisive Move',
     topLosses: 'Top Losses (Black)',
     noAnalysis: 'Not enough data',
@@ -135,6 +136,9 @@ export const T = {
     userUpsetWin: 'Upset Win',
     userTournamentGame: 'Tournament Game',
     userPinnedGame: 'Pinned Game',
+    userEditName: 'Edit',
+    userSaveName: 'Save',
+    userCancelEdit: 'Cancel',
     userBack: '← Back',
     userBuildUsage: 'Build Usage',
     userFavPositions: 'Favorite Positions',
@@ -221,6 +225,7 @@ export const T = {
     analyze: '分析',
     postmortem: '分析',
     analyzing: '分析中…',
+    analyzingEstimate: (sec: number) => sec < 60 ? `目安 約${sec}秒` : `目安 約${Math.round(sec / 60)}分`,
     decisiveMove: '決定的な一手',
     topLosses: '最大損失手（Black）',
     noAnalysis: 'データ不足',
@@ -283,6 +288,9 @@ export const T = {
     userUpsetWin: 'アップセット勝利',
     userTournamentGame: '大会対局',
     userPinnedGame: 'ピン留め対局',
+    userEditName: '編集',
+    userSaveName: '保存',
+    userCancelEdit: 'キャンセル',
     userBack: '← 戻る',
     userBuildUsage: 'Build 使用率',
     userFavPositions: 'よく選ぶ Position',
@@ -350,6 +358,7 @@ export type Translations = {
   analyze: string;
   postmortem: string;
   analyzing: string;
+  analyzingEstimate: (sec: number) => string;
   decisiveMove: string;
   topLosses: string;
   noAnalysis: string;
@@ -410,6 +419,9 @@ export type Translations = {
   userUpsetWin: string;
   userTournamentGame: string;
   userPinnedGame: string;
+  userEditName: string;
+  userSaveName: string;
+  userCancelEdit: string;
   userBack: string;
   userBuildUsage: string;
   userFavPositions: string;

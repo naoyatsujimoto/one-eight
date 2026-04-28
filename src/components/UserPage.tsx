@@ -17,6 +17,15 @@ import { loadAggregates, loadGameRecords, type GameRecord, type Aggregates } fro
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 
+const USER_NAME_KEY_PREFIX = 'one8_username_';
+
+function loadUsername(userId: string): string | null {
+  try { return localStorage.getItem(USER_NAME_KEY_PREFIX + userId); } catch { return null; }
+}
+function saveUsername(userId: string, name: string) {
+  try { localStorage.setItem(USER_NAME_KEY_PREFIX + userId, name); } catch { /* noop */ }
+}
+
 interface Props {
   userId: string;
   userEmail: string | null;
@@ -31,6 +40,10 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
+  const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
+  const [username, setUsername] = useState<string>(() => loadUsername(userId) ?? defaultName ?? 'Player');
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
 
   useEffect(() => {
     fetchUserPageStats(userId).then((s) => {
@@ -44,7 +57,23 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
     setLocalMap(map);
   }, [userId]);
 
-  const playerName = userEmail ? userEmail.split('@')[0] : 'Player';
+  function handleEditName() {
+    setNameInput(username);
+    setEditingName(true);
+  }
+  function handleSaveName() {
+    const trimmed = nameInput.trim();
+    if (trimmed) {
+      setUsername(trimmed);
+      saveUsername(userId, trimmed);
+    }
+    setEditingName(false);
+  }
+  function handleCancelEdit() {
+    setEditingName(false);
+  }
+
+  const playerName = username;
   const shortId = userId.slice(0, 8).toUpperCase();
 
   return (
@@ -63,7 +92,25 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
           <div style={s.profileHeader}>
             <div style={s.avatar}>{(playerName ?? 'P').slice(0, 1).toUpperCase()}</div>
             <div style={s.profileInfo}>
-              <div style={s.playerName}>{playerName}</div>
+              {editingName ? (
+                <div style={s.nameEditRow}>
+                  <input
+                    style={s.nameInput}
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') handleCancelEdit(); }}
+                    maxLength={30}
+                    autoFocus
+                  />
+                  <button type="button" style={s.nameBtn} onClick={handleSaveName}>{t.userSaveName}</button>
+                  <button type="button" style={{ ...s.nameBtn, ...s.nameBtnCancel }} onClick={handleCancelEdit}>{t.userCancelEdit}</button>
+                </div>
+              ) : (
+                <div style={s.nameRow}>
+                  <span style={s.playerName}>{playerName}</span>
+                  <button type="button" style={s.editNameBtn} onClick={handleEditName}>{t.userEditName}</button>
+                </div>
+              )}
               <div style={s.playerId}>ID: {shortId}</div>
             </div>
           </div>
@@ -414,6 +461,7 @@ const s: Record<string, React.CSSProperties> = {
     width: 64,
     textAlign: 'left' as const,
   },
+
   scrollArea: {
     flex: 1,
     overflowY: 'auto',
@@ -447,6 +495,48 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  nameEditRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap' as const,
+  },
+  nameInput: {
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    padding: '2px 6px',
+    outline: 'none',
+    width: 140,
+  },
+  nameBtn: {
+    fontSize: '0.7rem',
+    padding: '2px 8px',
+    border: '1px solid #bbb',
+    borderRadius: 4,
+    background: '#111',
+    color: '#fff',
+    cursor: 'pointer',
+  },
+  nameBtnCancel: {
+    background: '#fff',
+    color: '#555',
+  },
+  editNameBtn: {
+    fontSize: '0.68rem',
+    padding: '1px 6px',
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    background: 'none',
+    color: '#888',
+    cursor: 'pointer',
   },
   playerName: {
     fontWeight: 700,

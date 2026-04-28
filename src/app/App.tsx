@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board';
 import { HowToPlay } from '../components/HowToPlay';
-import { AnalyticsPanel } from '../components/AnalyticsPanel';
 import { ImportRecord } from '../components/ImportRecord';
 import { MoveHistory } from '../components/MoveHistory';
 import { ResultModal } from '../components/ResultModal';
@@ -16,6 +15,9 @@ import { useLang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
 import { UserPage } from '../components/UserPage';
+import { AdminInbox } from '../components/AdminInbox';
+import { useUnreadCount } from '../hooks/useUnreadCount';
+// import { useSound } from '../hooks/useSound'; // SOUND OFF
 
 type Screen = 'title' | 'tutorial' | 'main' | 'profile';
 import {
@@ -94,6 +96,7 @@ export default function App() {
     setTimeout(() => {
       setScreen(next);
       setScreenTransition(false);
+      if (next === 'main') refreshUnread();
     }, 300);
   }
 
@@ -305,12 +308,13 @@ export default function App() {
 
   function handleSelectPosition(positionId: PositionId) {
     if (isCpuTurn) return;
+    playSymbol();
     setState((prev) => selectPosition(prev, positionId));
   }
 
   function handleLargePocketClick(gateId: GateId) {
     if (isCpuTurn) return;
-    // Push snapshot before finalizing turn
+    playAsset();
     setUndoStack((s) => [...s, state]);
     setState((prev) => applyMassiveBuild(prev, gateId));
     setBuildState(EMPTY_BUILD_STATE);
@@ -337,7 +341,7 @@ export default function App() {
         return EMPTY_BUILD_STATE;
       }
       const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
-      // Push snapshot before finalizing turn
+      playAsset();
       setUndoStack((s) => [...s, state]);
       setState((gs) => applySelectiveBuild(gs, gates));
       return EMPTY_BUILD_STATE;
@@ -348,6 +352,7 @@ export default function App() {
     if (isCpuTurn) return;
     const { selectiveFirst } = buildState;
     if (!selectiveFirst) return;
+    playAsset();
     setUndoStack((s) => [...s, state]);
     setState((gs) => applySelectiveBuildSingle(gs, selectiveFirst));
     setBuildState(EMPTY_BUILD_STATE);
@@ -373,6 +378,7 @@ export default function App() {
     if (isCpuTurn) return;
     const { quadSelected } = buildState;
     if (quadSelected.length === 0) return;
+    playAsset();
     setUndoStack((s) => [...s, state]);
     setState((gs) => applyQuadBuildForGates(gs, quadSelected as GateId[]));
     setBuildState(EMPTY_BUILD_STATE);
@@ -402,6 +408,16 @@ export default function App() {
     setBuildState(EMPTY_BUILD_STATE);
   }
 
+  const playSymbol = () => {}; // SOUND OFF
+  const playAsset  = () => {}; // SOUND OFF
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [unreadCount, refreshUnread] = useUnreadCount(user?.id ?? null);
+
+  // メイン画面表示中は未読数を取得（リロード・初期表示含む）
+  useEffect(() => {
+    if (screen === 'main' && user) refreshUnread();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, user?.id]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
@@ -523,6 +539,16 @@ export default function App() {
           {user && (
             <button type="button" className="top-btn" onClick={() => setOnlineLobbyOpen(true)}>{t.onlinePlay}</button>
           )}
+          {user && (
+            <button
+              type="button"
+              className="top-btn"
+              style={unreadCount > 0 ? { color: '#c62828', fontWeight: 700 } : undefined}
+              onClick={() => setInboxOpen(true)}
+            >
+              MAIL
+            </button>
+          )}
           <button type="button" className="top-btn" onClick={handleNewGameRequest}>{t.newGame}</button>
         </div>
       </header>
@@ -553,9 +579,17 @@ export default function App() {
           />
           <HowToPlay />
           <ImportRecord onImport={handleImport} />
-          <AnalyticsPanel />
         </aside>
       </main>
+
+      {/* Admin Inbox */}
+      {inboxOpen && user && (
+        <AdminInbox
+          userId={user.id}
+          onClose={() => { setInboxOpen(false); refreshUnread(); }}
+          onUnreadChange={refreshUnread}
+        />
+      )}
 
       {/* History Drawer */}
       <div className={`backdrop${drawerOpen ? ' open' : ''}`} onClick={() => setDrawerOpen(false)} />

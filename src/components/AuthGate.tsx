@@ -234,9 +234,18 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#f5f5f5',
     borderBottom: '1px solid #e0e0e0',
     fontSize: '0.78rem',
+    width: '100%',
+    boxSizing: 'border-box',
+    overflowX: 'hidden',
   },
   emailLabel: {
     color: '#555',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    minWidth: 0,
+    flex: 1,
+    textAlign: 'right' as const,
   },
   signOutBtn: {
     background: 'none',
