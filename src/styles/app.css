@@ -419,10 +419,10 @@ html, body {
   font-weight: 400;
   letter-spacing: 0.12em;
   line-height: 1;
-  color: rgba(255,255,255,0.3);
+  color: #000000;
 }
 .position-btn.selected .pos-id {
-  color: #2a1a0a;
+  color: #000000;
 }
 .pos-gates {
   font-size: 0.5rem;
@@ -560,8 +560,8 @@ html, body {
   transform: translateX(-50%);
   font-weight: 600;
   font-size: 0.58rem;
-  color: #999;
-  opacity: 0.7;
+  color: #000000;
+  opacity: 1;
   line-height: 1;
   pointer-events: none;
   z-index: 2;
@@ -1551,6 +1551,60 @@ ol { padding-left: 20px; }
   border: none;
   padding: 0;
   margin: 0;
+}
+
+/* ── labels-hidden: ポジションラベル・ゲート番号を非表示 ── */
+.labels-hidden .pos-id {
+  visibility: hidden;
+}
+.labels-hidden .gate-card-id {
+  visibility: hidden;
+}
+
+/* ── Label toggle button (ボード下部) ── */
+.board-label-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #555;
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+}
+.board-label-toggle:hover {
+  background: rgba(0,0,0,0.12);
+  color: #222;
+}
+.board-label-toggle.labels-off {
+  color: #aaa;
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+.board-label-toggle-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #444;
+  transition: background 0.15s;
+}
+.board-label-toggle.labels-off .board-label-toggle-dot {
+  background: #ccc;
+}
+.board-label-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
 }
 
 /* ── Stage labels (盤面四隅) ── */

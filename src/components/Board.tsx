@@ -497,6 +497,7 @@ export function Board({
   const scalerRef = useRef<HTMLDivElement>(null);
   const lastScaleRef = useRef<number>(-1);
   const [lines, setLines] = useState<LineCoord[]>([]);
+  const [showLabels, setShowLabels] = useState(true);
 
   // ── Responsive board scaling ──────────────────────────────────────────────
   const BOARD_W = 680;
@@ -632,7 +633,7 @@ export function Board({
     <section className="board-section">
 
       <div className="board-inner-scaler" ref={scalerRef}>
-      <div className="board-inner" ref={containerRef}>
+      <div className={['board-inner', showLabels ? '' : 'labels-hidden'].filter(Boolean).join(' ')} ref={containerRef}>
         {/* Octagonal board outline */}
         <svg className="board-octagon-svg" aria-hidden="true">
           <defs>
@@ -739,6 +740,19 @@ export function Board({
         </div>
       </div>
       </div>{/* board-inner-scaler */}
+
+      {/* Label toggle button */}
+      <div className="board-label-toggle-wrap">
+        <button
+          type="button"
+          className={['board-label-toggle', showLabels ? '' : 'labels-off'].filter(Boolean).join(' ')}
+          onClick={() => setShowLabels(v => !v)}
+          aria-pressed={showLabels}
+        >
+          <span className="board-label-toggle-dot" />
+          {showLabels ? 'LABELS ON' : 'LABELS OFF'}
+        </button>
+      </div>
     </section>
   );
 }
