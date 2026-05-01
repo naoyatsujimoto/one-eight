@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useLang } from '../lib/lang';
 
 interface Props {
   children: ReactNode;
@@ -11,7 +10,6 @@ type LoginMode = 'magic' | 'password';
 
 export function AuthGate({ children }: Props) {
   const { user, loading, signInWithMagicLink, signInWithPassword, signOut } = useAuth();
-  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [sent, setSent] = useState(false);
@@ -83,8 +81,8 @@ export function AuthGate({ children }: Props) {
           {mode === 'magic' && (
             sent ? (
               <p style={styles.info}>
-                ✉️ メールを送信しました。<br />
-                受信ボックスのリンクをクリックしてください。
+                Email sent.<br />
+                Click the link in your inbox to log in.
               </p>
             ) : (
               <form onSubmit={handleMagicLink} style={styles.form}>
@@ -99,7 +97,7 @@ export function AuthGate({ children }: Props) {
                 />
                 {error && <p style={styles.error}>{error}</p>}
                 <button type="submit" disabled={submitting} style={styles.button}>
-                  {submitting ? '送信中…' : 'Magic Link を送信'}
+                  {submitting ? 'Sending…' : 'Send Magic Link'}
                 </button>
               </form>
             )
@@ -127,7 +125,7 @@ export function AuthGate({ children }: Props) {
               />
               {error && <p style={styles.error}>{error}</p>}
               <button type="submit" disabled={submitting} style={styles.button}>
-                {submitting ? 'ログイン中…' : 'Password Login'}
+                {submitting ? 'Logging in…' : 'Log In'}
               </button>
             </form>
           )}
@@ -141,7 +139,7 @@ export function AuthGate({ children }: Props) {
       <div style={styles.signOutBar}>
         <span style={styles.emailLabel}>{user.email}</span>
         <button type="button" onClick={signOut} style={styles.signOutBtn}>
-          {t.signOut}
+          Sign out
         </button>
       </div>
       {children}
