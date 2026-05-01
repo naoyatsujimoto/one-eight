@@ -78,34 +78,40 @@ const EMPTY_BUILD: BoardBuildState = {
   quadMax: 4,
 };
 
-// State index for each of the 14 tutorial steps
-// 0:WIN_POS 1:BUILD_UP 2:BOARD 3:EACH_TURN 4:SELECT_POS 5:MASSIVE
-// 6:SELECTIVE 7:QUAD 8:SIZE 9:SHARED 10:CAPTURE 11:MOST_BUILT 12:END 13:START
-const STEP_STATE_INDICES = [4, 2, 0, 0, 1, 2, 6, 8, 8, 8, 11, 11, 12, 0];
+// State index for each of the 19 tutorial steps
+// 0:WIN_POS 1:BUILD_UP 2:BOARD 3:BLACK_FIRST 4:EACH_TURN 5:SELECT_POS
+// 6:MASSIVE 7:SELECTIVE 8:QUAD 9:SIZE 10:SHARED 11:PASS_RULE
+// 12:NO_BUILD 13:CAPTURE 14:EMPTY_POS 15:MOST_BUILT 16:TIED_GATES 17:END 18:START
+const STEP_STATE_INDICES = [4, 2, 0, 0, 0, 1, 2, 6, 8, 8, 8, 8, 12, 11, 0, 11, 11, 12, 0];
 
 // Gate highlights per step (null = none)
 const STEP_GATE_HIGHLIGHTS: (GateId[] | null)[] = [
   null,          // 0: WIN_POS — show positions
   [1],           // 1: BUILD_UP — gate 1 has a Large asset
   null,          // 2: BOARD
-  null,          // 3: EACH_TURN (interactive)
-  [1, 4, 7, 10], // 4: SELECT_POS — G's gates
-  [1],           // 5: MASSIVE — gate 1 built
-  [2, 7],        // 6: SELECTIVE — gates 2,7 have Middle assets
-  [3, 4, 5, 10], // 7: QUAD — white's quad gates
-  null,          // 8: SIZE
-  [2],           // 9: SHARED — gate 2 shared by both
-  [2, 5, 6, 9],  // 10: CAPTURE — H's gates
-  [2],           // 11: MOST_BUILT — gate 2 most built
-  null,          // 12: END
-  null,          // 13: START
+  null,          // 3: BLACK_FIRST
+  null,          // 4: EACH_TURN (interactive)
+  [1, 4, 7, 10], // 5: SELECT_POS — G's gates
+  [1],           // 6: MASSIVE — gate 1 built
+  [2, 7],        // 7: SELECTIVE — gates 2,7 have Middle assets
+  [3, 4, 5, 10], // 8: QUAD — white's quad gates
+  null,          // 9: SIZE
+  [2],           // 10: SHARED — gate 2 shared by both
+  null,          // 11: PASS_RULE
+  null,          // 12: NO_BUILD
+  [2, 5, 6, 9],  // 13: CAPTURE — H's gates
+  null,          // 14: EMPTY_POS
+  [2],           // 15: MOST_BUILT — gate 2 most built
+  null,          // 16: TIED_GATES
+  null,          // 17: END
+  null,          // 18: START
 ];
 
 // Which steps highlight all positions
 const STEP_HIGHLIGHT_ALL_POSITIONS = new Set([0]); // WIN_POS
 
 // Which steps are interactive (user can click board)
-const STEP_INTERACTIVE = new Set([3]); // EACH_TURN
+const STEP_INTERACTIVE = new Set([4]); // EACH_TURN
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
