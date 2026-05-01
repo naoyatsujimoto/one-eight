@@ -212,6 +212,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
             onLargePocketClick={handleLargePocketClick}
             onMiddlePocketClick={handleMiddlePocketClick}
             onSmallPocketClick={handleSmallPocketClick}
+            labelPerspective={myColor === 'white' ? 'white' : 'black'}
           />
         </div>
         <aside className="panel-col">
@@ -220,8 +221,6 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
             modeLabel={modeLabel}
             buildState={buildState}
             onSkip={handleSkip}
-            onQuadConfirm={handleQuadConfirm}
-            onSelectiveConfirm={handleSelectiveConfirm}
             onClear={handleClearSelection}
           />
         </aside>

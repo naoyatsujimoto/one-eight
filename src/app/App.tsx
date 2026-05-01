@@ -187,7 +187,7 @@ export default function App() {
 
     if (state.selectedPosition && !state.gameEnded) {
       const options = getBuildOptionsForSelected(state);
-      if (!options.hasAny) {
+      if (options && !options.hasAny) {
         const pos = state.selectedPosition;
         setConfirmModal({
           open: true,
