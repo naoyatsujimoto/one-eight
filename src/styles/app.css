@@ -1828,18 +1828,16 @@ ol { padding-left: 20px; }
   0%, 100% { transform: translateX(-50%) translateY(0); }
   50% { transform: translateX(-50%) translateY(6px); }
 }
-.title-footer {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+.site-footer {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   justify-content: center;
-  white-space: nowrap;
+  padding: 20px 32px;
+  border-top: 1px solid var(--rule);
+  margin-top: 8px;
 }
-.title-footer a {
+.site-footer a {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -1847,7 +1845,7 @@ ol { padding-left: 20px; }
   color: var(--ink-4);
   text-decoration: none;
 }
-.title-footer a:hover { color: var(--ink-2); }
+.site-footer a:hover { color: var(--ink-2); }
 
 /* ══════════════════════════════════════════
    Tutorial Screen

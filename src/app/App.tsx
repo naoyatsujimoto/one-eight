@@ -665,6 +665,15 @@ export default function App() {
         </aside>
       </main>
 
+      {/* Site footer */}
+      <footer className="site-footer">
+        <a href="/pricing.html">Pricing</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/refund.html">Refund</a>
+        <a href="mailto:contact@oneeightgame.com">Contact</a>
+      </footer>
+
       {/* Admin Inbox */}
       {inboxOpen && user && (
         <AdminInbox
