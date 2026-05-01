@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pricing — ONE EIGHT</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14141a;
+      --ink-2: #4a4a55;
+      --ink-3: #8a8a92;
+      --rule: #e6e2d9;
+      --rule-strong: #c9c4b8;
+      --highlight: #c9a24a;
+      --sans: 'Inter', system-ui, sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
+      --display: 'Archivo', 'Inter', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: #ffffff;
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(0,0,0,0.006) 0%, transparent 60%),
+        radial-gradient(ellipse at 85% 90%, rgba(0,0,0,0.006) 0%, transparent 60%);
+    }
+    header {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0;
+    }
+    .wordmark {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    nav a {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      margin-left: 24px;
+    }
+    nav a:hover { color: var(--ink); }
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 64px 32px 80px;
+    }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-family: var(--display);
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin: 0 0 8px;
+    }
+    .lead {
+      font-size: 15px;
+      color: var(--ink-2);
+      margin: 0 0 48px;
+      line-height: 1.7;
+    }
+    .plan-card {
+      border: 1px solid var(--rule-strong);
+      border-radius: 12px;
+      padding: 36px;
+      margin-bottom: 24px;
+    }
+    .plan-name {
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 0 4px;
+    }
+    .plan-price {
+      font-family: var(--mono);
+      font-size: 36px;
+      font-weight: 500;
+      color: var(--ink);
+      margin: 12px 0 4px;
+    }
+    .plan-price-note {
+      font-size: 13px;
+      color: var(--ink-3);
+      margin: 0 0 28px;
+    }
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border-top: 1px solid var(--rule);
+      padding-top: 20px;
+    }
+    .plan-features li {
+      font-size: 14px;
+      color: var(--ink-2);
+      padding: 7px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+    .plan-features li::before {
+      content: '—';
+      color: var(--ink-3);
+      flex-shrink: 0;
+      font-family: var(--mono);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .free-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--rule);
+      color: var(--ink-2);
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-bottom: 4px;
+    }
+    .note {
+      font-size: 13px;
+      color: var(--ink-3);
+      line-height: 1.7;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--rule);
+    }
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 24px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+    }
+    footer a {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+    }
+    footer a:hover { color: var(--ink); }
+    @media (max-width: 600px) {
+      header { padding: 16px 20px; }
+      main { padding: 40px 20px 60px; }
+      h1 { font-size: 26px; }
+      .plan-card { padding: 24px 20px; }
+      .plan-price { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="wordmark" href="/">ONE EIGHT</a>
+    <nav>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/refund.html">Refund</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="eyebrow">Plans &amp; Pricing</div>
+    <h1>Simple, honest pricing.</h1>
+    <p class="lead">ONE EIGHT is free to play. A membership unlocks competitive features — ranked games, tournament entry, and more as we grow.</p>
+
+    <!-- Free Plan -->
+    <div class="plan-card">
+      <span class="free-tag">Free</span>
+      <div class="plan-name">Casual</div>
+      <div class="plan-price">$0</div>
+      <div class="plan-price-note">No credit card required</div>
+      <ul class="plan-features">
+        <li>Full access to local play (Human vs Human)</li>
+        <li>Play against the CPU at all difficulty levels</li>
+        <li>Online friend matches via private room codes</li>
+        <li>Game history and basic stats</li>
+        <li>Tutorial and in-game rules</li>
+      </ul>
+    </div>
+
+    <!-- Member Plan -->
+    <div class="plan-card">
+      <div class="plan-name">Member</div>
+      <div class="plan-price">$4.99 <span style="font-size:16px;color:var(--ink-3)">/mo</span></div>
+      <div class="plan-price-note">Billed monthly · Cancel anytime</div>
+      <ul class="plan-features">
+        <li>Everything in Casual</li>
+        <li>Ranked matches with rating system</li>
+        <li>Domestic and season leaderboards</li>
+        <li>Competition entry (with official key)</li>
+        <li>Priority access to new competitive features</li>
+      </ul>
+    </div>
+
+    <p class="note">Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.</p>
+  </main>
+
+  <footer>
+    <a href="/">Home</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/terms.html">Terms of Service</a>
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/refund.html">Refund Policy</a>
+    <a href="mailto:contact@oneeightgame.com">Contact</a>
+  </footer>
+</body>
+</html>

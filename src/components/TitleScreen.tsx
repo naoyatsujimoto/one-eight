@@ -39,6 +39,15 @@ export function TitleScreen() {
         <span className="title-hint-icon">↓</span>
         <span>{t.titleHint}</span>
       </div>
+
+      {/* Footer links */}
+      <div className="title-footer" onClick={e => e.stopPropagation()}>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/refund.html">Refund</a>
+        <a href="mailto:contact@oneeightgame.com">Contact</a>
+      </div>
     </div>
   );
 }
