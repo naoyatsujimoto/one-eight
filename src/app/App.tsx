@@ -16,6 +16,7 @@ import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
 import { UserPage } from '../components/UserPage';
 import { AdminInbox } from '../components/AdminInbox';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { useUnreadCount } from '../hooks/useUnreadCount';
 // import { useSound } from '../hooks/useSound'; // SOUND OFF
 
@@ -348,14 +349,31 @@ export default function App() {
     });
   }
 
+  // ── Confirm Modal ─────────────────────────────────────────
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; label: string; action: () => void }>({
+    open: false,
+    label: '',
+    action: () => {},
+  });
+
+  function closeConfirmModal() {
+    setConfirmModal((prev) => ({ ...prev, open: false }));
+  }
+
   function handleSelectiveConfirm() {
     if (isCpuTurn) return;
     const { selectiveFirst } = buildState;
     if (!selectiveFirst) return;
-    playAsset();
-    setUndoStack((s) => [...s, state]);
-    setState((gs) => applySelectiveBuildSingle(gs, selectiveFirst));
-    setBuildState(EMPTY_BUILD_STATE);
+    setConfirmModal({
+      open: true,
+      label: `Selective Build: ${selectiveFirst}`,
+      action: () => {
+        playAsset();
+        setUndoStack((s) => [...s, state]);
+        setState((gs) => applySelectiveBuildSingle(gs, selectiveFirst));
+        setBuildState(EMPTY_BUILD_STATE);
+      },
+    });
   }
 
   function handleSmallPocketClick(gateId: GateId) {
@@ -378,10 +396,16 @@ export default function App() {
     if (isCpuTurn) return;
     const { quadSelected } = buildState;
     if (quadSelected.length === 0) return;
-    playAsset();
-    setUndoStack((s) => [...s, state]);
-    setState((gs) => applyQuadBuildForGates(gs, quadSelected as GateId[]));
-    setBuildState(EMPTY_BUILD_STATE);
+    setConfirmModal({
+      open: true,
+      label: `Quad Build: ${quadSelected.join(', ')} (${quadSelected.length}/${buildState.quadMax})`,
+      action: () => {
+        playAsset();
+        setUndoStack((s) => [...s, state]);
+        setState((gs) => applyQuadBuildForGates(gs, quadSelected as GateId[]));
+        setBuildState(EMPTY_BUILD_STATE);
+      },
+    });
   }
 
   function handleSkip() {
@@ -394,9 +418,16 @@ export default function App() {
 
   function handleConfirmPosition() {
     if (isCpuTurn) return;
-    setUndoStack((s) => [...s, state]);
-    setState((prev) => confirmPositionOnly(prev));
-    setBuildState(EMPTY_BUILD_STATE);
+    const pos = state.selectedPosition;
+    setConfirmModal({
+      open: true,
+      label: `Confirm Position: ${pos ?? ''}`,
+      action: () => {
+        setUndoStack((s) => [...s, state]);
+        setState((prev) => confirmPositionOnly(prev));
+        setBuildState(EMPTY_BUILD_STATE);
+      },
+    });
   }
 
   const modeLabel = state.cpuPlayer === null
@@ -604,6 +635,13 @@ export default function App() {
       </aside>
 
       <ResultModal state={state} onReset={handleNewGameRequest} />
+
+      <ConfirmModal
+        open={confirmModal.open}
+        label={confirmModal.label}
+        onConfirm={() => { confirmModal.action(); closeConfirmModal(); }}
+        onCancel={closeConfirmModal}
+      />
 
       {/* Online lobby modal */}
       {onlineLobbyOpen && user && (
