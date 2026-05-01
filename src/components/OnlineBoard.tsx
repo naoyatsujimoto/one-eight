@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Board } from './Board';
 import { TurnInfo } from './TurnInfo';
+import { ConfirmModal } from './ConfirmModal';
 import { MoveHistory } from './MoveHistory';
 import { useOnlineGame } from '../hooks/useOnlineGame';
 import { useLang } from '../lib/lang';
@@ -16,6 +17,8 @@ import {
   applyQuadBuildForGates,
   applySelectiveBuild,
   applySelectiveBuildSingle,
+  confirmPositionOnly,
+  getBuildOptionsForSelected,
   selectPosition,
   skipTurn,
 } from '../game/engine';
@@ -56,6 +59,13 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; label: string; action: () => void }>({
+    open: false, label: '', action: () => {},
+  });
+
+  function closeConfirmModal() {
+    setConfirmModal((prev) => ({ ...prev, open: false }));
+  }
 
   // gameRow が更新されたら localState も同期
   useEffect(() => {
@@ -68,7 +78,21 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   useEffect(() => {
     if (!localState) return;
     const qMax = calcQuadMax(localState);
-    setBuildState((prev) => ({ ...prev, quadMax: qMax }));
+    setBuildState({ ...EMPTY_BUILD_STATE, quadMax: qMax });
+
+    if (localState.selectedPosition && !localState.gameEnded && !blocked) {
+      const options = getBuildOptionsForSelected(localState);
+      if (options && !options.hasAny) {
+        const pos = localState.selectedPosition;
+        setConfirmModal({
+          open: true,
+          label: `Confirm Position: ${pos}`,
+          action: () => {
+            finalize(confirmPositionOnly(localState));
+          },
+        });
+      }
+    }
   }, [localState?.selectedPosition]);
 
   if (!gameRow || !localState) {
@@ -109,21 +133,32 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
         const otherHasOpen = relatedGates.some(
           (id) => id !== gateId && state.gates[id].middleSlots.some((s) => s === null)
         );
-        return { mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: !otherHasOpen, quadSelected: [], quadMax: prev.quadMax };
+        if (!otherHasOpen) {
+          setConfirmModal({
+            open: true,
+            label: `Selective Build: ${gateId}`,
+            action: () => {
+              finalize(applySelectiveBuildSingle(state, gateId));
+              setBuildState(EMPTY_BUILD_STATE);
+            },
+          });
+          return EMPTY_BUILD_STATE;
+        }
+        return { mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: prev.quadMax };
       }
       if (prev.selectiveFirst === gateId) return EMPTY_BUILD_STATE;
-      const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
-      finalize(applySelectiveBuild(state, gates));
+      const first = prev.selectiveFirst;
+      const gates: [GateId, GateId] = [first, gateId];
+      setConfirmModal({
+        open: true,
+        label: `Selective Build: ${first} + ${gateId}`,
+        action: () => {
+          finalize(applySelectiveBuild(state, gates));
+          setBuildState(EMPTY_BUILD_STATE);
+        },
+      });
       return EMPTY_BUILD_STATE;
     });
-  }
-
-  function handleSelectiveConfirm() {
-    if (blocked) return;
-    const { selectiveFirst } = buildState;
-    if (!selectiveFirst) return;
-    finalize(applySelectiveBuildSingle(state, selectiveFirst));
-    setBuildState(EMPTY_BUILD_STATE);
   }
 
   function handleSmallPocketClick(gateId: GateId) {
@@ -136,16 +171,20 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
           ? EMPTY_BUILD_STATE
           : { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
       }
-      return { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: [...prev.quadSelected, gateId], quadMax: currentMax };
+      const next = [...prev.quadSelected, gateId];
+      if (next.length >= currentMax) {
+        setConfirmModal({
+          open: true,
+          label: `Quad Build: ${next.join(', ')} (${next.length}/${currentMax})`,
+          action: () => {
+            finalize(applyQuadBuildForGates(state, next as GateId[]));
+            setBuildState(EMPTY_BUILD_STATE);
+          },
+        });
+        return EMPTY_BUILD_STATE;
+      }
+      return { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
     });
-  }
-
-  function handleQuadConfirm() {
-    if (blocked) return;
-    const { quadSelected } = buildState;
-    if (quadSelected.length === 0) return;
-    finalize(applyQuadBuildForGates(state, quadSelected as GateId[]));
-    setBuildState(EMPTY_BUILD_STATE);
   }
 
   function handleSkip() {
@@ -237,6 +276,13 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
           <MoveHistory history={state.history} />
         </div>
       </aside>
+
+      <ConfirmModal
+        open={confirmModal.open}
+        label={confirmModal.label}
+        onConfirm={() => { confirmModal.action(); closeConfirmModal(); }}
+        onCancel={closeConfirmModal}
+      />
 
       {/* 終局後に退出ボタン */}
       {onlineStatus === 'finished' && (
