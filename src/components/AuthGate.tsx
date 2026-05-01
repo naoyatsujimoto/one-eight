@@ -162,9 +162,11 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
   },
   title: {
-    fontFamily: 'Georgia, serif',
-    fontSize: '2rem',
-    letterSpacing: '0.15em',
+    fontFamily: "'Archivo', 'Inter', system-ui, sans-serif",
+    fontSize: '1.5rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
     marginBottom: '1.5rem',
   },
   tabs: {
