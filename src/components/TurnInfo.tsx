@@ -12,15 +12,12 @@ function derivePhase(state: GameState): Phase {
 }
 
 export function TurnInfo({
-  state, modeLabel, buildState, onSkip, onConfirmPosition, onQuadConfirm, onSelectiveConfirm, onClear,
+  state, modeLabel, buildState, onSkip, onClear,
 }: {
   state: GameState;
   modeLabel?: string;
   buildState?: BoardBuildState;
   onSkip?: () => void;
-  onConfirmPosition?: () => void;
-  onQuadConfirm?: () => void;
-  onSelectiveConfirm?: () => void;
   onClear?: () => void;
 }) {
   const { t } = useLang();
@@ -90,21 +87,6 @@ export function TurnInfo({
       <div className="panel-section">
         <div className="section-eyebrow">{t.actions}</div>
         <div className="actions-row">
-          {showSelectiveConfirm && (
-            <button type="button" className="action-btn action-btn-primary" onClick={onSelectiveConfirm}>
-              {t.confirm}
-            </button>
-          )}
-          {showQuadConfirm && (
-            <button type="button" className="action-btn action-btn-primary" onClick={onQuadConfirm}>
-              {t.confirm} ({quadSelected.length}/{quadMax})
-            </button>
-          )}
-          {canConfirmPosition && (
-            <button type="button" className="action-btn action-btn-primary" onClick={onConfirmPosition}>
-              Confirm Position
-            </button>
-          )}
           <button type="button" className="action-btn" onClick={onSkip} disabled={!canSkip || !!state.selectedPosition}>
             {t.pass}
           </button>

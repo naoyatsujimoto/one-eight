@@ -27,6 +27,7 @@ import {
   applySelectiveBuild,
   applySelectiveBuildSingle,
   confirmPositionOnly,
+  getBuildOptionsForSelected,
   resetGame,
   selectPosition,
   skipTurn,
@@ -179,9 +180,26 @@ export default function App() {
   }, [state]);
 
   // Reset build state whenever selectedPosition changes
+  // Also auto-trigger ConfirmModal when the selected position has no build options
   useEffect(() => {
     const qMax = calcQuadMax(state);
     setBuildState({ ...EMPTY_BUILD_STATE, quadMax: qMax });
+
+    if (state.selectedPosition && !state.gameEnded) {
+      const options = getBuildOptionsForSelected(state);
+      if (!options.hasAny) {
+        const pos = state.selectedPosition;
+        setConfirmModal({
+          open: true,
+          label: `Confirm Position: ${pos}`,
+          action: () => {
+            setUndoStack((s) => [...s, state]);
+            setState((prev) => confirmPositionOnly(prev));
+            setBuildState(EMPTY_BUILD_STATE);
+          },
+        });
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedPosition]);
 
@@ -330,10 +348,25 @@ export default function App() {
         const otherHasOpen = relatedGates.some(
           (id) => id !== gateId && state.gates[id].middleSlots.some((s) => s === null)
         );
+        const canConfirm = !otherHasOpen;
+        if (canConfirm) {
+          // No other open middle slot → auto-trigger confirm modal
+          setConfirmModal({
+            open: true,
+            label: `Selective Build: ${gateId}`,
+            action: () => {
+              playAsset();
+              setUndoStack((s) => [...s, state]);
+              setState((gs) => applySelectiveBuildSingle(gs, gateId));
+              setBuildState(EMPTY_BUILD_STATE);
+            },
+          });
+          return EMPTY_BUILD_STATE;
+        }
         return {
           mode: 'selective',
           selectiveFirst: gateId,
-          selectiveCanConfirm: !otherHasOpen,
+          selectiveCanConfirm: false,
           quadSelected: [],
           quadMax: prev.quadMax,
         };
@@ -341,10 +374,19 @@ export default function App() {
       if (prev.selectiveFirst === gateId) {
         return EMPTY_BUILD_STATE;
       }
-      const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
-      playAsset();
-      setUndoStack((s) => [...s, state]);
-      setState((gs) => applySelectiveBuild(gs, gates));
+      // 2nd pick → auto-trigger confirm modal
+      const first = prev.selectiveFirst;
+      const gates: [GateId, GateId] = [first, gateId];
+      setConfirmModal({
+        open: true,
+        label: `Selective Build: ${first} + ${gateId}`,
+        action: () => {
+          playAsset();
+          setUndoStack((s) => [...s, state]);
+          setState((gs) => applySelectiveBuild(gs, gates));
+          setBuildState(EMPTY_BUILD_STATE);
+        },
+      });
       return EMPTY_BUILD_STATE;
     });
   }
@@ -387,7 +429,20 @@ export default function App() {
           : { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
       }
       const next = [...prev.quadSelected, gateId];
-      // 上限に達したら Confirm 待ち（自動確定しない）
+      // 上限に達したら自動でConfirmモーダルを表示
+      if (next.length >= currentMax) {
+        setConfirmModal({
+          open: true,
+          label: `Quad Build: ${next.join(', ')} (${next.length}/${currentMax})`,
+          action: () => {
+            playAsset();
+            setUndoStack((s) => [...s, state]);
+            setState((gs) => applyQuadBuildForGates(gs, next as GateId[]));
+            setBuildState(EMPTY_BUILD_STATE);
+          },
+        });
+        return EMPTY_BUILD_STATE;
+      }
       return { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
     });
   }
@@ -603,9 +658,6 @@ export default function App() {
             modeLabel={modeLabel}
             buildState={buildState}
             onSkip={handleSkip}
-            onConfirmPosition={handleConfirmPosition}
-            onQuadConfirm={handleQuadConfirm}
-            onSelectiveConfirm={handleSelectiveConfirm}
             onClear={handleClearSelection}
           />
           <HowToPlay />
