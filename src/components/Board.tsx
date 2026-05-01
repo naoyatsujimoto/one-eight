@@ -395,6 +395,28 @@ const DEBUG_GATES =
 
 const BOARD_POSITIONS: PositionId[] = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
 
+// ── White-perspective label remapping ────────────────────────────────────────
+// When myColor === 'white', displayed labels are remapped so that:
+//   Position labels (L→R, T→B): M,L,K,J,I,H,G,F,E,D,C,B,A
+//   Gate labels (TL clockwise): 7,8,9,10,11,12,1,2,3,4,5,6
+
+const WHITE_POSITION_LABEL: Record<PositionId, PositionId> = {
+  A: 'M', B: 'L', C: 'K',
+  D: 'J', E: 'I', F: 'H',
+  G: 'G',
+  H: 'F', I: 'E', J: 'D',
+  K: 'C', L: 'B', M: 'A',
+};
+
+function getDisplayPositionLabel(id: PositionId, perspective: 'black' | 'white'): PositionId {
+  return perspective === 'white' ? WHITE_POSITION_LABEL[id] : id;
+}
+
+function getDisplayGateLabel(gateId: GateId, perspective: 'black' | 'white'): number {
+  if (perspective !== 'white') return gateId;
+  return ((gateId - 1 + 6) % 12) + 1;
+}
+
 const POSITION_COORDS: Record<PositionId, { left: number; top: number }> = {
   A: { left: 0,   top: 0   },
   B: { left: 146, top: 0   },
@@ -462,6 +484,7 @@ export function Board({
   tutorialHighlightAllPositions,
   showLabelToggle = true,
   defaultLabels = true,
+  labelPerspective = 'black',
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -475,6 +498,7 @@ export function Board({
   defaultLabels?: boolean;
   moveNumber?: number;
   currentPlayer?: string;
+  labelPerspective?: 'black' | 'white';
 }) {
   const selectedId = state.selectedPosition;
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
@@ -728,7 +752,7 @@ export function Board({
                 className="gate-card-id"
                 style={{ position: 'absolute', left: labelOffset.left, top: labelOffset.top }}
               >
-                {gateId}
+                {getDisplayGateLabel(gateId, labelPerspective)}
               </div>
             </div>
           );
@@ -756,7 +780,7 @@ export function Board({
                 aria-pressed={isSelected}
                 style={{ position: 'absolute', left: coord.left, top: coord.top }}
               >
-                <span className="pos-id">{id}</span>
+                <span className="pos-id">{getDisplayPositionLabel(id, labelPerspective)}</span>
                 <OwnerDot owner={displayOwner} isLastOpponentMove={!isSelected && id === lastOpponentPositionId} />
               </button>
             );
