@@ -61,13 +61,13 @@ const EMPTY_BUILD_STATE: BoardBuildState = {
 function calcQuadMax(state: GameState): number {
   if (!state.selectedPosition) return 4;
   const gateIds = POSITION_TO_GATES[state.selectedPosition];
-  let freeCount = 0;
+  // 空き small スロットが1つ以上あるゲートの数をカウント
+  let gateWithFreeCount = 0;
   for (const gid of gateIds) {
     const gate = state.gates[gid];
-    if (gate) freeCount += gate.smallSlots.filter((s) => s === null).length;
+    if (gate && gate.smallSlots.some((s) => s === null)) gateWithFreeCount++;
   }
-  // 空きスロット数を Gate 数上限（4）でクランプ
-  return Math.min(freeCount, 4);
+  return gateWithFreeCount;
 }
 
 /** Delay (ms) before CPU executes its move — gives the player a moment to see the board */
