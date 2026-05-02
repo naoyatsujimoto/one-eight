@@ -73,6 +73,15 @@ export const T = {
     humanVsCpu: 'Human × CPU',
     selectMode: 'Select Mode',
     cancel: 'Cancel',
+    cpuSettings: 'CPU Settings',
+    cpuDifficulty: 'Difficulty',
+    cpuDiffNormal: 'Normal',
+    cpuDiffHard: 'Hard',
+    cpuDiffVeryHard: 'Very Hard',
+    cpuColor: 'Your Color',
+    cpuColorBlack: 'Black (First)',
+    cpuColorWhite: 'White (Second)',
+    startGame: 'Start Game',
     signOut: 'Sign out',
     gameHistory: 'Game History',
     analyze: 'Analyze',
@@ -230,6 +239,15 @@ export const T = {
     humanVsCpu: '人間 × CPU',
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
+    cpuSettings: 'CPU 設定',
+    cpuDifficulty: '強さ',
+    cpuDiffNormal: 'ノーマル',
+    cpuDiffHard: 'ハード',
+    cpuDiffVeryHard: '激強',
+    cpuColor: '自分の色',
+    cpuColorBlack: '黒（先手）',
+    cpuColorWhite: '白（後手）',
+    startGame: 'ゲーム開始',
     signOut: 'ログアウト',
     gameHistory: '対局履歴',
     analyze: '分析',
@@ -363,6 +381,15 @@ export type Translations = {
   humanVsCpu: string;
   selectMode: string;
   cancel: string;
+  cpuSettings: string;
+  cpuDifficulty: string;
+  cpuDiffNormal: string;
+  cpuDiffHard: string;
+  cpuDiffVeryHard: string;
+  cpuColor: string;
+  cpuColorBlack: string;
+  cpuColorWhite: string;
+  startGame: string;
   signOut: string;
   gameHistory: string;
   analyze: string;

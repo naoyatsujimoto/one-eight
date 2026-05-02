@@ -32,7 +32,7 @@ import {
   selectPosition,
   skipTurn,
 } from '../game/engine';
-import { selectCpuMove } from '../game/ai';
+import { selectCpuMove, CpuDifficulty } from '../game/ai';
 import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
 import { saveGameRecord, updateAggregates } from '../game/analytics';
 import { POSITION_TO_GATES } from '../game/constants';
@@ -219,7 +219,7 @@ export default function App() {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         setUndoStack((s) => [...s, prev]);
 
-        const move = selectCpuMove(prev, prev.cpuPlayer!);
+        const move = selectCpuMove(prev, prev.cpuPlayer!, cpuDifficulty);
 
         if (move.type === 'pass') {
           const POSITION_IDS = ['A','B','C','D','E','F','G','H','I','J','K','L','M'] as PositionId[];
@@ -506,6 +506,9 @@ export default function App() {
   }, [screen, user?.id]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
+  const [cpuSettingsOpen, setCpuSettingsOpen] = useState(false);
+  const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>('normal');
+  const [cpuColorChoice, setCpuColorChoice] = useState<'black' | 'white'>('black');
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
   const [onlineGameId, setOnlineGameId] = useState<string | null>(() => {
     try { return sessionStorage.getItem('one_eight_online_game_id') || null; } catch { return null; }
@@ -542,6 +545,18 @@ export default function App() {
 
   function handleModeSelect(cpuPlayer: Player | null) {
     setModeModalOpen(false);
+    if (cpuPlayer !== null) {
+      // vsCPU: open settings panel
+      setCpuSettingsOpen(true);
+    } else {
+      handleNewGame(null);
+    }
+  }
+
+  function handleCpuStart() {
+    setCpuSettingsOpen(false);
+    // cpuColorChoice is the human's color, so CPU gets the opposite
+    const cpuPlayer: Player = cpuColorChoice === 'black' ? 'white' : 'black';
     handleNewGame(cpuPlayer);
   }
 
@@ -730,6 +745,60 @@ export default function App() {
                 </button>
               </div>
               <button type="button" className="mode-modal-cancel" onClick={() => setModeModalOpen(false)}>
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* CPU settings modal */}
+      {cpuSettingsOpen && (
+        <>
+          <div className="backdrop open" onClick={() => setCpuSettingsOpen(false)} />
+          <div className="mode-modal">
+            <div className="mode-modal-card">
+              <div className="result-eyebrow">vs CPU</div>
+              <div className="mode-modal-title">{t.cpuSettings}</div>
+
+              <div className="cpu-settings-group">
+                <div className="cpu-settings-label">{t.cpuDifficulty}</div>
+                <div className="cpu-settings-row">
+                  {(['normal', 'hard', 'very_hard'] as CpuDifficulty[]).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`cpu-settings-btn${cpuDifficulty === d ? ' active' : ''}`}
+                      onClick={() => setCpuDifficulty(d)}
+                    >
+                      {d === 'normal' ? t.cpuDiffNormal : d === 'hard' ? t.cpuDiffHard : t.cpuDiffVeryHard}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="cpu-settings-group">
+                <div className="cpu-settings-label">{t.cpuColor}</div>
+                <div className="cpu-settings-row">
+                  {(['black', 'white'] as const).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`cpu-settings-btn${cpuColorChoice === c ? ' active' : ''}`}
+                      onClick={() => setCpuColorChoice(c)}
+                    >
+                      {c === 'black' ? t.cpuColorBlack : t.cpuColorWhite}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mode-modal-actions" style={{ marginTop: '16px' }}>
+                <button type="button" className="result-btn result-btn-primary" onClick={handleCpuStart}>
+                  {t.startGame}
+                </button>
+              </div>
+              <button type="button" className="mode-modal-cancel" onClick={() => setCpuSettingsOpen(false)}>
                 {t.cancel}
               </button>
             </div>

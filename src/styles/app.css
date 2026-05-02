@@ -1715,6 +1715,46 @@ ol { padding-left: 20px; }
 }
 .mode-modal-cancel:hover { color: var(--ink-2); }
 
+/* CPU settings */
+.cpu-settings-group {
+  margin-bottom: 16px;
+  width: 100%;
+}
+.cpu-settings-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+.cpu-settings-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cpu-settings-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  border: 1px solid var(--ink-4);
+  border-radius: 4px;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.cpu-settings-btn:hover {
+  border-color: var(--ink-2);
+  color: var(--ink-1);
+}
+.cpu-settings-btn.active {
+  background: var(--ink-1);
+  color: var(--bg);
+  border-color: var(--ink-1);
+}
+
 /* ══════════════════════════════════════════
    Screen transitions
 ══════════════════════════════════════════ */
