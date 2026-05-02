@@ -58,6 +58,10 @@ export function AuthGate({ children }: Props) {
       <div style={styles.center}>
         <div style={styles.card}>
           <h1 style={styles.title}>ONE EIGHT</h1>
+          <p style={styles.tagline}>
+            ONE EIGHT is a competitive abstract strategy game.<br />
+            Monthly membership available.
+          </p>
 
           {/* Tab switcher */}
           <div style={styles.tabs}>
@@ -274,5 +278,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.72rem',
     color: '#aaa',
     textDecoration: 'none',
+  },
+  tagline: {
+    fontSize: '0.82rem',
+    color: '#888',
+    lineHeight: 1.6,
+    marginBottom: '1.25rem',
+    marginTop: '-0.5rem',
   },
 };
