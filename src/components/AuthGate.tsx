@@ -129,6 +129,14 @@ export function AuthGate({ children }: Props) {
               </button>
             </form>
           )}
+
+          {/* Legal links */}
+          <div style={styles.legalLinks}>
+            <a href="/pricing.html" style={styles.legalLink}>Pricing</a>
+            <a href="/terms.html" style={styles.legalLink}>Terms</a>
+            <a href="/privacy.html" style={styles.legalLink}>Privacy</a>
+            <a href="/refund.html" style={styles.legalLink}>Refund</a>
+          </div>
         </div>
       </div>
     );
@@ -254,5 +262,17 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.2rem 0.6rem',
     cursor: 'pointer',
     fontSize: '0.78rem',
+  },
+  legalLinks: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '1rem',
+    marginTop: '1.5rem',
+    flexWrap: 'wrap' as const,
+  },
+  legalLink: {
+    fontSize: '0.72rem',
+    color: '#aaa',
+    textDecoration: 'none',
   },
 };
