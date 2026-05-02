@@ -78,6 +78,7 @@ export const T = {
     cpuDiffNormal: 'Normal',
     cpuDiffHard: 'Hard',
     cpuDiffVeryHard: 'Very Hard',
+
     cpuColor: 'Your Color',
     cpuColorBlack: 'Black (First)',
     cpuColorWhite: 'White (Second)',
@@ -243,7 +244,7 @@ export const T = {
     cpuDifficulty: '強さ',
     cpuDiffNormal: 'ノーマル',
     cpuDiffHard: 'ハード',
-    cpuDiffVeryHard: '激強',
+    cpuDiffVeryHard: 'Very Hard',
     cpuColor: '自分の色',
     cpuColorBlack: '黒（先手）',
     cpuColorWhite: '白（後手）',
