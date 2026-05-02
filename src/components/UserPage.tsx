@@ -16,6 +16,7 @@ import { fetchUserPageStats, type UserPageStats, type MatchLogRow } from '../lib
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
+import type { Lang } from '../lib/lang';
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
 
@@ -33,7 +34,7 @@ interface Props {
 }
 
 export function UserPage({ userId, userEmail, onBack }: Props) {
-  const { t } = useLang();
+  const { t, lang, setLangWithSync } = useLang();
   // t is also used in inline JSX below
   const [stats, setStats] = useState<UserPageStats | null>(null);
   const [agg, setAgg] = useState<Aggregates | null>(null);
@@ -123,6 +124,23 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
             <ProfileItem label={t.userRating} value="— (Coming Soon)" muted />
             <ProfileItem label={t.userDomesticRank} value="— (Coming Soon)" muted />
             <ProfileItem label={t.userSeasonRank} value="— (Coming Soon)" muted />
+          </div>
+
+          {/* 言語設定 */}
+          <div style={s.langSettingRow}>
+            <span style={s.langSettingLabel}>{t.langLabel}</span>
+            <div style={s.langBtnGroup}>
+              {(['en', 'ja'] as Lang[]).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  style={{ ...s.langBtn, ...(lang === l ? s.langBtnActive : {}) }}
+                  onClick={() => setLangWithSync(l)}
+                >
+                  {l === 'en' ? 'English' : '日本語'}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -579,6 +597,37 @@ const s: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '1fr 1fr',
     gap: '0.5rem 1rem',
     marginBottom: '0.5rem',
+  },
+  langSettingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    marginTop: '0.75rem',
+  },
+  langSettingLabel: {
+    fontSize: '0.72rem',
+    color: '#999',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    flexShrink: 0,
+  },
+  langBtnGroup: {
+    display: 'flex',
+    gap: '0.4rem',
+  },
+  langBtn: {
+    fontSize: '0.78rem',
+    padding: '3px 10px',
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    background: 'none',
+    color: '#555',
+    cursor: 'pointer',
+  },
+  langBtnActive: {
+    background: '#111',
+    color: '#fff',
+    borderColor: '#111',
   },
   profileItem: {
     display: 'flex',

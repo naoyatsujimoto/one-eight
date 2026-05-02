@@ -12,6 +12,8 @@ import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
 import { saveMatchLog } from '../lib/matchLog';
 import { useLang } from '../lib/lang';
+import { getProfile } from '../lib/profile';
+import type { Lang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
 import { UserPage } from '../components/UserPage';
@@ -77,7 +79,7 @@ const SCREENS: Screen[] = ['title', 'tutorial', 'main'];
 
 export default function App() {
   const { user } = useAuth();
-  const { t } = useLang();
+  const { t, setLang, setUserId } = useLang();
   // statsOpen は UserPage 画面遷移に置き換え済み（削除）
   const [screen, setScreen] = useState<Screen>(() => {
     // Restore screen from sessionStorage to survive reloads
@@ -501,6 +503,19 @@ export default function App() {
     user?.id ?? null,
     user?.email_confirmed_at ?? user?.created_at,
   );
+
+  // ログイン後にprofileを読み込み、言語をLangProviderに反映
+  useEffect(() => {
+    if (!user) {
+      setUserId(null);
+      return;
+    }
+    setUserId(user.id);
+    getProfile(user.id).then((profile) => {
+      if (profile?.lang) setLang(profile.lang as Lang);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // メイン画面表示中は未読数を取得（リロード・初期表示含む）
   useEffect(() => {

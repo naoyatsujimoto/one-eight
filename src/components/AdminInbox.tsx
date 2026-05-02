@@ -3,6 +3,8 @@
  */
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useLang } from '../lib/lang';
+import type { Lang } from '../lib/lang';
 
 interface AdminMessage {
   id: string;
@@ -11,6 +13,7 @@ interface AdminMessage {
   target: string;
   read_by: string[];
   created_at: string;
+  translations?: Record<Lang, { title: string; body: string }> | null;
 }
 
 interface Props {
@@ -21,6 +24,7 @@ interface Props {
 }
 
 export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }: Props) {
+  const { lang } = useLang();
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -59,6 +63,13 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
     }
   }
 
+  function getLocalizedTitle(msg: AdminMessage): string {
+    return msg.translations?.[lang]?.title ?? msg.title;
+  }
+  function getLocalizedBody(msg: AdminMessage): string {
+    return msg.translations?.[lang]?.body ?? msg.body;
+  }
+
   return (
     <div style={s.overlay} onClick={onClose}>
       <div style={s.card} onClick={(e) => e.stopPropagation()}>
@@ -85,14 +96,14 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
                 <div style={s.itemHeader}>
                   {!isRead && <span style={s.dot} />}
                   <span style={{ ...s.itemTitle, fontWeight: isRead ? 400 : 700 }}>
-                    {msg.title}
+                    {getLocalizedTitle(msg)}
                   </span>
                   <span style={s.itemDate}>
                     {new Date(msg.created_at).toLocaleDateString('ja-JP')}
                   </span>
                 </div>
                 {isOpen && (
-                  <div style={s.body}>{msg.body}</div>
+                  <div style={s.body}>{getLocalizedBody(msg)}</div>
                 )}
               </div>
             );

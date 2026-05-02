@@ -2,11 +2,11 @@ import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
 
 export function TitleScreen() {
-  const { lang, setLang, t } = useLang();
+  const { lang, setLangWithSync, t } = useLang();
 
   function handleLang(e: React.MouseEvent, l: Lang) {
     e.stopPropagation();
-    setLang(l);
+    setLangWithSync(l);
   }
 
   return (

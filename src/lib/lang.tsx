@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { upsertProfile } from './profile';
 
 export type Lang = 'en' | 'ja';
 
@@ -484,19 +485,34 @@ export type Translations = {
 interface LangContextValue {
   lang: Lang;
   setLang: (l: Lang) => void;
+  /** setLang + persist to profiles table if userId is set */
+  setLangWithSync: (l: Lang) => void;
+  /** Call after login to bind a userId for profile sync */
+  setUserId: (id: string | null) => void;
   t: Translations;
 }
 
 const LangContext = createContext<LangContextValue>({
   lang: 'en',
   setLang: () => {},
+  setLangWithSync: () => {},
+  setUserId: () => {},
   t: T.en as unknown as Translations,
 });
 
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>('en');
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const setLangWithSync = useCallback((l: Lang) => {
+    setLang(l);
+    if (userId) {
+      upsertProfile(userId, { lang: l }).catch(() => {/* silent */});
+    }
+  }, [userId]);
+
   return (
-    <LangContext.Provider value={{ lang, setLang, t: T[lang] as unknown as Translations }}>
+    <LangContext.Provider value={{ lang, setLang, setLangWithSync, setUserId, t: T[lang] as unknown as Translations }}>
       {children}
     </LangContext.Provider>
   );
