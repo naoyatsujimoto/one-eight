@@ -497,7 +497,10 @@ export default function App() {
   const playSymbol = () => {}; // SOUND OFF
   const playAsset  = () => {}; // SOUND OFF
   const [inboxOpen, setInboxOpen] = useState(false);
-  const [unreadCount, refreshUnread] = useUnreadCount(user?.id ?? null);
+  const [unreadCount, refreshUnread] = useUnreadCount(
+    user?.id ?? null,
+    user?.email_confirmed_at ?? user?.created_at,
+  );
 
   // メイン画面表示中は未読数を取得（リロード・初期表示含む）
   useEffect(() => {
@@ -693,6 +696,7 @@ export default function App() {
       {inboxOpen && user && (
         <AdminInbox
           userId={user.id}
+          userConfirmedAt={user.email_confirmed_at ?? user.created_at}
           onClose={() => { setInboxOpen(false); refreshUnread(); }}
           onUnreadChange={refreshUnread}
         />

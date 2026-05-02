@@ -15,20 +15,28 @@ interface AdminMessage {
 
 interface Props {
   userId: string;
+  userConfirmedAt?: string | null; // email_confirmed_at — filter messages sent after this date
   onClose: () => void;
   onUnreadChange?: () => void;
 }
 
-export function AdminInbox({ userId, onClose, onUnreadChange }: Props) {
+export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }: Props) {
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   async function load() {
-    const { data, error } = await supabase
+    let query = supabase
       .from('admin_messages')
       .select('*')
       .order('created_at', { ascending: false });
+
+    // Only show messages created after the user confirmed their email
+    if (userConfirmedAt) {
+      query = query.gte('created_at', userConfirmedAt);
+    }
+
+    const { data, error } = await query;
     if (!error && data) {
       setMessages(data as AdminMessage[]);
       onUnreadChange?.();
