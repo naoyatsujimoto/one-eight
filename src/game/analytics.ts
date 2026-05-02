@@ -199,6 +199,22 @@ export function loadGameRecords(limit = 10): GameRecord[] {
   }
 }
 
+/**
+ * Supabase から復元したレコードをローカルストレージにキャッシュする。
+ * 既に同 game_id が存在する場合はスキップ（重複防止）。
+ */
+export function cacheGameRecord(record: GameRecord): void {
+  try {
+    const raw = localStorage.getItem(RECORDS_KEY);
+    const records: GameRecord[] = raw ? (JSON.parse(raw) as GameRecord[]) : [];
+    if (records.some((r) => r.game_id === record.game_id)) return; // 既存はスキップ
+    records.push(record);
+    localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+  } catch {
+    // localStorage 満杯などは無視
+  }
+}
+
 /** 集計データ全体を JSON 文字列として返す（デバッグ・エクスポート用）。 */
 export function exportAnalytics(): string {
   try {

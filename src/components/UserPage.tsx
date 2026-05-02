@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react';
 import { fetchUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
-import { loadAggregates, loadGameRecords, type GameRecord, type Aggregates } from '../game/analytics';
+import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 
@@ -346,7 +346,34 @@ function RecentGamesTable({
             const resultColor = isDraw ? '#888' : isWin ? '#2e7d32' : '#c62828';
             const side = r.human_color === 'black' ? t.userSideBlack : r.human_color === 'white' ? t.userSideWhite : '—';
             const modeLabel = r.mode === 'human_vs_cpu' ? t.userTypeCpu : r.mode === 'online_pvp' ? t.userTypeOnline : t.userTypeHuman;
+
+            // ローカルキャッシュを優先。なければ Supabase の full_record からフォールバック
             const local = localMap.get(r.game_id);
+            const remoteRecord: GameRecord | null =
+              !local && r.full_record && r.full_record.length > 0
+                ? {
+                    game_id: r.game_id,
+                    started_at: r.started_at,
+                    ended_at: r.ended_at,
+                    mode: r.mode as GameRecord['mode'],
+                    human_color: r.human_color as GameRecord['human_color'],
+                    winner: r.winner as GameRecord['winner'],
+                    move_count: r.move_count,
+                    first_3_plies: [],
+                    full_record: r.full_record,
+                  }
+                : null;
+            const gameRecord = local ?? remoteRecord;
+
+            function handleAnalyze() {
+              if (!gameRecord) return;
+              // Supabase から復元した場合はローカルにキャッシュして次回以降即参照できるようにする
+              if (!local && remoteRecord) {
+                cacheGameRecord(remoteRecord);
+              }
+              onPostmortem(gameRecord);
+            }
+
             return (
               <tr key={r.game_id}>
                 <td style={s.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
@@ -355,8 +382,8 @@ function RecentGamesTable({
                 <td style={s.td}>{r.move_count}</td>
                 <td style={s.td}>{modeLabel}</td>
                 <td style={s.td}>
-                  {local ? (
-                    <button type="button" style={s.analyzeBtn} onClick={() => onPostmortem(local)}>{t.analyze}</button>
+                  {gameRecord ? (
+                    <button type="button" style={s.analyzeBtn} onClick={handleAnalyze}>{t.analyze}</button>
                   ) : <span style={{ color: '#ccc' }}>—</span>}
                 </td>
               </tr>

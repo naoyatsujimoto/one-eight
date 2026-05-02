@@ -4,6 +4,7 @@
  */
 import { supabase } from './supabase';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
+import type { MoveRecord } from '../game/types';
 
 export interface MatchLogRow {
   id?: string;
@@ -15,7 +16,7 @@ export interface MatchLogRow {
   human_color: string | null;
   winner: string | null;
   move_count: number;
-  full_record?: unknown;
+  full_record?: MoveRecord[] | null;
   created_at?: string;
 }
 
