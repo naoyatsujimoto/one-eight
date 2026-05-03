@@ -125,6 +125,7 @@ html, body {
 .cpu-name-chip {
   font-family: var(--mono);
   font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ink-2);
