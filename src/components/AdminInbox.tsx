@@ -32,7 +32,7 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
   async function load() {
     let query = supabase
       .from('admin_messages')
-      .select('*')
+      .select('id, title, body, target, read_by, created_at, translations')
       .order('created_at', { ascending: false });
 
     // Only show messages created after the user confirmed their email
