@@ -11,9 +11,9 @@ import type { CpuDifficulty } from '../game/ai';
 import type { MoveRecord, GateId } from '../game/types';
 
 const DIFFICULTY_LABELS: Record<CpuDifficulty, string> = {
-  normal: 'Normal',
-  hard: 'Hard',
-  very_hard: 'Very Hard',
+  normal: 'Agnesi',
+  hard: 'al-Kashi',
+  very_hard: 'Maupertuis',
 };
 
 interface CpuGameRow {

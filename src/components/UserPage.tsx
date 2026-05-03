@@ -317,7 +317,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                   style={s.cpuBtn}
                   onClick={() => setOpenCpuDiff(d)}
                 >
-                  {d === 'normal' ? 'Normal' : d === 'hard' ? 'Hard' : 'Very Hard'}
+                  {d === 'normal' ? 'Agnesi' : d === 'hard' ? 'al-Kashi' : 'Maupertuis'}
                 </button>
               ))}
             </div>
