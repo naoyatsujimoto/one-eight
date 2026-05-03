@@ -18,6 +18,8 @@ import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
 import { getProfile, upsertProfile } from '../lib/profile';
+import { CpuProfile } from './CpuProfile';
+import type { CpuDifficulty } from '../game/ai';
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
 
@@ -47,6 +49,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
+  const [openCpuDiff, setOpenCpuDiff] = useState<CpuDifficulty | null>(null);
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
   const [username, setUsername] = useState<string>(() => {
@@ -301,10 +304,33 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <SectionTitle title={t.userBadges} soon />
           <Muted text={t.onlineComingSoon} />
         </section>
+
+        {/* ── CPU Profiles ── */}
+        {!viewOnly && (
+          <section style={s.section}>
+            <SectionTitle title={t.cpuProfiles} />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {(['normal', 'hard', 'very_hard'] as CpuDifficulty[]).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  style={s.cpuBtn}
+                  onClick={() => setOpenCpuDiff(d)}
+                >
+                  {d === 'normal' ? 'Normal' : d === 'hard' ? 'Hard' : 'Very Hard'}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
         </>
         )}
 
       </div>
+
+      {openCpuDiff && (
+        <CpuProfile difficulty={openCpuDiff} onClose={() => setOpenCpuDiff(null)} />
+      )}
 
       {postmortemGame && (
         <PostmortemModal
@@ -849,6 +875,17 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     color: '#444',
     whiteSpace: 'nowrap' as const,
+  },
+  cpuBtn: {
+    padding: '0.5rem 1.1rem',
+    background: '#111',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    fontSize: '0.82rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    letterSpacing: '0.04em',
   },
   // 代表棋譜
   featuredScroll: {

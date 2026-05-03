@@ -18,6 +18,7 @@ export interface MatchLogRow {
   move_count: number;
   full_record?: MoveRecord[] | null;
   created_at?: string;
+  cpu_difficulty?: string | null;
 }
 
 export async function saveMatchLog(record: GameRecord, userId: string): Promise<void> {
@@ -31,6 +32,7 @@ export async function saveMatchLog(record: GameRecord, userId: string): Promise<
     winner: record.winner,
     move_count: record.move_count,
     full_record: record.full_record,
+    cpu_difficulty: record.cpu_difficulty ?? null,
   };
 
   const { error } = await supabase.from('match_logs').insert(row);

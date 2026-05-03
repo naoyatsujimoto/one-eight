@@ -171,7 +171,7 @@ export default function App() {
     setHasSaved(true);
     // Auto-save analytics when any game ends (Human vs CPU or Human vs Human)
     if (state.gameEnded) {
-      const record = saveGameRecord(state);
+      const record = saveGameRecord(state, state.cpuPlayer !== null ? cpuDifficulty : undefined);
       if (record) {
         updateAggregates(record);
         if (user) {

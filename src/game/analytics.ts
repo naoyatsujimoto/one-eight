@@ -27,6 +27,7 @@ export interface GameRecord {
   move_count: number;
   first_3_plies: PlyRecord[];
   full_record: MoveRecord[];
+  cpu_difficulty?: string | null;
 }
 
 export interface AggregateEntry {
@@ -91,11 +92,12 @@ function isWin(record: GameRecord, key: 'human' | 'cpu'): boolean {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /** ゲーム終了時に呼び出す。Human vs CPU / Human vs Human 両方を保存する。 */
-export function saveGameRecord(state: GameState): GameRecord | null {
+export function saveGameRecord(state: GameState, cpuDifficulty?: string | null): GameRecord | null {
   if (!state.gameEnded) return null;
 
   const now = new Date().toISOString();
   const mode: GameRecord['mode'] = state.cpuPlayer !== null ? 'human_vs_cpu' : 'human_vs_human';
+  const cpu_difficulty = mode === 'human_vs_cpu' ? (cpuDifficulty ?? null) : null;
   const human_color: Player | null = state.cpuPlayer !== null
     ? (state.cpuPlayer === 'white' ? 'black' : 'white')
     : null;
@@ -110,6 +112,7 @@ export function saveGameRecord(state: GameState): GameRecord | null {
     move_count: state.history.length,
     first_3_plies: extractFirst3Plies(state.history),
     full_record: state.history,
+    cpu_difficulty,
   };
 
   try {

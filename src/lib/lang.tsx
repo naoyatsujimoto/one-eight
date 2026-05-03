@@ -177,7 +177,16 @@ export const T = {
     statsPrivate: 'Private',
     opponentStats: "Opponent's Stats",
     statsPrivateMsg: "This player's stats are private.",
+    cpuProfiles: 'CPU Records',
+    cpuProfileTitle: (d: string) => `${d} CPU`,
+    cpuTotalGames: 'Total',
+    cpuWins: 'CPU Wins',
+    cpuLosses: 'CPU Losses',
+    cpuDraws: 'Draws',
+    cpuWinRate: 'CPU Win Rate',
+    cpuNoGames: 'No games recorded yet.',
   },
+
 
   ja: {
     // Title
@@ -348,6 +357,14 @@ export const T = {
     statsPrivate: '非公開',
     opponentStats: '相手の STATS',
     statsPrivateMsg: 'このプレイヤーの STATS は非公開です。',
+    cpuProfiles: 'CPU 成績',
+    cpuProfileTitle: (d: string) => `${d}`,
+    cpuTotalGames: '総対局数',
+    cpuWins: 'CPU 勝利',
+    cpuLosses: 'CPU 敗北',
+    cpuDraws: '引き分け',
+    cpuWinRate: 'CPU 勝率',
+    cpuNoGames: 'まだ対局記録がありません。',
   },
 } as const;
 
@@ -493,6 +510,14 @@ export type Translations = {
   statsPrivate: string;
   opponentStats: string;
   statsPrivateMsg: string;
+  cpuProfiles: string;
+  cpuProfileTitle: (d: string) => string;
+  cpuTotalGames: string;
+  cpuWins: string;
+  cpuLosses: string;
+  cpuDraws: string;
+  cpuWinRate: string;
+  cpuNoGames: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
