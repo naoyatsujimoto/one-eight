@@ -75,20 +75,16 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         if (viewOnly && profile.display_name) {
           setUsername(profile.display_name);
         } else if (!viewOnly && !profile.display_name) {
-          // Supabaseに display_name がない場合、ローカル名を同期
-          const localName = loadUsername(userId);
-          if (localName) {
-            upsertProfile(userId, { display_name: localName }).catch(() => {/* silent */});
-          }
+          // Supabaseに display_name がない場合、localName または defaultName を同期
+          const nameToSync = loadUsername(userId) || defaultName;
+          upsertProfile(userId, { display_name: nameToSync }).catch(() => {/* silent */});
         }
       } else if (viewOnly) {
         setUsername('Unknown');
       } else {
-        // プロフィール自体未作成の場合、ローカル名で初期化
-        const localName = loadUsername(userId);
-        if (localName) {
-          upsertProfile(userId, { display_name: localName }).catch(() => {/* silent */});
-        }
+        // プロフィール行自体未作成の場合も同様に同期
+        const nameToSync = loadUsername(userId) || defaultName;
+        upsertProfile(userId, { display_name: nameToSync }).catch(() => {/* silent */});
       }
     });
   }, [displayUserId, viewOnly]);
