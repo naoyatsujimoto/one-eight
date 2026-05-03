@@ -12,7 +12,7 @@ import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
 import { saveMatchLog } from '../lib/matchLog';
 import { useLang } from '../lib/lang';
-import { getProfile } from '../lib/profile';
+import { getProfile, upsertProfile } from '../lib/profile';
 import type { Lang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
@@ -513,6 +513,14 @@ export default function App() {
     setUserId(user.id);
     getProfile(user.id).then((profile) => {
       if (profile?.lang) setLang(profile.lang as Lang);
+      // display_name が未設定の場合、ローカル名 or メール prefix で初期化
+      if (!profile?.display_name) {
+        const localName =
+          (() => { try { return localStorage.getItem(`one8_username_${user.id}`); } catch { return null; } })();
+        const fallback = user.email ? user.email.split('@')[0] : 'Player';
+        const nameToSync = localName || fallback;
+        upsertProfile(user.id, { display_name: nameToSync }).catch(() => {/* silent */});
+      }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
