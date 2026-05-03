@@ -5,11 +5,12 @@
  * Phase 2 upgrade: move ordering + strengthened evaluation.
  * Phase 3 upgrade: very_hard difficulty with endgame extension.
  * Phase 4 upgrade: differential gate-cache evaluation (≈5× speedup vs Phase 3).
+ * Phase 5 upgrade: iterative deepening with time-budget control.
  *
  * Difficulty levels:
- *   'normal'    → depth 2
- *   'hard'      → depth 3
- *   'very_hard' → depth 3 (base), depth 4 in endgame (≥8/13 positions owned)
+ *   'normal'    → time budget 300 ms
+ *   'hard'      → time budget 800 ms
+ *   'very_hard' → time budget 1500 ms; endgame depth floor = base+1
  *
  * Evaluation factors (normal/hard):
  *   1. Position count difference (own - opponent)
@@ -50,10 +51,28 @@ import type { GameState, GateId, Player, PositionId } from './types';
 
 export type CpuDifficulty = 'normal' | 'hard' | 'very_hard';
 
+/** Fixed depth used as a soft floor before iterative deepening takes over. */
 const DEPTH_MAP: Record<CpuDifficulty, number> = {
   normal: 2,
   hard: 3,
   very_hard: 3,
+};
+
+/** Time budget (ms) per move for iterative deepening. */
+const TIME_BUDGET_MS: Record<CpuDifficulty, number> = {
+  normal: 300,
+  hard: 800,
+  very_hard: 1500,
+};
+
+/**
+ * Hard cap on search depth to prevent runaway searches.
+ * Iterative deepening will not exceed this depth even if time remains.
+ */
+const MAX_DEPTH_MAP: Record<CpuDifficulty, number> = {
+  normal: 4,
+  hard: 5,
+  very_hard: 6,
 };
 
 // ---------------------------------------------------------------------------
@@ -670,6 +689,9 @@ const INF = 1_000_000;
  * `gateCache` always reflects `maximizingPlayer`'s perspective and is updated
  * incrementally (O(1–4) gate recomputes per node instead of O(12)).
  */
+/** Sentinel value returned when minimax is aborted due to time expiry. */
+const TIMEOUT_SENTINEL = Number.MAX_SAFE_INTEGER;
+
 function minimax(
   state: GameState,
   depth: number,
@@ -679,7 +701,11 @@ function minimax(
   maximizingPlayer: Player,
   veryHard: boolean,
   gateCache: GateCache,
+  deadline: number,
 ): number {
+  // Abort search if time budget is exceeded
+  if (Date.now() >= deadline) return TIMEOUT_SENTINEL;
+
   if (depth === 0 || state.gameEnded) {
     return evaluateWithCache(state, gateCache, veryHard);
   }
@@ -689,7 +715,7 @@ function minimax(
   if (moves.length === 0) {
     // No legal moves → treat as pass, switch player
     const opponent: Player = currentPlayer === 'black' ? 'white' : 'black';
-    return minimax(state, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard, gateCache);
+    return minimax(state, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard, gateCache, deadline);
   }
 
   const isMaximizing = currentPlayer === maximizingPlayer;
@@ -706,7 +732,8 @@ function minimax(
       const next = simulateMove(state, currentPlayer, move);
       // Update only affected gates; cache stays in maximizingPlayer's perspective
       const nextCache = updateGateCache(gateCache, next, move);
-      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard, nextCache);
+      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard, nextCache, deadline);
+      if (score === TIMEOUT_SENTINEL) return TIMEOUT_SENTINEL;
       if (score > best) best = score;
       if (score > alpha) alpha = score;
       if (beta <= alpha) break; // beta cutoff
@@ -717,7 +744,8 @@ function minimax(
     for (const move of orderedMoves) {
       const next = simulateMove(state, currentPlayer, move);
       const nextCache = updateGateCache(gateCache, next, move);
-      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard, nextCache);
+      const score = minimax(next, depth - 1, alpha, beta, opponent, maximizingPlayer, veryHard, nextCache, deadline);
+      if (score === TIMEOUT_SENTINEL) return TIMEOUT_SENTINEL;
       if (score < best) best = score;
       if (score < beta) beta = score;
       if (beta <= alpha) break; // alpha cutoff
@@ -735,14 +763,17 @@ function pickRandom<T>(arr: T[]): T {
 }
 
 /**
- * Select one move for the CPU player using minimax search.
+ * Select one move for the CPU player using iterative deepening minimax.
  *
- * Phase 4: initializes a GateCache once before tree search and passes it
- * through minimax so each node recomputes only 1–4 affected gates instead of 12.
+ * Phase 5: replaces fixed-depth search with time-budget iterative deepening.
+ *   - Starts at depth 1 and increments until the time budget is exhausted.
+ *   - Always returns the best move from the last fully completed depth.
+ *   - very_hard endgame extends the minimum depth floor by +1.
+ *   - All Phase 2–4 optimisations (move ordering / GateCache) are preserved.
  *
  * @param state       Current game state
  * @param player      CPU player color
- * @param difficulty  'normal' (depth 2), 'hard' (depth 3), or 'very_hard' (depth 3, +1 in endgame).
+ * @param difficulty  'normal' (300 ms), 'hard' (800 ms), or 'very_hard' (1500 ms).
  *                    Defaults to 'normal'.
  */
 export function selectCpuMove(
@@ -757,39 +788,77 @@ export function selectCpuMove(
   }
 
   const veryHard = difficulty === 'very_hard';
+  const timeBudgetMs = TIME_BUDGET_MS[difficulty];
+  const deadline = Date.now() + timeBudgetMs;
 
-  // Phase 3: endgame extension for very_hard
-  let depth = DEPTH_MAP[difficulty];
-  if (veryHard && isEndgame(state)) {
-    depth = 4;
-  }
+  // Phase 3 (preserved): endgame extends minimum depth floor for very_hard
+  const minDepth = veryHard && isEndgame(state)
+    ? DEPTH_MAP[difficulty] + 1  // 4 in endgame
+    : DEPTH_MAP[difficulty];     // 2 / 3 / 3 normally
+
+  // Hard cap on search depth to prevent runaway searches
+  const maxDepth = veryHard && isEndgame(state)
+    ? MAX_DEPTH_MAP[difficulty] + 1
+    : MAX_DEPTH_MAP[difficulty];
 
   const opponent: Player = player === 'black' ? 'white' : 'black';
 
-  // Phase 4: initialize gate cache once for the entire search tree
+  // Phase 4: initialize gate cache once — reused across all depths
   const rootCache = initGateCache(state, player);
 
-  // Phase 2: apply move ordering at root for better pruning
+  // Phase 2: pre-order moves at root (order is stable across depths)
   const orderedLegal = [...legal].sort(
     (a, b) => scoreMoveForOrdering(state, player, b) - scoreMoveForOrdering(state, player, a)
   );
 
-  let bestScore = -INF;
-  const bestMoves: CpuMove[] = [];
+  // Seed with depth-1 result so we always have something to return
+  let bestMove: CpuMove = orderedLegal[0]!;
 
-  for (const move of orderedLegal) {
-    const next = simulateMove(state, player, move);
-    // Update cache for the root move before descending
-    const moveCache = updateGateCache(rootCache, next, move);
-    const score = minimax(next, depth - 1, -INF, INF, opponent, player, veryHard, moveCache);
-    if (score > bestScore) {
-      bestScore = score;
-      bestMoves.length = 0;
-      bestMoves.push(move);
-    } else if (score === bestScore) {
-      bestMoves.push(move);
+  // Iterative deepening loop
+  for (let depth = 1; ; depth++) {
+    // Do not start a new depth if: minDepth already reached AND time is exhausted
+    if (depth > minDepth && Date.now() >= deadline) {
+      break;
+    }
+
+    // Hard cap: never exceed maxDepth regardless of time remaining
+    if (depth > maxDepth) {
+      break;
+    }
+
+    // Run a full search at this depth
+    let iterBestScore = -INF;
+    const iterBestMoves: CpuMove[] = [];
+    let timedOut = false;
+
+    for (const move of orderedLegal) {
+      const next = simulateMove(state, player, move);
+      const moveCache = updateGateCache(rootCache, next, move);
+      const score = minimax(next, depth - 1, -INF, INF, opponent, player, veryHard, moveCache, deadline);
+      if (score === TIMEOUT_SENTINEL) {
+        // Time expired mid-depth — discard this depth's incomplete result
+        timedOut = true;
+        break;
+      }
+      if (score > iterBestScore) {
+        iterBestScore = score;
+        iterBestMoves.length = 0;
+        iterBestMoves.push(move);
+      } else if (score === iterBestScore) {
+        iterBestMoves.push(move);
+      }
+    }
+
+    // Only commit result if this depth completed fully
+    if (!timedOut && iterBestMoves.length > 0) {
+      bestMove = pickRandom(iterBestMoves);
+    }
+
+    // Stop if timed out or time has now run out after completing the depth
+    if (timedOut || (depth >= minDepth && Date.now() >= deadline)) {
+      break;
     }
   }
 
-  return pickRandom(bestMoves);
+  return bestMove;
 }
