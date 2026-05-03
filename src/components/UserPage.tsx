@@ -253,10 +253,12 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         </section>
 
         {/* ── Section 3: レーティング推移（Coming Soon）── */}
-        <section style={s.section}>
-          <SectionTitle title={t.userRatingHistory} soon />
-          <Muted text={t.onlineComingSoon} />
-        </section>
+        {!viewOnly && (
+          <section style={s.section}>
+            <SectionTitle title={t.userRatingHistory} soon />
+            <Muted text={t.onlineComingSoon} />
+          </section>
+        )}
 
         {/* ── Section 4: プレイ傾向 ── */}
         <section style={s.section}>
@@ -264,25 +266,29 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           {agg ? <TrendSection agg={agg} /> : <Muted text={t.userNoData} />}
         </section>
 
-        {/* ── Section 5: 最近の対局 ── */}
-        <section style={s.section}>
-          <SectionTitle title={t.userRecentGames} />
-          {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? ( // eslint-disable-line
-            <RecentGamesTable
-              games={stats.recentGames}
-              localMap={localMap}
-              onPostmortem={setPostmortemGame}
-            />
-          ) : <Muted text={t.userNoData} />}
-        </section>
+        {/* ── Section 5: 最近の対局（viewOnly時は非表示）── */}
+        {!viewOnly && (
+          <section style={s.section}>
+            <SectionTitle title={t.userRecentGames} />
+            {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? ( // eslint-disable-line
+              <RecentGamesTable
+                games={stats.recentGames}
+                localMap={localMap}
+                onPostmortem={setPostmortemGame}
+              />
+            ) : <Muted text={t.userNoData} />}
+          </section>
+        )}
 
-        {/* ── Section 6: 代表棋譜 ── */}
-        <section style={s.section}>
-          <SectionTitle title={t.userFeaturedGames} />
-          {loading ? <Muted text="Loading…" /> : stats && (
-            <FeaturedGames stats={stats} onPostmortem={setPostmortemGame} />
-          )}
-        </section>
+        {/* ── Section 6: 代表棋譜（viewOnly時は非表示）── */}
+        {!viewOnly && (
+          <section style={s.section}>
+            <SectionTitle title={t.userFeaturedGames} />
+            {loading ? <Muted text="Loading…" /> : stats && (
+              <FeaturedGames stats={stats} onPostmortem={setPostmortemGame} />
+            )}
+          </section>
+        )}
 
         {/* ── Section 7: 大会実績（Coming Soon）── */}
         <section style={s.section}>
