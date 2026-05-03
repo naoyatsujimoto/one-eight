@@ -12,7 +12,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { MoveHistory } from './MoveHistory';
 import { useOnlineGame } from '../hooks/useOnlineGame';
 import { useLang } from '../lib/lang';
-import { getProfile } from '../lib/profile';
+import { getPublicProfile } from '../lib/profile';
 import { UserPage } from './UserPage';
 import {
   applyMassiveBuild,
@@ -87,8 +87,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
     : null;
   useEffect(() => {
     if (!opponentId) return;
-    getProfile(opponentId).then((profile) => {
-      // profile が null の場合（未登録ユーザー）もデフォルト値で表示する
+    getPublicProfile(opponentId).then((profile) => {
       setOpponentProfile({
         display_name: profile?.display_name ?? null,
         stats_public: profile?.stats_public ?? false,
