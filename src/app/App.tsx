@@ -18,6 +18,7 @@ import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
 import { UserPage } from '../components/UserPage';
 import { AdminInbox } from '../components/AdminInbox';
+import { CpuProfile } from '../components/CpuProfile';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useUnreadCount } from '../hooks/useUnreadCount';
 // import { useSound } from '../hooks/useSound'; // SOUND OFF
@@ -534,6 +535,10 @@ export default function App() {
   const [modeModalOpen, setModeModalOpen] = useState(false);
   const [cpuSettingsOpen, setCpuSettingsOpen] = useState(false);
   const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>('normal');
+  const [cpuProfileOpen, setCpuProfileOpen] = useState(false);
+  const cpuDiffLabel = cpuDifficulty === 'normal' ? t.cpuDiffNormal
+    : cpuDifficulty === 'hard' ? t.cpuDiffHard
+    : t.cpuDiffVeryHard;
   const [cpuColorChoice, setCpuColorChoice] = useState<'black' | 'white'>('black');
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(false);
   const [onlineGameId, setOnlineGameId] = useState<string | null>(() => {
@@ -651,7 +656,17 @@ export default function App() {
           <div className="wordmark" style={{cursor:'pointer'}} onClick={() => goTo('title')}>
             ONE EIGHT
           </div>
-          <div className="meta-center">{modeLabel}</div>
+          <div className="meta-center">
+            {state.cpuPlayer !== null ? (
+              <button
+                type="button"
+                className="cpu-name-chip"
+                onClick={() => setCpuProfileOpen(true)}
+              >
+                {cpuDiffLabel}
+              </button>
+            ) : modeLabel}
+          </div>
         </div>
         {/* 2段目: メニューボタン */}
         <div className="topbar-row2">
@@ -777,6 +792,11 @@ export default function App() {
             </div>
           </div>
         </>
+      )}
+
+      {/* CPU name stats modal */}
+      {cpuProfileOpen && state.cpuPlayer !== null && (
+        <CpuProfile difficulty={cpuDifficulty} onClose={() => setCpuProfileOpen(false)} />
       )}
 
       {/* CPU settings modal */}

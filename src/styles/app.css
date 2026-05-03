@@ -122,6 +122,23 @@ html, body {
 .top-btn:hover:not(:disabled) { color: var(--ink); }
 .top-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+.cpu-name-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ink-4);
+  transition: color .15s;
+}
+.cpu-name-chip:hover { color: var(--ink); }
+
 .top-divider {
   width: 1px; height: 14px;
   background: var(--rule-strong);
