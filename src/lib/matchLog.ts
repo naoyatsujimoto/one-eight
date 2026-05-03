@@ -161,6 +161,71 @@ export async function fetchUserPageStats(userId: string): Promise<UserPageStats>
   };
 }
 
+/**
+ * SECURITY DEFINER RPC 経由で公開設定ユーザーの stats を取得。
+ * match_logs の RLS をバイパスし、stats_public = true の場合のみデータを返す。
+ * viewOnly モードで対戦相手の STATS を表示する際に使用。
+ */
+export async function fetchPublicUserPageStats(userId: string): Promise<UserPageStats> {
+  const { data, error } = await supabase
+    .rpc('get_public_match_logs', { target_user_id: userId });
+
+  const rows: MatchLogRow[] = (!error && data) ? (data as MatchLogRow[]) : [];
+
+  const joinedAt = rows.length > 0
+    ? (rows[rows.length - 1]?.created_at ?? null)
+    : null;
+
+  let wins = 0, losses = 0, draws = 0;
+  let blackWins = 0, blackTotal = 0;
+  let whiteWins = 0, whiteTotal = 0;
+  let cpuWins = 0, cpuTotal = 0;
+  let pvpWins = 0, pvpTotal = 0;
+
+  for (const r of rows) {
+    const isCpu = r.mode === 'human_vs_cpu';
+    const color = r.human_color;
+    const w = r.winner;
+    const isWin = w !== null && w !== 'draw' && color !== null && w === color;
+    const isDraw = w === 'draw';
+    const isLoss = !isWin && !isDraw && w !== null;
+    if (isDraw) draws++;
+    else if (isWin) wins++;
+    else if (isLoss) losses++;
+    if (color === 'black') { blackTotal++; if (isWin) blackWins++; }
+    if (color === 'white') { whiteTotal++; if (isWin) whiteWins++; }
+    if (isCpu) { cpuTotal++; if (isWin) cpuWins++; }
+    else { pvpTotal++; if (isWin) pvpWins++; }
+  }
+
+  const total = rows.length;
+  const recent20 = rows.slice(0, 20).map((r) => {
+    const isWin = r.winner !== null && r.winner !== 'draw' && r.human_color !== null && r.winner === r.human_color;
+    const isDraw = r.winner === 'draw';
+    return { win: isDraw ? null : isWin };
+  });
+
+  // 他ユーザーのローカルデータは参照できないため Featured Games は省略
+  return {
+    userId,
+    joinedAt,
+    total,
+    wins,
+    losses,
+    draws,
+    winRate: total > 0 ? wins / total : 0,
+    blackWinRate: blackTotal > 0 ? blackWins / blackTotal : 0,
+    whiteWinRate: whiteTotal > 0 ? whiteWins / whiteTotal : 0,
+    cpuWinRate: cpuTotal > 0 ? cpuWins / cpuTotal : 0,
+    pvpWinRate: pvpTotal > 0 ? pvpWins / pvpTotal : 0,
+    recent20,
+    recentGames: rows.slice(0, 20),
+    bestWin: null,
+    longestGame: null,
+    upsetWin: null,
+  };
+}
+
 export async function fetchMyStats(userId: string): Promise<MyStats> {
   const { data, error } = await supabase
     .from('match_logs')

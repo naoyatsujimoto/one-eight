@@ -12,7 +12,7 @@
  *   8. 称号 / バッジ（Coming Soon）
  */
 import { useEffect, useState } from 'react';
-import { fetchUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
+import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
@@ -57,7 +57,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [nameInput, setNameInput] = useState('');
 
   useEffect(() => {
-    fetchUserPageStats(displayUserId).then((s) => {
+    const fetcher = viewOnly ? fetchPublicUserPageStats : fetchUserPageStats;
+    fetcher(displayUserId).then((s) => {
       setStats(s);
       setLoading(false);
     });
