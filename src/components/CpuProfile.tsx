@@ -118,7 +118,7 @@ export function CpuProfile({ difficulty, onClose }: Props) {
         {/* ヘッダー */}
         <div style={s.header}>
           <div>
-            <div style={s.eyebrow}>CPU</div>
+
             <div style={s.title}>{label}</div>
           </div>
           <button type="button" style={s.closeBtn} onClick={onClose}>✕</button>

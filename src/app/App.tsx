@@ -663,7 +663,7 @@ export default function App() {
                 className="cpu-name-chip"
                 onClick={() => setCpuProfileOpen(true)}
               >
-                {cpuDiffLabel}
+                OPPONENT · {cpuDiffLabel}
               </button>
             ) : modeLabel}
           </div>
