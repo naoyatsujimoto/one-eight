@@ -81,16 +81,20 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   }, [gameRow]);
 
   // 対戦相手のプロフィールを取得
+  // white_player_id は waiting→playing で確定するため、両プレイヤーIDを依存配列に含める
+  const opponentId = gameRow
+    ? (gameRow.black_player_id === myUserId ? gameRow.white_player_id : gameRow.black_player_id)
+    : null;
   useEffect(() => {
-    if (!gameRow || !myUserId) return;
-    const opponentId = gameRow.black_player_id === myUserId
-      ? gameRow.white_player_id
-      : gameRow.black_player_id;
     if (!opponentId) return;
     getProfile(opponentId).then((profile) => {
-      if (profile) setOpponentProfile({ display_name: profile.display_name, stats_public: profile.stats_public ?? false });
+      // profile が null の場合（未登録ユーザー）もデフォルト値で表示する
+      setOpponentProfile({
+        display_name: profile?.display_name ?? null,
+        stats_public: profile?.stats_public ?? false,
+      });
     });
-  }, [gameRow?.id, myUserId]);
+  }, [opponentId]);
 
   useEffect(() => {
     if (!localState) return;
@@ -230,11 +234,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
             userEmail={null}
             onBack={() => setShowOpponentStats(false)}
             viewOnly
-            targetUserId={
-              gameRow?.black_player_id === myUserId
-                ? (gameRow?.white_player_id ?? undefined)
-                : gameRow?.black_player_id
-            }
+            targetUserId={opponentId ?? undefined}
           />
         </div>
       )}
