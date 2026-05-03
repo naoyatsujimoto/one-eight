@@ -17,6 +17,7 @@ import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
+import { getProfile, upsertProfile } from '../lib/profile';
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
 
@@ -31,9 +32,13 @@ interface Props {
   userId: string;
   userEmail: string | null;
   onBack: () => void;
+  /** 他ユーザーの STATS 閲覧モード（自分の編集不可） */
+  viewOnly?: boolean;
+  /** viewOnly 時に表示する対象ユーザーの ID */
+  targetUserId?: string;
 }
 
-export function UserPage({ userId, userEmail, onBack }: Props) {
+export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUserId }: Props) {
   const { t, lang, setLangWithSync } = useLang();
   // t is also used in inline JSX below
   const [stats, setStats] = useState<UserPageStats | null>(null);
@@ -41,27 +46,48 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
+  const [statsPublic, setStatsPublic] = useState(false);
+  const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
-  const [username, setUsername] = useState<string>(() => loadUsername(userId) ?? defaultName ?? 'Player');
+  const [username, setUsername] = useState<string>(() => {
+    if (viewOnly) return '…';
+    return loadUsername(userId) ?? defaultName ?? 'Player';
+  });
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
   useEffect(() => {
-    fetchUserPageStats(userId).then((s) => {
+    fetchUserPageStats(displayUserId).then((s) => {
       setStats(s);
       setLoading(false);
     });
-    setAgg(loadAggregates());
-    const records = loadGameRecords(100);
-    const map = new Map<string, GameRecord>();
-    for (const r of records) map.set(r.game_id, r);
-    setLocalMap(map);
-  }, [userId]);
+    if (!viewOnly) {
+      setAgg(loadAggregates());
+      const records = loadGameRecords(100);
+      const map = new Map<string, GameRecord>();
+      for (const r of records) map.set(r.game_id, r);
+      setLocalMap(map);
+    }
+    // Load profile: stats_public + display name (viewOnly時)
+    getProfile(displayUserId).then((profile) => {
+      if (profile) {
+        setStatsPublic(profile.stats_public ?? false);
+        if (viewOnly && profile.display_name) setUsername(profile.display_name);
+      } else if (viewOnly) {
+        setUsername('Unknown');
+      }
+    });
+  }, [displayUserId, viewOnly]);
 
   function handleEditName() {
     setNameInput(username);
     setEditingName(true);
   }
+  async function handleStatsPublicChange(val: boolean) {
+    setStatsPublic(val);
+    await upsertProfile(userId, { stats_public: val });
+  }
+
   function handleSaveName() {
     const trimmed = nameInput.trim();
     if (trimmed) {
@@ -75,7 +101,7 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
   }
 
   const playerName = username;
-  const shortId = userId.slice(0, 8).toUpperCase();
+  const shortId = displayUserId.slice(0, 8).toUpperCase();
 
   return (
     <div style={s.page}>
@@ -93,7 +119,7 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
           <div style={s.profileHeader}>
             <div style={s.avatar}>{(playerName ?? 'P').slice(0, 1).toUpperCase()}</div>
             <div style={s.profileInfo}>
-              {editingName ? (
+              {!viewOnly && editingName ? (
                 <div style={s.nameEditRow}>
                   <input
                     style={s.nameInput}
@@ -109,7 +135,7 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
               ) : (
                 <div style={s.nameRow}>
                   <span style={s.playerName}>{playerName}</span>
-                  <button type="button" style={s.editNameBtn} onClick={handleEditName}>{t.userEditName}</button>
+                  {!viewOnly && <button type="button" style={s.editNameBtn} onClick={handleEditName}>{t.userEditName}</button>}
                 </div>
               )}
               <div style={s.playerId}>ID: {shortId}</div>
@@ -126,25 +152,55 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
             <ProfileItem label={t.userSeasonRank} value="— (Coming Soon)" muted />
           </div>
 
-          {/* 言語設定 */}
-          <div style={s.langSettingRow}>
-            <span style={s.langSettingLabel}>{t.langLabel}</span>
-            <div style={s.langBtnGroup}>
-              {(['en', 'ja'] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  style={{ ...s.langBtn, ...(lang === l ? s.langBtnActive : {}) }}
-                  onClick={() => setLangWithSync(l)}
-                >
-                  {l === 'en' ? 'English' : '日本語'}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* 言語設定・公開設定（自分のページのみ） */}
+          {!viewOnly && (
+            <>
+              <div style={s.langSettingRow}>
+                <span style={s.langSettingLabel}>{t.langLabel}</span>
+                <div style={s.langBtnGroup}>
+                  {(['en', 'ja'] as Lang[]).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      style={{ ...s.langBtn, ...(lang === l ? s.langBtnActive : {}) }}
+                      onClick={() => setLangWithSync(l)}
+                    >
+                      {l === 'en' ? 'English' : '日本語'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={s.langSettingRow}>
+                <span style={s.langSettingLabel}>{t.statsVisibility}</span>
+                <div style={s.langBtnGroup}>
+                  {([true, false] as const).map((val) => (
+                    <button
+                      key={String(val)}
+                      type="button"
+                      style={{ ...s.langBtn, ...(statsPublic === val ? s.langBtnActive : {}) }}
+                      onClick={() => handleStatsPublicChange(val)}
+                    >
+                      {val ? t.statsPublic : t.statsPrivate}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
+        {/* viewOnly + 非公開: プライベートメッセージを表示して以降のセクションを非表示 */}
+        {viewOnly && !statsPublic && (
+          <section style={s.section}>
+            <p style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'center', padding: '2rem 0' }}>
+              {t.statsPrivateMsg}
+            </p>
+          </section>
+        )}
+
         {/* ── Section 2: 成績サマリー ── */}
+        {(!viewOnly || statsPublic) && (
+        <>
         <section style={s.section}>
           <SectionTitle title={t.userProfile} />
           {loading ? <Muted text="Loading…" /> : stats && (
@@ -226,6 +282,8 @@ export function UserPage({ userId, userEmail, onBack }: Props) {
           <SectionTitle title={t.userBadges} soon />
           <Muted text={t.onlineComingSoon} />
         </section>
+        </>
+        )}
 
       </div>
 

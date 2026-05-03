@@ -172,6 +172,11 @@ export const T = {
     userTypeHuman: 'H×H',
     userTypeCpu: 'vs CPU',
     userTypeOnline: 'Online',
+    statsVisibility: 'Stats Visibility',
+    statsPublic: 'Public',
+    statsPrivate: 'Private',
+    opponentStats: "Opponent's Stats",
+    statsPrivateMsg: "This player's stats are private.",
   },
 
   ja: {
@@ -338,6 +343,11 @@ export const T = {
     userTypeHuman: '対人戦',
     userTypeCpu: 'CPU戦',
     userTypeOnline: 'オンライン',
+    statsVisibility: 'STATS 公開設定',
+    statsPublic: '公開',
+    statsPrivate: '非公開',
+    opponentStats: '相手の STATS',
+    statsPrivateMsg: 'このプレイヤーの STATS は非公開です。',
   },
 } as const;
 
@@ -478,6 +488,11 @@ export type Translations = {
   userTypeHuman: string;
   userTypeCpu: string;
   userTypeOnline: string;
+  statsVisibility: string;
+  statsPublic: string;
+  statsPrivate: string;
+  opponentStats: string;
+  statsPrivateMsg: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────

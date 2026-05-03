@@ -12,6 +12,8 @@ import { ConfirmModal } from './ConfirmModal';
 import { MoveHistory } from './MoveHistory';
 import { useOnlineGame } from '../hooks/useOnlineGame';
 import { useLang } from '../lib/lang';
+import { getProfile } from '../lib/profile';
+import { UserPage } from './UserPage';
 import {
   applyMassiveBuild,
   applyQuadBuildForGates,
@@ -62,6 +64,9 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; label: string; action: () => void }>({
     open: false, label: '', action: () => {},
   });
+  // 対戦相手のプロフィール
+  const [opponentProfile, setOpponentProfile] = useState<{ display_name: string | null; stats_public: boolean } | null>(null);
+  const [showOpponentStats, setShowOpponentStats] = useState(false);
 
   function closeConfirmModal() {
     setConfirmModal((prev) => ({ ...prev, open: false }));
@@ -74,6 +79,18 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
       setBuildState(EMPTY_BUILD_STATE);
     }
   }, [gameRow]);
+
+  // 対戦相手のプロフィールを取得
+  useEffect(() => {
+    if (!gameRow || !myUserId) return;
+    const opponentId = gameRow.black_player_id === myUserId
+      ? gameRow.white_player_id
+      : gameRow.black_player_id;
+    if (!opponentId) return;
+    getProfile(opponentId).then((profile) => {
+      if (profile) setOpponentProfile({ display_name: profile.display_name, stats_public: profile.stats_public ?? false });
+    });
+  }, [gameRow?.id, myUserId]);
 
   useEffect(() => {
     if (!localState) return;
@@ -199,13 +216,51 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
 
   const myColorLabel = myColor === 'black' ? 'Black' : myColor === 'white' ? 'White' : '?';
   const turnLabel = isMyTurn ? t.onlineYourTurn : t.onlineOpponentTurn;
+  const opponentName = opponentProfile?.display_name ?? 'Opponent';
+  const opponentIsPublic = opponentProfile?.stats_public ?? false;
   const modeLabel = `Online · You: ${myColorLabel}`;
 
   return (
     <div className="app-shell" style={{ background: '#fff', minHeight: '100vh' }}>
+      {/* 相手の STATS オーバーレイ */}
+      {showOpponentStats && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300 }}>
+          <UserPage
+            userId={myUserId}
+            userEmail={null}
+            onBack={() => setShowOpponentStats(false)}
+            viewOnly
+            targetUserId={
+              gameRow?.black_player_id === myUserId
+                ? (gameRow?.white_player_id ?? undefined)
+                : gameRow?.black_player_id
+            }
+          />
+        </div>
+      )}
+
       <header className="topbar">
         <div className="wordmark">ONE EIGHT</div>
-        <div className="meta-center">{modeLabel}</div>
+        <div className="meta-center" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>{modeLabel}</span>
+          {opponentProfile && (
+            <>
+              <span style={{ color: '#bbb' }}>·</span>
+              {opponentIsPublic ? (
+                <button
+                  type="button"
+                  style={styles.opponentNameBtn}
+                  onClick={() => setShowOpponentStats(true)}
+                  title={t.opponentStats}
+                >
+                  {opponentName}
+                </button>
+              ) : (
+                <span style={styles.opponentNameText}>{opponentName}</span>
+              )}
+            </>
+          )}
+        </div>
         <div className="topbar-actions">
           <button type="button" className="top-btn" onClick={() => setDrawerOpen(true)}>
             {t.history} <span>{state.history.length}</span>
@@ -350,5 +405,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.95rem',
     cursor: 'pointer',
     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+  },
+  opponentNameBtn: {
+    background: 'none',
+    border: 'none',
+    padding: '0 2px',
+    cursor: 'pointer',
+    color: '#333',
+    fontSize: 'inherit',
+    fontWeight: 600,
+    textDecoration: 'underline',
+    textDecorationStyle: 'dotted' as const,
+  },
+  opponentNameText: {
+    color: '#555',
+    fontSize: 'inherit',
   },
 };

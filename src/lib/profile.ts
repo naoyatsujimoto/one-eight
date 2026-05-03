@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   display_name: string | null;
   lang: Lang;
+  stats_public: boolean;
   created_at: string;
 }
 
@@ -20,7 +21,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .eq('id', userId)
     .single();
   if (error || !data) return null;
-  return data as Profile;
+  return { ...data, stats_public: (data as Record<string, unknown>).stats_public ?? false } as Profile;
 }
 
 /** Upsert profile fields for the given user. */
