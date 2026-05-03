@@ -1768,9 +1768,10 @@ ol { padding-left: 20px; }
   color: var(--ink-1);
 }
 .cpu-settings-btn.active {
-  background: var(--ink-1);
-  color: var(--bg);
-  border-color: var(--ink-1);
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+  font-weight: 700;
 }
 
 /* ══════════════════════════════════════════
