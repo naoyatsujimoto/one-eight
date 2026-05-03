@@ -68,13 +68,27 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
       for (const r of records) map.set(r.game_id, r);
       setLocalMap(map);
     }
-    // Load profile: stats_public + display name (viewOnly時)
+    // Load profile: stats_public + display name
     getProfile(displayUserId).then((profile) => {
       if (profile) {
         setStatsPublic(profile.stats_public ?? false);
-        if (viewOnly && profile.display_name) setUsername(profile.display_name);
+        if (viewOnly && profile.display_name) {
+          setUsername(profile.display_name);
+        } else if (!viewOnly && !profile.display_name) {
+          // Supabaseに display_name がない場合、ローカル名を同期
+          const localName = loadUsername(userId);
+          if (localName) {
+            upsertProfile(userId, { display_name: localName }).catch(() => {/* silent */});
+          }
+        }
       } else if (viewOnly) {
         setUsername('Unknown');
+      } else {
+        // プロフィール自体未作成の場合、ローカル名で初期化
+        const localName = loadUsername(userId);
+        if (localName) {
+          upsertProfile(userId, { display_name: localName }).catch(() => {/* silent */});
+        }
       }
     });
   }, [displayUserId, viewOnly]);
@@ -93,6 +107,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     if (trimmed) {
       setUsername(trimmed);
       saveUsername(userId, trimmed);
+      // Supabase にも同期（相手が参照できるように）
+      upsertProfile(userId, { display_name: trimmed }).catch(() => {/* silent */});
     }
     setEditingName(false);
   }
