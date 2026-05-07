@@ -3,6 +3,7 @@
  */
 import { useEffect, useState } from 'react';
 import { runPostmortem, enrichPostmortemWithStats, type PostmortemResult, type PostmortemMoveRow } from '../game/postmortem';
+import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
 import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
@@ -90,6 +91,9 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
                       ({result.decisiveCrossing.player === 'black' ? 'Black' : 'White'})
                     </span>
                   </div>
+                  <StrategicFlagBadges
+                    flags={result.rows.find(r => r.moveNum === result.decisiveCrossing!.moveNum)?.strategicFlags}
+                  />
                 </div>
               ) : (
                 <p style={styles.muted}>—</p>
@@ -133,6 +137,19 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── 戦略フラグバッジ ────────────────────────────────────────────────────────
+
+function StrategicFlagBadges({ flags }: { flags?: StrategyFlag[] }) {
+  if (!flags || flags.length === 0) return null;
+  return (
+    <div style={styles.flagRow}>
+      {flags.map(flag => (
+        <span key={flag} style={styles.flagBadge}>{STRATEGY_FLAG_LABEL[flag]}</span>
+      ))}
     </div>
   );
 }
@@ -340,6 +357,23 @@ const styles: Record<string, React.CSSProperties> = {
   td: {
     padding: '0.35rem 0.4rem',
     borderBottom: '1px solid #f0f0f0',
+  },
+  flagRow: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 4,
+    marginTop: 8,
+  },
+  flagBadge: {
+    fontSize: '0.65rem',
+    fontWeight: 600,
+    letterSpacing: '0.03em',
+    color: '#7a5c1e',
+    background: '#fdf0d0',
+    border: '1px solid #e8c97a',
+    borderRadius: 4,
+    padding: '1px 6px',
+    whiteSpace: 'nowrap' as const,
   },
 };
 

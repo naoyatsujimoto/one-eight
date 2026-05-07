@@ -12,6 +12,8 @@ import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveB
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
 import { fetchPositionWinRates, fetchSymmetryGroupWinRates } from './positionStats';
+import { detectStrategyFlags } from './strategyPatterns';
+import type { StrategyFlag } from './strategyPatterns';
 
 // Win probability (logistic), Black perspective
 const K_WP = 0.003;
@@ -190,6 +192,8 @@ export interface PostmortemMoveRow {
   winRateSource?: 'position_stats' | 'symmetry_group';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
+  /** Phase N-4: post-move 局面で成立している戦略的特徴 */
+  strategicFlags?: StrategyFlag[];
 }
 
 export interface PostmortemCrossing {
@@ -342,6 +346,9 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
     const loss = evalBest !== null ? Math.max(0, evalBest - evalPlayed) : null;
     const wpSwing = wpAfterIfBest !== null ? wpAfterIfBest - wpAfter : null;
 
+    // Phase N-4: post-move 局面での戦略パターン検出
+    const strategicFlags = detectStrategyFlags(next, currentPlayer);
+
     rows.push({
       moveNum: record.moveNumber,
       player: currentPlayer,
@@ -353,6 +360,7 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
       wpAfter: +wpAfter.toFixed(4),
       wpAfterIfBest: wpAfterIfBest !== null ? +wpAfterIfBest.toFixed(4) : null,
       wpSwing: wpSwing !== null ? +wpSwing.toFixed(4) : null,
+      strategicFlags,
     });
 
     state = next;
