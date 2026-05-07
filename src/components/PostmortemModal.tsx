@@ -2,7 +2,7 @@
  * PostmortemModal.tsx — 対局の勝敗を分けた一手を分析して表示するポップアップ
  */
 import { useEffect, useState } from 'react';
-import { runPostmortem, type PostmortemResult } from '../game/postmortem';
+import { runPostmortem, enrichPostmortemWithStats, type PostmortemResult, type PostmortemMoveRow } from '../game/postmortem';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
 import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
@@ -29,16 +29,27 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
     if (cached) {
       setResult(cached);
       setAnalyzing(false);
+      // キャッシュヒット時も最新統計を非同期取得
+      enrichPostmortemWithStats(cached, history)
+        .then(enriched => setResult(enriched))
+        .catch(() => {});
       return;
     }
     setAnalyzing(true);
     setResult(null);
     // 非同期でレンダリングさせてからminimaxを実行
-    const timer = setTimeout(() => {
-      const r = runPostmortem(history);
-      savePostmortemCache(gameId, r);
-      setResult(r);
+    const timer = setTimeout(async () => {
+      const base = runPostmortem(history);
+      savePostmortemCache(gameId, base);  // minimax結果のみキャッシュ
+      setResult(base);
       setAnalyzing(false);
+      // 統計を非同期で取得してオーバーレイ
+      try {
+        const enriched = await enrichPostmortemWithStats(base, history);
+        setResult(enriched);
+      } catch {
+        // fallback: 統計なしで表示継続
+      }
     }, 30);
     return () => clearTimeout(timer);
   }, [gameId, history]);
@@ -102,6 +113,7 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
                       <th style={styles.th}>Played</th>
                       <th style={styles.th}>Best</th>
                       <th style={styles.th}>ΔWP</th>
+                      <th style={styles.th}>Hist.</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -111,6 +123,7 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
                         <td style={{ ...styles.td, color: '#e53' }}>{r.played}</td>
                         <td style={{ ...styles.td, color: '#27a' }}>{r.best ?? '—'}</td>
                         <td style={styles.td}>{r.wpSwing !== null ? `${(r.wpSwing * 100).toFixed(1)}pt` : '—'}</td>
+                        <td style={styles.td}>{formatHistWR(r)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -199,6 +212,13 @@ function WPChart({ rows, wpInitial, decisiveMoveNum }: WPChartProps) {
 
 function pct(wp: number): string {
   return `${(wp * 100).toFixed(1)}%`;
+}
+
+/** Top Losses 行の historicWinRate 表示用 */
+function formatHistWR(r: PostmortemMoveRow): string {
+  if (r.historicWinRate === undefined || r.confidence === undefined) return '—';
+  const pctStr = `${r.historicWinRate.toFixed(1)}%`;
+  return r.confidence === 'reference' ? `${pctStr}*` : pctStr;
 }
 
 // ─── スタイル ─────────────────────────────────────────────────────────────────

@@ -183,6 +183,10 @@ export interface PostmortemMoveRow {
   wpAfter: number;            // Black勝率
   wpAfterIfBest: number | null;
   wpSwing: number | null;
+  historicWinRate?: number;        // win_rate_black (0–100)
+  sampleCount?: number;            // total games
+  confidence?: 'reference' | 'main'; // hidden は設定しない
+  winRateSource?: 'position_stats';
 }
 
 export interface PostmortemCrossing {
@@ -292,4 +296,46 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
     .slice(0, 3);
 
   return { rows, wpInitial, decisiveCrossing, crossings, topBlackLosses };
+}
+
+import { fetchPositionWinRates } from './positionStats';
+
+/**
+ * runPostmortem の結果に位置統計を付加する（非同期）。
+ * RPC失敗・Supabase未接続・統計不足時はrowsを変更せず返す。
+ * confidence='hidden'(total<5) の統計は付加しない。
+ */
+export async function enrichPostmortemWithStats(
+  result: PostmortemResult,
+  history: MoveRecord[],
+): Promise<PostmortemResult> {
+  // canonical_hash を収集
+  const hashes = history
+    .map(r => r.canonical_hash)
+    .filter((h): h is string => typeof h === 'string' && h.length > 0);
+
+  if (hashes.length === 0) return result;
+
+  let statsMap: Map<string, import('./positionStats').PositionWinRateRow>;
+  try {
+    statsMap = await fetchPositionWinRates(hashes, 'all');
+  } catch {
+    return result; // RPC失敗 → fallback
+  }
+
+  const enrichedRows = result.rows.map((row, i) => {
+    const hash = history[i]?.canonical_hash;
+    if (!hash) return row;
+    const stat = statsMap.get(hash);
+    if (!stat || stat.confidence === 'hidden') return row;
+    return {
+      ...row,
+      historicWinRate: stat.win_rate_black ?? undefined,
+      sampleCount: stat.total,
+      confidence: stat.confidence as 'reference' | 'main',
+      winRateSource: 'position_stats' as const,
+    };
+  });
+
+  return { ...result, rows: enrichedRows };
 }
