@@ -17,7 +17,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { createInitialState } from './src/game/initialState';
+import { createInitialState } from '../src/game/initialState';
 import {
   selectPosition,
   applyMassiveBuild,
@@ -26,9 +26,9 @@ import {
   applyQuadBuildForGates,
   skipTurn,
   confirmPositionOnly,
-} from './src/game/engine';
-import { computeSymmetryGroupId } from './src/game/symmetry';
-import type { GameState, MoveRecord, GateId, PositionId } from './src/game/types';
+} from '../src/game/engine';
+import { computeSymmetryGroupId } from '../src/game/symmetry';
+import type { GameState, MoveRecord, GateId, PositionId } from '../src/game/types';
 
 // ─── Supabase クライアント ────────────────────────────────────────────────────
 

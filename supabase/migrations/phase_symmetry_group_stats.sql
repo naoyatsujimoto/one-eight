@@ -28,7 +28,7 @@ DECLARE
   v_mode      TEXT;
   v_unique    TEXT[];
 BEGIN
-  SELECT ARRAY(SELECT DISTINCT unnest(p_group_ids) WHERE unnest IS NOT NULL)
+  SELECT ARRAY(SELECT DISTINCT u FROM unnest(p_group_ids) AS u WHERE u IS NOT NULL)
   INTO v_unique;
 
   FOREACH v_group_id IN ARRAY v_unique LOOP
