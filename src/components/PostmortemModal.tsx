@@ -218,9 +218,13 @@ function pct(wp: number): string {
 function formatHistWR(r: PostmortemMoveRow): string {
   if (r.historicWinRate === undefined || r.confidence === undefined) return '—';
   const pctStr = `${r.historicWinRate.toFixed(1)}%`;
+  // symmetry_group 由来は常に参考値（Gate asset 差混入リスク）→ *~ で一貫表示
+  if (r.winRateSource === 'symmetry_group') {
+    return `${pctStr}*~`;
+  }
+  // canonical 由来: reference=* / main=マークなし
   const refMark = r.confidence === 'reference' ? '*' : '';
-  const srcMark = r.winRateSource === 'symmetry_group' ? '~' : '';
-  return `${pctStr}${refMark}${srcMark}`;
+  return `${pctStr}${refMark}`;
 }
 
 // ─── スタイル ─────────────────────────────────────────────────────────────────

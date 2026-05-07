@@ -399,9 +399,21 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
 
 /**
  * runPostmortem の結果に位置統計を付加する（非同期）。
+ *
  * fallback chain: canonical_hash → symmetry_group_id → static
  * RPC失敗・Supabase未接続・統計不足時はrowsを変更せず返す。
  * confidence='hidden'(total<5) の統計は付加しない。
+ *
+ * 【設計方針】
+ * - canonical_hash: full state（positions + gates + player + moveNumber）の厳密統計。信頼度の基準。
+ * - symmetry_group_id: Position所有状態のみの C4 正規化 hash（= position pattern group）。
+ *   Gate asset 差による勝率差が混入するため、厳密な局面グループではない。
+ *   → サンプル数が多くても常に「参考値（reference）」として扱い、canonical_hashと同格にしない。
+ *   → resolvedWP は常にblend（50/50）とし、direct historic WP は使わない。
+ *
+ * 【将来の拡張余地】
+ *   Position所有 + Gate支配要約（e.g. 各Gate上の優勢プレイヤーのみ）による中間粒度IDを
+ *   別フィールド（e.g. mid_group_id）として追加し、第3の fallback として挿入できる設計。
  */
 export async function enrichPostmortemWithStats(
   result: PostmortemResult,
@@ -457,13 +469,16 @@ export async function enrichPostmortemWithStats(
     }
 
     // Step 2: symmetry_group_id 統計へ fallback
+    // 【重要】symmetry_group_id は position pattern group（Gate asset 差を含む）のため、
+    // 実際の sampleCount に関わらず confidence を 'reference' に固定する。
+    // canonical_hash 統計と同格に扱わない。
     const symmetryStat = groupId ? symmetryMap.get(groupId) : undefined;
     if (symmetryStat && symmetryStat.confidence !== 'hidden') {
       const rowWithSym = {
         ...row,
         historicWinRate: symmetryStat.win_rate_black ?? undefined,
         sampleCount: symmetryStat.total,
-        confidence: symmetryStat.confidence as 'reference' | 'main',
+        confidence: 'reference' as const,  // Gate asset 差混入リスクのため常に reference 固定
         winRateSource: 'symmetry_group' as const,
       };
       const resolvedWP = resolveWPForRow(rowWithSym);
