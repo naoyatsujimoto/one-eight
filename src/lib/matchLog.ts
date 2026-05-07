@@ -35,10 +35,58 @@ export async function saveMatchLog(record: GameRecord, userId: string): Promise<
     cpu_difficulty: record.cpu_difficulty ?? null,
   };
 
-  const { error } = await supabase.from('match_logs').insert(row);
+  const { data: inserted, error } = await supabase
+    .from('match_logs')
+    .insert(row)
+    .select('id')
+    .single();
   if (error) {
     console.error('[matchLog] insert error:', error.message);
+    return;
   }
+
+  // N-1c: Edge Function で position_stats を非同期更新（fire-and-forget）
+  // match_logs の保存結果に影響しない。失敗してもログのみ。
+  if (inserted?.id) {
+    triggerPositionStatsUpdate(inserted.id);
+  }
+}
+
+/**
+ * Edge Function: update-position-stats を fire-and-forget で呼び出す。
+ * match_logs の保存フローを壊さないよう、await しない。
+ * 失敗はコンソールログのみ（ユーザー通知なし）。
+ */
+function triggerPositionStatsUpdate(matchLogId: string): void {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!supabaseUrl) {
+    console.warn('[matchLog] VITE_SUPABASE_URL not set — skipping position stats update');
+    return;
+  }
+
+  const functionsUrl = `${supabaseUrl}/functions/v1/update-position-stats`;
+
+  // anon key でリクエスト（Edge Function 内では service role で実行）
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+  fetch(functionsUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(anonKey ? { apikey: anonKey, Authorization: `Bearer ${anonKey}` } : {}),
+    },
+    body: JSON.stringify({ match_log_id: matchLogId }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.warn(`[matchLog] update-position-stats returned ${res.status}:`, text);
+      }
+    })
+    .catch((err) => {
+      // ネットワークエラー等 — ログのみ、保存には影響しない
+      console.warn('[matchLog] update-position-stats fetch error:', err);
+    });
 }
 
 export interface MyStats {
