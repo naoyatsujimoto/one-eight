@@ -11,7 +11,7 @@ import { createInitialState } from './initialState';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveBuildSingle, applyQuadBuildForGates, skipTurn } from './engine';
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
-import { fetchPositionWinRates } from './positionStats';
+import { fetchPositionWinRates, fetchSymmetryGroupWinRates } from './positionStats';
 
 // Win probability (logistic), Black perspective
 const K_WP = 0.003;
@@ -187,7 +187,7 @@ export interface PostmortemMoveRow {
   historicWinRate?: number;        // win_rate_black (0–100)
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
-  winRateSource?: 'position_stats';
+  winRateSource?: 'position_stats' | 'symmetry_group';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
 }
@@ -399,6 +399,7 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
 
 /**
  * runPostmortem の結果に位置統計を付加する（非同期）。
+ * fallback chain: canonical_hash → symmetry_group_id → static
  * RPC失敗・Supabase未接続・統計不足時はrowsを変更せず返す。
  * confidence='hidden'(total<5) の統計は付加しない。
  */
@@ -406,38 +407,71 @@ export async function enrichPostmortemWithStats(
   result: PostmortemResult,
   history: MoveRecord[],
 ): Promise<PostmortemResult> {
-  // canonical_hash を収集
+  // canonical_hash と symmetry_group_id を収集
   const hashes = history
     .map(r => r.canonical_hash)
     .filter((h): h is string => typeof h === 'string' && h.length > 0);
+  const groupIds = history
+    .map(r => r.symmetry_group_id)
+    .filter((g): g is string => typeof g === 'string' && g.length > 0);
 
-  if (hashes.length === 0) return result;
+  if (hashes.length === 0 && groupIds.length === 0) return result;
 
-  let statsMap: Map<string, import('./positionStats').PositionWinRateRow>;
-  try {
-    statsMap = await fetchPositionWinRates(hashes, 'all');
-  } catch {
-    return result; // RPC失敗 → fallback
+  // canonical_hash 統計を取得
+  let canonicalMap: Map<string, import('./positionStats').PositionWinRateRow> = new Map();
+  if (hashes.length > 0) {
+    try {
+      canonicalMap = await fetchPositionWinRates(hashes, 'all');
+    } catch {
+      // RPC失敗 → canonical stats なし
+    }
   }
 
-  // historicWinRate を付加 + resolvedWP を計算
+  // symmetry_group_id 統計を取得（fallback用）
+  let symmetryMap: Map<string, import('./positionStats').SymmetryGroupWinRateRow> = new Map();
+  if (groupIds.length > 0) {
+    try {
+      symmetryMap = await fetchSymmetryGroupWinRates(groupIds, 'all');
+    } catch {
+      // RPC失敗 → symmetry stats なし
+    }
+  }
+
+  // fallback chain で各行を enrich
   const enrichedRows = result.rows.map((row, i) => {
     const hash = history[i]?.canonical_hash;
-    if (!hash) return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };
-    const stat = statsMap.get(hash);
-    if (!stat || stat.confidence === 'hidden') {
-      return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };
+    const groupId = history[i]?.symmetry_group_id;
+
+    // Step 1: canonical_hash 統計を試みる
+    const canonicalStat = hash ? canonicalMap.get(hash) : undefined;
+    if (canonicalStat && canonicalStat.confidence !== 'hidden') {
+      const rowWithHist = {
+        ...row,
+        historicWinRate: canonicalStat.win_rate_black ?? undefined,
+        sampleCount: canonicalStat.total,
+        confidence: canonicalStat.confidence as 'reference' | 'main',
+        winRateSource: 'position_stats' as const,
+      };
+      const resolvedWP = resolveWPForRow(rowWithHist);
+      return { ...rowWithHist, resolvedWP, resolvedWpSource: resolveWpSource(rowWithHist) };
     }
-    const rowWithHist = {
-      ...row,
-      historicWinRate: stat.win_rate_black ?? undefined,
-      sampleCount: stat.total,
-      confidence: stat.confidence as 'reference' | 'main',
-      winRateSource: 'position_stats' as const,
-    };
-    const resolvedWP = resolveWPForRow(rowWithHist);
-    const resolvedWpSource = resolveWpSource(rowWithHist);
-    return { ...rowWithHist, resolvedWP, resolvedWpSource };
+
+    // Step 2: symmetry_group_id 統計へ fallback
+    const symmetryStat = groupId ? symmetryMap.get(groupId) : undefined;
+    if (symmetryStat && symmetryStat.confidence !== 'hidden') {
+      const rowWithSym = {
+        ...row,
+        historicWinRate: symmetryStat.win_rate_black ?? undefined,
+        sampleCount: symmetryStat.total,
+        confidence: symmetryStat.confidence as 'reference' | 'main',
+        winRateSource: 'symmetry_group' as const,
+      };
+      const resolvedWP = resolveWPForRow(rowWithSym);
+      return { ...rowWithSym, resolvedWP, resolvedWpSource: resolveWpSource(rowWithSym) };
+    }
+
+    // Step 3: static fallback
+    return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };
   });
 
   // resolvedWP が存在しない行を補完（安全策）

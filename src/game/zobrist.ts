@@ -446,6 +446,47 @@ export function updateMoveNumber(
 // Gate total asset value helper (for hash content description)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Position-ownership-only canonical hash (for symmetry group ID)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute the C4-normalized position-ownership hash string.
+ * This is used as the symmetry_group_id.
+ *
+ * Two states with the same set of owned positions (ignoring gates/player/moveNumber)
+ * that are related by a C4 rotation will have the same symmetry_group_id.
+ */
+export function computePositionOwnershipCanonicalHashString(state: GameState): string {
+  let minHashStr = '';
+
+  for (let rot = 0; rot < 4; rot++) {
+    const posMap = C4_POSITION_MAPS[rot] as Record<PositionId, PositionId>;
+
+    // Build inverse: invMap[posMap[origId]] = origId
+    const invMap: Partial<Record<PositionId, PositionId>> = {};
+    for (const origId of POSITION_IDS) {
+      invMap[posMap[origId]] = origId;
+    }
+
+    let h: ZobristKey = [0, 0];
+    for (let i = 0; i < POSITION_IDS.length; i++) {
+      const posId = POSITION_IDS[i]!;
+      const srcId = invMap[posId] ?? posId;
+      const owner = state.positions[srcId]?.owner ?? null;
+      const idx = owner === null ? 0 : owner === 'black' ? 1 : 2;
+      h = xorKey(h, ZOBRIST_POSITION[i]![idx]);
+    }
+    const hashStr = keyToString(h);
+
+    if (rot === 0 || hashStr < minHashStr) {
+      minHashStr = hashStr;
+    }
+  }
+
+  return minHashStr;
+}
+
 /**
  * Returns a compact string describing a gate's asset state for debugging.
  * Not used in hashing — for test/debug output only.

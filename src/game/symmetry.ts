@@ -22,8 +22,9 @@
  *   storage.ts   — On-demand re-computation for records missing canonical_hash
  */
 
-import type { GateId, PositionId } from './types';
+import type { GateId, PositionId, GameState } from './types';
 import { POSITION_IDS, GATE_IDS } from './constants';
+import { computePositionOwnershipCanonicalHashString } from './zobrist';
 
 // ---------------------------------------------------------------------------
 // Transform group definitions
@@ -146,17 +147,19 @@ export const C4_ROTATION_NAMES: readonly C4RotationName[] = ['R0', 'R90', 'R180'
 // ---------------------------------------------------------------------------
 
 /**
- * Derive the symmetry group ID from a precomputed canonical_hash string.
- *
- * For C4, the symmetry group ID is the canonical_hash itself.
- * This function is intentionally thin — it exists to name the concept
- * and provide a stable call site for future evolution (e.g., if D4 or
- * a richer group is adopted later).
- *
- * Step F-2: NOT used by CPU search or postmortem UI.
+ * Compute the symmetry group ID from a GameState.
+ * Uses position ownership only (no gates, no player, no moveNumber).
+ * C4-normalized.
+ */
+export function computeSymmetryGroupId(state: GameState): string {
+  return computePositionOwnershipCanonicalHashString(state);
+}
+
+/**
+ * @deprecated Use computeSymmetryGroupId(state) instead.
+ * Kept for backward compatibility only.
  */
 export function symmetryGroupIdFromHash(canonicalHash: string): string {
-  // For C4 normalization, the symmetry group orbit representative IS the canonical hash.
   return canonicalHash;
 }
 

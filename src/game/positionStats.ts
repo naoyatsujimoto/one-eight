@@ -127,6 +127,71 @@ export async function fetchPositionWinRate(
   return map.get(hash) ?? null;
 }
 
+// ─── symmetry_group_stats RPC クライアント ────────────────────────────────────────────────
+
+/** RPC v2 の symmetry_group 版返却行 */
+export interface SymmetryGroupWinRateRow {
+  symmetry_group_id: string;
+  wins_black: number;
+  wins_white: number;
+  draws: number;
+  total: number;
+  win_rate_black: number | null;
+  win_rate_white: number | null;
+  confidence: 'hidden' | 'reference' | 'main';
+}
+
+/**
+ * 複数の symmetry_group_id の勝率統計を一括取得する。
+ *
+ * @param groupIds    照会する symmetry_group_id 配列
+ * @param modeGroup   集計対象モード（default: 'all'）
+ * @returns           symmetry_group_id をキーとした Map
+ */
+export async function fetchSymmetryGroupWinRates(
+  groupIds: string[],
+  modeGroup: string = 'all',
+): Promise<Map<string, SymmetryGroupWinRateRow>> {
+  if (groupIds.length === 0) return new Map();
+
+  const uniqueIds = [...new Set(groupIds)];
+
+  const { data, error } = await supabase
+    .rpc('get_symmetry_group_win_rates', {
+      group_ids: uniqueIds,
+      mode_group: modeGroup,
+    });
+
+  if (error) {
+    console.warn('[positionStats] symmetry group RPC error:', error.message);
+    return new Map();
+  }
+
+  const result = new Map<string, SymmetryGroupWinRateRow>();
+
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const gid = row.symmetry_group_id as string;
+    const total = row.total as number;
+    const wins_black = row.wins_black as number;
+    const wins_white = row.wins_white as number;
+    const draws = row.draws as number;
+    const hasV2Fields = 'win_rate_black' in row && 'confidence' in row;
+
+    result.set(gid, {
+      symmetry_group_id: gid,
+      wins_black,
+      wins_white,
+      draws,
+      total,
+      win_rate_black: hasV2Fields ? (row.win_rate_black as number | null) : (total > 0 ? Math.round(wins_black / total * 10000) / 100 : null),
+      win_rate_white: hasV2Fields ? (row.win_rate_white as number | null) : (total > 0 ? Math.round(wins_white / total * 10000) / 100 : null),
+      confidence: hasV2Fields ? (row.confidence as PositionConfidence) : (total < 5 ? 'hidden' : total < 30 ? 'reference' : 'main'),
+    });
+  }
+
+  return result;
+}
+
 /**
  * 表示用: confidence ラベルの日本語変換
  */

@@ -218,7 +218,9 @@ function pct(wp: number): string {
 function formatHistWR(r: PostmortemMoveRow): string {
   if (r.historicWinRate === undefined || r.confidence === undefined) return '—';
   const pctStr = `${r.historicWinRate.toFixed(1)}%`;
-  return r.confidence === 'reference' ? `${pctStr}*` : pctStr;
+  const refMark = r.confidence === 'reference' ? '*' : '';
+  const srcMark = r.winRateSource === 'symmetry_group' ? '~' : '';
+  return `${pctStr}${refMark}${srcMark}`;
 }
 
 // ─── スタイル ─────────────────────────────────────────────────────────────────

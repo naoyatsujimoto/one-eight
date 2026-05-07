@@ -35,6 +35,8 @@ export type MoveRecord = {
    * Use ensureCanonicalHash() in storage.ts to on-demand compute when missing.
    */
   canonical_hash?: string;
+  /** C4-normalized position-ownership hash (optional, backward compat) */
+  symmetry_group_id?: string;
 };
 
 export type GameState = {

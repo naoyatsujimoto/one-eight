@@ -1,6 +1,7 @@
 import { createInitialState } from './initialState';
 import type { GameState, MoveRecord } from './types';
 import { computeCanonicalHashString } from './zobrist';
+import { computeSymmetryGroupId } from './symmetry';
 import type { PostmortemResult } from './postmortem';
 
 const STORAGE_KEY = 'one_eight_game_state';
@@ -87,6 +88,26 @@ export function ensureAllCanonicalHashes(state: GameState): GameState {
     // Use final state as proxy for the post-move state
     const canonical_hash = computeCanonicalHashString(state);
     return { ...record, canonical_hash };
+  });
+
+  return { ...state, history: updatedHistory };
+}
+
+/**
+ * On-demand symmetry_group_id re-computation for records missing it.
+ * Uses the same simple proxy pattern as ensureAllCanonicalHashes.
+ * For exact per-move computation, use the backfill script.
+ */
+export function ensureAllSymmetryGroupIds(state: GameState): GameState {
+  if (state.history.every(r => r.symmetry_group_id !== undefined)) {
+    return state; // nothing to do
+  }
+
+  const updatedHistory: MoveRecord[] = state.history.map(record => {
+    if (record.symmetry_group_id !== undefined) return record;
+    // Use final state as proxy (same pattern as ensureAllCanonicalHashes)
+    const symmetry_group_id = computeSymmetryGroupId(state);
+    return { ...record, symmetry_group_id };
   });
 
   return { ...state, history: updatedHistory };

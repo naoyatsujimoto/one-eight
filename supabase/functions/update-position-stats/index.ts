@@ -27,6 +27,7 @@ interface MoveRecord {
   positioning: string;
   build: Record<string, unknown>;
   canonical_hash?: string;
+  symmetry_group_id?: string;
 }
 
 interface MatchLogPayload {
@@ -99,6 +100,21 @@ function extractHashes(fullRecord: MoveRecord[]): string[] {
   return hashes;
 }
 
+/**
+ * full_record から symmetry_group_id を抽出する。
+ * null / undefined / 空文字 はスキップ。
+ */
+function extractSymmetryGroupIds(fullRecord: MoveRecord[]): string[] {
+  const ids: string[] = [];
+  for (const move of fullRecord) {
+    const gid = move.symmetry_group_id;
+    if (gid != null && gid !== '') {
+      ids.push(gid);
+    }
+  }
+  return ids;
+}
+
 // ─── winner 正規化 ───────────────────────────────────────────────────────────
 
 /**
@@ -135,10 +151,24 @@ Deno.serve(async (req: Request) => {
 
   // ─── Supabase Admin クライアント初期化 ─────────────────────────────────────
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  // SUPABASE_SECRET_KEYS（新形式: JSON）または SUPABASE_SERVICE_ROLE_KEY（旧形式）を取得
+  let serviceRoleKey: string | undefined;
+  const secretKeysJson = Deno.env.get('SUPABASE_SECRET_KEYS');
+  if (secretKeysJson) {
+    try {
+      const secretKeys = JSON.parse(secretKeysJson) as Record<string, string>;
+      // service_role キーを取得（キー名が異なる場合は最初の値を使用）
+      serviceRoleKey = secretKeys['service_role'] ?? Object.values(secretKeys)[0];
+    } catch {
+      console.warn('[update-position-stats] Failed to parse SUPABASE_SECRET_KEYS, falling back to SUPABASE_SERVICE_ROLE_KEY');
+    }
+  }
+  // フォールバック: 旧形式（DEPRECATED だが互換性のために残す）
+  serviceRoleKey = serviceRoleKey ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('[update-position-stats] Missing env vars: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    console.error('[update-position-stats] Missing env vars: SUPABASE_URL or service role key');
     return new Response(JSON.stringify({ error: 'Server configuration error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -235,6 +265,22 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // symmetry_group_stats も更新（symmetry_group_id がある場合のみ）
+  const groupIds = extractSymmetryGroupIds(fullRecord);
+  if (groupIds.length > 0) {
+    const { error: sgUpsertError } = await supabaseAdmin.rpc('batch_upsert_symmetry_group_stats', {
+      p_group_ids: groupIds,
+      p_winner: winner,
+      p_mode_groups: modeGroups,
+    });
+    if (sgUpsertError) {
+      // 失敗してもposition_stats更新は成功済みのため警告のみ
+      console.warn('[update-position-stats] symmetry_group_stats upsert failed:', sgUpsertError.message);
+    } else {
+      console.log(`[update-position-stats] symmetry_group_stats OK: group_ids=${groupIds.length}`);
+    }
+  }
+
   console.log(`[update-position-stats] OK: match_log_id=${match_log_id}, hashes=${hashes.length}, mode_groups=${modeGroups.join(',')}, winner=${winner}`);
 
   return new Response(
@@ -242,6 +288,7 @@ Deno.serve(async (req: Request) => {
       success: true,
       match_log_id,
       hashes_count: hashes.length,
+      symmetry_group_ids_count: groupIds.length,
       mode_groups: modeGroups,
       winner,
     }),
