@@ -152,7 +152,7 @@ function WPChart({ rows, wpInitial, decisiveMoveNum }: WPChartProps) {
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
 
-  const wps = [wpInitial, ...rows.map(r => r.wpAfter)];
+  const wps = [wpInitial, ...rows.map(r => r.resolvedWP ?? r.wpAfter)];
   const n = wps.length;
 
   function xOf(i: number) {

@@ -128,7 +128,7 @@ describe('enrichPostmortemWithStats', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('DECISIVE MOVEフィールドは変更されない', async () => {
+  it('DECISIVE MOVEはenrich後にswingベースで再計算される（行数<3の場合はnull）', async () => {
     const statMap = new Map();
     statMap.set('hash1', {
       canonical_hash: 'hash1', wins_black: 4, wins_white: 3, draws: 0, total: 7,
@@ -142,6 +142,7 @@ describe('enrichPostmortemWithStats', () => {
     };
     const history = makeHistory(['hash1']);
     const enriched = await enrichPostmortemWithStats(result, history);
-    expect(enriched.decisiveCrossing).toEqual(result.decisiveCrossing);
+    // rows.length < 3 のため computeDecisiveMoveFromSwing は null を返す（新仕様）
+    expect(enriched.decisiveCrossing).toBeNull();
   });
 });

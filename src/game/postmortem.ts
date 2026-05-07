@@ -11,6 +11,7 @@ import { createInitialState } from './initialState';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveBuildSingle, applyQuadBuildForGates, skipTurn } from './engine';
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
+import { fetchPositionWinRates } from './positionStats';
 
 // Win probability (logistic), Black perspective
 const K_WP = 0.003;
@@ -187,6 +188,8 @@ export interface PostmortemMoveRow {
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
   winRateSource?: 'position_stats';
+  resolvedWP?: number;                               // 最終的に使用するWP（0–1）
+  resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
 }
 
 export interface PostmortemCrossing {
@@ -204,6 +207,102 @@ export interface PostmortemResult {
   decisiveCrossing: PostmortemCrossing | null;
   crossings: PostmortemCrossing[];
   topBlackLosses: PostmortemMoveRow[];
+}
+
+// ─── resolvedWP ヘルパー ─────────────────────────────────────────────────────
+
+/** main confidence: historicWinRate を直接使用。reference: 50/50 ブレンド。fallback: 静的WP */
+function resolveWPForRow(row: PostmortemMoveRow): number {
+  if (row.confidence === 'main' && row.historicWinRate !== undefined) {
+    return row.historicWinRate / 100;
+  }
+  if (row.confidence === 'reference' && row.historicWinRate !== undefined) {
+    return (row.historicWinRate / 100 + row.wpAfter) / 2;
+  }
+  return row.wpAfter;
+}
+
+/** resolvedWP のソースを判定する */
+function resolveWpSource(row: PostmortemMoveRow): 'static' | 'blend' | 'historic' {
+  if (row.confidence === 'main' && row.historicWinRate !== undefined) return 'historic';
+  if (row.confidence === 'reference' && row.historicWinRate !== undefined) return 'blend';
+  return 'static';
+}
+
+/**
+ * WP graph / DECISIVE MOVE 共通の WP 系列を返す。
+ * [wpInitial, resolvedWP[0], resolvedWP[1], ...]
+ * resolvedWP が設定されていない行は wpAfter を使う。
+ */
+export function buildResolvedWPSeries(rows: PostmortemMoveRow[], wpInitial: number): number[] {
+  return [wpInitial, ...rows.map(r => r.resolvedWP ?? r.wpAfter)];
+}
+
+/**
+ * WP swing の大きさと持続性からDECISIVE MOVEを選ぶ。
+ * resolvedSeries: buildResolvedWPSeries の結果（length = rows.length + 1）
+ */
+function computeDecisiveMoveFromSwing(
+  rows: PostmortemMoveRow[],
+  resolvedSeries: number[],
+): PostmortemCrossing | null {
+  if (rows.length < 3) return null;
+
+  const n = rows.length;
+  const MIN_SWING = 0.05;
+  const LATE_GAME_THRESHOLD = 0.85;
+  const LATE_GAME_PENALTY = 0.6;
+  const REBOUND_LOOKBACK = 2;
+  const REBOUND_WEIGHT = 0.7;
+
+  let bestScore = -1;
+  let bestIdx = -1;
+
+  for (let i = 0; i < n; i++) {
+    const wpBefore = resolvedSeries[i]!;
+    const wpAfterI = resolvedSeries[i + 1]!;
+    const swing = Math.abs(wpAfterI - wpBefore);
+
+    if (swing < MIN_SWING) continue;
+
+    const direction = wpAfterI > wpBefore ? 1 : -1;
+    let reboundSum = 0;
+    let reboundCount = 0;
+    for (let j = 1; j <= REBOUND_LOOKBACK && (i + j) < n; j++) {
+      const wpNext = resolvedSeries[i + j + 1]!;
+      const recovery = (wpNext - wpAfterI) * (-direction);
+      if (recovery > 0) {
+        reboundSum += Math.min(recovery / swing, 1.0);
+        reboundCount++;
+      }
+    }
+    const reboundFactor = reboundCount > 0 ? (reboundSum / reboundCount) : 0;
+
+    const isLateGame = (i / n) > LATE_GAME_THRESHOLD;
+    const latePenalty = isLateGame ? LATE_GAME_PENALTY : 1.0;
+
+    const adjustedScore = swing * (1 - reboundFactor * REBOUND_WEIGHT) * latePenalty;
+
+    if (adjustedScore > bestScore) {
+      bestScore = adjustedScore;
+      bestIdx = i;
+    }
+  }
+
+  if (bestIdx < 0) return null;
+
+  const row = rows[bestIdx]!;
+  const wpBefore = resolvedSeries[bestIdx]!;
+  const wpAfterI = resolvedSeries[bestIdx + 1]!;
+
+  return {
+    moveNum: row.moveNum,
+    player: row.player,
+    played: row.played,
+    fromWP: +wpBefore.toFixed(4),
+    toWP: +wpAfterI.toFixed(4),
+    direction: wpAfterI < wpBefore ? 'down' : 'up',
+  };
 }
 
 // ─── メイン分析関数 ───────────────────────────────────────────────────────────
@@ -298,8 +397,6 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
   return { rows, wpInitial, decisiveCrossing, crossings, topBlackLosses };
 }
 
-import { fetchPositionWinRates } from './positionStats';
-
 /**
  * runPostmortem の結果に位置統計を付加する（非同期）。
  * RPC失敗・Supabase未接続・統計不足時はrowsを変更せず返す。
@@ -323,19 +420,40 @@ export async function enrichPostmortemWithStats(
     return result; // RPC失敗 → fallback
   }
 
+  // historicWinRate を付加 + resolvedWP を計算
   const enrichedRows = result.rows.map((row, i) => {
     const hash = history[i]?.canonical_hash;
-    if (!hash) return row;
+    if (!hash) return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };
     const stat = statsMap.get(hash);
-    if (!stat || stat.confidence === 'hidden') return row;
-    return {
+    if (!stat || stat.confidence === 'hidden') {
+      return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };
+    }
+    const rowWithHist = {
       ...row,
       historicWinRate: stat.win_rate_black ?? undefined,
       sampleCount: stat.total,
       confidence: stat.confidence as 'reference' | 'main',
       winRateSource: 'position_stats' as const,
     };
+    const resolvedWP = resolveWPForRow(rowWithHist);
+    const resolvedWpSource = resolveWpSource(rowWithHist);
+    return { ...rowWithHist, resolvedWP, resolvedWpSource };
   });
 
-  return { ...result, rows: enrichedRows };
+  // resolvedWP が存在しない行を補完（安全策）
+  const safeRows = enrichedRows.map(row => ({
+    ...row,
+    resolvedWP: row.resolvedWP ?? row.wpAfter,
+    resolvedWpSource: row.resolvedWpSource ?? 'static' as const,
+  }));
+
+  // resolved WP 系列から DECISIVE MOVE を再計算
+  const resolvedSeries = buildResolvedWPSeries(safeRows, result.wpInitial);
+  const newDecisiveCrossing = computeDecisiveMoveFromSwing(safeRows, resolvedSeries);
+
+  return {
+    ...result,
+    rows: safeRows,
+    decisiveCrossing: newDecisiveCrossing,
+  };
 }
