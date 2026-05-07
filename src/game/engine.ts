@@ -3,6 +3,7 @@ import { applyMassiveToGate, applyQuadToGate, applySelectiveToGate } from './bui
 import { canCapturePosition } from './capture';
 import { createInitialState } from './initialState';
 import { getAvailableBuildOptions, getWinner, isGameEnded } from './selectors';
+import { computeCanonicalHashString } from './zobrist';
 import type { GameState, GateId, MoveRecord, PositionId } from './types';
 
 export function selectPosition(state: GameState, positionId: PositionId): GameState {
@@ -42,10 +43,25 @@ function finalizeTurn(state: GameState, record: MoveRecord): GameState {
     };
   }
 
+  // Step F-2: Build the post-move state snapshot to compute canonical_hash.
+  // We construct a temporary state reflecting the committed positions so that
+  // the hash captures the actual board after this move.
+  const postMoveStateForHash: GameState = {
+    ...state,
+    positions,
+    selectedPosition: null,
+    pendingPositionOwner: null,
+    moveNumber: state.moveNumber + 1,
+    currentPlayer: state.currentPlayer === 'black' ? 'white' : 'black',
+  };
+  const canonical_hash = computeCanonicalHashString(postMoveStateForHash);
+
+  const recordWithHash: MoveRecord = { ...record, canonical_hash };
+
   const interim: GameState = {
     ...state,
     positions,
-    history: [...state.history, record],
+    history: [...state.history, recordWithHash],
     selectedPosition: null,
     pendingPositionOwner: null,
     moveNumber: state.moveNumber + 1,

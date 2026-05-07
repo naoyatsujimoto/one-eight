@@ -29,6 +29,12 @@ export type MoveRecord = {
     | { type: 'quad'; placedGateIds: GateId[]; placed: number }
     | { type: 'skip' }
     | { type: 'no-build' };
+  /**
+   * Step F-2: C4-canonical Zobrist hash of the game state AFTER this move is committed.
+   * Optional for backward compatibility — older saved records may lack this field.
+   * Use ensureCanonicalHash() in storage.ts to on-demand compute when missing.
+   */
+  canonical_hash?: string;
 };
 
 export type GameState = {
