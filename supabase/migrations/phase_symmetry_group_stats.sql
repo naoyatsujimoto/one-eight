@@ -3,6 +3,10 @@
 -- symmetry_group_stats 有効化フェーズ
 -- =============================================================================
 
+-- get_symmetry_group_win_rates は N-1b で v1（返り型: wins_black/white/draws/total のみ）として
+-- 既に作成済みのため、返り型変更には DROP が必要。
+DROP FUNCTION IF EXISTS get_symmetry_group_win_rates(text[], text);
+
 -- -----------------------------------------------------------------------------
 -- 1. batch_upsert_symmetry_group_stats
 -- -----------------------------------------------------------------------------
