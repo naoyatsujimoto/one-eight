@@ -457,6 +457,48 @@ export function updateMoveNumber(
  * Two states with the same set of owned positions (ignoring gates/player/moveNumber)
  * that are related by a C4 rotation will have the same symmetry_group_id.
  */
+/**
+ * Compute the position-ownership hash string for a specific C4 rotation (0=R0,1=R90,2=R180,3=R270).
+ * Exported so that medium_pattern_id can co-minimize position and gate bits under the SAME rotation.
+ */
+export function computePositionOwnershipHashStringForRotation(
+  state: GameState,
+  rot: number
+): string {
+  const posMap = C4_POSITION_MAPS[rot] as Record<PositionId, PositionId>;
+
+  const invMap: Partial<Record<PositionId, PositionId>> = {};
+  for (const origId of POSITION_IDS) {
+    invMap[posMap[origId]] = origId;
+  }
+
+  let h: ZobristKey = [0, 0];
+  for (let i = 0; i < POSITION_IDS.length; i++) {
+    const posId = POSITION_IDS[i]!;
+    const srcId = invMap[posId] ?? posId;
+    const owner = state.positions[srcId]?.owner ?? null;
+    const idx = owner === null ? 0 : owner === 'black' ? 1 : 2;
+    h = xorKey(h, ZOBRIST_POSITION[i]![idx]);
+  }
+  return keyToString(h);
+}
+
+/**
+ * Export the inverse gate map for a given rotation index.
+ * inv_gate_map[newGateId] = origGateId that maps to newGateId under rot.
+ * Used by mediumPattern.ts to compute corner bits under the same rotation as position.
+ */
+export function getInverseGateMapForRotation(
+  rot: number
+): Partial<Record<GateId, GateId>> {
+  const gateMap = C4_GATE_MAPS[rot] as Record<GateId, GateId>;
+  const invMap: Partial<Record<GateId, GateId>> = {};
+  for (const gId of GATE_IDS) {
+    invMap[gateMap[gId]] = gId;
+  }
+  return invMap;
+}
+
 export function computePositionOwnershipCanonicalHashString(state: GameState): string {
   let minHashStr = '';
 

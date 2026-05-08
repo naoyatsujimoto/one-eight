@@ -21,6 +21,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeMediumPatternId,
+  computeMediumPatternIdForRotation,
   getMediumPatternCornerBits,
   canonicalizeMediumPatternBits,
 } from '../game/mediumPattern';
@@ -149,24 +150,22 @@ describe('computeMediumPatternId — asymmetric states differ', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Gate1 に黒が支配的 vs Gate4 に黒が支配的 → C4正規化後の corner_bits が等しいこと
+// 4. Gate1 に黒が支配的 vs Gate4 に黒が支配的 → C4正規化後の medium_pattern_id が等しいこと
+//    (raw bits はズレるが、co-minimized ID は等しい)
 // ---------------------------------------------------------------------------
 
-describe('getMediumPatternCornerBits — C4 rotation equivalence of gates', () => {
-  it('black dominant at gate1 vs gate4 → same canonical corner_bits', () => {
-    // Position A -> gates [1,2,7,12]: use gate1
-    // Position C -> gates [3,4,5,10]: use gate4
-    // black@A+gate1: raw bits = [gate1=black, gate4=0, gate7=0, gate10=0] = "1000" -> canonical "0001"
-    // black@C+gate4: raw bits = [gate1=0, gate4=black, gate7=0, gate10=0] = "0100" -> canonical "0001"
+describe('computeMediumPatternId — C4 gate rotation equivalence', () => {
+  it('black A+gate1 vs black C+gate4 → same medium_pattern_id (co-minimized)', () => {
     const stateGate1 = blackAtAWithGate(1);
     const stateGate4 = (() => {
       const s0 = createInitialState(null);
       const s1 = selectPosition({ ...s0, currentPlayer: 'black' }, 'C');
       return withMassiveBuild(s1, 4);
     })();
-    const bits1 = getMediumPatternCornerBits(stateGate1);
-    const bits4 = getMediumPatternCornerBits(stateGate4);
-    expect(bits1).toBe(bits4);
+    // raw corner bits differ: "1000" vs "0100" — but co-minimized IDs must match
+    expect(getMediumPatternCornerBits(stateGate1)).toBe('1000'); // R0 raw
+    expect(getMediumPatternCornerBits(stateGate4)).toBe('0100'); // R0 raw, intentionally different
+    expect(computeMediumPatternId(stateGate1)).toBe(computeMediumPatternId(stateGate4));
   });
 });
 
@@ -309,22 +308,76 @@ describe('canonicalizeMediumPatternBits', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 11. part1 は computePositionOwnershipCanonicalHashString と一致すること
+// 11. part1 は中立コーナー状態では computePositionOwnershipCanonicalHashString と一致する
+//     (非中立状態では co-minimize のためズレる可能性あり。初期状態のみ検証)
 // ---------------------------------------------------------------------------
 
-describe('computeMediumPatternId — part1 consistency', () => {
-  it('part1 matches computePositionOwnershipCanonicalHashString for initial state', () => {
+describe('computeMediumPatternId — part1 consistency (neutral corner)', () => {
+  it('initial state: part1 matches computePositionOwnershipCanonicalHashString', () => {
+    // When all corner bits are "0000" for every rotation, co-minimization degrades
+    // to position-only minimization, so part1 must equal the independent canonical hash.
     const s = createInitialState(null);
     const id = computeMediumPatternId(s);
     const expectedPart1 = computePositionOwnershipCanonicalHashString(s);
     expect(id.startsWith(expectedPart1 + ':')).toBe(true);
   });
+});
 
-  it('part1 matches after some moves', () => {
+// ---------------------------------------------------------------------------
+// 11b. 向きズレ検出テスト— computeMediumPatternIdForRotation で同回転向きを検証
+// ---------------------------------------------------------------------------
+
+describe('computeMediumPatternId — co-rotation alignment (key fix verification)', () => {
+  it('all 4 C4-rotated versions of a state yield the SAME medium_pattern_id', () => {
+    // R90 equivalent: black@A+gate1 ≡ black@C+gate4 ≡ black@M+gate7 ≡ black@K+gate10
+    const s1 = blackAtAWithGate(1);
+    const s4 = (() => {
+      const s0 = createInitialState(null);
+      const s = selectPosition({ ...s0, currentPlayer: 'black' }, 'C');
+      return withMassiveBuild(s, 4);
+    })();
+    const s7 = (() => {
+      const s0 = createInitialState(null);
+      const s = selectPosition({ ...s0, currentPlayer: 'black' }, 'M');
+      return withMassiveBuild(s, 7);
+    })();
+    const s10 = (() => {
+      const s0 = createInitialState(null);
+      const s = selectPosition({ ...s0, currentPlayer: 'black' }, 'K');
+      return withMassiveBuild(s, 10);
+    })();
+    const id1 = computeMediumPatternId(s1);
+    const id4 = computeMediumPatternId(s4);
+    const id7 = computeMediumPatternId(s7);
+    const id10 = computeMediumPatternId(s10);
+    expect(id1).toBe(id4);
+    expect(id1).toBe(id7);
+    expect(id1).toBe(id10);
+  });
+
+  it('computeMediumPatternIdForRotation: each rotation returns a valid format string', () => {
+    // This verifies the per-rotation helper used internally for co-minimization
     const state = blackAtAWithGate(1);
-    const id = computeMediumPatternId(state);
-    const expectedPart1 = computePositionOwnershipCanonicalHashString(state);
-    expect(id.startsWith(expectedPart1 + ':')).toBe(true);
+    for (let rot = 0; rot < 4; rot++) {
+      const candidate = computeMediumPatternIdForRotation(state, rot);
+      const parts = candidate.split(':');
+      const cornerBits = parts[parts.length - 1];
+      expect(cornerBits).toMatch(/^[012]{4}$/);
+    }
+  });
+
+  it('position and gate bits are from the SAME rotation: no independent minimization', () => {
+    // If position and gate were independently minimized, states that are
+    // C4-rotations of each other might map to different IDs.
+    // This test confirms they always map to the same ID.
+    const state = blackAtAWithGate(1); // R0 base
+    const rotated = (() => {
+      // R90: A→C, gate1→4
+      const s0 = createInitialState(null);
+      const s = selectPosition({ ...s0, currentPlayer: 'black' }, 'C');
+      return withMassiveBuild(s, 4);
+    })();
+    expect(computeMediumPatternId(state)).toBe(computeMediumPatternId(rotated));
   });
 });
 
@@ -343,14 +396,13 @@ describe('getMediumPatternCornerBits — initial state', () => {
 // 13. 単一 corner gate 黒支配の raw → canonical が期待値
 // ---------------------------------------------------------------------------
 
-describe('getMediumPatternCornerBits — single gate dominance', () => {
-  it('only gate1 dominated by black → canonical bits = "0001" (rotation of "1000")', () => {
-    // raw bits for [gate1=black, gate4=0, gate7=0, gate10=0] = "1000"
-    // canonical = lexmin rotation = "0001"
+describe('getMediumPatternCornerBits — single gate dominance (raw R0 bits)', () => {
+  it('only gate1 dominated by black → raw R0 bits = "1000" (NOT independently canonicalized)', () => {
+    // getMediumPatternCornerBits returns raw (R0) bits, not independently canonicalized.
+    // canonical form is only produced inside computeMediumPatternId via co-minimization.
     const state = blackAtAWithGate(1);
     const bits = getMediumPatternCornerBits(state);
-    // After C4 normalization, "1000" should become "0001"
-    expect(bits).toBe('0001');
+    expect(bits).toBe('1000'); // raw: gate1=black, gate4=0, gate7=0, gate10=0
   });
 });
 
