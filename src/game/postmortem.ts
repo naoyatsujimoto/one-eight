@@ -11,9 +11,8 @@ import { createInitialState } from './initialState';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveBuildSingle, applyQuadBuildForGates, skipTurn } from './engine';
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
-import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchSimPositionWinRates, fetchMediumPatternWinRate } from './positionStats';
-import type { SimPositionWinRateRow } from './positionStats';
-import { computeMediumPatternId } from './mediumPattern';
+import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchSimPositionWinRates, fetchMediumPatternWinRates, fetchSimMediumPatternWinRates } from './positionStats';
+import type { SimPositionWinRateRow, MediumPatternWinRateRow, SimMediumPatternWinRateRow } from './positionStats';
 import { detectStrategyFlags } from './strategyPatterns';
 import type { StrategyFlag } from './strategyPatterns';
 
@@ -191,7 +190,7 @@ export interface PostmortemMoveRow {
   historicWinRate?: number;        // win_rate_black (0–100)
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
-  winRateSource?: 'position_stats' | 'symmetry_group' | 'sim_easy';
+  winRateSource?: 'position_stats' | 'symmetry_group' | 'sim_easy' | 'medium_pattern' | 'sim_medium_pattern';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
   /** Phase N-4: post-move 局面で成立している戦略的特徴 */
@@ -431,52 +430,60 @@ export async function enrichPostmortemWithStats(
   result: PostmortemResult,
   history: MoveRecord[],
 ): Promise<PostmortemResult> {
-  // canonical_hash と symmetry_group_id を収集
+  // 各「局面ID」を收集
   const hashes = history
     .map(r => r.canonical_hash)
     .filter((h): h is string => typeof h === 'string' && h.length > 0);
   const groupIds = history
     .map(r => r.symmetry_group_id)
     .filter((g): g is string => typeof g === 'string' && g.length > 0);
+  const mediumPatternIds = history
+    .map(r => r.medium_pattern_id)
+    .filter((p): p is string => typeof p === 'string' && p.length > 0);
 
-  if (hashes.length === 0 && groupIds.length === 0) return result;
+  if (hashes.length === 0 && groupIds.length === 0 && mediumPatternIds.length === 0) return result;
 
-  // canonical_hash 統計を取得
-  let canonicalMap: Map<string, import('./positionStats').PositionWinRateRow> = new Map();
-  if (hashes.length > 0) {
-    try {
-      canonicalMap = await fetchPositionWinRates(hashes, 'all');
-    } catch {
-      // RPC失敗 → canonical stats なし
-    }
-  }
+  // 一括フェッチ（並列実行）
+  const [canonicalMap, symmetryMap, simEasyMap, mediumPatternMap, simMediumPatternMap] =
+    await Promise.all([
+      // canonical_hash 統計
+      hashes.length > 0
+        ? fetchPositionWinRates(hashes, 'all').catch(() => new Map())
+        : Promise.resolve(new Map<string, import('./positionStats').PositionWinRateRow>()),
 
-  // symmetry_group_id 統計を取得（fallback用）
-  let symmetryMap: Map<string, import('./positionStats').SymmetryGroupWinRateRow> = new Map();
-  if (groupIds.length > 0) {
-    try {
-      symmetryMap = await fetchSymmetryGroupWinRates(groupIds, 'all');
-    } catch {
-      // RPC失敗 → symmetry stats なし
-    }
-  }
+      // symmetry_group_id 統計（fallback用）
+      groupIds.length > 0
+        ? fetchSymmetryGroupWinRates(groupIds, 'all').catch(() => new Map())
+        : Promise.resolve(new Map<string, import('./positionStats').SymmetryGroupWinRateRow>()),
 
-  // sim_easy 統計を取得（Step 2.5 fallback 用）
-  let simEasyMap: Map<string, SimPositionWinRateRow> = new Map();
-  if (hashes.length > 0) {
-    try {
-      simEasyMap = await fetchSimPositionWinRates(hashes, 'easy_vs_easy', 100);
-    } catch {
-      // sim fetch 失敗 → static fallback
-    }
-  }
+      // sim_easy 統計（Step 2.5 fallback）
+      hashes.length > 0
+        ? fetchSimPositionWinRates(hashes, 'easy_vs_easy', 100).catch(() => new Map())
+        : Promise.resolve(new Map<string, SimPositionWinRateRow>()),
+
+      // 実戦 medium_pattern 統計（Step 1.5 fallback）— min_total=5
+      mediumPatternIds.length > 0
+        ? fetchMediumPatternWinRates(mediumPatternIds, 5, 'all').catch(() => new Map())
+        : Promise.resolve(new Map<string, MediumPatternWinRateRow>()),
+
+      // sim medium_pattern 統計（Step 2.3 fallback）— min_total=30
+      mediumPatternIds.length > 0
+        ? fetchSimMediumPatternWinRates(mediumPatternIds, 30, 'easy_vs_easy').catch(() => new Map())
+        : Promise.resolve(new Map<string, SimMediumPatternWinRateRow>()),
+    ]);
 
   // fallback chain で各行を enrich
   const enrichedRows = result.rows.map((row, i) => {
     const hash = history[i]?.canonical_hash;
     const groupId = history[i]?.symmetry_group_id;
+    const mediumPatternId = history[i]?.medium_pattern_id;
 
-    // Step 1: canonical_hash 統計を試みる
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 1: 実戦 canonical_hash 統計
+    //   採用条件: confidence != 'hidden' (total >= 5)
+    //   confidence: DB値をそのまま使用（'reference' or 'main'）
+    //   resolvedWP: main=historic, reference=50/50 blend
+    // ──────────────────────────────────────────────────────────────────────────
     const canonicalStat = hash ? canonicalMap.get(hash) : undefined;
     if (canonicalStat && canonicalStat.confidence !== 'hidden') {
       const rowWithHist = {
@@ -490,37 +497,32 @@ export async function enrichPostmortemWithStats(
       return { ...rowWithHist, resolvedWP, resolvedWpSource: resolveWpSource(rowWithHist) };
     }
 
-    // Step 2.2: medium_pattern fallback（Phase M-1）
-    // DB 未適用 = medium_pattern_stats テーブルが存在しない場合
-    // → fetchMediumPatternWinRate は常に null を返すスタブ（スキップ）。
-    // DB 有効化後はスタブを実装に差し替える。
-    // エラーを catch して静かにスキップ、下流の symmetry_group fallback に流れる。
-    // (currentIndex は現在のループ変数を利用する)
-    const mediumPatternId = hash ? computeMediumPatternId(
-      // state はリプレイ履歴から再構築不可なので、
-      // medium_pattern_id は postmortem では記録目的のみ、DB参照はスタブが常に null
-      // そのためここではプレースホルダーとして initial state を利用
-      // 実際の実装では MoveRecord に mediumPatternId を保存する設計に変更予定
-      // フォールバック機能としては記録のみ
-      { positions: {} as GameState['positions'], gates: {} as GameState['gates'],
-        currentPlayer: 'black', moveNumber: 0, selectedPosition: null,
-        pendingPositionOwner: null, history: [], gameEnded: false, winner: null,
-        cpuPlayer: null, startedAt: null, endedAt: null }
-    ) : undefined;
-    // NOTE: medium_pattern DB fallback は現在スタブ（常に null）
-    // DB 有効化後に fetchMediumPatternWinRate を実際の RPC に置き換える
-    // try {
-    //   const medStat = mediumPatternId
-    //     ? await fetchMediumPatternWinRate(mediumPatternId, 30)
-    //     : null;
-    //   if (medStat) { /* enrich row */ }
-    // } catch { /* silent skip */ }
-    void fetchMediumPatternWinRate; // import を使用済みとしてマーク（lint 対策）
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 1.5: 実戦 medium_pattern_id fallback
+    //   採用条件: total >= 5 (confidence='reference'固定)
+    //   resolvedWP: 50/50 blend (historicWinRate + wpAfter) / 2
+    //   winRateSource: 'medium_pattern'
+    //   注意: medium_pattern_id は実戦の MoveRecordから取得
+    //            (旧実装のバグを修正： initial state を渡す事はしない)
+    // ──────────────────────────────────────────────────────────────────────────
+    const mediumPatternStat = mediumPatternId ? mediumPatternMap.get(mediumPatternId) : undefined;
+    if (mediumPatternStat && mediumPatternStat.total >= 5 && mediumPatternStat.win_rate_black !== null) {
+      const rowWithMed = {
+        ...row,
+        historicWinRate: mediumPatternStat.win_rate_black ?? undefined,
+        sampleCount: mediumPatternStat.total,
+        confidence: 'reference' as const,  // medium_pattern は常に reference 固定
+        winRateSource: 'medium_pattern' as const,
+      };
+      const resolvedWP = resolveWPForRow(rowWithMed); // 50/50 blend
+      return { ...rowWithMed, resolvedWP, resolvedWpSource: 'blend' as const };
+    }
 
+    // ──────────────────────────────────────────────────────────────────────────
     // Step 2: symmetry_group_id 統計へ fallback
-    // 【重要】symmetry_group_id は position pattern group（Gate asset 差を含む）のため、
-    // 実際の sampleCount に関わらず confidence を 'reference' に固定する。
-    // canonical_hash 統計と同格に扱わない。
+    //   【重要】 symmetry_group_id は Position 所有 + Gate asset 差が混入するため、
+    //   実際の sampleCount に関わらず confidence を 'reference' に固定する。
+    // ──────────────────────────────────────────────────────────────────────────
     const symmetryStat = groupId ? symmetryMap.get(groupId) : undefined;
     if (symmetryStat && symmetryStat.confidence !== 'hidden') {
       const rowWithSym = {
@@ -534,8 +536,33 @@ export async function enrichPostmortemWithStats(
       return { ...rowWithSym, resolvedWP, resolvedWpSource: resolveWpSource(rowWithSym) };
     }
 
-    // Step 2.5: sim_easy fallback
-    // 採用条件: totalMoves の 60% 以上の手番 かつ sim total >= 100
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.3: sim medium_pattern_id fallback
+    //   採用条件: total >= 30 (confidence='reference'固定)
+    //   resolvedWP: 0.2 × simWP + 0.8 × staticWP (wpAfter)
+    //   winRateSource: 'sim_medium_pattern'
+    // ──────────────────────────────────────────────────────────────────────────
+    const simMedPatternStat = mediumPatternId ? simMediumPatternMap.get(mediumPatternId) : undefined;
+    if (simMedPatternStat && simMedPatternStat.total >= 30 && simMedPatternStat.win_rate_black !== null) {
+      const simWP = simMedPatternStat.win_rate_black / 100;
+      const blendedWP = 0.2 * simWP + 0.8 * row.wpAfter;
+      const rowWithSimMed = {
+        ...row,
+        historicWinRate: simMedPatternStat.win_rate_black,
+        sampleCount: simMedPatternStat.total,
+        confidence: 'reference' as const,
+        winRateSource: 'sim_medium_pattern' as const,
+        resolvedWP: blendedWP,
+        resolvedWpSource: 'blend' as const,
+      };
+      return rowWithSimMed;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.5: sim_easy canonical_hash fallback
+    //   採用条件: totalMoves の 60% 以上の手番 かつ sim total >= 100
+    //   resolvedWP: 0.2 × simWP + 0.8 × staticWP
+    // ──────────────────────────────────────────────────────────────────────────
     const totalMoves = history.length;
     const simStat = hash ? simEasyMap.get(hash) : undefined;
     if (simStat && simStat.win_rate_black !== null && simStat.total >= 100) {
@@ -556,7 +583,9 @@ export async function enrichPostmortemWithStats(
       }
     }
 
+    // ──────────────────────────────────────────────────────────────────────────
     // Step 3: static fallback
+    // ──────────────────────────────────────────────────────────────────────────
     return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };
   });
 

@@ -5,6 +5,7 @@ import { createInitialState } from './initialState';
 import { getAvailableBuildOptions, getWinner, isGameEnded } from './selectors';
 import { computeCanonicalHashString } from './zobrist';
 import { computeSymmetryGroupId } from './symmetry';
+import { computeMediumPatternId } from './mediumPattern';
 import type { GameState, GateId, MoveRecord, PositionId } from './types';
 
 export function selectPosition(state: GameState, positionId: PositionId): GameState {
@@ -57,8 +58,9 @@ function finalizeTurn(state: GameState, record: MoveRecord): GameState {
   };
   const canonical_hash = computeCanonicalHashString(postMoveStateForHash);
   const symmetry_group_id = computeSymmetryGroupId(postMoveStateForHash);
+  const medium_pattern_id = computeMediumPatternId(postMoveStateForHash);
 
-  const recordWithHash: MoveRecord = { ...record, canonical_hash, symmetry_group_id };
+  const recordWithHash: MoveRecord = { ...record, canonical_hash, symmetry_group_id, medium_pattern_id };
 
   const interim: GameState = {
     ...state,

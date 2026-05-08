@@ -151,3 +151,41 @@ $$;
 
 COMMENT ON FUNCTION get_sim_medium_pattern_win_rates(TEXT[], TEXT, INT) IS
   'Phase M-1: medium_pattern_id のシミュレーション勝率を一括取得する RPC。p_min_total 未満のレコードは除外。';
+
+-- ---------------------------------------------------------------------------
+-- 5. Row Level Security (RLS)
+-- ---------------------------------------------------------------------------
+
+-- medium_pattern_stats
+ALTER TABLE medium_pattern_stats ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "allow_read_medium_pattern_stats" ON medium_pattern_stats;
+CREATE POLICY "allow_read_medium_pattern_stats"
+  ON medium_pattern_stats
+  FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "allow_service_write_medium_pattern_stats" ON medium_pattern_stats;
+CREATE POLICY "allow_service_write_medium_pattern_stats"
+  ON medium_pattern_stats
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- sim_medium_pattern_stats
+ALTER TABLE sim_medium_pattern_stats ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "allow_read_sim_medium_pattern_stats" ON sim_medium_pattern_stats;
+CREATE POLICY "allow_read_sim_medium_pattern_stats"
+  ON sim_medium_pattern_stats
+  FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "allow_service_write_sim_medium_pattern_stats" ON sim_medium_pattern_stats;
+CREATE POLICY "allow_service_write_sim_medium_pattern_stats"
+  ON sim_medium_pattern_stats
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);

@@ -37,6 +37,8 @@ export type MoveRecord = {
   canonical_hash?: string;
   /** C4-normalized position-ownership hash (optional, backward compat) */
   symmetry_group_id?: string;
+  /** Phase M-1: medium_pattern_id (Position所有 + corner gate dominance) of the state AFTER this move */
+  medium_pattern_id?: string;
 };
 
 export type GameState = {

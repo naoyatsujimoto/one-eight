@@ -49,12 +49,36 @@
 
 ---
 
-## 次フェーズ
+## S-2 完了（2026-05-08 JST）
 
-- **S-2**: sim_position_stats を postmortem fallback に接続
-  - 参照優先順位: 実戦 canonical → 実戦 symmetry → sim very_hard → sim hard → sim easy → static fallback
-  - UIに sim 由来であることを明示する必要はない
-  - 内部では source / sim_policy / sim_batch_id を保持
+**ステータス: ✅ S-2 完了**
+
+### 変更ファイル
+
+| ファイル | 内容 |
+|---|---|
+| `src/game/positionStats.ts` | `SimPositionWinRateRow` 型、`fetchSimPositionWinRates()` 関数を追加 |
+| `src/game/postmortem.ts` | `winRateSource` 嵌定型に `'sim_easy'` を追加 |
+| `src/game/postmortem.ts` | `enrichPostmortemWithStats()` に Step 2.5 sim_easy fallback を挿入 |
+| `src/tests/sim_position_stats_fallback.test.ts` | 新規テスト（6件）追加 |
+
+### sim fallback 仕様
+
+- **插入位置**: Step 2（symmetry）と Step 3（static）の間（Step 2.5）
+- **採用条件**: `moveNum / totalMoves >= 0.6`（終盤のみ）かつ `total >= 100`
+- **blend 比率**: `resolvedWP = 0.2 * simWinRateBlack + 0.8 * wpAfter`
+- **winRateSource**: `'sim_easy'`
+- **実戦テーブル汚染**: なし（`sim_position_stats` から読み取りのみ）
+- **UI汎用化**: なし（既存の Hist. 表示を壊さない）
+
+### テスト結果
+
+- 追加テスト: 6件（全合格）
+- 合計: 220 tests passed
+- build: 成功
+
+### 次フェーズ
+
 - **S-3**: Naoyaから追加simデータ（hard / very_hard）を都度受け取り増量
 
 ## 制約遵守確認

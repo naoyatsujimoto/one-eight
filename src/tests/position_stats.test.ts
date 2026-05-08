@@ -10,6 +10,10 @@ import type { MoveRecord } from '../game/types';
 // positionStats モジュールをモック
 vi.mock('../game/positionStats', () => ({
   fetchPositionWinRates: vi.fn(),
+  fetchSymmetryGroupWinRates: vi.fn().mockResolvedValue(new Map()),
+  fetchSimPositionWinRates: vi.fn().mockResolvedValue(new Map()),
+  fetchMediumPatternWinRates: vi.fn().mockResolvedValue(new Map()),
+  fetchSimMediumPatternWinRates: vi.fn().mockResolvedValue(new Map()),
 }));
 
 import { fetchPositionWinRates } from '../game/positionStats';

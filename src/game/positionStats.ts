@@ -239,26 +239,165 @@ export async function fetchSimPositionWinRates(
   return result;
 }
 
-// ─── medium_pattern_stats クライアント（Phase M-1 スタブ） ─────────────────────────────────
+// ─── medium_pattern_stats クライアント（Phase M-1） ─────────────────────────────────────────
+
+/** get_medium_pattern_win_rates RPC の返却行 */
+export interface MediumPatternWinRateRow {
+  medium_pattern_id: string;
+  wins_black: number;
+  wins_white: number;
+  draws: number;
+  total: number;
+  win_rate_black: number | null;
+  win_rate_white: number | null;
+}
 
 /**
- * fetchMediumPatternWinRate — medium_pattern_id の勝率統計を取得する（スタブ）
+ * fetchMediumPatternWinRate — medium_pattern_id の勝率統計を取得する。
  *
- * Phase M-1: DB 未適用のため常に null を返す。
- * DB有効化後（Supabase SQL Editor で phase_medium_pattern.sql 実行後）に
- * 実際の RPC 呼び出しに差し替える。
+ * Phase M-1: get_medium_pattern_win_rates RPC を使用。
+ * RPC 失敗・統計不足・DB 未適用の場合は null を返す。
  *
- * @param _patternId   照会する medium_pattern_id
- * @param _minTotal    最低サンプル数（閾値未満は null 扱い）
- * @returns            null（DB有効化後に実装）
+ * @param patternId   照会する medium_pattern_id
+ * @param minTotal    最低サンプル数（閾値未満は null 扱い）
+ * @param modeGroup   集計対象モード（default: 'all'）
+ * @returns           { winRate: number; total: number } | null
  */
 export async function fetchMediumPatternWinRate(
-  _patternId: string,
-  _minTotal: number
+  patternId: string,
+  minTotal: number = 5,
+  modeGroup: string = 'all',
 ): Promise<{ winRate: number; total: number } | null> {
-  // TODO: DB有効化後に実装
-  // const { data, error } = await supabase.rpc('get_medium_pattern_win_rates', { ... });
-  return null;
+  if (!patternId) return null;
+
+  try {
+    const { data, error } = await supabase.rpc('get_medium_pattern_win_rates', {
+      p_pattern_ids: [patternId],
+      p_mode_group: modeGroup,
+      p_min_total: minTotal,
+    });
+
+    if (error) {
+      console.warn('[positionStats] medium_pattern RPC error:', error.message);
+      return null;
+    }
+
+    const rows = (data ?? []) as MediumPatternWinRateRow[];
+    const row = rows.find(r => r.medium_pattern_id === patternId);
+    if (!row || row.total < minTotal) return null;
+
+    const winRate = row.win_rate_black ?? (
+      row.total > 0 ? Math.round(row.wins_black / row.total * 10000) / 100 : null
+    );
+    if (winRate === null) return null;
+
+    return { winRate, total: row.total };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * fetchMediumPatternWinRates — 複数の medium_pattern_id の勝率統計を一括取得する。
+ *
+ * @param patternIds  照会する medium_pattern_id 配列
+ * @param minTotal    最低サンプル数
+ * @param modeGroup   集計対象モード（default: 'all'）
+ * @returns           medium_pattern_id をキーとした Map
+ */
+export async function fetchMediumPatternWinRates(
+  patternIds: string[],
+  minTotal: number = 5,
+  modeGroup: string = 'all',
+): Promise<Map<string, MediumPatternWinRateRow>> {
+  if (patternIds.length === 0) return new Map();
+
+  const uniqueIds = [...new Set(patternIds)];
+
+  try {
+    const { data, error } = await supabase.rpc('get_medium_pattern_win_rates', {
+      p_pattern_ids: uniqueIds,
+      p_mode_group: modeGroup,
+      p_min_total: minTotal,
+    });
+
+    if (error) {
+      console.warn('[positionStats] medium_pattern batch RPC error:', error.message);
+      return new Map();
+    }
+
+    const result = new Map<string, MediumPatternWinRateRow>();
+    for (const row of (data ?? []) as MediumPatternWinRateRow[]) {
+      result.set(row.medium_pattern_id, row);
+    }
+    return result;
+  } catch {
+    return new Map();
+  }
+}
+
+// ─── sim_medium_pattern_stats クライアント（Phase M-1）────────────────────────────────────────────────────────────────────────────
+
+/** sim_medium_pattern_stats の返却行 */
+export interface SimMediumPatternWinRateRow {
+  medium_pattern_id: string;
+  sim_policy: string;
+  wins_black: number;
+  wins_white: number;
+  draws: number;
+  total: number;
+  win_rate_black: number | null;
+}
+
+/**
+ * fetchSimMediumPatternWinRates — 複数の medium_pattern_id の sim 勝率統計を一括取得する。
+ *
+ * @param patternIds  照会する medium_pattern_id 配列
+ * @param minTotal    最低サンプル数（デフォルト: 30）
+ * @param simPolicy   simポリシー（デフォルト: 'easy_vs_easy'）
+ * @returns           medium_pattern_id をキーとした Map
+ */
+export async function fetchSimMediumPatternWinRates(
+  patternIds: string[],
+  minTotal: number = 30,
+  simPolicy: string = 'easy_vs_easy',
+): Promise<Map<string, SimMediumPatternWinRateRow>> {
+  if (patternIds.length === 0) return new Map();
+
+  const uniqueIds = [...new Set(patternIds)];
+
+  try {
+    const { data, error } = await supabase
+      .from('sim_medium_pattern_stats')
+      .select('medium_pattern_id, sim_policy, wins_black, wins_white, draws, total')
+      .in('medium_pattern_id', uniqueIds)
+      .eq('sim_policy', simPolicy)
+      .gte('total', minTotal);
+
+    if (error) {
+      console.warn('[positionStats] sim_medium_pattern fetch error:', error.message);
+      return new Map();
+    }
+
+    const result = new Map<string, SimMediumPatternWinRateRow>();
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const pid = row.medium_pattern_id as string;
+      const total = row.total as number;
+      const wins_black = row.wins_black as number;
+      result.set(pid, {
+        medium_pattern_id: pid,
+        sim_policy: row.sim_policy as string,
+        wins_black,
+        wins_white: row.wins_white as number,
+        draws: row.draws as number,
+        total,
+        win_rate_black: total > 0 ? Math.round((wins_black / total) * 10000) / 100 : null,
+      });
+    }
+    return result;
+  } catch {
+    return new Map();
+  }
 }
 
 /**
