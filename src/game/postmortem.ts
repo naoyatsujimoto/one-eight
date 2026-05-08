@@ -11,7 +11,8 @@ import { createInitialState } from './initialState';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveBuildSingle, applyQuadBuildForGates, skipTurn } from './engine';
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
-import { fetchPositionWinRates, fetchSymmetryGroupWinRates } from './positionStats';
+import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchSimPositionWinRates } from './positionStats';
+import type { SimPositionWinRateRow } from './positionStats';
 import { detectStrategyFlags } from './strategyPatterns';
 import type { StrategyFlag } from './strategyPatterns';
 
@@ -189,7 +190,7 @@ export interface PostmortemMoveRow {
   historicWinRate?: number;        // win_rate_black (0–100)
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
-  winRateSource?: 'position_stats' | 'symmetry_group';
+  winRateSource?: 'position_stats' | 'symmetry_group' | 'sim_easy';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
   /** Phase N-4: post-move 局面で成立している戦略的特徴 */
@@ -457,6 +458,16 @@ export async function enrichPostmortemWithStats(
     }
   }
 
+  // sim_easy 統計を取得（Step 2.5 fallback 用）
+  let simEasyMap: Map<string, SimPositionWinRateRow> = new Map();
+  if (hashes.length > 0) {
+    try {
+      simEasyMap = await fetchSimPositionWinRates(hashes, 'easy_vs_easy', 100);
+    } catch {
+      // sim fetch 失敗 → static fallback
+    }
+  }
+
   // fallback chain で各行を enrich
   const enrichedRows = result.rows.map((row, i) => {
     const hash = history[i]?.canonical_hash;
@@ -491,6 +502,24 @@ export async function enrichPostmortemWithStats(
       };
       const resolvedWP = resolveWPForRow(rowWithSym);
       return { ...rowWithSym, resolvedWP, resolvedWpSource: resolveWpSource(rowWithSym) };
+    }
+
+    // Step 2.5: sim_easy fallback
+    // 採用条件: totalMoves の 60% 以上の手番 かつ sim total >= 100
+    const totalMoves = history.length;
+    const simStat = hash ? simEasyMap.get(hash) : undefined;
+    if (simStat && simStat.win_rate_black !== null) {
+      const gameProgress = row.moveNum / totalMoves;
+      if (gameProgress >= 0.6) {
+        const simWP = simStat.win_rate_black / 100;
+        const blendedWP = 0.2 * simWP + 0.8 * row.wpAfter;
+        return {
+          ...row,
+          winRateSource: 'sim_easy' as const,
+          resolvedWP: blendedWP,
+          resolvedWpSource: 'blend' as const,
+        };
+      }
     }
 
     // Step 3: static fallback

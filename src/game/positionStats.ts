@@ -192,6 +192,53 @@ export async function fetchSymmetryGroupWinRates(
   return result;
 }
 
+// ─── sim_position_stats クライアント ────────────────────────────────────────────────
+
+export interface SimPositionWinRateRow {
+  canonical_hash: string;
+  sim_policy: string;
+  wins_black: number;
+  wins_white: number;
+  draws: number;
+  total: number;
+  win_rate_black: number | null;
+}
+
+export async function fetchSimPositionWinRates(
+  hashes: string[],
+  simPolicy: string = 'easy_vs_easy',
+  minTotal: number = 100,
+): Promise<Map<string, SimPositionWinRateRow>> {
+  if (hashes.length === 0) return new Map();
+  const uniqueHashes = [...new Set(hashes)];
+  const { data, error } = await supabase
+    .from('sim_position_stats')
+    .select('canonical_hash, sim_policy, wins_black, wins_white, draws, total')
+    .in('canonical_hash', uniqueHashes)
+    .eq('sim_policy', simPolicy)
+    .gte('total', minTotal);
+  if (error) {
+    console.warn('[positionStats] sim fetch error:', error.message);
+    return new Map();
+  }
+  const result = new Map<string, SimPositionWinRateRow>();
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const hash = row.canonical_hash as string;
+    const total = row.total as number;
+    const wins_black = row.wins_black as number;
+    result.set(hash, {
+      canonical_hash: hash,
+      sim_policy: row.sim_policy as string,
+      wins_black,
+      wins_white: row.wins_white as number,
+      draws: row.draws as number,
+      total,
+      win_rate_black: total > 0 ? Math.round((wins_black / total) * 10000) / 100 : null,
+    });
+  }
+  return result;
+}
+
 /**
  * 表示用: confidence ラベルの日本語変換
  */
