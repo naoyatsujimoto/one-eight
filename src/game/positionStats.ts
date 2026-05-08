@@ -239,6 +239,28 @@ export async function fetchSimPositionWinRates(
   return result;
 }
 
+// ─── medium_pattern_stats クライアント（Phase M-1 スタブ） ─────────────────────────────────
+
+/**
+ * fetchMediumPatternWinRate — medium_pattern_id の勝率統計を取得する（スタブ）
+ *
+ * Phase M-1: DB 未適用のため常に null を返す。
+ * DB有効化後（Supabase SQL Editor で phase_medium_pattern.sql 実行後）に
+ * 実際の RPC 呼び出しに差し替える。
+ *
+ * @param _patternId   照会する medium_pattern_id
+ * @param _minTotal    最低サンプル数（閾値未満は null 扱い）
+ * @returns            null（DB有効化後に実装）
+ */
+export async function fetchMediumPatternWinRate(
+  _patternId: string,
+  _minTotal: number
+): Promise<{ winRate: number; total: number } | null> {
+  // TODO: DB有効化後に実装
+  // const { data, error } = await supabase.rpc('get_medium_pattern_win_rates', { ... });
+  return null;
+}
+
 /**
  * 表示用: confidence ラベルの日本語変換
  */

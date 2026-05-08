@@ -11,8 +11,9 @@ import { createInitialState } from './initialState';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveBuildSingle, applyQuadBuildForGates, skipTurn } from './engine';
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
-import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchSimPositionWinRates } from './positionStats';
+import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchSimPositionWinRates, fetchMediumPatternWinRate } from './positionStats';
 import type { SimPositionWinRateRow } from './positionStats';
+import { computeMediumPatternId } from './mediumPattern';
 import { detectStrategyFlags } from './strategyPatterns';
 import type { StrategyFlag } from './strategyPatterns';
 
@@ -195,6 +196,8 @@ export interface PostmortemMoveRow {
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
   /** Phase N-4: post-move 局面で成立している戦略的特徴 */
   strategicFlags?: StrategyFlag[];
+  /** Phase M-1: medium_pattern_id（DB未適用時は未使用） */
+  mediumPatternId?: string;
 }
 
 export interface PostmortemCrossing {
@@ -486,6 +489,33 @@ export async function enrichPostmortemWithStats(
       const resolvedWP = resolveWPForRow(rowWithHist);
       return { ...rowWithHist, resolvedWP, resolvedWpSource: resolveWpSource(rowWithHist) };
     }
+
+    // Step 2.2: medium_pattern fallback（Phase M-1）
+    // DB 未適用 = medium_pattern_stats テーブルが存在しない場合
+    // → fetchMediumPatternWinRate は常に null を返すスタブ（スキップ）。
+    // DB 有効化後はスタブを実装に差し替える。
+    // エラーを catch して静かにスキップ、下流の symmetry_group fallback に流れる。
+    // (currentIndex は現在のループ変数を利用する)
+    const mediumPatternId = hash ? computeMediumPatternId(
+      // state はリプレイ履歴から再構築不可なので、
+      // medium_pattern_id は postmortem では記録目的のみ、DB参照はスタブが常に null
+      // そのためここではプレースホルダーとして initial state を利用
+      // 実際の実装では MoveRecord に mediumPatternId を保存する設計に変更予定
+      // フォールバック機能としては記録のみ
+      { positions: {} as GameState['positions'], gates: {} as GameState['gates'],
+        currentPlayer: 'black', moveNumber: 0, selectedPosition: null,
+        pendingPositionOwner: null, history: [], gameEnded: false, winner: null,
+        cpuPlayer: null, startedAt: null, endedAt: null }
+    ) : undefined;
+    // NOTE: medium_pattern DB fallback は現在スタブ（常に null）
+    // DB 有効化後に fetchMediumPatternWinRate を実際の RPC に置き換える
+    // try {
+    //   const medStat = mediumPatternId
+    //     ? await fetchMediumPatternWinRate(mediumPatternId, 30)
+    //     : null;
+    //   if (medStat) { /* enrich row */ }
+    // } catch { /* silent skip */ }
+    void fetchMediumPatternWinRate; // import を使用済みとしてマーク（lint 対策）
 
     // Step 2: symmetry_group_id 統計へ fallback
     // 【重要】symmetry_group_id は position pattern group（Gate asset 差を含む）のため、
