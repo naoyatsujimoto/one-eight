@@ -508,17 +508,21 @@ export async function enrichPostmortemWithStats(
     // 採用条件: totalMoves の 60% 以上の手番 かつ sim total >= 100
     const totalMoves = history.length;
     const simStat = hash ? simEasyMap.get(hash) : undefined;
-    if (simStat && simStat.win_rate_black !== null) {
+    if (simStat && simStat.win_rate_black !== null && simStat.total >= 100) {
       const gameProgress = row.moveNum / totalMoves;
       if (gameProgress >= 0.6) {
         const simWP = simStat.win_rate_black / 100;
         const blendedWP = 0.2 * simWP + 0.8 * row.wpAfter;
-        return {
+        const rowWithSim = {
           ...row,
+          historicWinRate: simStat.win_rate_black,
+          sampleCount: simStat.total,
+          confidence: 'reference' as const,
           winRateSource: 'sim_easy' as const,
           resolvedWP: blendedWP,
           resolvedWpSource: 'blend' as const,
         };
+        return rowWithSim;
       }
     }
 

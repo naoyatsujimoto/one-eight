@@ -239,6 +239,10 @@ function formatHistWR(r: PostmortemMoveRow): string {
   if (r.winRateSource === 'symmetry_group') {
     return `${pctStr}*~`;
   }
+  // sim_easy 由来: confidence='reference' 相当の * 表示
+  if (r.winRateSource === 'sim_easy') {
+    return `${pctStr}*`;
+  }
   // canonical 由来: reference=* / main=マークなし
   const refMark = r.confidence === 'reference' ? '*' : '';
   return `${pctStr}${refMark}`;
