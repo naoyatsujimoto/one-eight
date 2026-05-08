@@ -12,6 +12,7 @@ import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveB
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
 import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchSimPositionWinRates, fetchMediumPatternWinRates, fetchSimMediumPatternWinRates } from './positionStats';
+import { computeMediumPatternId } from './mediumPattern';
 import type { SimPositionWinRateRow, MediumPatternWinRateRow, SimMediumPatternWinRateRow } from './positionStats';
 import { detectStrategyFlags } from './strategyPatterns';
 import type { StrategyFlag } from './strategyPatterns';
@@ -312,6 +313,28 @@ function computeDecisiveMoveFromSwing(
   };
 }
 
+// ─── medium_pattern_id リプレイ算出 ──────────────────────────────────────────
+
+/**
+ * MoveRecord[] をリプレイして各手の post-move state の medium_pattern_id を算出する。
+ * enrichPostmortemWithStats の内部ヘルパー。
+ * 既存ゲームで MoveRecord.medium_pattern_id が未設定の場合に使用。
+ */
+function computeMediumPatternIdsFromHistory(history: MoveRecord[]): (string | undefined)[] {
+  let state: GameState = createInitialState(null);
+  const result: (string | undefined)[] = [];
+
+  for (const record of history) {
+    state = applyMoveRecord(state, record);
+    try {
+      result.push(computeMediumPatternId(state));
+    } catch {
+      result.push(undefined);
+    }
+  }
+  return result;
+}
+
 // ─── メイン分析関数 ───────────────────────────────────────────────────────────
 
 /**
@@ -437,11 +460,24 @@ export async function enrichPostmortemWithStats(
   const groupIds = history
     .map(r => r.symmetry_group_id)
     .filter((g): g is string => typeof g === 'string' && g.length > 0);
-  const mediumPatternIds = history
-    .map(r => r.medium_pattern_id)
-    .filter((p): p is string => typeof p === 'string' && p.length > 0);
 
-  if (hashes.length === 0 && groupIds.length === 0 && mediumPatternIds.length === 0) return result;
+  // medium_pattern_id の取得: MoveRecord にあればそれを使い、なければリプレイ算出
+  const mediumPatternIds: (string | undefined)[] = history.map(r => r.medium_pattern_id);
+  const needsReplay = mediumPatternIds.some(id => !id);
+
+  if (needsReplay) {
+    // history をリプレイして各 post-move state から medium_pattern_id を算出
+    const replayedIds = computeMediumPatternIdsFromHistory(history);
+    for (let i = 0; i < mediumPatternIds.length; i++) {
+      if (!mediumPatternIds[i]) {
+        mediumPatternIds[i] = replayedIds[i];
+      }
+    }
+  }
+
+  const validMediumPatternIds = mediumPatternIds.filter((p): p is string => typeof p === 'string' && p.length > 0);
+
+  if (hashes.length === 0 && groupIds.length === 0 && validMediumPatternIds.length === 0) return result;
 
   // 一括フェッチ（並列実行）
   const [canonicalMap, symmetryMap, simEasyMap, mediumPatternMap, simMediumPatternMap] =
@@ -462,13 +498,13 @@ export async function enrichPostmortemWithStats(
         : Promise.resolve(new Map<string, SimPositionWinRateRow>()),
 
       // 実戦 medium_pattern 統計（Step 1.5 fallback）— min_total=5
-      mediumPatternIds.length > 0
-        ? fetchMediumPatternWinRates(mediumPatternIds, 5, 'all').catch(() => new Map())
+      validMediumPatternIds.length > 0
+        ? fetchMediumPatternWinRates(validMediumPatternIds, 5, 'all').catch(() => new Map())
         : Promise.resolve(new Map<string, MediumPatternWinRateRow>()),
 
       // sim medium_pattern 統計（Step 2.3 fallback）— min_total=30
-      mediumPatternIds.length > 0
-        ? fetchSimMediumPatternWinRates(mediumPatternIds, 30, 'easy_vs_easy').catch(() => new Map())
+      validMediumPatternIds.length > 0
+        ? fetchSimMediumPatternWinRates(validMediumPatternIds, 30, 'easy_vs_easy').catch(() => new Map())
         : Promise.resolve(new Map<string, SimMediumPatternWinRateRow>()),
     ]);
 
@@ -476,7 +512,7 @@ export async function enrichPostmortemWithStats(
   const enrichedRows = result.rows.map((row, i) => {
     const hash = history[i]?.canonical_hash;
     const groupId = history[i]?.symmetry_group_id;
-    const mediumPatternId = history[i]?.medium_pattern_id;
+    const mediumPatternId = mediumPatternIds[i];
 
     // ──────────────────────────────────────────────────────────────────────────
     // Step 1: 実戦 canonical_hash 統計

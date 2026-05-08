@@ -15,17 +15,23 @@ vi.mock('../game/positionStats', () => ({
   fetchPositionWinRates: vi.fn(),
   fetchSymmetryGroupWinRates: vi.fn(),
   fetchSimPositionWinRates: vi.fn(),
+  fetchMediumPatternWinRates: vi.fn(),
+  fetchSimMediumPatternWinRates: vi.fn(),
 }));
 
 import {
   fetchPositionWinRates,
   fetchSymmetryGroupWinRates,
   fetchSimPositionWinRates,
+  fetchMediumPatternWinRates,
+  fetchSimMediumPatternWinRates,
 } from '../game/positionStats';
 
 const mockFetchCanonical = fetchPositionWinRates as ReturnType<typeof vi.fn>;
 const mockFetchSymmetry = fetchSymmetryGroupWinRates as ReturnType<typeof vi.fn>;
 const mockFetchSim = fetchSimPositionWinRates as ReturnType<typeof vi.fn>;
+const mockFetchMediumPattern = fetchMediumPatternWinRates as ReturnType<typeof vi.fn>;
+const mockFetchSimMediumPattern = fetchSimMediumPatternWinRates as ReturnType<typeof vi.fn>;
 
 // ─── ヘルパー ────────────────────────────────────────────────────────────────
 
@@ -85,10 +91,14 @@ describe('sim_position_stats_fallback (Step 2.5)', () => {
     mockFetchCanonical.mockReset();
     mockFetchSymmetry.mockReset();
     mockFetchSim.mockReset();
+    mockFetchMediumPattern.mockReset();
+    mockFetchSimMediumPattern.mockReset();
     // デフォルト: 実戦統計なし
     mockFetchCanonical.mockResolvedValue(new Map());
     mockFetchSymmetry.mockResolvedValue(new Map());
     mockFetchSim.mockResolvedValue(new Map());
+    mockFetchMediumPattern.mockResolvedValue(new Map());
+    mockFetchSimMediumPattern.mockResolvedValue(new Map());
   });
 
   it('sim 統計あり・終盤(60%以上)・total>=100 → winRateSource=sim_easy かつ resolvedWP が blend になる', async () => {
