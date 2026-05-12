@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
+import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
@@ -47,6 +48,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
+  const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
   const [openCpuDiff, setOpenCpuDiff] = useState<CpuDifficulty | null>(null);
@@ -278,6 +280,12 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 games={stats.recentGames}
                 localMap={localMap}
                 onPostmortem={setPostmortemGame}
+                refreshingGameId={refreshingGameId}
+                onRefresh={(record) => {
+                  clearPostmortemCache(record.game_id);
+                  setRefreshingGameId(record.game_id);
+                  setPostmortemGame(record);
+                }}
               />
             ) : <Muted text={t.userNoData} />}
           </section>
@@ -336,7 +344,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <PostmortemModal
           history={postmortemGame.full_record}
           gameId={postmortemGame.game_id}
-          onClose={() => setPostmortemGame(null)}
+          onClose={() => { setPostmortemGame(null); setRefreshingGameId(null); }}
         />
       )}
     </div>
@@ -440,10 +448,14 @@ function RecentGamesTable({
   games,
   localMap,
   onPostmortem,
+  refreshingGameId = null,
+  onRefresh,
 }: {
   games: MatchLogRow[];
   localMap: Map<string, GameRecord>;
   onPostmortem: (r: GameRecord) => void;
+  refreshingGameId?: string | null;
+  onRefresh?: (r: GameRecord) => void;
 }) {
   const { t } = useLang();
   return (
@@ -504,7 +516,19 @@ function RecentGamesTable({
                 <td style={s.td}>{modeLabel}</td>
                 <td style={s.td}>
                   {gameRecord ? (
-                    <button type="button" style={s.analyzeBtn} onClick={handleAnalyze}>{t.analyze}</button>
+                    <div style={s.btnGroup}>
+                      <button type="button" style={s.analyzeBtn} onClick={handleAnalyze}>{t.analyze}</button>
+                      {onRefresh && (
+                        <button
+                          type="button"
+                          style={refreshingGameId === r.game_id ? s.refreshingBtn : s.refreshBtn}
+                          disabled={refreshingGameId === r.game_id}
+                          onClick={() => onRefresh(gameRecord)}
+                        >
+                          {refreshingGameId === r.game_id ? t.refreshing : t.refresh}
+                        </button>
+                      )}
+                    </div>
                   ) : <span style={{ color: '#ccc' }}>—</span>}
                 </td>
               </tr>
@@ -866,6 +890,11 @@ const s: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #f5f5f5',
     whiteSpace: 'nowrap' as const,
   },
+  btnGroup: {
+    display: 'flex',
+    gap: 4,
+    alignItems: 'center',
+  },
   analyzeBtn: {
     background: 'none',
     border: '1px solid #ddd',
@@ -874,6 +903,26 @@ const s: Record<string, React.CSSProperties> = {
     padding: '2px 7px',
     cursor: 'pointer',
     color: '#444',
+    whiteSpace: 'nowrap' as const,
+  },
+  refreshBtn: {
+    background: 'none',
+    border: '1px solid #c8d8f0',
+    borderRadius: 4,
+    fontSize: '0.7rem',
+    padding: '2px 7px',
+    cursor: 'pointer',
+    color: '#3a7bd5',
+    whiteSpace: 'nowrap' as const,
+  },
+  refreshingBtn: {
+    background: 'none',
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    fontSize: '0.7rem',
+    padding: '2px 7px',
+    cursor: 'default',
+    color: '#aaa',
     whiteSpace: 'nowrap' as const,
   },
   cpuBtn: {
