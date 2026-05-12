@@ -92,6 +92,7 @@ export const T = {
     analyzingEstimate: (sec: number) => sec < 60 ? `est. ~${sec}s` : `est. ~${Math.round(sec / 60)}min`,
     decisiveMove: 'Decisive Move',
     topLosses: 'Top Losses (Black)',
+    historySection: 'History',
     noAnalysis: 'Not enough data',
     onlinePlay: 'Online Play',
     onlineCreate: 'Create',
@@ -272,6 +273,7 @@ export const T = {
     analyzingEstimate: (sec: number) => sec < 60 ? `目安 約${sec}秒` : `目安 約${Math.round(sec / 60)}分`,
     decisiveMove: '決定的な一手',
     topLosses: '最大損失手（Black）',
+    historySection: '棋譜',
     noAnalysis: 'データ不足',
     onlinePlay: 'オンライン対戦',
     onlineCreate: 'ルーム作成',
@@ -427,6 +429,7 @@ export type Translations = {
   analyzingEstimate: (sec: number) => string;
   decisiveMove: string;
   topLosses: string;
+  historySection: string;
   noAnalysis: string;
   onlinePlay: string;
   onlineCreate: string;

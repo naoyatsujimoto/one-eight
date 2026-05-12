@@ -2,7 +2,7 @@
  * PostmortemModal.tsx — 対局の勝敗を分けた一手を分析して表示するポップアップ
  */
 import { useEffect, useState } from 'react';
-import { runPostmortem, enrichPostmortemWithStats, type PostmortemResult, type PostmortemMoveRow } from '../game/postmortem';
+import { runPostmortem, enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
 import type { MoveRecord } from '../game/types';
@@ -106,32 +106,11 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
               <WPChart rows={result.rows} wpInitial={result.wpInitial} decisiveMoveNum={result.decisiveCrossing?.moveNum ?? null} />
             </section>
 
-            {/* Blackの損失top3 */}
-            {result.topBlackLosses.length > 0 && (
+            {/* 棋譜一覧 */}
+            {result.rows.length > 0 && (
               <section style={styles.section}>
-                <div style={styles.sectionTitle}>{t.topLosses}</div>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Move</th>
-                      <th style={styles.th}>Played</th>
-                      <th style={styles.th}>Best</th>
-                      <th style={styles.th}>ΔWP</th>
-                      <th style={styles.th}>Hist.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.topBlackLosses.map((r) => (
-                      <tr key={r.moveNum}>
-                        <td style={styles.td}>#{r.moveNum}</td>
-                        <td style={{ ...styles.td, color: '#e53' }}>{r.played}</td>
-                        <td style={{ ...styles.td, color: '#27a' }}>{r.best ?? '—'}</td>
-                        <td style={styles.td}>{r.wpSwing !== null ? `${(r.wpSwing * 100).toFixed(1)}pt` : '—'}</td>
-                        <td style={styles.td}>{formatHistWR(r)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div style={styles.sectionTitle}>{t.historySection}</div>
+                <HistoryList rows={result.rows} wpInitial={result.wpInitial} />
               </section>
             )}
           </>
@@ -231,21 +210,35 @@ function pct(wp: number): string {
   return `${(wp * 100).toFixed(1)}%`;
 }
 
-/** Top Losses 行の historicWinRate 表示用 */
-function formatHistWR(r: PostmortemMoveRow): string {
-  if (r.historicWinRate === undefined || r.confidence === undefined) return '—';
-  const pctStr = `${r.historicWinRate.toFixed(1)}%`;
-  // symmetry_group 由来は常に参考値（Gate asset 差混入リスク）→ *~ で一貫表示
-  if (r.winRateSource === 'symmetry_group') {
-    return `${pctStr}*~`;
-  }
-  // sim_easy 由来: confidence='reference' 相当の * 表示
-  if (r.winRateSource === 'sim_easy') {
-    return `${pctStr}*`;
-  }
-  // canonical 由来: reference=* / main=マークなし
-  const refMark = r.confidence === 'reference' ? '*' : '';
-  return `${pctStr}${refMark}`;
+// ─── HISTORY リスト ──────────────────────────────────────────────────────────
+
+interface HistoryListProps {
+  rows: PostmortemResult['rows'];
+  wpInitial: number;
+}
+
+function HistoryList({ rows, wpInitial }: HistoryListProps) {
+  const resolvedSeries = buildResolvedWPSeries(rows, wpInitial);
+  return (
+    <div style={styles.historyList}>
+      {rows.map((r, i) => {
+        const prevWP = resolvedSeries[i]!;
+        const curWP = resolvedSeries[i + 1]!;
+        const delta = curWP - prevWP;
+        const deltaText = `${delta >= 0 ? '+' : ''}${(delta * 100).toFixed(1)}pt`;
+        return (
+          <div key={r.moveNum} style={styles.historyRow}>
+            <span style={styles.historyNum}>#{r.moveNum}</span>
+            <span style={styles.historyMove}>{r.played}</span>
+            <span style={styles.historyWP}>{pct(curWP)}</span>
+            <span style={{ ...styles.historyDelta, color: delta >= 0 ? '#27a' : '#e53' }}>
+              {deltaText}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── スタイル ─────────────────────────────────────────────────────────────────
@@ -346,21 +339,44 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.82rem',
     color: '#555',
   },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
+  historyList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 0,
+  },
+  historyRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 6,
+    padding: '0.28rem 0',
+    borderBottom: '1px solid #f3f3f3',
     fontSize: '0.78rem',
   },
-  th: {
-    textAlign: 'left',
-    padding: '0.35rem 0.4rem',
-    borderBottom: '1px solid #eee',
-    color: '#888',
-    fontWeight: 600,
+  historyNum: {
+    color: '#bbb',
+    fontVariantNumeric: 'tabular-nums',
+    minWidth: 32,
+    flexShrink: 0,
+    fontSize: '0.72rem',
   },
-  td: {
-    padding: '0.35rem 0.4rem',
-    borderBottom: '1px solid #f0f0f0',
+  historyMove: {
+    flex: 1,
+    color: '#333',
+    wordBreak: 'break-all' as const,
+  },
+  historyWP: {
+    color: '#555',
+    fontVariantNumeric: 'tabular-nums',
+    flexShrink: 0,
+    minWidth: 44,
+    textAlign: 'right' as const,
+  },
+  historyDelta: {
+    fontVariantNumeric: 'tabular-nums',
+    flexShrink: 0,
+    minWidth: 52,
+    textAlign: 'right' as const,
+    fontSize: '0.72rem',
   },
   flagRow: {
     display: 'flex',
