@@ -38,6 +38,7 @@ import {
 import { selectCpuMove, CpuDifficulty } from '../game/ai';
 import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
 import { saveGameRecord, updateAggregates } from '../game/analytics';
+import { schedulePostmortemPrecompute } from '../game/postmortemPrecompute';
 import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, GameState, Player, PositionId } from '../game/types';
 
@@ -165,6 +166,8 @@ export default function App() {
   const [undoStack, setUndoStack] = useState<GameState[]>([]);
 
   const cpuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ゲームごとの Postmortem 事前計算スケジュール済みキー（二重実行防止）
+  const precomputeScheduledRef = useRef<string | null>(null);
 
   // Persist state to localStorage on every change
   useEffect(() => {
@@ -177,6 +180,12 @@ export default function App() {
         updateAggregates(record);
         if (user) {
           saveMatchLog(record, user.id).catch(() => {/* silent */});
+        }
+        // Postmortem 事前計算: 同じゲームで一度だけスケジュール（state.endedAt でゲート）
+        const stableKey = state.endedAt ?? null;
+        if (stableKey && precomputeScheduledRef.current !== stableKey) {
+          precomputeScheduledRef.current = stableKey;
+          schedulePostmortemPrecompute(record.game_id, state.history);
         }
       }
     }
