@@ -93,6 +93,8 @@ export const T = {
     decisiveMove: 'Decisive Move',
     topLosses: 'Top Losses (Black)',
     historySection: 'History',
+    refresh: 'Refresh',
+    refreshing: 'Refreshing…',
     noAnalysis: 'Not enough data',
     onlinePlay: 'Online Play',
     onlineCreate: 'Create',
@@ -274,6 +276,8 @@ export const T = {
     decisiveMove: '決定的な一手',
     topLosses: '最大損失手（Black）',
     historySection: '棋譜',
+    refresh: '更新',
+    refreshing: '更新中…',
     noAnalysis: 'データ不足',
     onlinePlay: 'オンライン対戦',
     onlineCreate: 'ルーム作成',
@@ -430,6 +434,8 @@ export type Translations = {
   decisiveMove: string;
   topLosses: string;
   historySection: string;
+  refresh: string;
+  refreshing: string;
   noAnalysis: string;
   onlinePlay: string;
   onlineCreate: string;

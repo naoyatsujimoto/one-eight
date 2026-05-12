@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { MyStats as MyStatsData, MatchLogRow } from '../lib/matchLog';
 import { fetchMyStats } from '../lib/matchLog';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
+import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 
@@ -16,6 +17,8 @@ export function MyStats({ userId, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
+  // 更新中の game_id（ボタン disabled 制御）
+  const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
@@ -28,6 +31,19 @@ export function MyStats({ userId, onClose }: Props) {
     for (const r of records) map.set(r.game_id, r);
     setLocalMap(map);
   }, [userId]);
+
+  // 更新ボタンのハンドラ： cache 削除→モーダル影カースを open （モーダル内部で miss 检知→再分析）
+  function handleRefresh(record: GameRecord) {
+    clearPostmortemCache(record.game_id); // 対象 game_id の cache のみ削除
+    setRefreshingGameId(record.game_id);
+    setPostmortemGame(record);
+  }
+
+  // モーダル close: 更新中状態もリセット
+  function handlePostmortemClose() {
+    setPostmortemGame(null);
+    setRefreshingGameId(null);
+  }
 
   // Supabase記録にない場合はローカルのみのリストを補完表示
   const localOnlyRecords = Array.from(localMap.values()).filter(
@@ -82,13 +98,23 @@ export function MyStats({ userId, onClose }: Props) {
                           <td style={styles.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '—'}</td>
                           <td style={styles.td}>
                             {local ? (
-                              <button
-                                type="button"
-                                style={styles.analyzeBtn}
-                                onClick={() => setPostmortemGame(local)}
-                              >
-                                {t.analyze}
-                              </button>
+                              <div style={styles.btnGroup}>
+                                <button
+                                  type="button"
+                                  style={styles.analyzeBtn}
+                                  onClick={() => setPostmortemGame(local)}
+                                >
+                                  {t.analyze}
+                                </button>
+                                <button
+                                  type="button"
+                                  style={refreshingGameId === local.game_id ? styles.refreshingBtn : styles.refreshBtn}
+                                  disabled={refreshingGameId === local.game_id}
+                                  onClick={() => handleRefresh(local)}
+                                >
+                                  {refreshingGameId === local.game_id ? t.refreshing : t.refresh}
+                                </button>
+                              </div>
                             ) : (
                               <span style={styles.noData}>—</span>
                             )}
@@ -104,13 +130,23 @@ export function MyStats({ userId, onClose }: Props) {
                         <td style={styles.td}>{r.move_count}</td>
                         <td style={styles.td}>{new Date(r.ended_at).toLocaleDateString('ja-JP')}</td>
                         <td style={styles.td}>
-                          <button
-                            type="button"
-                            style={styles.analyzeBtn}
-                            onClick={() => setPostmortemGame(r)}
-                          >
-                            {t.analyze}
-                          </button>
+                          <div style={styles.btnGroup}>
+                            <button
+                              type="button"
+                              style={styles.analyzeBtn}
+                              onClick={() => setPostmortemGame(r)}
+                            >
+                              {t.analyze}
+                            </button>
+                            <button
+                              type="button"
+                              style={refreshingGameId === r.game_id ? styles.refreshingBtn : styles.refreshBtn}
+                              disabled={refreshingGameId === r.game_id}
+                              onClick={() => handleRefresh(r)}
+                            >
+                              {refreshingGameId === r.game_id ? t.refreshing : t.refresh}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -127,7 +163,7 @@ export function MyStats({ userId, onClose }: Props) {
         <PostmortemModal
           history={postmortemGame.full_record}
           gameId={postmortemGame.game_id}
-          onClose={() => setPostmortemGame(null)}
+          onClose={handlePostmortemClose}
         />
       )}
     </div>
@@ -218,6 +254,11 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     fontSize: '0.85rem',
   },
+  btnGroup: {
+    display: 'flex',
+    gap: 4,
+    alignItems: 'center',
+  },
   analyzeBtn: {
     background: 'none',
     border: '1px solid #ddd',
@@ -226,6 +267,26 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '2px 8px',
     cursor: 'pointer',
     color: '#444',
+    whiteSpace: 'nowrap',
+  },
+  refreshBtn: {
+    background: 'none',
+    border: '1px solid #c8d8f0',
+    borderRadius: 4,
+    fontSize: '0.72rem',
+    padding: '2px 8px',
+    cursor: 'pointer',
+    color: '#3a7bd5',
+    whiteSpace: 'nowrap',
+  },
+  refreshingBtn: {
+    background: 'none',
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    fontSize: '0.72rem',
+    padding: '2px 8px',
+    cursor: 'default',
+    color: '#aaa',
     whiteSpace: 'nowrap',
   },
   noData: {
