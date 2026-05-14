@@ -353,6 +353,53 @@ export async function fetchSimMediumPatternWinRates(
   }
 }
 
+// ─── sim_position_only_stats クライアント ─────────────────────────────────────
+
+export interface SimPositionOnlyWinRateRow {
+  position_only_id: string;
+  wins_black: number;
+  wins_white: number;
+  draws: number;
+  total: number;
+  win_rate_black: number;  // クライアントサイドで計算: wins_black / total
+  win_rate_white: number;
+  sim_policy: string;
+}
+
+/**
+ * fetchSimPositionOnlyWinRates — 複数の position_only_id の統計を一括取得
+ *
+ * @param positionOnlyIds  照会する position_only_id 配列
+ * @param minTotal         採用閾値（デフォルト 100）
+ * @returns                position_only_id をキーとした Map
+ */
+export async function fetchSimPositionOnlyWinRates(
+  positionOnlyIds: string[],
+  minTotal = 100,
+): Promise<Map<string, SimPositionOnlyWinRateRow>> {
+  if (positionOnlyIds.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('sim_position_only_stats')
+    .select('position_only_id, wins_black, wins_white, draws, total, sim_policy')
+    .in('position_only_id', positionOnlyIds)
+    .eq('sim_policy', 'easy_vs_easy')
+    .gte('total', minTotal);
+  if (error) {
+    console.warn('[positionStats] sim_position_only fetch error:', error.message);
+    return new Map();
+  }
+  const result = new Map<string, SimPositionOnlyWinRateRow>();
+  for (const row of data ?? []) {
+    const total = row.total ?? 0;
+    result.set(row.position_only_id, {
+      ...row,
+      win_rate_black: total > 0 ? row.wins_black / total : 0.5,
+      win_rate_white: total > 0 ? row.wins_white / total : 0.5,
+    });
+  }
+  return result;
+}
+
 /**
  * 表示用: confidence ラベルの日本語変換
  */

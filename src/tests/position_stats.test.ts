@@ -13,6 +13,7 @@ vi.mock('../game/positionStats', () => ({
   fetchSymmetryGroupWinRates: vi.fn().mockResolvedValue(new Map()),
   fetchMediumPatternWinRates: vi.fn().mockResolvedValue(new Map()),
   fetchSimMediumPatternWinRates: vi.fn().mockResolvedValue(new Map()),
+  fetchSimPositionOnlyWinRates: vi.fn().mockResolvedValue(new Map()),
 }));
 
 import { fetchPositionWinRates } from '../game/positionStats';

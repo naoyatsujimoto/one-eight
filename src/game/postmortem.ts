@@ -11,9 +11,9 @@ import { createInitialState } from './initialState';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applySelectiveBuildSingle, applyQuadBuildForGates, skipTurn } from './engine';
 import { evaluateState, enumerateLegalMoves, scoreMoveForOrdering, type CpuMove } from './ai';
 import type { GameState, MoveRecord, Player, PositionId, GateId } from './types';
-import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchMediumPatternWinRates, fetchSimMediumPatternWinRates } from './positionStats';
+import { fetchPositionWinRates, fetchSymmetryGroupWinRates, fetchMediumPatternWinRates, fetchSimMediumPatternWinRates, fetchSimPositionOnlyWinRates } from './positionStats';
 import { computeMediumPatternId } from './mediumPattern';
-import type { MediumPatternWinRateRow, SimMediumPatternWinRateRow } from './positionStats';
+import type { MediumPatternWinRateRow, SimMediumPatternWinRateRow, SimPositionOnlyWinRateRow } from './positionStats';
 import { detectStrategyFlags } from './strategyPatterns';
 import type { StrategyFlag } from './strategyPatterns';
 
@@ -191,7 +191,7 @@ export interface PostmortemMoveRow {
   historicWinRate?: number;        // win_rate_black (0–100)
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
-  winRateSource?: 'position_stats' | 'symmetry_group' | 'medium_pattern' | 'sim_medium_pattern';
+  winRateSource?: 'position_stats' | 'symmetry_group' | 'medium_pattern' | 'sim_medium_pattern' | 'sim_position_only';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
   /** Phase N-4: post-move 局面で成立している戦略的特徴 */
@@ -477,10 +477,20 @@ export async function enrichPostmortemWithStats(
 
   const validMediumPatternIds = mediumPatternIds.filter((p): p is string => typeof p === 'string' && p.length > 0);
 
+  // position_only_id = medium_pattern_id の ":" より前（posOwnershipHash）
+  const positionOnlyIds: (string | undefined)[] = mediumPatternIds.map(pid => {
+    if (!pid) return undefined;
+    const colonIdx = pid.indexOf(':');
+    return colonIdx >= 0 ? pid.slice(0, colonIdx) : pid;
+  });
+  const validPositionOnlyIds = [...new Set(
+    positionOnlyIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
+  )];
+
   if (hashes.length === 0 && groupIds.length === 0 && validMediumPatternIds.length === 0) return result;
 
   // 一括フェッチ（並列実行）
-  const [canonicalMap, symmetryMap, mediumPatternMap, simMediumPatternMap] =
+  const [canonicalMap, symmetryMap, mediumPatternMap, simMediumPatternMap, simPositionOnlyMap] =
     await Promise.all([
       // canonical_hash 統計
       hashes.length > 0
@@ -501,6 +511,11 @@ export async function enrichPostmortemWithStats(
       validMediumPatternIds.length > 0
         ? fetchSimMediumPatternWinRates(validMediumPatternIds, 30, 'easy_vs_easy').catch(() => new Map())
         : Promise.resolve(new Map<string, SimMediumPatternWinRateRow>()),
+
+      // sim position_only 統計（Step 2.5 fallback）— min_total=100
+      validPositionOnlyIds.length > 0
+        ? fetchSimPositionOnlyWinRates(validPositionOnlyIds, 100).catch(() => new Map())
+        : Promise.resolve(new Map<string, SimPositionOnlyWinRateRow>()),
     ]);
 
   // fallback chain で各行を enrich
@@ -508,6 +523,7 @@ export async function enrichPostmortemWithStats(
     const hash = history[i]?.canonical_hash;
     const groupId = history[i]?.symmetry_group_id;
     const mediumPatternId = mediumPatternIds[i];
+    const positionOnlyId = positionOnlyIds[i];
 
     // ──────────────────────────────────────────────────────────────────────────
     // Step 1: 実戦 canonical_hash 統計
@@ -587,6 +603,28 @@ export async function enrichPostmortemWithStats(
         resolvedWpSource: 'blend' as const,
       };
       return rowWithSimMed;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.5: sim position_only（total >= 100, blend 0.1）
+    //   採用条件: total >= 100
+    //   resolvedWP: 0.1 \xd7 posWP + 0.9 \xd7 staticWP (wpAfter)
+    //   winRateSource: 'sim_position_only'
+    // ──────────────────────────────────────────────────────────────────────────
+    const simPosOnlyStat = positionOnlyId ? simPositionOnlyMap.get(positionOnlyId) : undefined;
+    if (simPosOnlyStat && simPosOnlyStat.total >= 100) {
+      const posWP = simPosOnlyStat.win_rate_black; // black視点（0–1範囲）
+      const blendedWP = 0.1 * posWP + 0.9 * row.wpAfter;
+      const rowWithPosOnly = {
+        ...row,
+        historicWinRate: Math.round(posWP * 10000) / 100, // 0–1 → 0–100
+        sampleCount: simPosOnlyStat.total,
+        confidence: 'reference' as const,
+        winRateSource: 'sim_position_only' as const,
+        resolvedWP: blendedWP,
+        resolvedWpSource: 'blend' as const,
+      };
+      return rowWithPosOnly;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
