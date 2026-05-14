@@ -21,7 +21,6 @@ import type { MoveRecord } from '../game/types';
 vi.mock('../game/positionStats', () => ({
   fetchPositionWinRates: vi.fn().mockResolvedValue(new Map()),
   fetchSymmetryGroupWinRates: vi.fn().mockResolvedValue(new Map()),
-  fetchSimPositionWinRates: vi.fn().mockResolvedValue(new Map()),
   fetchMediumPatternWinRates: vi.fn(),
   fetchSimMediumPatternWinRates: vi.fn(),
 }));
