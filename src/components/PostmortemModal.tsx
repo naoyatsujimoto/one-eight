@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
-import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
+
 import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
@@ -34,36 +34,24 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-  const { state: workerState, run: runWorker, cancel: cancelWorker } = usePostmortemWorker();
+  const { state: workerState, run: runWorker } = usePostmortemWorker();
 
-  const analyzing = workerState.status === 'running';
+  const analyzing = workerState.status === 'running' && (workerState as { gameId?: string }).gameId === gameId;
 
   const handleAnalyze = useCallback(() => {
-    if (workerState.status === 'running') return;
+    if (workerState.status === 'running' && (workerState as { gameId?: string }).gameId === gameId) return;
 
-    // cache 確認
-    const cached = loadPostmortemCache(gameId);
-    if (cached) {
-      setResult(cached);
-      // cache hit 時も最新統計を非同期取得
-      enrichPostmortemWithStats(cached, history)
-        .then(enriched => { setResult(enriched); })
-        .catch(() => {});
-      return;
-    }
-
-    // Worker で分析開始（メインスレッドをブロックしない）
+    // Worker で分析開始（シングルトンが cache 確認・Worker 管理を担う）
     setAnalyzeError(null);
     setResult(null);
     onAnalyzing?.(true);
-    runWorker(history);
-  }, [workerState.status, gameId, history, onAnalyzing, runWorker]);
+    runWorker(gameId, history);
+  }, [workerState.status, workerState, gameId, history, onAnalyzing, runWorker]);
 
   // workerState が done / error になったら処理
   useEffect(() => {
-    if (workerState.status === 'done') {
+    if (workerState.status === 'done' && (workerState as { gameId?: string }).gameId === gameId) {
       const base = workerState.result;
-      savePostmortemCache(gameId, base);
       setResult(base);
       onAnalyzing?.(false);
 
@@ -72,12 +60,12 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
         .then(enriched => setResult(enriched))
         .catch(() => {});
     }
-    if (workerState.status === 'error') {
+    if (workerState.status === 'error' && (workerState as { gameId?: string }).gameId === gameId) {
       setAnalyzeError('分析に失敗しました。再試行してください。');
       onAnalyzing?.(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workerState.status]);
+  }, [workerState.status, workerState]);
 
   // autoStart: マウント直後に Worker 起動
   useEffect(() => {
@@ -87,12 +75,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // unmount 時に Worker を停止
-  useEffect(() => {
-    return () => {
-      cancelWorker();
-    };
-  }, [cancelWorker]);
+  // シングルトン Worker は unmount 時に停止しない（継続動作させる）
 
   // autoStart モード: 分析中はモーダルを表示しない（ボタン側のみで状態を示す）
   if (autoStart && analyzing) {

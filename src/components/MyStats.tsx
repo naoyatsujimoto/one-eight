@@ -4,6 +4,7 @@ import { fetchMyStats } from '../lib/matchLog';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
+import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { useLang } from '../lib/lang';
 import { getProfile, isProActive } from '../lib/profile';
 
@@ -18,10 +19,12 @@ export function MyStats({ userId, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
-  // 分析中の game_id（ボタン色変更 + disabled 制御）
-  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   // 更新中の game_id（ボタン disabled 制御）
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
+
+  // シングルトン Worker の状態から analyzingId を導出
+  const { state: workerState, run: runWorker } = usePostmortemWorker();
+  const analyzingId = workerState.status === 'running' ? (workerState as { gameId: string }).gameId : null;
   const [proActive, setProActive] = useState<boolean>(false);
 
   useEffect(() => {
@@ -40,18 +43,11 @@ export function MyStats({ userId, onClose }: Props) {
     });
   }, [userId]);
 
-  // 分析ボタンのハンドラ: autoStart モードで分析を開始（ポップアップなし）
+  // 分析ボタンのハンドラ: シングルトン Worker に委譲してポップアップ表示
   function handleAnalyzeClick(record: GameRecord) {
     if (analyzingId === record.game_id) return; // 二重押し防止
-    setAnalyzingId(record.game_id);
+    runWorker(record.game_id, record.full_record);
     setPostmortemGame(record);
-  }
-
-  // 分析中状態の変化を PostmortemModal から受け取る
-  function handleAnalyzingChange(active: boolean) {
-    if (!active) {
-      setAnalyzingId(null);
-    }
   }
 
   // 更新ボタンのハンドラ: cache 削除→autoStart モードで再分析
@@ -65,7 +61,6 @@ export function MyStats({ userId, onClose }: Props) {
   function handlePostmortemClose() {
     setPostmortemGame(null);
     setRefreshingGameId(null);
-    setAnalyzingId(null);
   }
 
   // Supabase記録にない場合はローカルのみのリストを補完表示
@@ -196,7 +191,6 @@ export function MyStats({ userId, onClose }: Props) {
           gameId={postmortemGame.game_id}
           onClose={handlePostmortemClose}
           autoStart
-          onAnalyzing={handleAnalyzingChange}
         />
       )}
     </div>
