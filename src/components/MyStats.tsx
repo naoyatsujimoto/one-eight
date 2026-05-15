@@ -26,6 +26,12 @@ export function MyStats({ userId, onClose }: Props) {
   const { state: workerState, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
   const analyzingId = workerState.status === 'running' ? workerState.gameId : null;
 
+  // [DEBUG] MyStats マウント時のシングルトン状態を記録
+  useEffect(() => {
+    console.log('[MyStats mount] workerState:', JSON.stringify({ status: workerState.status, gameId: 'gameId' in workerState ? workerState.gameId : null, hasHistory: 'history' in workerState && workerState.history != null }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // モーダル表示判定: history はスナップショットに含まれるのでリアクティブに追従
   const showModal =
     workerState.status !== 'idle' &&
