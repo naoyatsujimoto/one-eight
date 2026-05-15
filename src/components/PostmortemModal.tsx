@@ -2,7 +2,7 @@
  * PostmortemModal.tsx — 対局の勝敗を分けた一手を分析して表示するポップアップ
  */
 import { useEffect, useState } from 'react';
-import { runPostmortem, enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
+import { runPostmortemAsync, enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
 import type { MoveRecord } from '../game/types';
@@ -25,6 +25,8 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
   const [analyzing, setAnalyzing] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     // キャッシュヒット確認
     const cached = loadPostmortemCache(gameId);
     if (cached) {
@@ -32,27 +34,30 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
       setAnalyzing(false);
       // キャッシュヒット時も最新統計を非同期取得
       enrichPostmortemWithStats(cached, history)
-        .then(enriched => setResult(enriched))
+        .then(enriched => { if (!cancelled) setResult(enriched); })
         .catch(() => {});
-      return;
+      return () => { cancelled = true; };
     }
     setAnalyzing(true);
     setResult(null);
-    // 非同期でレンダリングさせてからminimaxを実行
-    const timer = setTimeout(async () => {
-      const base = runPostmortem(history);
-      savePostmortemCache(gameId, base);  // minimax結果のみキャッシュ
-      setResult(base);
-      setAnalyzing(false);
-      // 統計を非同期で取得してオーバーレイ
-      try {
-        const enriched = await enrichPostmortemWithStats(base, history);
-        setResult(enriched);
-      } catch {
-        // fallback: 統計なしで表示継続
-      }
-    }, 30);
-    return () => clearTimeout(timer);
+
+    // runPostmortemAsync を直接起動（各手の処理後に setTimeout(0) で UI に制御を返す）
+    runPostmortemAsync(history, () => cancelled)
+      .then(base => {
+        if (cancelled) return;
+        savePostmortemCache(gameId, base);  // minimax結果のみキャッシュ
+        setResult(base);
+        setAnalyzing(false);
+        // 統計を非同期で取得してオーバーレイ
+        return enrichPostmortemWithStats(base, history)
+          .then(enriched => { if (!cancelled) setResult(enriched); })
+          .catch(() => {/* fallback: 統計なしで表示継続 */});
+      })
+      .catch(() => {
+        if (!cancelled) setAnalyzing(false);
+      });
+
+    return () => { cancelled = true; };
   }, [gameId, history]);
 
   return (

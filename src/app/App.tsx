@@ -38,7 +38,7 @@ import {
 import { selectCpuMove, CpuDifficulty } from '../game/ai';
 import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
 import { saveGameRecord, updateAggregates } from '../game/analytics';
-import { schedulePostmortemPrecompute } from '../game/postmortemPrecompute';
+import { schedulePostmortemPrecompute, cancelPostmortemPrecompute } from '../game/postmortemPrecompute';
 import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, GameState, Player, PositionId } from '../game/types';
 
@@ -273,6 +273,11 @@ export default function App() {
     if (cpuTimerRef.current !== null) {
       clearTimeout(cpuTimerRef.current);
       cpuTimerRef.current = null;
+    }
+    // 実行中の Postmortem 事前計算をキャンセル（新ゲーム開始時に不要）
+    if (precomputeScheduledRef.current) {
+      cancelPostmortemPrecompute(precomputeScheduledRef.current);
+      precomputeScheduledRef.current = null;
     }
     clearState();
     setHasSaved(false);

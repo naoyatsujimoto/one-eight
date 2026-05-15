@@ -432,6 +432,107 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
 }
 
 /**
+ * runPostmortem の非同期版。
+ * 各手の処理後に setTimeout(0) で制御をブラウザに返し、UIスレッドをブロックしない。
+ * バックグラウンド事前計算・PostmortemModal の両方から利用可能。
+ *
+ * @param history        棋譜
+ * @param isCancelled    キャンセルチェック関数（New Game等でキャンセルされた場合にtrueを返す）
+ */
+export async function runPostmortemAsync(
+  history: MoveRecord[],
+  isCancelled?: () => boolean,
+): Promise<PostmortemResult> {
+  const DEPTH = 3;
+  let state: GameState = createInitialState(null);
+  const wpInitial = winProb(evaluateState(state, 'black', true));
+  const rows: PostmortemMoveRow[] = [];
+
+  for (let idx = 0; idx < history.length; idx++) {
+    if (isCancelled?.()) {
+      // キャンセルされた場合は中間結果を返す
+      break;
+    }
+
+    const record = history[idx]!;
+    const currentPlayer = record.player;
+
+    let bestMoveStr: string | null = null;
+    let evalBest: number | null = null;
+    let wpAfterIfBest: number | null = null;
+
+    if (currentPlayer === 'black') {
+      const res = bestMoveDepth(state, 'black', DEPTH);
+      bestMoveStr = shortMove(res.move);
+      evalBest = res.evalAfter;
+      wpAfterIfBest = winProb(evalBest);
+    }
+
+    const next = applyMoveRecord(state, record);
+    const evalPlayed = evaluateState(next, 'black', true);
+    const wpAfter = winProb(evalPlayed);
+
+    const loss = evalBest !== null ? Math.max(0, evalBest - evalPlayed) : null;
+    const wpSwing = wpAfterIfBest !== null ? wpAfterIfBest - wpAfter : null;
+    const strategicFlags = detectStrategyFlags(next, currentPlayer);
+
+    rows.push({
+      moveNum: record.moveNumber,
+      player: currentPlayer,
+      played: shortRecord(record),
+      best: bestMoveStr,
+      evalAfterPlayed: Math.round(evalPlayed),
+      evalAfterBest: evalBest !== null ? Math.round(evalBest) : null,
+      loss: loss !== null ? Math.round(loss) : null,
+      wpAfter: +wpAfter.toFixed(4),
+      wpAfterIfBest: wpAfterIfBest !== null ? +wpAfterIfBest.toFixed(4) : null,
+      wpSwing: wpSwing !== null ? +wpSwing.toFixed(4) : null,
+      strategicFlags,
+    });
+
+    state = next;
+
+    // UIスレッドに制御を返す（60fps 維持のため）
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+  }
+
+  const crossings: PostmortemCrossing[] = [];
+  let prevWP = wpInitial;
+  for (const r of rows) {
+    const fromWP = prevWP;
+    const toWP = r.wpAfter;
+    if ((fromWP >= 0.5 && toWP < 0.5) || (fromWP < 0.5 && toWP >= 0.5)) {
+      crossings.push({
+        moveNum: r.moveNum,
+        player: r.player,
+        played: r.played,
+        fromWP: +fromWP.toFixed(4),
+        toWP: +toWP.toFixed(4),
+        direction: toWP < 0.5 ? 'down' : 'up',
+      });
+    }
+    prevWP = toWP;
+  }
+
+  const finalWP = rows.length > 0 ? rows[rows.length - 1]!.wpAfter : wpInitial;
+  const finalSide = finalWP < 0.5 ? 'down' : 'up';
+  let decisiveCrossing: PostmortemCrossing | null = null;
+  for (let i = crossings.length - 1; i >= 0; i--) {
+    if (crossings[i]!.direction === finalSide) {
+      decisiveCrossing = crossings[i]!;
+      break;
+    }
+  }
+
+  const topBlackLosses = rows
+    .filter(r => r.player === 'black' && r.loss !== null && r.loss > 0)
+    .sort((a, b) => (b.loss ?? 0) - (a.loss ?? 0))
+    .slice(0, 3);
+
+  return { rows, wpInitial, decisiveCrossing, crossings, topBlackLosses };
+}
+
+/**
  * runPostmortem の結果に位置統計を付加する（非同期）。
  *
  * fallback chain: canonical_hash → symmetry_group_id → static
