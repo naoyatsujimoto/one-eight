@@ -21,5 +21,11 @@ export function usePostmortemWorker() {
     postmortemWorkerManager.cancel()
   }, [])
 
-  return { state, run, cancel }
+  const dismiss = useCallback(() => {
+    postmortemWorkerManager.dismiss()
+  }, [])
+
+  const history = postmortemWorkerManager.history
+
+  return { state, run, cancel, dismiss, history }
 }

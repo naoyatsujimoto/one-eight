@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import type { MyStats as MyStatsData, MatchLogRow } from '../lib/matchLog';
 import { fetchMyStats } from '../lib/matchLog';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
@@ -18,60 +18,51 @@ export function MyStats({ userId, onClose }: Props) {
   const [stats, setStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
-  const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
   // 更新中の game_id（ボタン disabled 制御）
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
-
-  // シングルトン Worker の状態から analyzingId を導出
-  const { state: workerState, run: runWorker } = usePostmortemWorker();
-  const analyzingId = workerState.status === 'running' ? (workerState as { gameId: string }).gameId : null;
   const [proActive, setProActive] = useState<boolean>(false);
 
-  // シングルトン復元済みフラグ（2回実行防止）
-  const restoredRef = useRef(false);
+  // シングルトン Worker の状態・履歴（コンポーネントのマウント状態に依存しない）
+  const { state: workerState, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
+  const workerHistory = usePostmortemWorker().history;
+  const analyzingId = workerState.status === 'running' ? (workerState as { gameId: string }).gameId : null;
+
+  // モーダル表示判定: シングルトンに running/done があり history も保持されている場合に表示
+  const showModal =
+    (workerState.status === 'running' || workerState.status === 'done') &&
+    'gameId' in workerState &&
+    workerHistory !== null;
 
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
       setStats(s);
       setLoading(false);
     });
-    // game_id → GameRecord のマップを作成
     const records = loadGameRecords(20);
     const map = new Map<string, GameRecord>();
     for (const r of records) map.set(r.game_id, r);
     setLocalMap(map);
-    // プラン取得
     getProfile(userId).then((profile) => {
       if (profile) setProActive(isProActive(profile));
     });
-    // 再マウント時: シングルトンに running/done のゲームがあれば postmortemGame を復元
-    if (!restoredRef.current) {
-      restoredRef.current = true;
-      const ws = workerState;
-      if ((ws.status === 'running' || ws.status === 'done') && 'gameId' in ws) {
-        const matched = records.find((r) => r.game_id === ws.gameId);
-        if (matched) setPostmortemGame(matched);
-      }
-    }
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId]);
 
-  // 分析ボタンのハンドラ: シングルトン Worker に委譲してポップアップ表示
+  // 分析ボタンのハンドラ: シングルトン Worker に委譲
   function handleAnalyzeClick(record: GameRecord) {
     if (analyzingId === record.game_id) return; // 二重押し防止
     runWorker(record.game_id, record.full_record);
-    setPostmortemGame(record);
   }
 
-  // 更新ボタンのハンドラ: cache 削除→autoStart モードで再分析
+  // 更新ボタンのハンドラ: cache 削除→再分析
   function handleRefresh(record: GameRecord) {
-    clearPostmortemCache(record.game_id); // 対象 game_id の cache のみ削除
+    clearPostmortemCache(record.game_id);
     setRefreshingGameId(record.game_id);
-    handleAnalyzeClick(record);
+    runWorker(record.game_id, record.full_record);
   }
 
-  // モーダル close: 状態リセット
+  // モーダル close: シングルトンを dismiss して idle に戻す
   function handlePostmortemClose() {
-    setPostmortemGame(null);
+    dismissWorker();
     setRefreshingGameId(null);
   }
 
@@ -196,11 +187,11 @@ export function MyStats({ userId, onClose }: Props) {
         )}
       </div>
 
-      {/* 分析モーダル (autoStart=true: 分析中は非表示、完了後に表示) */}
-      {postmortemGame && (
+      {/* 分析モーダル: シングルトンの running/done 状態で表示。STATS開閉をまたいで継続する */}
+      {showModal && (
         <PostmortemModal
-          history={postmortemGame.full_record}
-          gameId={postmortemGame.game_id}
+          history={workerHistory!}
+          gameId={(workerState as { gameId: string }).gameId}
           onClose={handlePostmortemClose}
           autoStart
         />

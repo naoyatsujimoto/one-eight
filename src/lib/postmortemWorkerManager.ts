@@ -19,6 +19,8 @@ class PostmortemWorkerManager {
   private worker: Worker | null = null
   private listeners: Set<Listener> = new Set()
   private _state: WorkerManagerState = { status: 'idle' }
+  // run() 時に history を保持 → コンポーネントのマウント状態に依存しない
+  private _history: MoveRecord[] | null = null
 
   get state(): WorkerManagerState {
     return this._state
@@ -41,9 +43,14 @@ class PostmortemWorkerManager {
     return () => this.listeners.delete(wrapped)
   }
 
+  get history(): MoveRecord[] | null {
+    return this._history
+  }
+
   run(gameId: string, history: MoveRecord[]) {
     // 同じ gameId が既に running なら何もしない
     if (this._state.status === 'running' && this._state.gameId === gameId) return
+    this._history = history
 
     // cache hit ならすぐ done
     const cached = loadPostmortemCache(gameId)
@@ -86,7 +93,16 @@ class PostmortemWorkerManager {
   cancel() {
     this.worker?.terminate()
     this.worker = null
+    this._history = null
     this.setState({ status: 'idle' })
+  }
+
+  /** 結果確認後にモーダルを閉じるためにリセット */
+  dismiss() {
+    if (this._state.status === 'done' || this._state.status === 'error') {
+      this._history = null
+      this.setState({ status: 'idle' })
+    }
   }
 }
 
