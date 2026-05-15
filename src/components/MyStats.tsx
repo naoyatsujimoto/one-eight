@@ -24,14 +24,13 @@ export function MyStats({ userId, onClose }: Props) {
 
   // シングルトン Worker の状態・履歴（コンポーネントのマウント状態に依存しない）
   const { state: workerState, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
-  const workerHistory = usePostmortemWorker().history;
-  const analyzingId = workerState.status === 'running' ? (workerState as { gameId: string }).gameId : null;
+  const analyzingId = workerState.status === 'running' ? workerState.gameId : null;
 
-  // モーダル表示判定: シングルトンに running/done があり history も保持されている場合に表示
+  // モーダル表示判定: history はスナップショットに含まれるのでリアクティブに追従
   const showModal =
-    (workerState.status === 'running' || workerState.status === 'done') &&
-    'gameId' in workerState &&
-    workerHistory !== null;
+    workerState.status !== 'idle' &&
+    'history' in workerState &&
+    workerState.history != null;
 
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
@@ -187,11 +186,11 @@ export function MyStats({ userId, onClose }: Props) {
         )}
       </div>
 
-      {/* 分析モーダル: シングルトンの running/done 状態で表示。STATS開閉をまたいで継続する */}
-      {showModal && (
+      {/* 分析モーダル: シングルトンの running/done/error 状態で表示。STATS開閉をまたいで継続する */}
+      {showModal && 'history' in workerState && 'gameId' in workerState && (
         <PostmortemModal
-          history={workerHistory!}
-          gameId={(workerState as { gameId: string }).gameId}
+          history={workerState.history}
+          gameId={workerState.gameId}
           onClose={handlePostmortemClose}
           autoStart
         />

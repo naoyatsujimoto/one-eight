@@ -39,9 +39,16 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
   const analyzing = workerState.status === 'running' && (workerState as { gameId?: string }).gameId === gameId;
 
   const handleAnalyze = useCallback(() => {
+    // 既にこの gameId で running → 何もしない
     if (workerState.status === 'running' && (workerState as { gameId?: string }).gameId === gameId) return;
 
-    // Worker で分析開始（シングルトンが cache 確認・Worker 管理を担う）
+    // 既に done → result を直接表示（Worker 再起動不要）
+    if (workerState.status === 'done' && (workerState as { gameId?: string }).gameId === gameId) {
+      setResult(workerState.result);
+      return;
+    }
+
+    // 新規分析開始
     setAnalyzeError(null);
     setResult(null);
     onAnalyzing?.(true);

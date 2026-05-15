@@ -10,10 +10,10 @@ import type { PostmortemWorkerRequest, PostmortemWorkerResponse } from '../worke
 type Listener = (state: WorkerManagerState) => void
 
 export type WorkerManagerState =
-  | { status: 'idle' }
-  | { status: 'running'; gameId: string }
-  | { status: 'done'; gameId: string; result: PostmortemResult }
-  | { status: 'error'; gameId: string; message: string }
+  | { status: 'idle'; history?: undefined }
+  | { status: 'running'; gameId: string; history: MoveRecord[] }
+  | { status: 'done'; gameId: string; result: PostmortemResult; history: MoveRecord[] }
+  | { status: 'error'; gameId: string; message: string; history: MoveRecord[] }
 
 class PostmortemWorkerManager {
   private worker: Worker | null = null
@@ -55,7 +55,7 @@ class PostmortemWorkerManager {
     // cache hit ならすぐ done
     const cached = loadPostmortemCache(gameId)
     if (cached) {
-      this.setState({ status: 'done', gameId, result: cached })
+      this.setState({ status: 'done', gameId, result: cached, history })
       return
     }
 
@@ -67,21 +67,21 @@ class PostmortemWorkerManager {
       { type: 'module' }
     )
     this.worker = worker
-    this.setState({ status: 'running', gameId })
+    this.setState({ status: 'running', gameId, history })
 
     worker.addEventListener('message', (e: MessageEvent<PostmortemWorkerResponse>) => {
       if (e.data.type === 'done') {
         savePostmortemCache(gameId, e.data.result)
-        this.setState({ status: 'done', gameId, result: e.data.result })
+        this.setState({ status: 'done', gameId, result: e.data.result, history })
       } else {
-        this.setState({ status: 'error', gameId, message: e.data.message })
+        this.setState({ status: 'error', gameId, message: e.data.message, history })
       }
       worker.terminate()
       this.worker = null
     })
 
     worker.addEventListener('error', (err) => {
-      this.setState({ status: 'error', gameId, message: err.message })
+      this.setState({ status: 'error', gameId, message: err.message, history })
       worker.terminate()
       this.worker = null
     })
