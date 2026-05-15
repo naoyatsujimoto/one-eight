@@ -7,12 +7,13 @@
  *   - 分析完了後に結果モーダルを表示する
  *   - onAnalyzing(true/false) で分析中状態を呼び出し元に通知する
  */
-import { useRef, useState, useEffect } from 'react';
-import { runPostmortemAsync, enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
+import { useState, useEffect, useCallback } from 'react';
+import { enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
 import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
+import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 
 interface Props {
   history: MoveRecord[];
@@ -32,22 +33,13 @@ function estimateSec(moveCount: number): number {
 export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing }: Props) {
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-  // gameId 単位の in-flight 管理（二重実行防止）
-  const inFlightRef = useRef<Set<string>>(new Set());
+  const { state: workerState, run: runWorker, cancel: cancelWorker } = usePostmortemWorker();
 
-  // autoStart: マウント直後に分析を自動開始
-  useEffect(() => {
-    if (autoStart) {
-      handleAnalyze();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const analyzing = workerState.status === 'running';
 
-  async function handleAnalyze() {
-    // 二重実行防止
-    if (inFlightRef.current.has(gameId)) return;
+  const handleAnalyze = useCallback(() => {
+    if (workerState.status === 'running') return;
 
     // cache 確認
     const cached = loadPostmortemCache(gameId);
@@ -60,42 +52,47 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
       return;
     }
 
-    // 分析開始
-    inFlightRef.current.add(gameId);
-    setAnalyzing(true);
-    onAnalyzing?.(true);
+    // Worker で分析開始（メインスレッドをブロックしない）
     setAnalyzeError(null);
     setResult(null);
+    onAnalyzing?.(true);
+    runWorker(history);
+  }, [workerState.status, gameId, history, onAnalyzing, runWorker]);
 
-    try {
-      // setTimeout(0) で UI スレッドを一時開放
-      const base = await new Promise<PostmortemResult>((resolve, reject) => {
-        setTimeout(async () => {
-          try {
-            resolve(await runPostmortemAsync(history, () => !inFlightRef.current.has(gameId)));
-          } catch (e) {
-            reject(e);
-          }
-        }, 0);
-      });
-
+  // workerState が done / error になったら処理
+  useEffect(() => {
+    if (workerState.status === 'done') {
+      const base = workerState.result;
       savePostmortemCache(gameId, base);
       setResult(base);
-      setAnalyzing(false);
       onAnalyzing?.(false);
 
-      // 統計を非同期で取得してオーバーレイ
+      // enrichment は既存の非同期処理を維持
       enrichPostmortemWithStats(base, history)
-        .then(enriched => { setResult(enriched); })
-        .catch(() => {/* fallback: 統計なしで表示継続 */});
-    } catch {
-      setAnalyzeError('分析に失敗しました。再試行してください。');
-      setAnalyzing(false);
-      onAnalyzing?.(false);
-    } finally {
-      inFlightRef.current.delete(gameId);
+        .then(enriched => setResult(enriched))
+        .catch(() => {});
     }
-  }
+    if (workerState.status === 'error') {
+      setAnalyzeError('分析に失敗しました。再試行してください。');
+      onAnalyzing?.(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workerState.status]);
+
+  // autoStart: マウント直後に Worker 起動
+  useEffect(() => {
+    if (autoStart) {
+      handleAnalyze();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // unmount 時に Worker を停止
+  useEffect(() => {
+    return () => {
+      cancelWorker();
+    };
+  }, [cancelWorker]);
 
   // autoStart モード: 分析中はモーダルを表示しない（ボタン側のみで状態を示す）
   if (autoStart && analyzing) {
