@@ -1,7 +1,7 @@
 /**
  * PostmortemModal.tsx — 対局の勝敗を分けた一手を分析して表示するポップアップ
  */
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { runPostmortemAsync, enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
@@ -22,43 +22,59 @@ function estimateSec(moveCount: number): number {
 export function PostmortemModal({ history, gameId, onClose }: Props) {
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  // gameId 単位の in-flight 管理（二重実行防止）
+  const inFlightRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    let cancelled = false;
+  async function handleAnalyze() {
+    // 二重実行防止
+    if (inFlightRef.current.has(gameId)) return;
 
-    // キャッシュヒット確認
+    // cache 確認
     const cached = loadPostmortemCache(gameId);
     if (cached) {
       setResult(cached);
-      setAnalyzing(false);
-      // キャッシュヒット時も最新統計を非同期取得
+      // cache hit 時も最新統計を非同期取得
       enrichPostmortemWithStats(cached, history)
-        .then(enriched => { if (!cancelled) setResult(enriched); })
+        .then(enriched => { setResult(enriched); })
         .catch(() => {});
-      return () => { cancelled = true; };
+      return;
     }
+
+    // 分析開始
+    inFlightRef.current.add(gameId);
     setAnalyzing(true);
+    setAnalyzeError(null);
     setResult(null);
 
-    // runPostmortemAsync を直接起動（各手の処理後に setTimeout(0) で UI に制御を返す）
-    runPostmortemAsync(history, () => cancelled)
-      .then(base => {
-        if (cancelled) return;
-        savePostmortemCache(gameId, base);  // minimax結果のみキャッシュ
-        setResult(base);
-        setAnalyzing(false);
-        // 統計を非同期で取得してオーバーレイ
-        return enrichPostmortemWithStats(base, history)
-          .then(enriched => { if (!cancelled) setResult(enriched); })
-          .catch(() => {/* fallback: 統計なしで表示継続 */});
-      })
-      .catch(() => {
-        if (!cancelled) setAnalyzing(false);
+    try {
+      // setTimeout(0) で UI スレッドを一時開放
+      const base = await new Promise<PostmortemResult>((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            resolve(await runPostmortemAsync(history, () => !inFlightRef.current.has(gameId)));
+          } catch (e) {
+            reject(e);
+          }
+        }, 0);
       });
 
-    return () => { cancelled = true; };
-  }, [gameId, history]);
+      savePostmortemCache(gameId, base);
+      setResult(base);
+      setAnalyzing(false);
+
+      // 統計を非同期で取得してオーバーレイ
+      enrichPostmortemWithStats(base, history)
+        .then(enriched => { setResult(enriched); })
+        .catch(() => {/* fallback: 統計なしで表示継続 */});
+    } catch {
+      setAnalyzeError('分析に失敗しました。再試行してください。');
+      setAnalyzing(false);
+    } finally {
+      inFlightRef.current.delete(gameId);
+    }
+  }
 
   return (
     <div style={styles.overlay} onClick={onClose}>
@@ -67,6 +83,23 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
           <span style={styles.title}>{t.postmortem}</span>
           <button type="button" onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
+
+        {/* Analyze ボタン: 未分析時・エラー時に表示 */}
+        {!analyzing && !result && (
+          <div style={styles.center}>
+            <button
+              type="button"
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              style={styles.analyzeStartBtn}
+            >
+              Analyze
+            </button>
+            {analyzeError && (
+              <p style={{ ...styles.muted, color: '#e53', marginTop: 8 }}>{analyzeError}</p>
+            )}
+          </div>
+        )}
 
         {analyzing && (
           <div style={styles.center}>
@@ -284,6 +317,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1rem',
     cursor: 'pointer',
     color: '#555',
+  },
+  analyzeStartBtn: {
+    background: '#222',
+    border: 'none',
+    borderRadius: 8,
+    fontSize: '0.9rem',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
+    color: '#fff',
+    cursor: 'pointer',
+    padding: '0.55rem 1.75rem',
   },
   center: {
     display: 'flex',
