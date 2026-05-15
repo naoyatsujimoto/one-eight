@@ -34,6 +34,13 @@ class PostmortemWorkerManager {
     return () => this.listeners.delete(fn)
   }
 
+  /** useSyncExternalStore 用: 通知のみ（引数なし）のサブスクライバ */
+  subscribeNotify(callback: () => void): () => void {
+    const wrapped: Listener = () => callback()
+    this.listeners.add(wrapped)
+    return () => this.listeners.delete(wrapped)
+  }
+
   run(gameId: string, history: MoveRecord[]) {
     // 同じ gameId が既に running なら何もしない
     if (this._state.status === 'running' && this._state.gameId === gameId) return

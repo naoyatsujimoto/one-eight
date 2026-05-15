@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { MyStats as MyStatsData, MatchLogRow } from '../lib/matchLog';
 import { fetchMyStats } from '../lib/matchLog';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
@@ -27,6 +27,9 @@ export function MyStats({ userId, onClose }: Props) {
   const analyzingId = workerState.status === 'running' ? (workerState as { gameId: string }).gameId : null;
   const [proActive, setProActive] = useState<boolean>(false);
 
+  // シングルトン復元済みフラグ（2回実行防止）
+  const restoredRef = useRef(false);
+
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
       setStats(s);
@@ -41,7 +44,16 @@ export function MyStats({ userId, onClose }: Props) {
     getProfile(userId).then((profile) => {
       if (profile) setProActive(isProActive(profile));
     });
-  }, [userId]);
+    // 再マウント時: シングルトンに running/done のゲームがあれば postmortemGame を復元
+    if (!restoredRef.current) {
+      restoredRef.current = true;
+      const ws = workerState;
+      if ((ws.status === 'running' || ws.status === 'done') && 'gameId' in ws) {
+        const matched = records.find((r) => r.game_id === ws.gameId);
+        if (matched) setPostmortemGame(matched);
+      }
+    }
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 分析ボタンのハンドラ: シングルトン Worker に委譲してポップアップ表示
   function handleAnalyzeClick(record: GameRecord) {
