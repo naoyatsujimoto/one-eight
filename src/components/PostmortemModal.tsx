@@ -1,7 +1,13 @@
 /**
  * PostmortemModal.tsx — 対局の勝敗を分けた一手を分析して表示するポップアップ
+ *
+ * autoStart=true の場合:
+ *   - マウント直後に分析を開始する
+ *   - 分析中はモーダル（オーバーレイ）を非表示にし、呼び出し元のボタン状態のみで進捗を示す
+ *   - 分析完了後に結果モーダルを表示する
+ *   - onAnalyzing(true/false) で分析中状態を呼び出し元に通知する
  */
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { runPostmortemAsync, enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 import { loadPostmortemCache, savePostmortemCache } from '../game/storage';
@@ -12,6 +18,10 @@ interface Props {
   history: MoveRecord[];
   gameId: string;
   onClose: () => void;
+  /** true の場合、マウント直後に分析を自動開始し、分析中はモーダルを非表示にする */
+  autoStart?: boolean;
+  /** 分析中状態の変化を呼び出し元に通知する (autoStart=true 時に使用) */
+  onAnalyzing?: (analyzing: boolean) => void;
 }
 
 /** 手数ベースの所要時間推定（秒） depth=3 minimax: 1手あたり約0.15秒 */
@@ -19,13 +29,21 @@ function estimateSec(moveCount: number): number {
   return Math.max(5, Math.round(moveCount * 0.15));
 }
 
-export function PostmortemModal({ history, gameId, onClose }: Props) {
+export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing }: Props) {
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   // gameId 単位の in-flight 管理（二重実行防止）
   const inFlightRef = useRef<Set<string>>(new Set());
+
+  // autoStart: マウント直後に分析を自動開始
+  useEffect(() => {
+    if (autoStart) {
+      handleAnalyze();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleAnalyze() {
     // 二重実行防止
@@ -45,6 +63,7 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
     // 分析開始
     inFlightRef.current.add(gameId);
     setAnalyzing(true);
+    onAnalyzing?.(true);
     setAnalyzeError(null);
     setResult(null);
 
@@ -63,6 +82,7 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
       savePostmortemCache(gameId, base);
       setResult(base);
       setAnalyzing(false);
+      onAnalyzing?.(false);
 
       // 統計を非同期で取得してオーバーレイ
       enrichPostmortemWithStats(base, history)
@@ -71,9 +91,20 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
     } catch {
       setAnalyzeError('分析に失敗しました。再試行してください。');
       setAnalyzing(false);
+      onAnalyzing?.(false);
     } finally {
       inFlightRef.current.delete(gameId);
     }
+  }
+
+  // autoStart モード: 分析中はモーダルを表示しない（ボタン側のみで状態を示す）
+  if (autoStart && analyzing) {
+    return null;
+  }
+
+  // autoStart モード: 分析前（まだ result がない、エラーもない）はモーダルを表示しない
+  if (autoStart && !result && !analyzeError) {
+    return null;
   }
 
   return (
@@ -84,8 +115,8 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
           <button type="button" onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
 
-        {/* Analyze ボタン: 未分析時・エラー時に表示 */}
-        {!analyzing && !result && (
+        {/* Analyze ボタン: autoStart でない場合かつ未分析時・エラー時に表示 */}
+        {!autoStart && !analyzing && !result && (
           <div style={styles.center}>
             <button
               type="button"
@@ -101,7 +132,22 @@ export function PostmortemModal({ history, gameId, onClose }: Props) {
           </div>
         )}
 
-        {analyzing && (
+        {/* エラー表示 (autoStart モード): 再試行ボタンを表示 */}
+        {autoStart && analyzeError && (
+          <div style={styles.center}>
+            <p style={{ ...styles.muted, color: '#e53' }}>{analyzeError}</p>
+            <button
+              type="button"
+              onClick={handleAnalyze}
+              style={styles.analyzeStartBtn}
+            >
+              再試行
+            </button>
+          </div>
+        )}
+
+        {/* 分析中スピナー: autoStart でない場合のみ表示（autoStart は呼び出し元ボタンで示す） */}
+        {!autoStart && analyzing && (
           <div style={styles.center}>
             <div style={styles.spinner} />
             <p style={styles.muted}>{t.analyzing}</p>

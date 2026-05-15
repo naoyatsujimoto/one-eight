@@ -18,6 +18,8 @@ export function MyStats({ userId, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
+  // 分析中の game_id（ボタン色変更 + disabled 制御）
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   // 更新中の game_id（ボタン disabled 制御）
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [proActive, setProActive] = useState<boolean>(false);
@@ -38,17 +40,32 @@ export function MyStats({ userId, onClose }: Props) {
     });
   }, [userId]);
 
-  // 更新ボタンのハンドラ： cache 削除→モーダル影カースを open （モーダル内部で miss 检知→再分析）
-  function handleRefresh(record: GameRecord) {
-    clearPostmortemCache(record.game_id); // 対象 game_id の cache のみ削除
-    setRefreshingGameId(record.game_id);
+  // 分析ボタンのハンドラ: autoStart モードで分析を開始（ポップアップなし）
+  function handleAnalyzeClick(record: GameRecord) {
+    if (analyzingId === record.game_id) return; // 二重押し防止
+    setAnalyzingId(record.game_id);
     setPostmortemGame(record);
   }
 
-  // モーダル close: 更新中状態もリセット
+  // 分析中状態の変化を PostmortemModal から受け取る
+  function handleAnalyzingChange(active: boolean) {
+    if (!active) {
+      setAnalyzingId(null);
+    }
+  }
+
+  // 更新ボタンのハンドラ: cache 削除→autoStart モードで再分析
+  function handleRefresh(record: GameRecord) {
+    clearPostmortemCache(record.game_id); // 対象 game_id の cache のみ削除
+    setRefreshingGameId(record.game_id);
+    handleAnalyzeClick(record);
+  }
+
+  // モーダル close: 状態リセット
   function handlePostmortemClose() {
     setPostmortemGame(null);
     setRefreshingGameId(null);
+    setAnalyzingId(null);
   }
 
   // Supabase記録にない場合はローカルのみのリストを補完表示
@@ -107,10 +124,11 @@ export function MyStats({ userId, onClose }: Props) {
                               <div style={styles.btnGroup}>
                                 <button
                                   type="button"
-                                  style={styles.analyzeBtn}
-                                  onClick={() => setPostmortemGame(local)}
+                                  style={analyzingId === local.game_id ? styles.analyzingBtn : styles.analyzeBtn}
+                                  disabled={analyzingId === local.game_id}
+                                  onClick={() => handleAnalyzeClick(local)}
                                 >
-                                  {t.analyze}
+                                  {analyzingId === local.game_id ? t.analyzing : t.analyze}
                                 </button>
                                 <button
                                   type="button"
@@ -139,10 +157,11 @@ export function MyStats({ userId, onClose }: Props) {
                           <div style={styles.btnGroup}>
                             <button
                               type="button"
-                              style={styles.analyzeBtn}
-                              onClick={() => setPostmortemGame(r)}
+                              style={analyzingId === r.game_id ? styles.analyzingBtn : styles.analyzeBtn}
+                              disabled={analyzingId === r.game_id}
+                              onClick={() => handleAnalyzeClick(r)}
                             >
-                              {t.analyze}
+                              {analyzingId === r.game_id ? t.analyzing : t.analyze}
                             </button>
                             <button
                               type="button"
@@ -170,12 +189,14 @@ export function MyStats({ userId, onClose }: Props) {
         )}
       </div>
 
-      {/* 分析ポップアップ */}
+      {/* 分析モーダル (autoStart=true: 分析中は非表示、完了後に表示) */}
       {postmortemGame && (
         <PostmortemModal
           history={postmortemGame.full_record}
           gameId={postmortemGame.game_id}
           onClose={handlePostmortemClose}
+          autoStart
+          onAnalyzing={handleAnalyzingChange}
         />
       )}
     </div>
@@ -280,6 +301,17 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     color: '#444',
     whiteSpace: 'nowrap',
+  },
+  analyzingBtn: {
+    background: 'none',
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    fontSize: '0.72rem',
+    padding: '2px 8px',
+    cursor: 'not-allowed',
+    color: '#bbb',
+    whiteSpace: 'nowrap',
+    opacity: 0.5,
   },
   refreshBtn: {
     background: 'none',

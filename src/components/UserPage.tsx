@@ -48,6 +48,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
+  // 分析中の game_id（ボタン色変更 + disabled 制御）
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
@@ -114,6 +116,13 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     }
     setEditingName(false);
   }
+  // 分析ボタンのハンドラ: autoStart モードで分析を開始（ポップアップなし）
+  function handleAnalyzeClick(record: GameRecord) {
+    if (analyzingId === record.game_id) return; // 二重押し防止
+    setAnalyzingId(record.game_id);
+    setPostmortemGame(record);
+  }
+
   function handleCancelEdit() {
     setEditingName(false);
   }
@@ -284,8 +293,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 onRefresh={(record) => {
                   clearPostmortemCache(record.game_id);
                   setRefreshingGameId(record.game_id);
-                  setPostmortemGame(record);
+                  handleAnalyzeClick(record);
                 }}
+                analyzingId={analyzingId}
+                onAnalyzeClick={handleAnalyzeClick}
               />
             ) : <Muted text={t.userNoData} />}
           </section>
@@ -344,7 +355,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <PostmortemModal
           history={postmortemGame.full_record}
           gameId={postmortemGame.game_id}
-          onClose={() => { setPostmortemGame(null); setRefreshingGameId(null); }}
+          onClose={() => { setPostmortemGame(null); setRefreshingGameId(null); setAnalyzingId(null); }}
+          autoStart
+          onAnalyzing={(active) => { if (!active) setAnalyzingId(null); }}
         />
       )}
     </div>
@@ -450,12 +463,16 @@ function RecentGamesTable({
   onPostmortem,
   refreshingGameId = null,
   onRefresh,
+  analyzingId = null,
+  onAnalyzeClick,
 }: {
   games: MatchLogRow[];
   localMap: Map<string, GameRecord>;
   onPostmortem: (r: GameRecord) => void;
   refreshingGameId?: string | null;
   onRefresh?: (r: GameRecord) => void;
+  analyzingId?: string | null;
+  onAnalyzeClick?: (r: GameRecord) => void;
 }) {
   const { t } = useLang();
   return (
@@ -517,7 +534,14 @@ function RecentGamesTable({
                 <td style={s.td}>
                   {gameRecord ? (
                     <div style={s.btnGroup}>
-                      <button type="button" style={s.analyzeBtn} onClick={handleAnalyze}>{t.analyze}</button>
+                      <button
+                        type="button"
+                        style={analyzingId === r.game_id ? s.analyzingBtn : s.analyzeBtn}
+                        disabled={analyzingId === r.game_id}
+                        onClick={() => onAnalyzeClick ? onAnalyzeClick(gameRecord) : handleAnalyze()}
+                      >
+                        {analyzingId === r.game_id ? t.analyzing : t.analyze}
+                      </button>
                       {onRefresh && (
                         <button
                           type="button"
@@ -904,6 +928,17 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     color: '#444',
     whiteSpace: 'nowrap' as const,
+  },
+  analyzingBtn: {
+    background: 'none',
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    fontSize: '0.7rem',
+    padding: '2px 7px',
+    cursor: 'not-allowed',
+    color: '#bbb',
+    whiteSpace: 'nowrap' as const,
+    opacity: 0.5,
   },
   refreshBtn: {
     background: 'none',
