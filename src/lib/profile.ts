@@ -5,12 +5,31 @@
 import { supabase } from './supabase';
 import type { Lang } from './lang';
 
+export type SubscriptionPlan = 'free' | 'pro'
+export type SubscriptionStatus = 'inactive' | 'active' | 'trial' | 'canceled'
+
 export interface Profile {
   id: string;
   display_name: string | null;
   lang: Lang;
   stats_public: boolean;
   created_at: string;
+  plan: SubscriptionPlan;
+  subscription_status: SubscriptionStatus;
+  current_period_end: string | null;
+}
+
+export function isProActive(profile: {
+  plan: SubscriptionPlan;
+  subscription_status: SubscriptionStatus;
+  current_period_end: string | null;
+}): boolean {
+  if (profile.plan !== 'pro') return false;
+  if (profile.subscription_status !== 'active') return false;
+  if (profile.current_period_end) {
+    return new Date(profile.current_period_end) > new Date();
+  }
+  return true;
 }
 
 /** Fetch profile for the given user. Returns null if not found. */
@@ -21,7 +40,14 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .eq('id', userId)
     .single();
   if (error || !data) return null;
-  return { ...data, stats_public: (data as Record<string, unknown>).stats_public ?? false } as Profile;
+  const row = data as Record<string, unknown>;
+  return {
+    ...row,
+    stats_public: row.stats_public ?? false,
+    plan: (row.plan as SubscriptionPlan) ?? 'free',
+    subscription_status: (row.subscription_status as SubscriptionStatus) ?? 'inactive',
+    current_period_end: (row.current_period_end as string | null) ?? null,
+  } as Profile;
 }
 
 /**

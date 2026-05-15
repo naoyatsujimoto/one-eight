@@ -118,13 +118,10 @@ export interface UserPageStats {
   upsetWin: GameRecord | null;
 }
 
-export async function fetchUserPageStats(userId: string): Promise<UserPageStats> {
+export async function fetchUserPageStats(_userId: string): Promise<UserPageStats> {
+  // P-2: RPC 経由で履歴を取得（free: 直近10局 / pro: 全件）
   const { data, error } = await supabase
-    .from('match_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(100);
+    .rpc('get_user_match_history');
 
   const rows: MatchLogRow[] = (!error && data) ? (data as MatchLogRow[]) : [];
 
@@ -192,7 +189,7 @@ export async function fetchUserPageStats(userId: string): Promise<UserPageStats>
   const upsetWin = won.find((r) => r.human_color === 'white') ?? null;
 
   return {
-    userId,
+    userId: _userId,
     joinedAt,
     total,
     wins,
@@ -276,13 +273,10 @@ export async function fetchPublicUserPageStats(userId: string): Promise<UserPage
   };
 }
 
-export async function fetchMyStats(userId: string): Promise<MyStats> {
+export async function fetchMyStats(_userId: string): Promise<MyStats> {
+  // P-2: RPC 経由で履歴を取得（free: 直近10局 / pro: 全件）
   const { data, error } = await supabase
-    .from('match_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(20);
+    .rpc('get_user_match_history');
 
   if (error || !data) {
     return { total: 0, wins: 0, losses: 0, draws: 0, recent: [] };

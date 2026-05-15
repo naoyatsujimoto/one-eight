@@ -5,6 +5,7 @@ import { loadGameRecords, type GameRecord } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
+import { getProfile, isProActive } from '../lib/profile';
 
 interface Props {
   userId: string;
@@ -19,6 +20,7 @@ export function MyStats({ userId, onClose }: Props) {
   const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
   // 更新中の game_id（ボタン disabled 制御）
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
+  const [proActive, setProActive] = useState<boolean>(false);
 
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
@@ -30,6 +32,10 @@ export function MyStats({ userId, onClose }: Props) {
     const map = new Map<string, GameRecord>();
     for (const r of records) map.set(r.game_id, r);
     setLocalMap(map);
+    // プラン取得
+    getProfile(userId).then((profile) => {
+      if (profile) setProActive(isProActive(profile));
+    });
   }, [userId]);
 
   // 更新ボタンのハンドラ： cache 削除→モーダル影カースを open （モーダル内部で miss 检知→再分析）
@@ -152,6 +158,12 @@ export function MyStats({ userId, onClose }: Props) {
                     ))}
                   </tbody>
                 </table>
+                {/* Upgrade 導線: 無料ユーザーのみ表示 */}
+                {!proActive && (
+                  <div style={styles.upgradeBanner}>
+                    過去の全対局を見るには Pro プランへ
+                  </div>
+                )}
               </>
             )}
           </>
@@ -292,5 +304,15 @@ const styles: Record<string, React.CSSProperties> = {
   noData: {
     color: '#ccc',
     fontSize: '0.8rem',
+  },
+  upgradeBanner: {
+    marginTop: '1rem',
+    padding: '0.6rem 0.75rem',
+    background: '#f4f7ff',
+    border: '1px solid #d0daf8',
+    borderRadius: 6,
+    fontSize: '0.8rem',
+    color: '#4a6abf',
+    textAlign: 'center' as const,
   },
 };
