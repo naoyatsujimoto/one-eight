@@ -19,7 +19,7 @@ import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
-import { getProfile, upsertProfile } from '../lib/profile';
+import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { CpuProfile } from './CpuProfile';
 import type { CpuDifficulty } from '../game/ai';
 
@@ -59,6 +59,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
+  const [proActive, setProActive] = useState(false);
   const [openCpuDiff, setOpenCpuDiff] = useState<CpuDifficulty | null>(null);
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
@@ -86,6 +87,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     getProfile(displayUserId).then((profile) => {
       if (profile) {
         setStatsPublic(profile.stats_public ?? false);
+        setProActive(isProActive(profile));
         if (viewOnly && profile.display_name) {
           setUsername(profile.display_name);
         } else if (!viewOnly && !profile.display_name) {
@@ -302,6 +304,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 }}
                 analyzingId={analyzingId}
                 onAnalyzeClick={handleAnalyzeClick}
+                proActive={proActive}
               />
             ) : <Muted text={t.userNoData} />}
           </section>
@@ -469,6 +472,7 @@ function RecentGamesTable({
   onRefresh,
   analyzingId = null,
   onAnalyzeClick,
+  proActive = false,
 }: {
   games: MatchLogRow[];
   localMap: Map<string, GameRecord>;
@@ -477,10 +481,17 @@ function RecentGamesTable({
   onRefresh?: (r: GameRecord) => void;
   analyzingId?: string | null;
   onAnalyzeClick?: (r: GameRecord) => void;
+  proActive?: boolean;
 }) {
   const { t } = useLang();
   return (
     <div style={{ overflowX: 'auto' }}>
+      {!proActive && (
+        <div style={s.upgradeBanner}>
+          {/* Upgrade prompt: free users see latest 10 games only */}
+          過去の全対局を見るには Pro プランへ
+        </div>
+      )}
       <table style={s.table}>
         <thead>
           <tr>
@@ -917,6 +928,12 @@ const s: Record<string, React.CSSProperties> = {
     padding: '0.4rem 0.4rem',
     borderBottom: '1px solid #f5f5f5',
     whiteSpace: 'nowrap' as const,
+  },
+  upgradeBanner: {
+    fontSize: '0.75rem',
+    color: '#888',
+    textAlign: 'center' as const,
+    padding: '6px 0 4px',
   },
   btnGroup: {
     display: 'flex',
