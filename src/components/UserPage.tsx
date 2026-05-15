@@ -12,6 +12,7 @@
  *   8. 称号 / バッジ（Coming Soon）
  */
 import { useEffect, useState } from 'react';
+import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
@@ -47,9 +48,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [stats, setStats] = useState<UserPageStats | null>(null);
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
-  const [postmortemGame, setPostmortemGame] = useState<GameRecord | null>(null);
-  // 分析中の game_id（ボタン色変更 + disabled 制御）
-  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  // シングルトン Worker（UserPage アンマウント後も継続動作）
+  const { state: workerState, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
+  const analyzingId = workerState.status === 'running' ? workerState.gameId : null;
+  // モーダル表示判定: history がスナップショットに含まれる場合のみ表示
+  const showModal =
+    workerState.status !== 'idle' &&
+    'history' in workerState &&
+    workerState.history != null;
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
@@ -116,11 +122,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     }
     setEditingName(false);
   }
-  // 分析ボタンのハンドラ: autoStart モードで分析を開始（ポップアップなし）
+  // 分析ボタンのハンドラ: シングルトン Worker に委譲
   function handleAnalyzeClick(record: GameRecord) {
-    if (analyzingId === record.game_id) return; // 二重押し防止
-    setAnalyzingId(record.game_id);
-    setPostmortemGame(record);
+    if (analyzingId === record.game_id) return;
+    runWorker(record.game_id, record.full_record);
   }
 
   function handleCancelEdit() {
@@ -288,7 +293,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               <RecentGamesTable
                 games={stats.recentGames}
                 localMap={localMap}
-                onPostmortem={setPostmortemGame}
+                onPostmortem={(r) => runWorker(r.game_id, r.full_record)}
                 refreshingGameId={refreshingGameId}
                 onRefresh={(record) => {
                   clearPostmortemCache(record.game_id);
@@ -307,7 +312,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <section style={s.section}>
             <SectionTitle title={t.userFeaturedGames} />
             {loading ? <Muted text="Loading…" /> : stats && (
-              <FeaturedGames stats={stats} onPostmortem={setPostmortemGame} />
+              <FeaturedGames stats={stats} onPostmortem={(r) => runWorker(r.game_id, r.full_record)} />
             )}
           </section>
         )}
@@ -351,13 +356,12 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <CpuProfile difficulty={openCpuDiff} onClose={() => setOpenCpuDiff(null)} />
       )}
 
-      {postmortemGame && (
+      {showModal && 'history' in workerState && 'gameId' in workerState && (
         <PostmortemModal
-          history={postmortemGame.full_record}
-          gameId={postmortemGame.game_id}
-          onClose={() => { setPostmortemGame(null); setRefreshingGameId(null); setAnalyzingId(null); }}
+          history={workerState.history}
+          gameId={workerState.gameId}
+          onClose={() => { dismissWorker(); setRefreshingGameId(null); }}
           autoStart
-          onAnalyzing={(active) => { if (!active) setAnalyzingId(null); }}
         />
       )}
     </div>
