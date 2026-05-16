@@ -357,7 +357,7 @@ function CandidateMovePanel({ candidates, proActive }: CandidateMovePanelProps) 
   if (!proActive) {
     return (
       <div style={styles.candidatePanel}>
-        <span style={styles.candidateUpgrade}>⭐ Proプランで候補手を表示</span>
+        <span style={styles.candidateUpgrade}>Proプランで候補手を表示</span>
       </div>
     );
   }
