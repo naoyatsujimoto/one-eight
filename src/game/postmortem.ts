@@ -126,6 +126,40 @@ function simulateMove(state: GameState, player: Player, move: CpuMove): GameStat
   }
 }
 
+/** top-N候補手を返す（各候補について evalAfter を計算） */
+function topNMovesDepth(
+  state: GameState,
+  player: Player,
+  depth: number,
+  n: number,
+): { move: CpuMove; evalAfter: number }[] {
+  const legal = enumerateLegalMoves(state, player);
+  if (legal.length === 0) {
+    const evalAfter = evaluateState(state, player, true);
+    return [{ move: { type: 'pass' }, evalAfter }];
+  }
+  const ordered = [...legal].sort(
+    (a, b) => scoreMoveForOrdering(state, player, b) - scoreMoveForOrdering(state, player, a),
+  );
+  const opp: Player = player === 'black' ? 'white' : 'black';
+  let alpha = -INF;
+  const beta = INF;
+  const scored: { move: CpuMove; score: number }[] = [];
+  for (const move of ordered) {
+    const next = simulateMove(state, player, move);
+    const s = minimaxAB(next, depth - 1, alpha, beta, opp, player);
+    scored.push({ move, score: s });
+    if (s > alpha) alpha = s;
+  }
+  // score順にソートして上位Nを返す
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, n).map(({ move }) => {
+    const next = simulateMove(state, player, move);
+    const evalAfter = evaluateState(next, player, true);
+    return { move, evalAfter };
+  });
+}
+
 function bestMoveDepth(state: GameState, player: Player, depth: number): { move: CpuMove; evalAfter: number } {
   const legal = enumerateLegalMoves(state, player);
   if (legal.length === 0) {
@@ -177,6 +211,14 @@ function shortRecord(r: MoveRecord): string {
 
 // ─── 公開型 ───────────────────────────────────────────────────────────────────
 
+/** 候補手1件（top3の1つ） */
+export interface CandidateMove {
+  rank: number;          // 1-indexed
+  move: string;          // shortMove() 表記
+  wp: number;            // 推定WP（Black視点, 0–1）
+  wpDiff: number;        // 実際に指した手との差分（+がProが有利）
+}
+
 export interface PostmortemMoveRow {
   moveNum: number;
   player: Player;
@@ -191,13 +233,15 @@ export interface PostmortemMoveRow {
   historicWinRate?: number;        // win_rate_black (0–100)
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
-  winRateSource?: 'position_stats' | 'symmetry_group' | 'medium_pattern' | 'sim_medium_pattern' | 'sim_position_only';
+  winRateSource?: 'position_stats' | 'symmetry_group' | 'medium_pattern' | 'sim_medium_pattern' | 'sim_position_only' | 'fh_sim_medium_pattern' | 'fh_sim_position_only';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
   /** Phase N-4: post-move 局面で成立している戦略的特徴 */
   strategicFlags?: StrategyFlag[];
   /** Phase M-1: medium_pattern_id（DB未適用時は未使用） */
   mediumPatternId?: string;
+  /** Phase P-2b: top3候補手（Pro専用表示用） */
+  candidateMoves?: CandidateMove[];
 }
 
 export interface PostmortemCrossing {
@@ -352,22 +396,41 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
   for (const record of history) {
     const currentPlayer = record.player;
 
-    // Black手のみ最善手を計算
+    // Black手のみ最善手を計算（top3候補手も同時に取得）
     let bestMoveStr: string | null = null;
     let evalBest: number | null = null;
     let wpAfterIfBest: number | null = null;
+    let candidateMoves: CandidateMove[] | undefined;
 
     if (currentPlayer === 'black') {
-      const res = bestMoveDepth(state, 'black', DEPTH);
-      bestMoveStr = shortMove(res.move);
-      evalBest = res.evalAfter;
-      wpAfterIfBest = winProb(evalBest);
+      const top3 = topNMovesDepth(state, 'black', DEPTH, 3);
+      if (top3.length > 0) {
+        const best = top3[0]!;
+        bestMoveStr = shortMove(best.move);
+        evalBest = best.evalAfter;
+        wpAfterIfBest = winProb(evalBest);
+        // 実際の手のWP（仮計算: 後で正式に計算）を使って差分を計算するため、後でセット
+        candidateMoves = top3.map((c, idx) => ({
+          rank: idx + 1,
+          move: shortMove(c.move),
+          wp: +winProb(c.evalAfter).toFixed(4),
+          wpDiff: 0, // 後でwpAfterが確定してから設定
+        }));
+      }
     }
 
     // 実際の手を適用
     const next = applyMoveRecord(state, record);
     const evalPlayed = evaluateState(next, 'black', true);
     const wpAfter = winProb(evalPlayed);
+
+    // candidateMovesのwpDiffを確定（実際に指した手のWPとの差分）
+    if (candidateMoves) {
+      candidateMoves = candidateMoves.map(c => ({
+        ...c,
+        wpDiff: +(c.wp - wpAfter).toFixed(4),
+      }));
+    }
 
     const loss = evalBest !== null ? Math.max(0, evalBest - evalPlayed) : null;
     const wpSwing = wpAfterIfBest !== null ? wpAfterIfBest - wpAfter : null;
@@ -387,6 +450,7 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
       wpAfterIfBest: wpAfterIfBest !== null ? +wpAfterIfBest.toFixed(4) : null,
       wpSwing: wpSwing !== null ? +wpSwing.toFixed(4) : null,
       strategicFlags,
+      candidateMoves,
     });
 
     state = next;
@@ -460,17 +524,34 @@ export async function runPostmortemAsync(
     let bestMoveStr: string | null = null;
     let evalBest: number | null = null;
     let wpAfterIfBest: number | null = null;
+    let candidateMoves: CandidateMove[] | undefined;
 
     if (currentPlayer === 'black') {
-      const res = bestMoveDepth(state, 'black', DEPTH);
-      bestMoveStr = shortMove(res.move);
-      evalBest = res.evalAfter;
-      wpAfterIfBest = winProb(evalBest);
+      const top3 = topNMovesDepth(state, 'black', DEPTH, 3);
+      if (top3.length > 0) {
+        const best = top3[0]!;
+        bestMoveStr = shortMove(best.move);
+        evalBest = best.evalAfter;
+        wpAfterIfBest = winProb(evalBest);
+        candidateMoves = top3.map((c, idx) => ({
+          rank: idx + 1,
+          move: shortMove(c.move),
+          wp: +winProb(c.evalAfter).toFixed(4),
+          wpDiff: 0,
+        }));
+      }
     }
 
     const next = applyMoveRecord(state, record);
     const evalPlayed = evaluateState(next, 'black', true);
     const wpAfter = winProb(evalPlayed);
+
+    if (candidateMoves) {
+      candidateMoves = candidateMoves.map(c => ({
+        ...c,
+        wpDiff: +(c.wp - wpAfter).toFixed(4),
+      }));
+    }
 
     const loss = evalBest !== null ? Math.max(0, evalBest - evalPlayed) : null;
     const wpSwing = wpAfterIfBest !== null ? wpAfterIfBest - wpAfter : null;
@@ -488,6 +569,7 @@ export async function runPostmortemAsync(
       wpAfterIfBest: wpAfterIfBest !== null ? +wpAfterIfBest.toFixed(4) : null,
       wpSwing: wpSwing !== null ? +wpSwing.toFixed(4) : null,
       strategicFlags,
+      candidateMoves,
     });
 
     state = next;
@@ -591,7 +673,15 @@ export async function enrichPostmortemWithStats(
   if (hashes.length === 0 && groupIds.length === 0 && validMediumPatternIds.length === 0) return result;
 
   // 一括フェッチ（並列実行）
-  const [canonicalMap, symmetryMap, mediumPatternMap, simMediumPatternMap, simPositionOnlyMap] =
+  const [
+    canonicalMap,
+    symmetryMap,
+    mediumPatternMap,
+    fhSimMediumPatternMap,
+    fhSimPositionOnlyMap,
+    simMediumPatternMap,
+    simPositionOnlyMap,
+  ] =
     await Promise.all([
       // canonical_hash 統計
       hashes.length > 0
@@ -608,14 +698,24 @@ export async function enrichPostmortemWithStats(
         ? fetchMediumPatternWinRates(validMediumPatternIds, 5, 'all').catch(() => new Map())
         : Promise.resolve(new Map<string, MediumPatternWinRateRow>()),
 
-      // sim medium_pattern 統計（Step 2.3 fallback）— min_total=30
+      // fast_hard sim medium_pattern 統計（Step 2.3a fallback）— min_total=30
+      validMediumPatternIds.length > 0
+        ? fetchSimMediumPatternWinRates(validMediumPatternIds, 30, 'fast_hard_vs_fast_hard').catch(() => new Map())
+        : Promise.resolve(new Map<string, SimMediumPatternWinRateRow>()),
+
+      // fast_hard sim position_only 統計（Step 2.5a fallback）— min_total=100
+      validPositionOnlyIds.length > 0
+        ? fetchSimPositionOnlyWinRates(validPositionOnlyIds, 100, 'fast_hard_vs_fast_hard').catch(() => new Map())
+        : Promise.resolve(new Map<string, SimPositionOnlyWinRateRow>()),
+
+      // easy sim medium_pattern 統計（Step 2.3b fallback）— min_total=30
       validMediumPatternIds.length > 0
         ? fetchSimMediumPatternWinRates(validMediumPatternIds, 30, 'easy_vs_easy').catch(() => new Map())
         : Promise.resolve(new Map<string, SimMediumPatternWinRateRow>()),
 
-      // sim position_only 統計（Step 2.5 fallback）— min_total=100
+      // easy sim position_only 統計（Step 2.5b fallback）— min_total=100
       validPositionOnlyIds.length > 0
-        ? fetchSimPositionOnlyWinRates(validPositionOnlyIds, 100).catch(() => new Map())
+        ? fetchSimPositionOnlyWinRates(validPositionOnlyIds, 100, 'easy_vs_easy').catch(() => new Map())
         : Promise.resolve(new Map<string, SimPositionOnlyWinRateRow>()),
     ]);
 
@@ -685,7 +785,52 @@ export async function enrichPostmortemWithStats(
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Step 2.3: sim medium_pattern_id fallback
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.3a: fast_hard sim medium_pattern fallback
+    //   採用条件: total >= 30 (confidence='reference'固定)
+    //   resolvedWP: 0.2 × simWP + 0.8 × staticWP (wpAfter)
+    //   winRateSource: 'fh_sim_medium_pattern'
+    //   優先度: easy_vs_easyより上位（実戦よりは下位）
+    // ──────────────────────────────────────────────────────────────────────────
+    const fhSimMedPatternStat = mediumPatternId ? fhSimMediumPatternMap.get(mediumPatternId) : undefined;
+    if (fhSimMedPatternStat && fhSimMedPatternStat.total >= 30 && fhSimMedPatternStat.win_rate_black !== null) {
+      const simWP = fhSimMedPatternStat.win_rate_black / 100;
+      const blendedWP = 0.2 * simWP + 0.8 * row.wpAfter;
+      return {
+        ...row,
+        historicWinRate: fhSimMedPatternStat.win_rate_black,
+        sampleCount: fhSimMedPatternStat.total,
+        confidence: 'reference' as const,
+        winRateSource: 'fh_sim_medium_pattern' as const,
+        resolvedWP: blendedWP,
+        resolvedWpSource: 'blend' as const,
+      };
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.5a: fast_hard sim position_only（total >= 100, blend 0.1）
+    //   採用条件: total >= 100
+    //   resolvedWP: 0.1 × posWP + 0.9 × staticWP (wpAfter)
+    //   winRateSource: 'fh_sim_position_only'
+    //   優先度: easy_vs_easyより上位（実戦よりは下位）
+    // ──────────────────────────────────────────────────────────────────────────
+    const fhSimPosOnlyStat = positionOnlyId ? fhSimPositionOnlyMap.get(positionOnlyId) : undefined;
+    if (fhSimPosOnlyStat && fhSimPosOnlyStat.total >= 100) {
+      const posWP = fhSimPosOnlyStat.win_rate_black; // black視点（0–1範囲）
+      const blendedWP = 0.1 * posWP + 0.9 * row.wpAfter;
+      return {
+        ...row,
+        historicWinRate: Math.round(posWP * 10000) / 100, // 0–1 → 0–100
+        sampleCount: fhSimPosOnlyStat.total,
+        confidence: 'reference' as const,
+        winRateSource: 'fh_sim_position_only' as const,
+        resolvedWP: blendedWP,
+        resolvedWpSource: 'blend' as const,
+      };
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.3b: easy sim medium_pattern fallback
     //   採用条件: total >= 30 (confidence='reference'固定)
     //   resolvedWP: 0.2 × simWP + 0.8 × staticWP (wpAfter)
     //   winRateSource: 'sim_medium_pattern'
@@ -694,7 +839,7 @@ export async function enrichPostmortemWithStats(
     if (simMedPatternStat && simMedPatternStat.total >= 30 && simMedPatternStat.win_rate_black !== null) {
       const simWP = simMedPatternStat.win_rate_black / 100;
       const blendedWP = 0.2 * simWP + 0.8 * row.wpAfter;
-      const rowWithSimMed = {
+      return {
         ...row,
         historicWinRate: simMedPatternStat.win_rate_black,
         sampleCount: simMedPatternStat.total,
@@ -703,20 +848,19 @@ export async function enrichPostmortemWithStats(
         resolvedWP: blendedWP,
         resolvedWpSource: 'blend' as const,
       };
-      return rowWithSimMed;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Step 2.5: sim position_only（total >= 100, blend 0.1）
+    // Step 2.5b: easy sim position_only（total >= 100, blend 0.1）
     //   採用条件: total >= 100
-    //   resolvedWP: 0.1 \xd7 posWP + 0.9 \xd7 staticWP (wpAfter)
+    //   resolvedWP: 0.1 × posWP + 0.9 × staticWP (wpAfter)
     //   winRateSource: 'sim_position_only'
     // ──────────────────────────────────────────────────────────────────────────
     const simPosOnlyStat = positionOnlyId ? simPositionOnlyMap.get(positionOnlyId) : undefined;
     if (simPosOnlyStat && simPosOnlyStat.total >= 100) {
       const posWP = simPosOnlyStat.win_rate_black; // black視点（0–1範囲）
       const blendedWP = 0.1 * posWP + 0.9 * row.wpAfter;
-      const rowWithPosOnly = {
+      return {
         ...row,
         historicWinRate: Math.round(posWP * 10000) / 100, // 0–1 → 0–100
         sampleCount: simPosOnlyStat.total,
@@ -725,10 +869,8 @@ export async function enrichPostmortemWithStats(
         resolvedWP: blendedWP,
         resolvedWpSource: 'blend' as const,
       };
-      return rowWithPosOnly;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
     // Step 3: static fallback
     // ──────────────────────────────────────────────────────────────────────────
     return { ...row, resolvedWP: row.wpAfter, resolvedWpSource: 'static' as const };

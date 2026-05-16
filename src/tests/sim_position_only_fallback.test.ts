@@ -103,9 +103,17 @@ describe('sim_position_only_fallback', () => {
     const history = makeHistory([{ mediumPatternId }]);
     await enrichPostmortemWithStats(result, history);
 
+    // fast_hard と easy の2回呼ばれる（どちらも positionOnlyId を含む）
+    expect(mockFetchSimPositionOnly).toHaveBeenCalledTimes(2);
     expect(mockFetchSimPositionOnly).toHaveBeenCalledWith(
       expect.arrayContaining([positionOnlyId]),
       100,
+      'fast_hard_vs_fast_hard',
+    );
+    expect(mockFetchSimPositionOnly).toHaveBeenCalledWith(
+      expect.arrayContaining([positionOnlyId]),
+      100,
+      'easy_vs_easy',
     );
   });
 
@@ -165,14 +173,19 @@ describe('sim_position_only_fallback', () => {
     const mediumPatternId = 'abcdef1234567890:0012';
     const positionOnlyId  = 'abcdef1234567890';
 
-    mockFetchSimPositionOnly.mockResolvedValue(new Map([
+    const easyPosOnlyData = new Map([
       [positionOnlyId, {
         position_only_id: positionOnlyId,
         wins_black: 60, wins_white: 40, draws: 0,
         total: 150, win_rate_black: 0.6, win_rate_white: 0.4,
         sim_policy: 'easy_vs_easy',
       }],
-    ]));
+    ]);
+    // fast_hardは空、easyのみデータあり → sim_position_only が採用される
+    mockFetchSimPositionOnly.mockImplementation((_ids: string[], _min: number, policy: string) => {
+      if (policy === 'easy_vs_easy') return Promise.resolve(easyPosOnlyData);
+      return Promise.resolve(new Map());
+    });
 
     const result = makeResult(1, [0.5]);
     const history = makeHistory([{ mediumPatternId }]);
@@ -210,25 +223,33 @@ describe('sim_position_only_fallback', () => {
     const mediumPatternId = 'abcdef1234567890:0012';
     const positionOnlyId  = 'abcdef1234567890';
 
-    // sim_medium_pattern: total=50 (>= 30) が存在
-    mockFetchSimMediumPattern.mockResolvedValue(new Map([
+    const easyMedData = new Map([
       [mediumPatternId, {
         medium_pattern_id: mediumPatternId,
         wins_black: 30, wins_white: 20, draws: 0,
         total: 50, win_rate_black: 60, // 0-100スケール
         sim_policy: 'easy_vs_easy',
       }],
-    ]));
+    ]);
+    // fast_hardは空、easyのみデータあり → easy sim_medium_pattern が採用される
+    mockFetchSimMediumPattern.mockImplementation((_ids: string[], _min: number, policy: string) => {
+      if (policy === 'easy_vs_easy') return Promise.resolve(easyMedData);
+      return Promise.resolve(new Map());
+    });
 
     // sim_position_only: total=200 が存在（より多いが優先されない）
-    mockFetchSimPositionOnly.mockResolvedValue(new Map([
+    const easyPosOnlyData = new Map([
       [positionOnlyId, {
         position_only_id: positionOnlyId,
         wins_black: 120, wins_white: 80, draws: 0,
         total: 200, win_rate_black: 0.6, win_rate_white: 0.4,
         sim_policy: 'easy_vs_easy',
       }],
-    ]));
+    ]);
+    mockFetchSimPositionOnly.mockImplementation((_ids: string[], _min: number, policy: string) => {
+      if (policy === 'easy_vs_easy') return Promise.resolve(easyPosOnlyData);
+      return Promise.resolve(new Map());
+    });
 
     const result = makeResult(1, [0.5]);
     const history = makeHistory([{ mediumPatternId }]);

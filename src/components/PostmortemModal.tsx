@@ -8,7 +8,7 @@
  *   - onAnalyzing(true/false) で分析中状態を呼び出し元に通知する
  */
 import { useState, useEffect, useCallback } from 'react';
-import { enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult } from '../game/postmortem';
+import { enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult, type CandidateMove } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 
 import type { MoveRecord } from '../game/types';
@@ -23,6 +23,8 @@ interface Props {
   autoStart?: boolean;
   /** 分析中状態の変化を呼び出し元に通知する (autoStart=true 時に使用) */
   onAnalyzing?: (analyzing: boolean) => void;
+  /** Phase P-2b: Proアクティブユーザーかどうか（候補手表示制御用） */
+  proActive?: boolean;
 }
 
 /** 手数ベースの所要時間推定（秒） depth=3 minimax: 1手あたり約0.15秒 */
@@ -30,7 +32,7 @@ function estimateSec(moveCount: number): number {
   return Math.max(5, Math.round(moveCount * 0.15));
 }
 
-export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing }: Props) {
+export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing, proActive = false }: Props) {
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -181,7 +183,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
             {result.rows.length > 0 && (
               <section style={styles.section}>
                 <div style={styles.sectionTitle}>{t.historySection}</div>
-                <HistoryList rows={result.rows} wpInitial={result.wpInitial} />
+                <HistoryList rows={result.rows} wpInitial={result.wpInitial} proActive={proActive} />
               </section>
             )}
           </>
@@ -286,10 +288,18 @@ function pct(wp: number): string {
 interface HistoryListProps {
   rows: PostmortemResult['rows'];
   wpInitial: number;
+  proActive?: boolean;
 }
 
-function HistoryList({ rows, wpInitial }: HistoryListProps) {
+function HistoryList({ rows, wpInitial, proActive = false }: HistoryListProps) {
   const resolvedSeries = buildResolvedWPSeries(rows, wpInitial);
+  const [expandedMoveNum, setExpandedMoveNum] = useState<number | null>(null);
+
+  const handleRowTap = (moveNum: number, hasCandidates: boolean) => {
+    if (!hasCandidates) return;
+    setExpandedMoveNum(prev => prev === moveNum ? null : moveNum);
+  };
+
   return (
     <div style={styles.historyList}>
       {rows.map((r, i) => {
@@ -297,17 +307,77 @@ function HistoryList({ rows, wpInitial }: HistoryListProps) {
         const curWP = resolvedSeries[i + 1]!;
         const delta = curWP - prevWP;
         const deltaText = `${delta >= 0 ? '+' : ''}${(delta * 100).toFixed(1)}pt`;
+        const hasCandidates = r.player === 'black' && !!r.candidateMoves && r.candidateMoves.length > 0;
+        const isExpanded = expandedMoveNum === r.moveNum;
+        const tappable = hasCandidates; // Pro判定は展開内容側で制御
+
         return (
-          <div key={r.moveNum} style={styles.historyRow}>
-            <span style={styles.historyNum}>#{r.moveNum}</span>
-            <span style={styles.historyMove}>{r.played}</span>
-            <span style={styles.historyWP}>{pct(curWP)}</span>
-            <span style={{ ...styles.historyDelta, color: delta >= 0 ? '#27a' : '#e53' }}>
-              {deltaText}
-            </span>
+          <div key={r.moveNum}>
+            <div
+              style={{
+                ...styles.historyRow,
+                cursor: tappable ? 'pointer' : 'default',
+                background: isExpanded ? '#f5f5f5' : 'transparent',
+              }}
+              onClick={() => tappable && handleRowTap(r.moveNum, hasCandidates)}
+            >
+              <span style={styles.historyNum}>#{r.moveNum}</span>
+              <span style={styles.historyMove}>{r.played}</span>
+              <span style={styles.historyWP}>{pct(curWP)}</span>
+              <span style={{ ...styles.historyDelta, color: delta >= 0 ? '#27a' : '#e53' }}>
+                {deltaText}
+              </span>
+              {tappable && (
+                <span style={styles.historyExpandIcon}>{isExpanded ? '▲' : '▼'}</span>
+              )}
+            </div>
+            {isExpanded && hasCandidates && (
+              <CandidateMovePanel
+                candidates={r.candidateMoves!}
+                playedWP={curWP}
+                proActive={proActive}
+              />
+            )}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── 候補手展開パネル ────────────────────────────────────────────────────────────
+
+interface CandidateMovePanelProps {
+  candidates: CandidateMove[];
+  playedWP: number;
+  proActive: boolean;
+}
+
+function CandidateMovePanel({ candidates, proActive }: CandidateMovePanelProps) {
+  if (!proActive) {
+    return (
+      <div style={styles.candidatePanel}>
+        <span style={styles.candidateUpgrade}>⭐ Proプランで候補手を表示</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.candidatePanel}>
+      <div style={styles.candidateLabel}>Candidate Moves</div>
+      {candidates.map(c => (
+        <div key={c.rank} style={styles.candidateRow}>
+          <span style={styles.candidateRank}>#{c.rank}</span>
+          <span style={styles.candidateMove}>{c.move}</span>
+          <span style={styles.candidateWP}>WP {pct(c.wp)}</span>
+          <span style={{
+            ...styles.candidateDiff,
+            color: c.wpDiff >= 0 ? '#27a' : '#e53',
+          }}>
+            {c.wpDiff >= 0 ? '+' : ''}{(c.wpDiff * 100).toFixed(1)}pt
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -476,6 +546,64 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     padding: '1px 6px',
     whiteSpace: 'nowrap' as const,
+  },
+  historyExpandIcon: {
+    color: '#bbb',
+    fontSize: '0.6rem',
+    flexShrink: 0,
+    marginLeft: 2,
+  },
+  candidatePanel: {
+    background: '#f8f8f8',
+    borderLeft: '3px solid #ddd',
+    padding: '0.45rem 0.6rem 0.45rem 0.8rem',
+    marginBottom: '0.1rem',
+    fontSize: '0.75rem',
+  },
+  candidateLabel: {
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    color: '#999',
+    textTransform: 'uppercase' as const,
+    marginBottom: 5,
+  },
+  candidateRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 5,
+    padding: '0.15rem 0',
+  },
+  candidateRank: {
+    color: '#bbb',
+    fontVariantNumeric: 'tabular-nums' as const,
+    minWidth: 20,
+    flexShrink: 0,
+    fontSize: '0.68rem',
+  },
+  candidateMove: {
+    flex: 1,
+    color: '#444',
+    wordBreak: 'break-all' as const,
+  },
+  candidateWP: {
+    color: '#555',
+    fontVariantNumeric: 'tabular-nums' as const,
+    flexShrink: 0,
+    minWidth: 52,
+    textAlign: 'right' as const,
+    fontSize: '0.7rem',
+  },
+  candidateDiff: {
+    fontVariantNumeric: 'tabular-nums' as const,
+    flexShrink: 0,
+    minWidth: 52,
+    textAlign: 'right' as const,
+    fontSize: '0.68rem',
+  },
+  candidateUpgrade: {
+    fontSize: '0.72rem',
+    color: '#b8860b',
   },
 };
 

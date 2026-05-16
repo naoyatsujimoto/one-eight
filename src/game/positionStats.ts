@@ -371,18 +371,20 @@ export interface SimPositionOnlyWinRateRow {
  *
  * @param positionOnlyIds  照会する position_only_id 配列
  * @param minTotal         採用閾値（デフォルト 100）
+ * @param simPolicy        simポリシー（デフォルト: 'easy_vs_easy'）
  * @returns                position_only_id をキーとした Map
  */
 export async function fetchSimPositionOnlyWinRates(
   positionOnlyIds: string[],
   minTotal = 100,
+  simPolicy: string = 'easy_vs_easy',
 ): Promise<Map<string, SimPositionOnlyWinRateRow>> {
   if (positionOnlyIds.length === 0) return new Map();
   const { data, error } = await supabase
     .from('sim_position_only_stats')
     .select('position_only_id, wins_black, wins_white, draws, total, sim_policy')
     .in('position_only_id', positionOnlyIds)
-    .eq('sim_policy', 'easy_vs_easy')
+    .eq('sim_policy', simPolicy)
     .gte('total', minTotal);
   if (error) {
     console.warn('[positionStats] sim_position_only fetch error:', error.message);

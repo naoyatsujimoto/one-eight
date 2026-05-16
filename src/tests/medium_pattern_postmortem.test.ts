@@ -213,7 +213,11 @@ describe('medium_pattern postmortem fallback chain', () => {
       total: 200,
       win_rate_black: 75.0,
     });
-    mockFetchSimMediumPattern.mockResolvedValue(simMedMap);
+    // fast_hardは空、easyのみデータあり → sim_medium_pattern (easy) が採用される
+    mockFetchSimMediumPattern.mockImplementation((_ids: string[], _min: number, policy: string) => {
+      if (policy === 'easy_vs_easy') return Promise.resolve(simMedMap);
+      return Promise.resolve(new Map());
+    });
 
     const result = makeResult(1);
     const history = makeHistory([{ mediumPatternId: 'pattern1' }]);
@@ -359,7 +363,11 @@ describe('medium_pattern postmortem fallback chain', () => {
       total: 100,
       win_rate_black: 60.0,
     });
-    mockFetchSimMediumPattern.mockResolvedValue(simMedMap);
+    // fast_hardは空、easyのみデータあり → sim_medium_pattern が採用される
+    mockFetchSimMediumPattern.mockImplementation((_ids: string[], _min: number, policy: string) => {
+      if (policy === 'easy_vs_easy') return Promise.resolve(simMedMap);
+      return Promise.resolve(new Map());
+    });
 
     const result = makeResult(1);
     const history = makeHistory([{ mediumPatternId: 'pattern1' }]);

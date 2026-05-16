@@ -365,6 +365,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           gameId={workerState.gameId}
           onClose={() => { dismissWorker(); setRefreshingGameId(null); }}
           autoStart
+          proActive={proActive}
         />
       )}
     </div>
