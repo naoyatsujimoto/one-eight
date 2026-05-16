@@ -273,6 +273,38 @@ export async function fetchPublicUserPageStats(userId: string): Promise<UserPage
   };
 }
 
+// ─── Ghost Mode ─────────────────────────────────────────────────────────────
+
+export interface GhostMove {
+  positioning: string;   // PositionId ('A'〜'M') | 'P'
+  build_type: string;    // 'massive' | 'selective' | 'quad' | 'skip'
+  frequency: number;
+}
+
+/**
+ * 現在局面（canonical_hash）において、自分の過去の対局でどのポジション・ビルドを
+ * 選択したかを取得する（Ghost Mode 用）。
+ *
+ * - Pro ユーザーのみ結果を返す（RPC 側で判定、非 Pro は空配列）
+ * - 対象モード: human_vs_cpu / online_pvp のみ（human_vs_human は対象外）
+ * - anon ユーザーは RPC 実行権限なし → エラー時は空配列を返す
+ *
+ * @param canonicalHash  現在局面の canonical_hash
+ * @param humanColor     自分の手番色 ('black' | 'white' | null)
+ * @returns GhostMove 配列（frequency 降順）
+ */
+export async function fetchGhostMoves(
+  canonicalHash: string,
+  humanColor: 'black' | 'white' | null
+): Promise<GhostMove[]> {
+  const { data, error } = await supabase.rpc('get_ghost_moves', {
+    p_canonical_hash: canonicalHash,
+    p_human_color: humanColor,
+  });
+  if (error || !data) return [];
+  return data as GhostMove[];
+}
+
 export async function fetchMyStats(_userId: string): Promise<MyStats> {
   // P-2: RPC 経由で履歴を取得（free: 直近10局 / pro: 全件）
   const { data, error } = await supabase

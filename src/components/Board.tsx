@@ -3,6 +3,7 @@ import { POSITION_TO_GATES } from '../game/constants';
 import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build';
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
+import type { GhostMove } from '../lib/matchLog';
 
 function OwnerDot({ owner, isLastOpponentMove }: { owner: 'black' | 'white' | null; isLastOpponentMove?: boolean }) {
   return (
@@ -485,6 +486,10 @@ export function Board({
   showLabelToggle = true,
   defaultLabels = true,
   labelPerspective = 'black',
+  ghostMoves,
+  ghostModeActive = false,
+  showGhostToggle = false,
+  onGhostModeToggle,
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -499,8 +504,28 @@ export function Board({
   moveNumber?: number;
   currentPlayer?: string;
   labelPerspective?: 'black' | 'white';
+  ghostMoves?: GhostMove[];
+  ghostModeActive?: boolean;
+  showGhostToggle?: boolean;
+  onGhostModeToggle?: () => void;
 }) {
   const selectedId = state.selectedPosition;
+
+  // ── Ghost Mode: positioning → opacity マップを乚める ──────────────────────────────────
+  const ghostOpacityMap = (() => {
+    if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0) return new Map<string, number>();
+    const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
+    const map = new Map<string, number>();
+    for (const gm of ghostMoves) {
+      // 1 以上の全てを表示。最大頻度 = opacity 0.7、最小度 = 0.3 で濃淡表現
+      const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
+      const opacity = 0.3 + ratio * 0.4; // 0.3 〜 0.7
+      // positioningごとに最大 opacity を保持（複数 build_type がある場合）
+      const existing = map.get(gm.positioning) ?? 0;
+      if (opacity > existing) map.set(gm.positioning, opacity);
+    }
+    return map;
+  })();
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
 
   // Derive the last opponent's positioned move for subtle highlight
@@ -764,8 +789,16 @@ export function Board({
           {BOARD_POSITIONS.map((id) => {
             const pos = state.positions[id];
             const isSelected = state.selectedPosition === id;
+            const isLastOpponent = !isSelected && id === lastOpponentPositionId;
             const displayOwner = isSelected ? state.pendingPositionOwner : pos.owner;
             const coord = POSITION_COORDS[id];
+
+            // Ghost Mode: 既存状態（selected / lastOpponent）でない場合のみ Ghost 表示
+            const ghostOpacity = (!isSelected && !isLastOpponent)
+              ? (ghostOpacityMap.get(id) ?? 0)
+              : 0;
+            const isGhostHighlight = ghostOpacity > 0;
+
             return (
               <button
                 key={id}
@@ -774,14 +807,20 @@ export function Board({
                   'position-btn',
                   isSelected ? 'selected' : '',
                   tutorialHighlightAllPositions ? 'position-btn-tutorial-hl' : '',
+                  isGhostHighlight ? 'position-btn-ghost' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
                 type="button"
                 aria-pressed={isSelected}
-                style={{ position: 'absolute', left: coord.left, top: coord.top }}
+                style={{
+                  position: 'absolute',
+                  left: coord.left,
+                  top: coord.top,
+                  ...(isGhostHighlight ? { opacity: ghostOpacity + 0.3 } : {}),
+                }}
               >
                 <span className="pos-id">{getDisplayPositionLabel(id, labelPerspective)}</span>
-                <OwnerDot owner={displayOwner} isLastOpponentMove={!isSelected && id === lastOpponentPositionId} />
+                <OwnerDot owner={displayOwner} isLastOpponentMove={isLastOpponent} />
               </button>
             );
           })}
@@ -789,8 +828,36 @@ export function Board({
       </div>
       </div>{/* board-inner-scaler */}
 
-      {/* Label toggle button */}
-      {showLabelToggle && (
+      {/* Label toggle + Ghost Mode toggle */}
+      {(showLabelToggle || showGhostToggle) && !state.gameEnded && (
+        <div className="board-label-toggle-wrap">
+          {showLabelToggle && (
+            <button
+              type="button"
+              className={['board-label-toggle', showLabels ? '' : 'labels-off'].filter(Boolean).join(' ')}
+              onClick={() => setShowLabels(v => !v)}
+              aria-pressed={showLabels}
+            >
+              <span className="board-label-toggle-dot" />
+              {showLabels ? 'LABELS ON' : 'LABELS OFF'}
+            </button>
+          )}
+          {showGhostToggle && (
+            <button
+              type="button"
+              className={['board-label-toggle', 'board-ghost-toggle', ghostModeActive ? 'ghost-on' : 'ghost-off'].filter(Boolean).join(' ')}
+              onClick={onGhostModeToggle}
+              aria-pressed={ghostModeActive}
+              title="Ghost Mode: show your past moves at this position"
+            >
+              <span className="board-label-toggle-dot" />
+              {ghostModeActive ? 'GHOST ON' : 'GHOST OFF'}
+            </button>
+          )}
+        </div>
+      )}
+      {/* Label toggle when game ended (no Ghost toggle) */}
+      {showLabelToggle && state.gameEnded && (
         <div className="board-label-toggle-wrap">
           <button
             type="button"

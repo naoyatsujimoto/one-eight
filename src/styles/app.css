@@ -1620,7 +1620,33 @@ ol { padding-left: 20px; }
 .board-label-toggle-wrap {
   display: flex;
   justify-content: center;
+  gap: 8px;
   margin-top: 6px;
+}
+
+/* ── Ghost Mode toggle ボタン ── */
+.board-ghost-toggle.ghost-on {
+  color: #3a6bc8;
+  background: rgba(100, 149, 237, 0.12);
+  border-color: rgba(100, 149, 237, 0.4);
+}
+.board-ghost-toggle.ghost-on .board-label-toggle-dot {
+  background: #3a6bc8;
+}
+.board-ghost-toggle.ghost-off {
+  color: #aaa;
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+.board-ghost-toggle.ghost-off .board-label-toggle-dot {
+  background: #ccc;
+}
+
+/* ── Ghost Mode ポジションハイライト ── */
+.position-btn-ghost {
+  /* 虫眼色のインセットリングで Ghost を表現 */
+  box-shadow: inset 0 0 0 2px rgba(100, 149, 237, 0.6);
+  /* opacity は JS 側で style 属性として付与 */
 }
 
 /* ── Stage labels (盤面四隅) ── */

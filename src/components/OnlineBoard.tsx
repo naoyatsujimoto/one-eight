@@ -12,7 +12,10 @@ import { ConfirmModal } from './ConfirmModal';
 import { MoveHistory } from './MoveHistory';
 import { useOnlineGame } from '../hooks/useOnlineGame';
 import { useLang } from '../lib/lang';
-import { getPublicProfile } from '../lib/profile';
+import { getPublicProfile, getProfile, isProActive } from '../lib/profile';
+import { fetchGhostMoves } from '../lib/matchLog';
+import type { GhostMove } from '../lib/matchLog';
+import { computeCanonicalHashString } from '../game/zobrist';
 import { UserPage } from './UserPage';
 import {
   applyMassiveBuild,
@@ -61,6 +64,46 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
+
+  // ── Ghost Mode (online_pvp) ─────────────────────────────────────────────
+  const [proActive, setProActive] = useState(false);
+  const [ghostModeActive, setGhostModeActive] = useState(false);
+  const [ghostMoves, setGhostMoves] = useState<GhostMove[]>([]);
+
+  // pro状態を取得
+  useEffect(() => {
+    getProfile(myUserId).then((profile) => {
+      if (profile) setProActive(isProActive(profile));
+    });
+  }, [myUserId]);
+
+  // online_pvp は常に showGhostToggle = proActive
+  const showGhostToggle = proActive;
+
+  // Ghost Mode ON かつ自分の手番のときのみ fetch
+  useEffect(() => {
+    const state = localState;
+    if (!ghostModeActive || !showGhostToggle || !state) {
+      setGhostMoves([]);
+      return;
+    }
+    // 自分の手番チェック
+    if (!isMyTurn) {
+      setGhostMoves([]);
+      return;
+    }
+    void (async () => {
+      try {
+        const hash = computeCanonicalHashString(state);
+        const moves = await fetchGhostMoves(hash, myColor ?? null);
+        setGhostMoves(moves);
+      } catch {
+        setGhostMoves([]);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ghostModeActive, showGhostToggle, isMyTurn, localState?.history.length]);
+
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; label: string; action: () => void }>({
     open: false, label: '', action: () => {},
   });
@@ -306,6 +349,10 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
             onMiddlePocketClick={handleMiddlePocketClick}
             onSmallPocketClick={handleSmallPocketClick}
             labelPerspective={myColor === 'white' ? 'white' : 'black'}
+            ghostMoves={ghostMoves}
+            ghostModeActive={ghostModeActive}
+            showGhostToggle={showGhostToggle}
+            onGhostModeToggle={() => setGhostModeActive(v => !v)}
           />
         </div>
         <aside className="panel-col">

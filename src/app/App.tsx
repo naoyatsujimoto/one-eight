@@ -10,9 +10,11 @@ import { TutorialScreen } from '../components/TutorialScreen';
 import { AuthGate } from '../components/AuthGate';
 import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
-import { saveMatchLog } from '../lib/matchLog';
+import { saveMatchLog, fetchGhostMoves } from '../lib/matchLog';
+import type { GhostMove } from '../lib/matchLog';
+import { computeCanonicalHashString } from '../game/zobrist';
 import { useLang } from '../lib/lang';
-import { getProfile, upsertProfile } from '../lib/profile';
+import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import type { Lang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
@@ -535,6 +537,56 @@ export default function App() {
     if (screen === 'main' && user) refreshUnread();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, user?.id]);
+  // ── Ghost Mode ────────────────────────────────────────────────────────────────
+  const [proActive, setProActive] = useState(false);
+  const [ghostModeActive, setGhostModeActive] = useState(false);
+  const [ghostMoves, setGhostMoves] = useState<GhostMove[]>([]);
+
+  // pro状態をログイン後に取得
+  useEffect(() => {
+    if (!user) { setProActive(false); return; }
+    getProfile(user.id).then((profile) => {
+      if (profile) setProActive(isProActive(profile));
+    });
+  }, [user?.id]);
+
+  // Ghost Mode: 自分の手番になったときに fetchGhostMoves
+  const humanColor: 'black' | 'white' | null = state.cpuPlayer !== null
+    ? (state.cpuPlayer === 'black' ? 'white' : 'black')  // PvC: cpuが blackなら humanは white
+    : null;
+
+  const isHumanTurn = !state.gameEnded
+    && state.cpuPlayer !== null
+    && state.currentPlayer !== state.cpuPlayer;
+
+  const gameMode: string = state.cpuPlayer !== null ? 'human_vs_cpu' : 'human_vs_human';
+
+  // showGhostToggle: proユーザー、かつ PvP 以外のモードでのみ表示
+  const showGhostToggle = proActive && gameMode !== 'human_vs_human';
+
+  useEffect(() => {
+    if (!ghostModeActive || !showGhostToggle) {
+      setGhostMoves([]);
+      return;
+    }
+    // 自分の手番のときのみ fetch（PvCのみ対象、相手手番はスキップ）
+    if (!isHumanTurn && state.cpuPlayer !== null) {
+      setGhostMoves([]);
+      return;
+    }
+    // 現局面の canonical_hash を算出して Ghost Move を取得
+    void (async () => {
+      try {
+        const hash = computeCanonicalHashString(state);
+        const moves = await fetchGhostMoves(hash, humanColor);
+        setGhostMoves(moves);
+      } catch {
+        setGhostMoves([]);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ghostModeActive, showGhostToggle, state.history.length, state.currentPlayer]);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
   const [cpuSettingsOpen, setCpuSettingsOpen] = useState(false);
@@ -710,6 +762,10 @@ export default function App() {
             onLargePocketClick={handleLargePocketClick}
             onMiddlePocketClick={handleMiddlePocketClick}
             onSmallPocketClick={handleSmallPocketClick}
+            ghostMoves={ghostMoves}
+            ghostModeActive={ghostModeActive}
+            showGhostToggle={showGhostToggle}
+            onGhostModeToggle={() => setGhostModeActive(v => !v)}
           />
         </div>
         <aside className="panel-col">
