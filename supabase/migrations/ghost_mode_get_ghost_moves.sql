@@ -47,6 +47,7 @@ CREATE OR REPLACE FUNCTION get_ghost_moves(
 RETURNS TABLE (
   positioning      TEXT,
   build_type       TEXT,
+  gate_ids_str     TEXT,    -- massive:単一gate / selective:カンマ区切り2gate / quad:カンマ区切り複数gate / skip:NULL
   frequency        INTEGER
 )
 LANGUAGE plpgsql
@@ -116,7 +117,23 @@ BEGIN
   filtered AS (
     SELECT
       COALESCE(gc.ghost_move->>'positioning', 'P')      AS pos,
-      COALESCE(gc.ghost_move->'build'->>'type', 'skip') AS btype
+      COALESCE(gc.ghost_move->'build'->>'type', 'skip') AS btype,
+      -- ゲートIDの抽出: buildタイプに応じて
+      CASE
+        WHEN gc.ghost_move->'build'->>'type' = 'massive'
+          THEN gc.ghost_move->'build'->>'gate'
+        WHEN gc.ghost_move->'build'->>'type' = 'selective'
+          THEN (
+            COALESCE(gc.ghost_move->'build'->'gates'->>0, '') || ',' ||
+            COALESCE(gc.ghost_move->'build'->'gates'->>1, '')
+          )
+        WHEN gc.ghost_move->'build'->>'type' = 'quad'
+          THEN (
+            SELECT string_agg(v::text, ',')
+            FROM jsonb_array_elements(gc.ghost_move->'build'->'placedGateIds') AS v
+          )
+        ELSE NULL
+      END AS gate_ids_str
     FROM ghost_candidates gc
     WHERE gc.ghost_move IS NOT NULL
       AND (
@@ -125,11 +142,12 @@ BEGIN
       )
   )
   SELECT
-    f.pos::TEXT       AS positioning,
-    f.btype::TEXT     AS build_type,
-    COUNT(*)::INTEGER AS frequency
+    f.pos::TEXT          AS positioning,
+    f.btype::TEXT        AS build_type,
+    f.gate_ids_str::TEXT AS gate_ids_str,
+    COUNT(*)::INTEGER    AS frequency
   FROM filtered f
-  GROUP BY f.pos, f.btype
+  GROUP BY f.pos, f.btype, f.gate_ids_str
   ORDER BY frequency DESC;
 
 END;

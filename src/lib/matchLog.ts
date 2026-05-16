@@ -276,8 +276,9 @@ export async function fetchPublicUserPageStats(userId: string): Promise<UserPage
 // ─── Ghost Mode ─────────────────────────────────────────────────────────────
 
 export interface GhostMove {
-  positioning: string;   // PositionId ('A'〜'M') | 'P'
-  build_type: string;    // 'massive' | 'selective' | 'quad' | 'skip'
+  positioning: string;    // PositionId ('A'〜'M') | 'P'
+  build_type: string;     // 'massive' | 'selective' | 'quad' | 'skip'
+  gate_ids_str: string | null; // massive:単一gate / selective:カンマ区切り2gate / quad:複数gate
   frequency: number;
 }
 

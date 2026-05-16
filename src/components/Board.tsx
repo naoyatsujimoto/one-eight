@@ -260,12 +260,14 @@ interface ClusterProps {
   gateType: GateType;
   ps: PocketStates;
   lastOpponentPocketSize?: AssetSize | null;
+  ghostPocketSize?: 'large' | 'middle' | 'small' | null;
+  ghostOpacity?: number;
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
 }
 
-function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge, onMiddle, onSmall }: ClusterProps) {
+function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketSize, ghostOpacity = 0, onLarge, onMiddle, onSmall }: ClusterProps) {
   const L = gate.largeSlots;
   const M = gate.middleSlots;
   const S = gate.smallSlots;
@@ -273,6 +275,12 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge
   const hlS = lastOpponentPocketSize === 'small';
   const hlM = lastOpponentPocketSize === 'middle';
   const hlL = lastOpponentPocketSize === 'large';
+
+  // Ghost Mode: 対象ポケットサイズに outline で濃淡表示
+  const ghostStyle = (size: 'large' | 'middle' | 'small'): React.CSSProperties =>
+    ghostPocketSize === size && ghostOpacity > 0
+      ? { outline: `2px solid rgba(100,149,237,${ghostOpacity})`, borderRadius: 3 }
+      : {};
 
   const SmallTL = () => <div className="gate-corner-tl"><DiamondPip owner={S[0]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
   const SmallTR = () => <div className="gate-corner-tr"><DiamondPip owner={S[1]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
@@ -302,14 +310,14 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge
         <div className={`gate-cluster gate-cluster-${gateType}`}>
           <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
-          <div className="gate-col-1row-center">
+          <div className="gate-col-1row-center" style={ghostStyle('middle')}>
             <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
-          <div className="gate-col-tb">
+          <div className="gate-col-tb" style={ghostStyle('large')}>
             <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
             <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
           </div>
-          <div className="gate-col-1row-center">
+          <div className="gate-col-1row-center" style={ghostStyle('middle')}>
             <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
         </div>
@@ -321,14 +329,14 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge
         <div className={`gate-cluster gate-cluster-${gateType}`}>
           <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
-          <div className="gate-row-1col-center">
+          <div className="gate-row-1col-center" style={ghostStyle('middle')}>
             <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
-          <div className="gate-row-lr">
+          <div className="gate-row-lr" style={ghostStyle('large')}>
             <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
             <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
           </div>
-          <div className="gate-row-1col-center">
+          <div className="gate-row-1col-center" style={ghostStyle('middle')}>
             <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
           </div>
         </div>
@@ -350,6 +358,8 @@ function GateCard({
   ps,
   lastOpponentPocketSize,
   tutorialHighlight,
+  ghostPocketSize,
+  ghostOpacity,
   onLarge,
   onMiddle,
   onSmall,
@@ -362,6 +372,8 @@ function GateCard({
   ps: PocketStates;
   lastOpponentPocketSize?: AssetSize | null;
   tutorialHighlight?: boolean;
+  ghostPocketSize?: 'large' | 'middle' | 'small' | null;
+  ghostOpacity?: number;
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
@@ -382,7 +394,7 @@ function GateCard({
       data-gate-id={gateId}
       aria-label={`Gate ${gateId}`}
     >
-      {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, onLarge, onMiddle, onSmall })}
+      {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketSize, ghostOpacity, onLarge, onMiddle, onSmall })}
     </div>
   );
 }
@@ -526,6 +538,30 @@ export function Board({
     }
     return map;
   })();
+  // Ghost Mode: gateId → {opacity, pocketSize} マップ
+  const ghostGateMap = (() => {
+    if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0)
+      return new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
+    const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
+    const map = new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
+    for (const gm of ghostMoves) {
+      if (!gm.gate_ids_str) continue;
+      const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
+      const opacity = 0.3 + ratio * 0.4;
+      const pocketSize: 'large' | 'middle' | 'small' =
+        gm.build_type === 'massive' ? 'large' :
+        gm.build_type === 'selective' ? 'middle' : 'small';
+      const ids = gm.gate_ids_str.split(',').map(Number).filter((n) => !isNaN(n) && n > 0);
+      for (const gateId of ids) {
+        const existing = map.get(gateId);
+        if (!existing || opacity > existing.opacity) {
+          map.set(gateId, { opacity, pocketSize });
+        }
+      }
+    }
+    return map;
+  })();
+
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
 
   // Derive the last opponent's positioned move for subtle highlight
@@ -769,6 +805,8 @@ export function Board({
                 ps={ps}
                 lastOpponentPocketSize={lastOpponentBuild.gateIds.has(gateId) ? lastOpponentBuild.pocketSize : null}
                 tutorialHighlight={tutorialGateHighlights?.has(gateId)}
+                ghostPocketSize={ghostGateMap.get(gateId)?.pocketSize ?? null}
+                ghostOpacity={ghostGateMap.get(gateId)?.opacity ?? 0}
                 onLarge={() => onLargePocketClick(gateId)}
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}
