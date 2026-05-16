@@ -295,11 +295,13 @@ export interface GhostMove {
  */
 export async function fetchGhostMoves(
   canonicalHash: string,
-  humanColor: 'black' | 'white' | null
+  humanColor: 'black' | 'white' | null,
+  moveIndex: number = 0,
 ): Promise<GhostMove[]> {
   const { data, error } = await supabase.rpc('get_ghost_moves', {
     p_canonical_hash: canonicalHash,
     p_human_color: humanColor,
+    p_move_index: moveIndex,
   });
   if (error || !data) return [];
   return data as GhostMove[];

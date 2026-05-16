@@ -578,7 +578,7 @@ export default function App() {
     void (async () => {
       try {
         const hash = computeCanonicalHashString(state);
-        const moves = await fetchGhostMoves(hash, humanColor);
+        const moves = await fetchGhostMoves(hash, humanColor, state.history.length);
         setGhostMoves(moves);
       } catch {
         setGhostMoves([]);

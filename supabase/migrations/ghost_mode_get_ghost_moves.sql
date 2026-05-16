@@ -41,140 +41,95 @@
 
 CREATE OR REPLACE FUNCTION get_ghost_moves(
   p_canonical_hash TEXT,
-  p_human_color TEXT DEFAULT NULL
+  p_human_color    TEXT DEFAULT NULL,
+  p_move_index     INTEGER DEFAULT 0  -- 現在の手番インデックス（state.history.length）
 )
 RETURNS TABLE (
-  positioning TEXT,
-  build_type  TEXT,
-  frequency   INTEGER
+  positioning      TEXT,
+  build_type       TEXT,
+  frequency        INTEGER
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_uid       UUID;
-  v_plan      TEXT;
-  v_status    TEXT;
+  v_uid        UUID;
+  v_plan       TEXT;
+  v_status     TEXT;
   v_period_end TIMESTAMPTZ;
-  v_is_pro    BOOLEAN;
+  v_is_pro     BOOLEAN;
 BEGIN
-  -- 呼び出しユーザーの UUID を取得
   v_uid := auth.uid();
+  IF v_uid IS NULL THEN RETURN; END IF;
 
-  -- 認証チェック: 未ログインの場合は空を返す
-  IF v_uid IS NULL THEN
-    RETURN;
-  END IF;
-
-  -- Pro 判定: profiles テーブルから取得
   SELECT plan, subscription_status, current_period_end
   INTO v_plan, v_status, v_period_end
-  FROM profiles
-  WHERE id = v_uid;
+  FROM profiles WHERE id = v_uid;
 
   v_is_pro := (
     v_plan = 'pro'
     AND v_status = 'active'
     AND (v_period_end IS NULL OR v_period_end > now())
   );
-
-  -- 非 Pro ユーザーは空を返す（エラーなし）
-  IF NOT v_is_pro THEN
-    RETURN;
-  END IF;
-
-  -- Ghost Move の集計:
-  --   full_record (JSONB 配列) の各手を走査し、
-  --   canonical_hash が p_canonical_hash に一致する手を見つけ、
-  --   その「次の手」（index+1）が human_color プレイヤーの手であれば集計対象とする。
-  --
-  -- full_record の各要素 (MoveRecord) の構造:
-  --   {
-  --     "player": "black" | "white",
-  --     "positioning": "A"〜"M" | "P",
-  --     "build": { "type": "massive"|"selective"|"quad"|"skip", ... },
-  --     "canonical_hash": "...",
-  --     ...
-  --   }
-  --
-  -- ロジック:
-  --   1. user_id = v_uid かつ mode IN ('human_vs_cpu', 'online_pvp') の match_logs を取得
-  --   2. full_record を jsonb_array_elements でインデックス付き展開
-  --   3. index i の手の canonical_hash = p_canonical_hash を見つける
-  --   4. index i+1 の手（次の手）を取得
-  --   5. p_human_color が指定されている場合は next_move.player = p_human_color のもののみ
-  --      p_human_color が NULL の場合は全て対象
-  --   6. positioning + build_type でグループ化して frequency を集計
+  IF NOT v_is_pro THEN RETURN; END IF;
 
   RETURN QUERY
   WITH
-  -- 対象となる match_logs（自分のデータ、対象モードのみ）
+  -- 自分の対象モード対局だけ取得
   target_logs AS (
-    SELECT
-      ml.full_record,
-      ml.human_color
+    SELECT ml.full_record, ml.human_color
     FROM match_logs ml
     WHERE ml.user_id = v_uid
       AND ml.mode IN ('human_vs_cpu', 'online_pvp')
       AND ml.full_record IS NOT NULL
       AND jsonb_array_length(ml.full_record) > 0
   ),
-
-  -- full_record を index 付きで展開
-  moves_with_index AS (
+  -- Ghost候補手の取得方法：
+  --   p_move_index = 0 (初手前): full_record[0] を直接返す
+  --     理由: canonical_hash は手実行後の状態に付属するため、
+  --             初手前の状態（初期状態）はどの MoveRecord にも保存されていない。
+  --             初手を返すには full_record[0] を直接参照する必要がある。
+  --   p_move_index > 0: 現状の canonical_hash で対履を検索し、次の手を返す
+  ghost_candidates AS (
+    -- 初手前: full_record[0] を直接使用
     SELECT
-      tl.full_record,
-      tl.human_color AS log_human_color,
-      idx.ord         AS move_index,
-      idx.move        AS move_data
+      tl.human_color,
+      tl.full_record -> 0 AS ghost_move
+    FROM target_logs tl
+    WHERE p_move_index = 0
+      AND jsonb_array_length(tl.full_record) > 0
+
+    UNION ALL
+
+    -- 2手目以降: canonical_hash マッチした次の手を返す
+    SELECT
+      tl.human_color,
+      tl.full_record -> (elem.ord::int) AS ghost_move
     FROM target_logs tl,
-         jsonb_array_elements(tl.full_record) WITH ORDINALITY AS idx(move, ord)
+         jsonb_array_elements(tl.full_record) WITH ORDINALITY AS elem(move, ord)
+    WHERE p_move_index > 0
+      AND elem.move->>'canonical_hash' = p_canonical_hash
+      AND elem.ord::int < jsonb_array_length(tl.full_record)
   ),
-
-  -- canonical_hash が一致する手のインデックスを見つける
-  matching_moves AS (
+  -- 自分の手番の候補のみに絞り込む
+  filtered AS (
     SELECT
-      m.full_record,
-      m.log_human_color,
-      m.move_index
-    FROM moves_with_index m
-    WHERE m.move_data->>'canonical_hash' = p_canonical_hash
-  ),
-
-  -- 次の手（index+1）を取得
-  next_moves AS (
-    SELECT
-      mm.log_human_color,
-      -- 次の手（0-based インデックス: ord は 1-based なので mm.move_index は +1 済み）
-      mm.full_record -> (mm.move_index::int) AS next_move
-    FROM matching_moves mm
-    WHERE mm.move_index::int < jsonb_array_length(mm.full_record)
-  ),
-
-  -- 次の手をフィルタリング（human_color の手のみ）
-  filtered_next_moves AS (
-    SELECT
-      COALESCE(nm.next_move->>'positioning', 'P')   AS positioning,
-      COALESCE(nm.next_move->'build'->>'type', 'skip') AS build_type
-    FROM next_moves nm
-    WHERE nm.next_move IS NOT NULL
-      -- p_human_color が NULL の場合は全て対象、指定されている場合は該当プレイヤーのみ
+      COALESCE(gc.ghost_move->>'positioning', 'P')      AS pos,
+      COALESCE(gc.ghost_move->'build'->>'type', 'skip') AS btype
+    FROM ghost_candidates gc
+    WHERE gc.ghost_move IS NOT NULL
       AND (
         p_human_color IS NULL
-        OR nm.next_move->>'player' = p_human_color
+        OR gc.ghost_move->>'player' = p_human_color
       )
   )
-
-  -- グループ化して frequency を集計
   SELECT
-    fnm.positioning::TEXT,
-    fnm.build_type::TEXT,
+    f.pos::TEXT       AS positioning,
+    f.btype::TEXT     AS build_type,
     COUNT(*)::INTEGER AS frequency
-  FROM filtered_next_moves fnm
-  WHERE fnm.positioning IS NOT NULL
-    AND fnm.build_type IS NOT NULL
-  GROUP BY fnm.positioning, fnm.build_type
+  FROM filtered f
+  GROUP BY f.pos, f.btype
   ORDER BY frequency DESC;
 
 END;

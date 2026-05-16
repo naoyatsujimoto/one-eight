@@ -95,7 +95,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
     void (async () => {
       try {
         const hash = computeCanonicalHashString(state);
-        const moves = await fetchGhostMoves(hash, myColor ?? null);
+        const moves = await fetchGhostMoves(hash, myColor ?? null, state.history.length);
         setGhostMoves(moves);
       } catch {
         setGhostMoves([]);
