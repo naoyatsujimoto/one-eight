@@ -158,10 +158,14 @@ $$;
 -- -----------------------------------------------------------------------------
 
 -- authenticated ユーザーのみ実行可能
-GRANT EXECUTE ON FUNCTION get_ghost_moves(TEXT, TEXT) TO authenticated;
+-- 旧シグネチャが残っている場合は先に削除してから実行
+-- DROP FUNCTION IF EXISTS get_ghost_moves(text, text);
+-- DROP FUNCTION IF EXISTS get_ghost_moves(text, text, integer);
+
+GRANT EXECUTE ON FUNCTION get_ghost_moves(TEXT, TEXT, INTEGER) TO authenticated;
 
 -- anon には実行権限を付与しない（明示的に剥奪）
-REVOKE EXECUTE ON FUNCTION get_ghost_moves(TEXT, TEXT) FROM anon;
+REVOKE EXECUTE ON FUNCTION get_ghost_moves(TEXT, TEXT, INTEGER) FROM anon;
 
 -- =============================================================================
 -- 確認クエリ（実行後にこれで状態を確認する）
