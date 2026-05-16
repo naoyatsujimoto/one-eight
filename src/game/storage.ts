@@ -132,7 +132,7 @@ export function hasSavedState(): boolean {
 // ─── Postmortem cache ─────────────────────────────────────────────────────────
 
 const POSTMORTEM_CACHE_PREFIX = 'one_eight_pm_';
-const POSTMORTEM_CACHE_VERSION = 1;
+const POSTMORTEM_CACHE_VERSION = 2; // bumped: P-2b candidateMoves added
 
 interface PostmortemCacheEntry {
   version: number;
