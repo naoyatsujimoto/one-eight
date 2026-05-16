@@ -285,9 +285,9 @@ export interface GhostMove {
  * 現在局面（canonical_hash）において、自分の過去の対局でどのポジション・ビルドを
  * 選択したかを取得する（Ghost Mode 用）。
  *
- * - Pro ユーザーのみ結果を返す（RPC 側で判定、非 Pro は空配列）
- * - 対象モード: human_vs_cpu / online_pvp のみ（human_vs_human は対象外）
- * - anon ユーザーは RPC 実行権限なし → エラー時は空配列を返す
+ * - localStorage の過去対局から直接集計する（STATSと同じデータソース）
+ * - 対象モード: human_vs_cpu のみ（human_vs_human は対象外）
+ * - canonical_hash がない古い棋譜はスキップする
  *
  * @param canonicalHash  現在局面の canonical_hash
  * @param humanColor     自分の手番色 ('black' | 'white' | null)
@@ -297,12 +297,62 @@ export async function fetchGhostMoves(
   canonicalHash: string,
   humanColor: 'black' | 'white' | null
 ): Promise<GhostMove[]> {
-  const { data, error } = await supabase.rpc('get_ghost_moves', {
-    p_canonical_hash: canonicalHash,
-    p_human_color: humanColor,
-  });
-  if (error || !data) return [];
-  return data as GhostMove[];
+  return computeGhostMovesFromLocalStorage(canonicalHash, humanColor);
+}
+
+/**
+ * localStorage の過去対局から Ghost Move を集計する（同期版）。
+ */
+export function computeGhostMovesFromLocalStorage(
+  canonicalHash: string,
+  humanColor: 'black' | 'white' | null
+): GhostMove[] {
+  try {
+    const records = loadGameRecords(500);
+    const countMap = new Map<string, number>();
+
+    for (const record of records) {
+      // PvP は対象外
+      if (record.mode === 'human_vs_human') continue;
+      if (!record.full_record || record.full_record.length === 0) continue;
+
+      const hColor = record.human_color; // 'black' | 'white' | null
+
+      for (let i = 0; i < record.full_record.length - 1; i++) {
+        const move = record.full_record[i];
+        if (!move) continue;
+        // canonical_hash がない古い棋譜はスキップ
+        if (!move.canonical_hash) continue;
+        if (move.canonical_hash !== canonicalHash) continue;
+
+        // 次の手を取得
+        const nextMove = record.full_record[i + 1];
+        if (!nextMove) continue;
+
+        // human_color フィルタ：自分の手番のみ
+        const targetColor = humanColor ?? hColor;
+        if (targetColor !== null && nextMove.player !== targetColor) continue;
+
+        const pos = nextMove.positioning ?? 'P';
+        const bt = ('type' in nextMove.build ? nextMove.build.type : 'skip');
+        const key = `${pos}|${bt}`;
+        countMap.set(key, (countMap.get(key) ?? 0) + 1);
+      }
+    }
+
+    return Array.from(countMap.entries())
+      .map(([key, frequency]) => {
+        const sep = key.indexOf('|');
+        return {
+          positioning: key.slice(0, sep),
+          build_type: key.slice(sep + 1),
+          frequency,
+        };
+      })
+      .sort((a, b) => b.frequency - a.frequency);
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchMyStats(_userId: string): Promise<MyStats> {
