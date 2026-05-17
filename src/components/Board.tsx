@@ -125,6 +125,8 @@ interface DiamondPipProps {
   size: 'large' | 'middle' | 'small';
   clickState: PocketClickState;
   onClick?: () => void;
+  /** Ghost Mode: 0-1 の ring 強度。0 はハイライトなし */
+  ghostHighlight?: number;
 }
 
 /**
@@ -225,7 +227,7 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
   );
 }
 
-function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove }: DiamondPipProps & { isLastOpponentMove?: boolean }) {
+function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove, ghostHighlight = 0 }: DiamondPipProps & { isLastOpponentMove?: boolean }) {
   const interactive = clickState === 'clickable' || clickState === 'selected';
   const cls = [
     `diamond-pip`,
@@ -238,6 +240,15 @@ function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove }: Di
     isLastOpponentMove && clickState !== 'selected' ? 'last-opponent-move' : '',
   ].filter(Boolean).join(' ');
 
+  // Ghost Mode: ポケット輪郭リングのみ。fill なし。
+  const ringOpacity = ghostHighlight > 0 ? Math.min(0.9, ghostHighlight + 0.18) : 0;
+  const glowOpacity = ghostHighlight > 0 ? ghostHighlight * 0.55 : 0;
+  const ghostRingStyle: React.CSSProperties = ghostHighlight > 0
+    ? {
+        boxShadow: `0 0 0 2px rgba(100,149,237,${ringOpacity}), 0 0 7px 1px rgba(100,149,237,${glowOpacity})`,
+      }
+    : {};
+
   return (
     <span
       className={cls}
@@ -246,7 +257,7 @@ function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove }: Di
       aria-pressed={clickState === 'selected' ? true : undefined}
       onClick={interactive ? onClick : undefined}
       onKeyDown={interactive && onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', ...ghostRingStyle }}
     >
       {(owner === 'black' || owner === 'white') && <SilverCap owner={owner} />}
     </span>
@@ -276,16 +287,14 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPo
   const hlM = lastOpponentPocketSize === 'middle';
   const hlL = lastOpponentPocketSize === 'large';
 
-  // Ghost Mode: 対象ポケットサイズに outline で濃淡表示
-  const ghostStyle = (size: 'large' | 'middle' | 'small'): React.CSSProperties =>
-    ghostPocketSize === size && ghostOpacity > 0
-      ? { outline: `2px solid rgba(100,149,237,${ghostOpacity})`, borderRadius: 3 }
-      : {};
+  // Ghost Mode: ポケットサイズが一致するときの ring 強度を返す
+  const pocketGhost = (size: 'large' | 'middle' | 'small'): number =>
+    ghostPocketSize === size ? ghostOpacity : 0;
 
-  const SmallTL = () => <div className="gate-corner-tl"><DiamondPip owner={S[0]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
-  const SmallTR = () => <div className="gate-corner-tr"><DiamondPip owner={S[1]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
-  const SmallBL = () => <div className="gate-corner-bl"><DiamondPip owner={S[2]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
-  const SmallBR = () => <div className="gate-corner-br"><DiamondPip owner={S[3]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} /></div>;
+  const SmallTL = () => <div className="gate-corner-tl"><DiamondPip owner={S[0]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} ghostHighlight={pocketGhost('small')} /></div>;
+  const SmallTR = () => <div className="gate-corner-tr"><DiamondPip owner={S[1]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} ghostHighlight={pocketGhost('small')} /></div>;
+  const SmallBL = () => <div className="gate-corner-bl"><DiamondPip owner={S[2]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} ghostHighlight={pocketGhost('small')} /></div>;
+  const SmallBR = () => <div className="gate-corner-br"><DiamondPip owner={S[3]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} ghostHighlight={pocketGhost('small')} /></div>;
 
   const isCorner = gateType.startsWith('corner');
   const DbgBorder = DEBUG_GATES
@@ -310,15 +319,15 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPo
         <div className={`gate-cluster gate-cluster-${gateType}`}>
           <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
-          <div className="gate-col-1row-center" style={ghostStyle('middle')}>
-            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
+          <div className="gate-col-1row-center">
+            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} ghostHighlight={pocketGhost('middle')} />
           </div>
-          <div className="gate-col-tb" style={ghostStyle('large')}>
-            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
-            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
+          <div className="gate-col-tb">
+            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} ghostHighlight={pocketGhost('large')} />
+            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} ghostHighlight={pocketGhost('large')} />
           </div>
-          <div className="gate-col-1row-center" style={ghostStyle('middle')}>
-            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
+          <div className="gate-col-1row-center">
+            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} ghostHighlight={pocketGhost('middle')} />
           </div>
         </div>
       );
@@ -329,15 +338,15 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPo
         <div className={`gate-cluster gate-cluster-${gateType}`}>
           <DbgBorder />
           <SmallTL /><SmallTR /><SmallBL /><SmallBR />
-          <div className="gate-row-1col-center" style={ghostStyle('middle')}>
-            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
+          <div className="gate-row-1col-center">
+            <DiamondPip owner={M[0]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} ghostHighlight={pocketGhost('middle')} />
           </div>
-          <div className="gate-row-lr" style={ghostStyle('large')}>
-            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
-            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} />
+          <div className="gate-row-lr">
+            <DiamondPip owner={L[0]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} ghostHighlight={pocketGhost('large')} />
+            <DiamondPip owner={L[1]?.owner ?? null} size="large" clickState={ps.large} onClick={onLarge} isLastOpponentMove={hlL} ghostHighlight={pocketGhost('large')} />
           </div>
-          <div className="gate-row-1col-center" style={ghostStyle('middle')}>
-            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} />
+          <div className="gate-row-1col-center">
+            <DiamondPip owner={M[1]?.owner ?? null} size="middle" clickState={ps.middle} onClick={onMiddle} isLastOpponentMove={hlM} ghostHighlight={pocketGhost('middle')} />
           </div>
         </div>
       );
@@ -523,21 +532,6 @@ export function Board({
 }) {
   const selectedId = state.selectedPosition;
 
-  // ── Ghost Mode: positioning → opacity マップを乚める ──────────────────────────────────
-  const ghostOpacityMap = (() => {
-    if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0) return new Map<string, number>();
-    const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
-    const map = new Map<string, number>();
-    for (const gm of ghostMoves) {
-      // 1 以上の全てを表示。最大頻度 = opacity 0.7、最小度 = 0.3 で濃淡表現
-      const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.3 + ratio * 0.4; // 0.3 〜 0.7
-      // positioningごとに最大 opacity を保持（複数 build_type がある場合）
-      const existing = map.get(gm.positioning) ?? 0;
-      if (opacity > existing) map.set(gm.positioning, opacity);
-    }
-    return map;
-  })();
   // Ghost Mode: gateId → {opacity, pocketSize} マップ
   const ghostGateMap = (() => {
     if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0)
@@ -831,12 +825,6 @@ export function Board({
             const displayOwner = isSelected ? state.pendingPositionOwner : pos.owner;
             const coord = POSITION_COORDS[id];
 
-            // Ghost Mode: 既存状態（selected / lastOpponent）でない場合のみ Ghost 表示
-            const ghostOpacity = (!isSelected && !isLastOpponent)
-              ? (ghostOpacityMap.get(id) ?? 0)
-              : 0;
-            const isGhostHighlight = ghostOpacity > 0;
-
             return (
               <button
                 key={id}
@@ -845,7 +833,6 @@ export function Board({
                   'position-btn',
                   isSelected ? 'selected' : '',
                   tutorialHighlightAllPositions ? 'position-btn-tutorial-hl' : '',
-                  isGhostHighlight ? 'position-btn-ghost' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
                 type="button"
@@ -854,7 +841,6 @@ export function Board({
                   position: 'absolute',
                   left: coord.left,
                   top: coord.top,
-                  ...(isGhostHighlight ? { opacity: ghostOpacity + 0.3 } : {}),
                 }}
               >
                 <span className="pos-id">{getDisplayPositionLabel(id, labelPerspective)}</span>
