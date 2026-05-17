@@ -529,35 +529,32 @@ html, body {
   cursor: default;
 }
 
-/* Position 選択中で関連Gate: active (フォーカス可能な状態) */
-/* [修正] drop-shadow を gate-card ではなく gate-cluster に適用する。
-   角ゲートのクラスターは rotate+scale で gate-card のレイアウトボックスを超えて
-   はみ出すため、gate-card に filter を置くとブラウザが filter コンテキストの
-   境界でポケットをクリッピングする。gate-cluster に filter を移動することで
-   トランスフォーム後に glow が正しく表示される。 */
+/* Position 選択中で関連Gate: active
+   gate-card / gate-cluster レベルの glow は付けない。
+   pocket 個別の pocket-clickable ring のみで表現する。 */
 .gate-card-active .gate-cluster {
-  filter: drop-shadow(0 0 8px rgba(74,144,226,0.75));
+  /* drop-shadow 除去: pocket-clickable ring に統一 */
 }
-/* 関連外Gate */
+/* 関連外Gate: 非関連 gate を抑制（opacity のみ、outline/shadow なし） */
 .gate-card-inactive {
   opacity: 0.28;
 }
 
-/* 選択済み (Selective 1st, Quad 選択中) */
-/* 同様に filter を gate-cluster に移動し、outline は gate-card レベルに残す */
+/* 選択済み (Selective 1st, Quad 選択中)
+   gate-card / gate-cluster レベルの outline / drop-shadow は付けない。
+   pocket-selected ring のみで表現する。 */
 .gate-card-selected {
   cursor: pointer;
-  outline: 2px solid rgba(123,94,167,0.7);
-  outline-offset: 2px;
+  /* outline 除去: pocket-selected ring に統一 */
 }
 .gate-card-selected .gate-cluster {
-  filter: drop-shadow(0 0 15px rgba(123,94,167,0.9));
+  /* drop-shadow 除去 */
 }
 .gate-card-selected:hover:not(:disabled) .gate-cluster {
-  filter: drop-shadow(0 0 20px rgba(123,94,167,1.0));
+  /* drop-shadow 除去 */
 }
 
-/* Tutorial gate highlight */
+/* Tutorial gate highlight: チュートリアルは gate-card レベル outline を維持（学習用途） */
 .gate-card-tutorial-hl {
   outline: 2px solid rgba(255,180,0,0.85);
   outline-offset: 2px;
@@ -828,28 +825,41 @@ html, body {
 
 .diamond-pip-none  { background: #e0dbd5; border-color: #bbb; }
 
-/* ── Pocket click states ────────────────────────── */
+/* ── Pocket click states
+   gate-card / gate-cluster レベルの highlight を廃止し、
+   pocket 要素単体の ring / glow のみで状態を表現する。
+────────────────────────────────────────────────────── */
+
+/* clickable: クリック可能なポケット（選択候補） — 青系リング */
 .diamond-pip.pocket-clickable {
   cursor: pointer;
-  border: 1px solid #2a1a0a;
-  box-shadow: 0 0 0 2px rgba(232,217,168,0.1);
+  border-color: rgba(74,144,226,0.6);
+  box-shadow:
+    0 0 0 2px rgba(74,144,226,0.55),
+    0 0 7px 1px rgba(74,144,226,0.25);
 }
 .diamond-pip.pocket-clickable:hover {
-  background: rgba(232,217,168,0.1);
-  box-shadow: 0 0 0 3px rgba(232,217,168,0.2);
+  border-color: rgba(74,144,226,0.85);
+  box-shadow:
+    0 0 0 3px rgba(74,144,226,0.75),
+    0 0 10px 2px rgba(74,144,226,0.40);
 }
 
+/* selected: 選択済みポケット（Selective 1st pick など） — 紫系リング */
 .diamond-pip.pocket-selected {
   cursor: pointer;
-  border: 1px solid #6a5b8a;
-  background: rgba(106,91,138,0.2);
-  box-shadow: 0 0 0 3px rgba(106,91,138,0.25);
+  border-color: rgba(123,94,167,0.85);
+  box-shadow:
+    0 0 0 3px rgba(123,94,167,0.65),
+    0 0 9px 2px rgba(123,94,167,0.35);
 }
 .diamond-pip.pocket-selected:hover {
-  box-shadow: 0 0 0 4px rgba(106,91,138,0.35);
+  box-shadow:
+    0 0 0 4px rgba(123,94,167,0.80),
+    0 0 12px 3px rgba(123,94,167,0.45);
 }
 
-/* disabled: subdued — not interactive in current context */
+/* disabled: 現コンテキストで操作不可 */
 .diamond-pip.pocket-disabled {
   cursor: default;
   opacity: 0.55;
