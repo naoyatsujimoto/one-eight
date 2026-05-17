@@ -241,9 +241,11 @@ function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove, ghos
   ].filter(Boolean).join(' ');
 
   // Ghost Mode: ポケット輪郭リングのみ。fill なし。
+  // selected 状態のときは ghost ring を無効化（CSS pocket-selected リングを優先）
+  const isSelected = clickState === 'selected';
   const ringOpacity = ghostHighlight > 0 ? Math.min(0.9, ghostHighlight + 0.18) : 0;
   const glowOpacity = ghostHighlight > 0 ? ghostHighlight * 0.55 : 0;
-  const ghostRingStyle: React.CSSProperties = ghostHighlight > 0
+  const ghostRingStyle: React.CSSProperties = ghostHighlight > 0 && !isSelected
     ? {
         boxShadow: `0 0 0 2px rgba(100,149,237,${ringOpacity}), 0 0 7px 1px rgba(100,149,237,${glowOpacity})`,
       }
