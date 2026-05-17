@@ -532,6 +532,20 @@ export function Board({
 }) {
   const selectedId = state.selectedPosition;
 
+  // Ghost Mode: positioning → opacity マップ（Position ボタンの薄いリング表示用）
+  const ghostOpacityMap = (() => {
+    if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0) return new Map<string, number>();
+    const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
+    const map = new Map<string, number>();
+    for (const gm of ghostMoves) {
+      const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
+      const opacity = 0.3 + ratio * 0.4;
+      const existing = map.get(gm.positioning) ?? 0;
+      if (opacity > existing) map.set(gm.positioning, opacity);
+    }
+    return map;
+  })();
+
   // Ghost Mode: gateId → {opacity, pocketSize} マップ
   const ghostGateMap = (() => {
     if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0)
@@ -825,6 +839,11 @@ export function Board({
             const displayOwner = isSelected ? state.pendingPositionOwner : pos.owner;
             const coord = POSITION_COORDS[id];
 
+            // Ghost Mode: position ボタンに薄いリングのみ（opacity ベールは付与しない）
+            const posGhostOpacity = (!isSelected && !isLastOpponent)
+              ? (ghostOpacityMap.get(id) ?? 0)
+              : 0;
+
             return (
               <button
                 key={id}
@@ -833,6 +852,7 @@ export function Board({
                   'position-btn',
                   isSelected ? 'selected' : '',
                   tutorialHighlightAllPositions ? 'position-btn-tutorial-hl' : '',
+                  posGhostOpacity > 0 ? 'position-btn-ghost' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
                 type="button"
