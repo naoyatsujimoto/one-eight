@@ -124,10 +124,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     }
     setEditingName(false);
   }
+  // 候補手表示用: 現在分析中の対局の human_color
+  const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
   // 分析ボタンのハンドラ: シングルトン Worker に委譲
   function handleAnalyzeClick(record: GameRecord) {
     if (analyzingId === record.game_id) return;
-    runWorker(record.game_id, record.full_record);
+    const hc = (record.human_color as 'black' | 'white' | null) ?? null;
+    setCurrentHumanColor(hc);
+    runWorker(record.game_id, record.full_record, hc);
   }
 
   function handleCancelEdit() {
@@ -295,7 +299,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               <RecentGamesTable
                 games={stats.recentGames}
                 localMap={localMap}
-                onPostmortem={(r) => runWorker(r.game_id, r.full_record)}
+                onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); runWorker(r.game_id, r.full_record, hc); }}
                 refreshingGameId={refreshingGameId}
                 onRefresh={(record) => {
                   clearPostmortemCache(record.game_id);
@@ -315,7 +319,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <section style={s.section}>
             <SectionTitle title={t.userFeaturedGames} />
             {loading ? <Muted text="Loading…" /> : stats && (
-              <FeaturedGames stats={stats} onPostmortem={(r) => runWorker(r.game_id, r.full_record)} />
+              <FeaturedGames stats={stats} onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); runWorker(r.game_id, r.full_record, hc); }} />
             )}
           </section>
         )}
@@ -363,9 +367,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <PostmortemModal
           history={workerState.history}
           gameId={workerState.gameId}
-          onClose={() => { dismissWorker(); setRefreshingGameId(null); }}
+          onClose={() => { dismissWorker(); setRefreshingGameId(null); setCurrentHumanColor(null); }}
           autoStart
           proActive={proActive}
+          humanColor={currentHumanColor}
         />
       )}
     </div>

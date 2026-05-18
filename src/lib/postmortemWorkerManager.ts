@@ -19,8 +19,9 @@ class PostmortemWorkerManager {
   private worker: Worker | null = null
   private listeners: Set<Listener> = new Set()
   private _state: WorkerManagerState = { status: 'idle' }
-  // run() 時に history を保持 → コンポーネントのマウント状態に依存しない
+  // run() 時に history / humanColor を保持 → コンポーネントのマウント状態に依存しない
   private _history: MoveRecord[] | null = null
+  private _humanColor: 'black' | 'white' | null = null
 
   get state(): WorkerManagerState {
     return this._state
@@ -47,10 +48,11 @@ class PostmortemWorkerManager {
     return this._history
   }
 
-  run(gameId: string, history: MoveRecord[]) {
+  run(gameId: string, history: MoveRecord[], humanColor?: 'black' | 'white' | null) {
     // 同じ gameId が既に running なら何もしない
     if (this._state.status === 'running' && this._state.gameId === gameId) return
     this._history = history
+    this._humanColor = humanColor ?? null
 
     // cache hit ならすぐ done
     const cached = loadPostmortemCache(gameId)
@@ -86,7 +88,7 @@ class PostmortemWorkerManager {
       this.worker = null
     })
 
-    worker.postMessage({ type: 'run', history } satisfies PostmortemWorkerRequest)
+    worker.postMessage({ type: 'run', history, humanColor: this._humanColor } satisfies PostmortemWorkerRequest)
   }
 
   /** 手動キャンセル（New Game 等で不要になった場合） */

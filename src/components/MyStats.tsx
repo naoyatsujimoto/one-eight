@@ -53,22 +53,30 @@ export function MyStats({ userId, onClose }: Props) {
   }, [userId]);
 
   // 分析ボタンのハンドラ: シングルトン Worker に委譲
+  // 候補手表示用: 現在分析中の対局の human_color
+  const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
+
   function handleAnalyzeClick(record: GameRecord) {
     if (analyzingId === record.game_id) return; // 二重押し防止
-    runWorker(record.game_id, record.full_record);
+    const hc = (record.human_color as 'black' | 'white' | null) ?? null;
+    setCurrentHumanColor(hc);
+    runWorker(record.game_id, record.full_record, hc);
   }
 
   // 更新ボタンのハンドラ: cache 削除→再分析
   function handleRefresh(record: GameRecord) {
     clearPostmortemCache(record.game_id);
     setRefreshingGameId(record.game_id);
-    runWorker(record.game_id, record.full_record);
+    const hc = (record.human_color as 'black' | 'white' | null) ?? null;
+    setCurrentHumanColor(hc);
+    runWorker(record.game_id, record.full_record, hc);
   }
 
   // モーダル close: シングルトンを dismiss して idle に戻す
   function handlePostmortemClose() {
     dismissWorker();
     setRefreshingGameId(null);
+    setCurrentHumanColor(null);
   }
 
   // Supabase記録にない場合はローカルのみのリストを補完表示
@@ -199,6 +207,7 @@ export function MyStats({ userId, onClose }: Props) {
           gameId={workerState.gameId}
           onClose={handlePostmortemClose}
           autoStart
+          humanColor={currentHumanColor}
         />
       )}
     </div>

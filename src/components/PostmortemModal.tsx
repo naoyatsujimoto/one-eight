@@ -25,6 +25,8 @@ interface Props {
   onAnalyzing?: (analyzing: boolean) => void;
   /** Phase P-2b: Proアクティブユーザーかどうか（候補手表示制御用） */
   proActive?: boolean;
+  /** 人間プレイヤーの手番色。候補手表示対象手番の制御用 */
+  humanColor?: 'black' | 'white' | null;
 }
 
 /** 手数ベースの所要時間推定（秒） depth=3 minimax: 1手あたり約0.15秒 */
@@ -32,7 +34,7 @@ function estimateSec(moveCount: number): number {
   return Math.max(5, Math.round(moveCount * 0.15));
 }
 
-export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing, proActive = false }: Props) {
+export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing, proActive = false, humanColor }: Props) {
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -183,7 +185,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
             {result.rows.length > 0 && (
               <section style={styles.section}>
                 <div style={styles.sectionTitle}>{t.historySection}</div>
-                <HistoryList rows={result.rows} wpInitial={result.wpInitial} proActive={proActive} />
+                <HistoryList rows={result.rows} wpInitial={result.wpInitial} proActive={proActive} humanColor={humanColor} />
               </section>
             )}
           </>
@@ -289,9 +291,10 @@ interface HistoryListProps {
   rows: PostmortemResult['rows'];
   wpInitial: number;
   proActive?: boolean;
+  humanColor?: 'black' | 'white' | null;
 }
 
-function HistoryList({ rows, wpInitial, proActive = false }: HistoryListProps) {
+function HistoryList({ rows, wpInitial, proActive = false, humanColor }: HistoryListProps) {
   const resolvedSeries = buildResolvedWPSeries(rows, wpInitial);
   const [expandedMoveNum, setExpandedMoveNum] = useState<number | null>(null);
 
@@ -307,7 +310,10 @@ function HistoryList({ rows, wpInitial, proActive = false }: HistoryListProps) {
         const curWP = resolvedSeries[i + 1]!;
         const delta = curWP - prevWP;
         const deltaText = `${delta >= 0 ? '+' : ''}${(delta * 100).toFixed(1)}pt`;
-        const hasCandidates = r.player === 'black' && !!r.candidateMoves && r.candidateMoves.length > 0;
+        // humanColor と一致する手番のみ候補手を表示する
+        // humanColor が未指定または null の場合は候補手を表示しない（安全側）
+        const isHumanMove = humanColor != null && r.player === humanColor;
+        const hasCandidates = isHumanMove && !!r.candidateMoves && r.candidateMoves.length > 0;
         const isExpanded = expandedMoveNum === r.moveNum;
         const tappable = hasCandidates; // Pro判定は展開内容側で制御
 

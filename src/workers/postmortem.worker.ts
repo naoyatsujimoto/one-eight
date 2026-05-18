@@ -7,6 +7,7 @@ import type { PostmortemResult } from '../game/postmortem'
 export interface PostmortemWorkerRequest {
   type: 'run'
   history: MoveRecord[]
+  humanColor?: 'black' | 'white' | null
 }
 
 // Worker からの返答型
@@ -17,7 +18,7 @@ export type PostmortemWorkerResponse =
 self.addEventListener('message', (e: MessageEvent<PostmortemWorkerRequest>) => {
   if (e.data.type === 'run') {
     try {
-      const result = runPostmortem(e.data.history)
+      const result = runPostmortem(e.data.history, e.data.humanColor)
       self.postMessage({ type: 'done', result } satisfies PostmortemWorkerResponse)
     } catch (err) {
       self.postMessage({

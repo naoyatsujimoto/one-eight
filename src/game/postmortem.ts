@@ -384,8 +384,12 @@ function computeMediumPatternIdsFromHistory(history: MoveRecord[]): (string | un
 /**
  * MoveRecord[] からゲームをリプレイしてpostmortem分析を実行する。
  * depth=3 固定。
+ * @param humanColor  人間プレイヤーの手番色。候補手表示の対象手番を制御する。
+ *   - 'black': 先手（奇数手）のみ候補手を計算・表示
+ *   - 'white': 後手（偶数手）のみ候補手を計算・表示
+ *   - null/undefined: 安全側として候補手を計算しない
  */
-export function runPostmortem(history: MoveRecord[]): PostmortemResult {
+export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'white' | null): PostmortemResult {
   const DEPTH = 3;
   let state: GameState = createInitialState(null);
   // Black first: currentPlayer は 'black' が初期値
@@ -396,24 +400,32 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
   for (const record of history) {
     const currentPlayer = record.player;
 
-    // Black手のみ最善手を計算（top3候補手も同時に取得）
+    // humanColor と一致する手番のみ候補手を計算する
+    // humanColor が未指定・null の場合は安全側として計算しない
+    const isHumanTurn = humanColor != null && currentPlayer === humanColor;
     let bestMoveStr: string | null = null;
     let evalBest: number | null = null;
     let wpAfterIfBest: number | null = null;
     let candidateMoves: CandidateMove[] | undefined;
 
-    if (currentPlayer === 'black') {
-      const top3 = topNMovesDepth(state, 'black', DEPTH, 3);
+    if (isHumanTurn) {
+      const top3 = topNMovesDepth(state, currentPlayer, DEPTH, 3);
       if (top3.length > 0) {
         const best = top3[0]!;
         bestMoveStr = shortMove(best.move);
         evalBest = best.evalAfter;
-        wpAfterIfBest = winProb(evalBest);
+        // white 視点の evalAfter は white 有利 = Black WP が低い → 1 - winProb で Black 視点 WP に変換
+        wpAfterIfBest = humanColor === 'white'
+          ? 1 - winProb(evalBest)
+          : winProb(evalBest);
         // 実際の手のWP（仮計算: 後で正式に計算）を使って差分を計算するため、後でセット
         candidateMoves = top3.map((c, idx) => ({
           rank: idx + 1,
           move: shortMove(c.move),
-          wp: +winProb(c.evalAfter).toFixed(4),
+          // candidateMoves.wp は常に Black 視点 WP で統一
+          wp: humanColor === 'white'
+            ? +(1 - winProb(c.evalAfter)).toFixed(4)
+            : +winProb(c.evalAfter).toFixed(4),
           wpDiff: 0, // 後でwpAfterが確定してから設定
         }));
       }
@@ -425,6 +437,7 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
     const wpAfter = winProb(evalPlayed);
 
     // candidateMovesのwpDiffを確定（実際に指した手のWPとの差分）
+    // wpDiff = 候補手WP - 実際の手WP（正が有利 = 人間視点でより良い手があった）
     if (candidateMoves) {
       candidateMoves = candidateMoves.map(c => ({
         ...c,
@@ -502,10 +515,12 @@ export function runPostmortem(history: MoveRecord[]): PostmortemResult {
  *
  * @param history        棋譜
  * @param isCancelled    キャンセルチェック関数（New Game等でキャンセルされた場合にtrueを返す）
+ * @param humanColor     人間プレイヤーの手番色。候補手表示の対象手番を制御する。
  */
 export async function runPostmortemAsync(
   history: MoveRecord[],
   isCancelled?: () => boolean,
+  humanColor?: 'black' | 'white' | null,
 ): Promise<PostmortemResult> {
   const DEPTH = 3;
   let state: GameState = createInitialState(null);
@@ -521,22 +536,28 @@ export async function runPostmortemAsync(
     const record = history[idx]!;
     const currentPlayer = record.player;
 
+    // humanColor と一致する手番のみ候補手を計算する
+    const isHumanTurn = humanColor != null && currentPlayer === humanColor;
     let bestMoveStr: string | null = null;
     let evalBest: number | null = null;
     let wpAfterIfBest: number | null = null;
     let candidateMoves: CandidateMove[] | undefined;
 
-    if (currentPlayer === 'black') {
-      const top3 = topNMovesDepth(state, 'black', DEPTH, 3);
+    if (isHumanTurn) {
+      const top3 = topNMovesDepth(state, currentPlayer, DEPTH, 3);
       if (top3.length > 0) {
         const best = top3[0]!;
         bestMoveStr = shortMove(best.move);
         evalBest = best.evalAfter;
-        wpAfterIfBest = winProb(evalBest);
+        wpAfterIfBest = humanColor === 'white'
+          ? 1 - winProb(evalBest)
+          : winProb(evalBest);
         candidateMoves = top3.map((c, idx) => ({
           rank: idx + 1,
           move: shortMove(c.move),
-          wp: +winProb(c.evalAfter).toFixed(4),
+          wp: humanColor === 'white'
+            ? +(1 - winProb(c.evalAfter)).toFixed(4)
+            : +winProb(c.evalAfter).toFixed(4),
           wpDiff: 0,
         }));
       }

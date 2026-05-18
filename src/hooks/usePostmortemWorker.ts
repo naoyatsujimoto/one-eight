@@ -13,8 +13,8 @@ export function usePostmortemWorker() {
     () => postmortemWorkerManager.state,
   )
 
-  const run = useCallback((gameId: string, history: MoveRecord[]) => {
-    postmortemWorkerManager.run(gameId, history)
+  const run = useCallback((gameId: string, history: MoveRecord[], humanColor?: 'black' | 'white' | null) => {
+    postmortemWorkerManager.run(gameId, history, humanColor)
   }, [])
 
   const cancel = useCallback(() => {

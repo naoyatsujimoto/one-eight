@@ -90,9 +90,10 @@ describe('runPostmortem -- candidateMoves (Phase P-2b)', () => {
     expect(result.wpInitial).toBeLessThan(1);
   });
 
-  it('実際の棋譜: Black 手の全行に candidateMoves が存在する', () => {
+  it('実際の棋譜: humanColor=black の場合、Black 手の全行に candidateMoves が存在する', () => {
     const history = makeMinimalHistory();
-    const result = runPostmortem(history);
+    // humanColor='black' を渡すことで Black 手に候補手を計算
+    const result = runPostmortem(history, 'black');
 
     expect(result.rows.length).toBeGreaterThan(0);
 
@@ -115,6 +116,45 @@ describe('runPostmortem -- candidateMoves (Phase P-2b)', () => {
         // White 手には candidateMoves がないはず
         expect(row.candidateMoves).toBeUndefined();
       }
+    }
+  });
+
+  it('実際の棋譜: humanColor=white の場合、White 手の全行に candidateMoves が存在する', () => {
+    const history = makeMinimalHistory();
+    // humanColor='white' を渡すことで White 手に候補手を計算
+    const result = runPostmortem(history, 'white');
+
+    expect(result.rows.length).toBeGreaterThan(0);
+
+    for (const row of result.rows) {
+      if (row.player === 'white') {
+        // White 手には candidateMoves が存在するはず
+        expect(row.candidateMoves).toBeDefined();
+        expect(Array.isArray(row.candidateMoves)).toBe(true);
+        expect(row.candidateMoves!.length).toBeGreaterThan(0);
+        expect(row.candidateMoves![0]!.rank).toBe(1);
+        for (const c of row.candidateMoves!) {
+          expect(c.wp).toBeGreaterThanOrEqual(0);
+          expect(c.wp).toBeLessThanOrEqual(1);
+          expect(typeof c.move).toBe('string');
+          expect(typeof c.wpDiff).toBe('number');
+        }
+      } else {
+        // Black 手には candidateMoves がないはず
+        expect(row.candidateMoves).toBeUndefined();
+      }
+    }
+  });
+
+  it('実際の棋譜: humanColor=null の場合、候補手は一切計算されない（安全側）', () => {
+    const history = makeMinimalHistory();
+    const result = runPostmortem(history, null);
+
+    expect(result.rows.length).toBeGreaterThan(0);
+
+    for (const row of result.rows) {
+      // どの手番でも candidateMoves はない
+      expect(row.candidateMoves).toBeUndefined();
     }
   });
 
@@ -211,7 +251,7 @@ describe('runPostmortem -- candidateMoves (Phase P-2b)', () => {
     expect(enriched.rows[2]?.candidateMoves).toHaveLength(3);
   });
 
-  it('Black 手の hasCandidates チェック: candidateMoves が存在する行のみ true', () => {
+  it('hasCandidates チェック: humanColor=black の場合、Black手+candidateMovesありの行のみ true', () => {
     const mockResult: PostmortemResult = {
       rows: [
         {
@@ -248,14 +288,100 @@ describe('runPostmortem -- candidateMoves (Phase P-2b)', () => {
       topBlackLosses: [],
     };
 
-    // PostmortemModal の HistoryList と同じロジック
+    // PostmortemModal の HistoryList の新しいロジック: humanColor を使って展開対象を制御
+    const humanColor: 'black' | 'white' | null = 'black';
     for (const r of mockResult.rows) {
-      const hasCandidates = r.player === 'black' && !!r.candidateMoves && r.candidateMoves.length > 0;
+      const isHumanMove = humanColor != null && r.player === humanColor;
+      const hasCandidates = isHumanMove && !!r.candidateMoves && r.candidateMoves.length > 0;
       if (r.player === 'black') {
-        expect(hasCandidates).toBe(true);  // Black手 + candidateMoves あり → true
+        expect(hasCandidates).toBe(true);  // humanColor=black, Black手 + candidateMoves あり → true
       } else {
-        expect(hasCandidates).toBe(false); // White手 → false
+        expect(hasCandidates).toBe(false); // White手 → false (CPU側の手)
       }
+    }
+  });
+
+  it('hasCandidates チェック: humanColor=white の場合、White手+candidateMovesありの行のみ true', () => {
+    const mockResult: PostmortemResult = {
+      rows: [
+        {
+          moveNum: 1,
+          player: 'black',
+          played: 'A massive(1)',
+          best: null,
+          evalAfterPlayed: 100,
+          evalAfterBest: null,
+          loss: null,
+          wpAfter: 0.5,
+          wpAfterIfBest: null,
+          wpSwing: null,
+          // CPU側（black）の手には candidateMoves なし
+        },
+        {
+          moveNum: 2,
+          player: 'white',
+          played: 'B massive(2)',
+          best: 'B massive(2)',
+          evalAfterPlayed: 80,
+          evalAfterBest: 80,
+          loss: 0,
+          wpAfter: 0.45,
+          wpAfterIfBest: 0.45,
+          wpSwing: 0,
+          candidateMoves: [
+            { rank: 1, move: 'B massive(2)', wp: 0.45, wpDiff: 0 },
+          ],
+        },
+      ],
+      wpInitial: 0.5,
+      decisiveCrossing: null,
+      crossings: [],
+      topBlackLosses: [],
+    };
+
+    const humanColor: 'black' | 'white' | null = 'white';
+    for (const r of mockResult.rows) {
+      const isHumanMove = humanColor != null && r.player === humanColor;
+      const hasCandidates = isHumanMove && !!r.candidateMoves && r.candidateMoves.length > 0;
+      if (r.player === 'white') {
+        expect(hasCandidates).toBe(true);  // humanColor=white, White手 + candidateMoves あり → true
+      } else {
+        expect(hasCandidates).toBe(false); // Black手 → false (CPU側の手)
+      }
+    }
+  });
+
+  it('hasCandidates チェック: humanColor=null の場合、全行 false（安全側）', () => {
+    const mockResult: PostmortemResult = {
+      rows: [
+        {
+          moveNum: 1,
+          player: 'black',
+          played: 'A massive(1)',
+          best: 'A massive(1)',
+          evalAfterPlayed: 100,
+          evalAfterBest: 100,
+          loss: 0,
+          wpAfter: 0.5,
+          wpAfterIfBest: 0.6,
+          wpSwing: 0.1,
+          candidateMoves: [
+            { rank: 1, move: 'A massive(1)', wp: 0.6, wpDiff: 0.1 },
+          ],
+        },
+      ],
+      wpInitial: 0.5,
+      decisiveCrossing: null,
+      crossings: [],
+      topBlackLosses: [],
+    };
+
+    const humanColor: 'black' | 'white' | null = null;
+    for (const r of mockResult.rows) {
+      const isHumanMove = humanColor != null && r.player === humanColor;
+      const hasCandidates = isHumanMove && !!r.candidateMoves && r.candidateMoves.length > 0;
+      // humanColor=null の場合は全行 false
+      expect(hasCandidates).toBe(false);
     }
   });
 });
