@@ -332,10 +332,12 @@ function HistoryList({ rows, wpInitial, proActive = false, humanColor }: History
             >
               <span style={styles.historyNum}>#{r.moveNum}</span>
               <span style={styles.historyMove}>{r.played}</span>
-              <span style={styles.historyWP}>{pct(curWP)}</span>
-              {tappable && (
-                <span style={styles.historyExpandIcon}>{isExpanded ? '▲' : '▼'}</span>
-              )}
+              <span style={styles.historyWPCell}>
+                <span style={styles.historyWPNum}>{pct(curWP)}</span>
+                <span style={styles.historyExpandIcon}>
+                  {tappable ? (isExpanded ? '▲' : '▼') : ''}
+                </span>
+              </span>
             </div>
             {isExpanded && hasCandidates && (
               <CandidateMovePanel
@@ -519,9 +521,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   historyHeaderWP: {
     flexShrink: 0,
-    minWidth: 60,
+    minWidth: 66,
     textAlign: 'right' as const,
     color: '#aaa',
+    paddingRight: 14,
   },
   historyRow: {
     display: 'flex',
@@ -548,6 +551,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontVariantNumeric: 'tabular-nums',
     flexShrink: 0,
     minWidth: 60,
+    textAlign: 'right' as const,
+  },
+  historyWPCell: {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'baseline',
+    flexShrink: 0,
+  },
+  historyWPNum: {
+    color: '#555',
+    fontVariantNumeric: 'tabular-nums',
+    minWidth: 52,
     textAlign: 'right' as const,
   },
   historyDelta: {
@@ -578,7 +593,9 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#bbb',
     fontSize: '0.6rem',
     flexShrink: 0,
-    marginLeft: 2,
+    width: 14,
+    textAlign: 'center' as const,
+    display: 'inline-block',
   },
   candidatePanel: {
     background: '#f8f8f8',
