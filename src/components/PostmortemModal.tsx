@@ -305,6 +305,12 @@ function HistoryList({ rows, wpInitial, proActive = false, humanColor }: History
 
   return (
     <div style={styles.historyList}>
+      {/* ヘッダー行 */}
+      <div style={styles.historyHeader}>
+        <span style={styles.historyHeaderNum}>No.</span>
+        <span style={styles.historyHeaderMove}>Move</span>
+        <span style={styles.historyHeaderWP}>WP(Black)</span>
+      </div>
       {rows.map((r, i) => {
         const curWP = resolvedSeries[i + 1]!;
         // humanColor と一致する手番のみ候補手を表示する
@@ -369,13 +375,7 @@ function CandidateMovePanel({ candidates, proActive }: CandidateMovePanelProps) 
         <div key={c.rank} style={styles.candidateRow}>
           <span style={styles.candidateRank}>#{c.rank}</span>
           <span style={styles.candidateMove}>{c.move}</span>
-          <span style={styles.candidateWP}>WP {pct(c.wp)}</span>
-          <span style={{
-            ...styles.candidateDiff,
-            color: c.wpDiff >= 0 ? '#27a' : '#e53',
-          }}>
-            {c.wpDiff >= 0 ? '+' : ''}{(c.wpDiff * 100).toFixed(1)}pt
-          </span>
+          <span style={styles.candidateWP}>{pct(c.wp)}</span>
         </div>
       ))}
     </div>
@@ -496,6 +496,33 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column' as const,
     gap: 0,
   },
+  historyHeader: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 6,
+    padding: '0.2rem 0 0.3rem',
+    borderBottom: '2px solid #ddd',
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    color: '#aaa',
+    letterSpacing: '0.03em',
+  },
+  historyHeaderNum: {
+    minWidth: 32,
+    flexShrink: 0,
+    fontSize: '0.68rem',
+    color: '#aaa',
+  },
+  historyHeaderMove: {
+    flex: 1,
+    color: '#aaa',
+  },
+  historyHeaderWP: {
+    flexShrink: 0,
+    minWidth: 60,
+    textAlign: 'right' as const,
+    color: '#aaa',
+  },
   historyRow: {
     display: 'flex',
     alignItems: 'baseline',
@@ -520,7 +547,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#555',
     fontVariantNumeric: 'tabular-nums',
     flexShrink: 0,
-    minWidth: 44,
+    minWidth: 60,
     textAlign: 'right' as const,
   },
   historyDelta: {
@@ -590,16 +617,9 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#555',
     fontVariantNumeric: 'tabular-nums' as const,
     flexShrink: 0,
-    minWidth: 52,
+    minWidth: 60,
     textAlign: 'right' as const,
     fontSize: '0.7rem',
-  },
-  candidateDiff: {
-    fontVariantNumeric: 'tabular-nums' as const,
-    flexShrink: 0,
-    minWidth: 52,
-    textAlign: 'right' as const,
-    fontSize: '0.68rem',
   },
   candidateUpgrade: {
     fontSize: '0.72rem',
