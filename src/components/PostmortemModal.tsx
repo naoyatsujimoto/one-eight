@@ -306,10 +306,7 @@ function HistoryList({ rows, wpInitial, proActive = false, humanColor }: History
   return (
     <div style={styles.historyList}>
       {rows.map((r, i) => {
-        const prevWP = resolvedSeries[i]!;
         const curWP = resolvedSeries[i + 1]!;
-        const delta = curWP - prevWP;
-        const deltaText = `${delta >= 0 ? '+' : ''}${(delta * 100).toFixed(1)}pt`;
         // humanColor と一致する手番のみ候補手を表示する
         // humanColor が未指定または null の場合は候補手を表示しない（安全側）
         const isHumanMove = humanColor != null && r.player === humanColor;
@@ -330,9 +327,6 @@ function HistoryList({ rows, wpInitial, proActive = false, humanColor }: History
               <span style={styles.historyNum}>#{r.moveNum}</span>
               <span style={styles.historyMove}>{r.played}</span>
               <span style={styles.historyWP}>{pct(curWP)}</span>
-              <span style={{ ...styles.historyDelta, color: delta >= 0 ? '#27a' : '#e53' }}>
-                {deltaText}
-              </span>
               {tappable && (
                 <span style={styles.historyExpandIcon}>{isExpanded ? '▲' : '▼'}</span>
               )}
