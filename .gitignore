@@ -5,3 +5,6 @@ dist/
 .env
 .env.*
 .vercel
+
+# Batch-specific sim scripts (one-time use, not for repo)
+scripts/archive/
