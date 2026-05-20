@@ -198,6 +198,28 @@ function shortMove(m: CpuMove): string {
   return '?';
 }
 
+/**
+ * 案Aチェック: 非終局stateで次プレイヤーの全合法手が即終局かつ同一winnerならそのwinnerを返す。
+ * 該当しない場合は null。
+ * @internal テスト指定からexport
+ */
+export function checkAllMovesTerminalWinner(
+  state: GameState,
+): 'black' | 'white' | 'draw' | null {
+  if (state.gameEnded) return null; // terminal stateは对象外
+  const nextPlayer = state.currentPlayer;
+  const legalMoves = enumerateLegalMoves(state, nextPlayer);
+  if (legalMoves.length === 0) return null;
+  const outcomes = legalMoves.map(mv => {
+    const afterMv = simulateMove(state, nextPlayer, mv);
+    return afterMv.gameEnded ? (afterMv.winner ?? null) : null;
+  });
+  if (!outcomes.every((o): o is NonNullable<typeof o> => o !== null)) return null;
+  const first = outcomes[0]!;
+  if (!outcomes.every(o => o === first)) return null;
+  return first;
+}
+
 function shortRecord(r: MoveRecord): string {
   if (r.positioning === 'P' || r.build.type === 'skip') return 'Pass';
   if (r.build.type === 'massive') return `${r.positioning} massive(${r.build.gate ?? '?'})`;
@@ -434,7 +456,30 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
     // 実際の手を適用
     const next = applyMoveRecord(state, record);
     const evalPlayed = evaluateState(next, 'black', true);
-    const wpAfter = winProb(evalPlayed);
+    let wpAfter = winProb(evalPlayed);
+
+    // 案A: 全合法手が即終局かつ同一結果なら確定WP補正
+    // 対象: gameEnded=false だが、次プレイヤーの全合法手を打つと全て即終局・同一winner
+    // 例: #51後に White の全6手が即 Black 勝利終局 → WP(Black)=100%
+    if (!next.gameEnded) {
+      const nextPlayer = next.currentPlayer;
+      const legalMoves = enumerateLegalMoves(next, nextPlayer);
+      if (legalMoves.length > 0) {
+        const outcomes = legalMoves.map(mv => {
+          const afterMv = simulateMove(next, nextPlayer, mv);
+          return afterMv.gameEnded ? (afterMv.winner ?? null) : null;
+        });
+        // 全手が即終局（null なし）かつ全て同一 winner の場合のみ補正
+        if (outcomes.every((o): o is NonNullable<typeof o> => o !== null)) {
+          const firstOutcome = outcomes[0]!;
+          if (outcomes.every(o => o === firstOutcome)) {
+            if (firstOutcome === 'black')      wpAfter = 1.0;
+            else if (firstOutcome === 'white') wpAfter = 0.0;
+            else if (firstOutcome === 'draw')  wpAfter = 0.5;
+          }
+        }
+      }
+    }
 
     // candidateMovesのwpDiffを確定（実際に指した手のWPとの差分）
     // wpDiff = 候補手WP - 実際の手WP（正が有利 = 人間視点でより良い手があった）

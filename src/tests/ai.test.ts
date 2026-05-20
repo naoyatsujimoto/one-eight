@@ -538,3 +538,49 @@ describe('selectCpuMove (very_hard)', () => {
     expect(isEndgame(endgameState)).toBe(true);
   });
 });
+
+// ---------- evaluateState terminal state 処理 ----------
+
+describe('evaluateState terminal state 処理', () => {
+  function makeTerminalState(winner: 'black' | 'white' | 'draw'): GameState {
+    const base = createInitialState('black');
+    return { ...base, gameEnded: true, winner };
+  }
+
+  it('Black勝利ターミナル局面で evaluateState(state, black) = 1_000_000', () => {
+    const state = makeTerminalState('black');
+    expect(evaluateState(state, 'black')).toBe(1_000_000);
+  });
+
+  it('Black勝利ターミナル局面で evaluateState(state, white) = -1_000_000', () => {
+    const state = makeTerminalState('black');
+    expect(evaluateState(state, 'white')).toBe(-1_000_000);
+  });
+
+  it('White勝利ターミナル局面で evaluateState(state, white) = 1_000_000', () => {
+    const state = makeTerminalState('white');
+    expect(evaluateState(state, 'white')).toBe(1_000_000);
+  });
+
+  it('White勝利ターミナル局面で evaluateState(state, black) = -1_000_000', () => {
+    const state = makeTerminalState('white');
+    expect(evaluateState(state, 'black')).toBe(-1_000_000);
+  });
+
+  it('Drawターミナル局面で evaluateState(state, black) = 0', () => {
+    const state = makeTerminalState('draw');
+    expect(evaluateState(state, 'black')).toBe(0);
+  });
+
+  it('Drawターミナル局面で evaluateState(state, white) = 0', () => {
+    const state = makeTerminalState('draw');
+    expect(evaluateState(state, 'white')).toBe(0);
+  });
+
+  it('非終局局面では通常評価値レンジを維持する（アーティファクトなし）', () => {
+    const base = createInitialState('black');
+    const score = evaluateState(base, 'black');
+    expect(score).toBeGreaterThan(-10_000);
+    expect(score).toBeLessThan(10_000);
+  });
+});

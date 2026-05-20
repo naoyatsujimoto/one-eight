@@ -571,6 +571,13 @@ function evaluateWithCache(
  * @param veryHard  When true, uses strengthened weights for very_hard difficulty.
  */
 export function evaluateState(state: GameState, player: Player, veryHard = false): number {
+  // Terminal state: 勝敗確定値を返す（通常評価をスキップ）
+  if (state.gameEnded && state.winner !== null) {
+    if (state.winner === player) return 1_000_000;
+    if (state.winner === 'draw') return 0;
+    return -1_000_000;
+  }
+
   const opponent: Player = player === 'black' ? 'white' : 'black';
   let score = 0;
 
