@@ -153,11 +153,14 @@ export default function App() {
 
   const [state, setState] = useState<GameState>(() => {
     const saved = loadState();
+    // タイマー state は React state で管理するため、リロード時は timerConfig をリセット
+    // (playerTimers 等が復元できないため、そのまま使うと即タイムアウトになる)
+    const withoutTimer = { ...saved, timerConfig: null as GameState['timerConfig'] };
     // Migrate saved state that lacks cpuPlayer field
     if (saved.cpuPlayer === undefined) {
-      return { ...saved, cpuPlayer: null };
+      return { ...withoutTimer, cpuPlayer: null };
     }
-    return saved;
+    return withoutTimer;
   });
   const [hasSaved, setHasSaved] = useState<boolean>(() => hasSavedState());
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
@@ -185,6 +188,8 @@ export default function App() {
   /** タイマー一時停止フラグ (Page Visibility) */
   const [timerPaused, setTimerPaused] = useState(false);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** タイムアウト多重発火防止 flag */
+  const timeoutFiredRef = useRef<boolean>(false);
   /** total_time: 手番開始時刻 (Date.now()) - elapsed 計算用 */
   const turnStartedAtRef = useRef<number | null>(null);
   /** total_time: 手番開始時の残り時間 snapshot */
@@ -294,6 +299,7 @@ export default function App() {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+    timeoutFiredRef.current = false;
     // Postmortem auto-precompute: disabled (no cancellation needed)
     clearState();
     setHasSaved(false);
@@ -433,6 +439,8 @@ export default function App() {
   useEffect(() => {
     if (!state.timerConfig || state.timerConfig.mode === 'none' || state.gameEnded) return;
     const config = state.timerConfig;
+    // 手番切り替わり時にタイムアウト flag をリセット
+    timeoutFiredRef.current = false;
     if (config.mode === 'total_time') {
       // 手番開始時刻をリセット
       turnStartedAtRef.current = Date.now();
@@ -478,24 +486,24 @@ export default function App() {
         const newRemaining = Math.max(0, turnStartRemainingRef.current - elapsed);
         setPlayerTimers((prev) => {
           if (!prev) return prev;
-          const updated = { ...prev, [currentPlayer]: newRemaining };
-          if (newRemaining <= 0) {
-            // 時間切れ
-            setTimeout(() => handleTimeout(currentPlayer), 0);
-          }
-          return updated;
+          return { ...prev, [currentPlayer]: newRemaining };
         });
+        if (newRemaining <= 0 && !timeoutFiredRef.current) {
+          timeoutFiredRef.current = true;
+          handleTimeout(currentPlayer);
+        }
       } else if (config.mode === 'per_move') {
         const startedAt = moveTimerStartedAtRef.current;
         if (startedAt === null) return;
         const elapsed = Date.now() - startedAt;
         const newRemaining = Math.max(0, config.perMoveSeconds * 1000 - elapsed);
         setCurrentMoveRemainingMs(newRemaining);
-        if (newRemaining <= 0) {
-          setTimeout(() => handleTimeout(currentPlayer), 0);
+        if (newRemaining <= 0 && !timeoutFiredRef.current) {
+          timeoutFiredRef.current = true;
+          handleTimeout(currentPlayer);
         }
       }
-    }, 100);
+    }, 500);
 
     return () => {
       if (timerIntervalRef.current !== null) {
