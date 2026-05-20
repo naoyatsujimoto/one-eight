@@ -19,6 +19,8 @@ export interface MatchLogRow {
   full_record?: MoveRecord[] | null;
   created_at?: string;
   cpu_difficulty?: string | null;
+  timer_config?: Record<string, unknown> | null;
+  end_reason?: string | null;
 }
 
 export async function saveMatchLog(record: GameRecord, userId: string): Promise<void> {
@@ -33,6 +35,8 @@ export async function saveMatchLog(record: GameRecord, userId: string): Promise<
     move_count: record.move_count,
     full_record: record.full_record,
     cpu_difficulty: record.cpu_difficulty ?? null,
+    timer_config: record.timer_config ?? null,
+    end_reason: record.end_reason ?? 'normal',
   };
 
   const { data: inserted, error } = await supabase

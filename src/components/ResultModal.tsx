@@ -13,12 +13,15 @@ export function ResultModal({
 
   if (!state.gameEnded) return null;
 
+  const isTimeout = state.endReason === 'timeout';
   const winnerLabel =
     state.winner === 'draw'
       ? 'Draw'
-      : `${state.winner ? state.winner.charAt(0).toUpperCase() + state.winner.slice(1) : ''} Wins`;
+      : `${state.winner ? state.winner.charAt(0).toUpperCase() + state.winner.slice(1) : ''} Wins${isTimeout ? ' (Time Out)' : ''}`;
 
-  const subLabel = `Game ended after ${state.history.length} moves`;
+  const subLabel = isTimeout
+    ? `時間切れ — ${state.history.length} moves`
+    : `Game ended after ${state.history.length} moves`;
 
   function handleCopy() {
     const text = generateRecordText(state.history);

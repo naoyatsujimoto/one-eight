@@ -28,6 +28,10 @@ export interface GameRecord {
   first_3_plies: PlyRecord[];
   full_record: MoveRecord[];
   cpu_difficulty?: string | null;
+  /** Phase T-1: タイマー設定（保存用） */
+  timer_config?: Record<string, unknown> | null;
+  /** Phase T-1: 終了理由 */
+  end_reason?: string | null;
 }
 
 export interface AggregateEntry {
@@ -113,6 +117,8 @@ export function saveGameRecord(state: GameState, cpuDifficulty?: string | null):
     first_3_plies: extractFirst3Plies(state.history),
     full_record: state.history,
     cpu_difficulty,
+    timer_config: state.timerConfig ? (state.timerConfig as unknown as Record<string, unknown>) : null,
+    end_reason: state.endReason ?? 'normal',
   };
 
   try {

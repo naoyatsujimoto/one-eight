@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Board } from '../components/Board';
+import { TimerDisplay } from '../components/TimerDisplay';
+import { TimerSettings } from '../components/TimerSettings';
 import { HowToPlay } from '../components/HowToPlay';
 import { ImportRecord } from '../components/ImportRecord';
 import { MoveHistory } from '../components/MoveHistory';
@@ -43,6 +45,8 @@ import { saveGameRecord, updateAggregates } from '../game/analytics';
 // postmortemPrecompute: auto-precompute on game end is disabled (trigger via Analyze button in STATS)
 import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, GameState, Player, PositionId } from '../game/types';
+import type { TimerConfig } from '../game/timerTypes';
+import { DEFAULT_TIMER_CONFIG } from '../game/timerTypes';
 
 export type BuildMode = 'none' | 'massive' | 'selective' | 'quad';
 
@@ -170,6 +174,23 @@ export default function App() {
   const cpuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // precomputeScheduledRef: removed (auto-precompute disabled)
 
+  // ── Phase T-1: Timer state ─────────────────────────────────────────────────
+  /** timerConfig 設定（New Game 時に渡す） */
+  const [pendingTimerConfig, setPendingTimerConfig] = useState<TimerConfig>(DEFAULT_TIMER_CONFIG);
+  /** total_time 用: 各プレイヤーの残り時間 (ms) */
+  const [playerTimers, setPlayerTimers] = useState<{ black: number; white: number } | null>(null);
+  /** per_move 用: 手番開始時刻 (Date.now()) */
+  const moveTimerStartedAtRef = useRef<number | null>(null);
+  /** per_move 用: UI 表示用残り時間 (ms) */
+  const [currentMoveRemainingMs, setCurrentMoveRemainingMs] = useState<number | null>(null);
+  /** タイマー一時停止フラグ (Page Visibility) */
+  const [timerPaused, setTimerPaused] = useState(false);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** total_time: 手番開始時刻 (Date.now()) - elapsed 計算用 */
+  const turnStartedAtRef = useRef<number | null>(null);
+  /** total_time: 手番開始時の残り時間 snapshot */
+  const turnStartRemainingRef = useRef<number>(0);
+
   // Persist state to localStorage on every change
   useEffect(() => {
     saveState(state);
@@ -265,17 +286,39 @@ export default function App() {
     };
   }, [state.currentPlayer, state.cpuPlayer, state.gameEnded]);
 
-  function handleNewGame(cpuPlayer: Player | null = null) {
+  function handleNewGame(cpuPlayer: Player | null = null, timerConfig?: TimerConfig) {
     if (cpuTimerRef.current !== null) {
       clearTimeout(cpuTimerRef.current);
       cpuTimerRef.current = null;
     }
+    if (timerIntervalRef.current !== null) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     // Postmortem auto-precompute: disabled (no cancellation needed)
     clearState();
     setHasSaved(false);
-    setState(resetGame(cpuPlayer));
+    const config = timerConfig ?? pendingTimerConfig;
+    const newState: GameState = { ...resetGame(cpuPlayer), timerConfig: config.mode === 'none' ? null : config };
+    setState(newState);
     setBuildState(EMPTY_BUILD_STATE);
     setUndoStack([]);
+    // タイマー初期化
+    if (config.mode === 'total_time') {
+      setPlayerTimers({ black: config.totalSeconds * 1000, white: config.totalSeconds * 1000 });
+      turnStartedAtRef.current = Date.now();
+      turnStartRemainingRef.current = config.totalSeconds * 1000;
+    } else if (config.mode === 'per_move') {
+      setPlayerTimers(null);
+      setCurrentMoveRemainingMs(config.perMoveSeconds * 1000);
+      moveTimerStartedAtRef.current = Date.now();
+    } else {
+      setPlayerTimers(null);
+      setCurrentMoveRemainingMs(null);
+      moveTimerStartedAtRef.current = null;
+      turnStartedAtRef.current = null;
+    }
+    setTimerPaused(false);
   }
 
   function handleClearSaved() {
@@ -307,16 +350,19 @@ export default function App() {
       cpuTimerRef.current = null;
     }
 
+    let restoredState: GameState | undefined;
+    let newUndoStack: GameState[];
+
     if (state.cpuPlayer === null) {
       // Human vs Human: restore 1 turn
       const prev = undoStack[undoStack.length - 1];
       if (prev === undefined) return;
-      setUndoStack((s) => s.slice(0, -1));
+      newUndoStack = undoStack.slice(0, -1);
+      setUndoStack(newUndoStack);
       setState(prev);
+      restoredState = prev;
     } else {
       // Human vs CPU: pop back until we reach a state where it's the human's turn.
-      // In normal play the stack looks like: [..., beforeHumanTurn, beforeCpuTurn]
-      // We want to restore to beforeHumanTurn.
       let targetIdx = undoStack.length - 1;
       while (targetIdx >= 0 && undoStack[targetIdx]?.currentPlayer === state.cpuPlayer) {
         targetIdx--;
@@ -324,15 +370,208 @@ export default function App() {
       if (targetIdx < 0) return;
       const prev = undoStack[targetIdx];
       if (prev === undefined) return;
-      setUndoStack((s) => s.slice(0, targetIdx));
+      newUndoStack = undoStack.slice(0, targetIdx);
+      setUndoStack(newUndoStack);
       setState(prev);
+      restoredState = prev;
     }
+
+    // タイマー時間復元 (Phase T-1)
+    if (restoredState && state.timerConfig) {
+      const config = state.timerConfig;
+      const undoneMove = state.history[state.history.length - 1];
+      if (config.mode === 'total_time' && undoneMove?.time_used_ms) {
+        const undonePlayer = undoneMove.player;
+        setPlayerTimers((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            [undonePlayer]: prev[undonePlayer] + undoneMove.time_used_ms!,
+          };
+        });
+      } else if (config.mode === 'per_move') {
+        moveTimerStartedAtRef.current = Date.now();
+        setCurrentMoveRemainingMs(config.perMoveSeconds * 1000);
+      }
+      // total_time: 手番切り替え後の turnStartedAt をリセット
+      turnStartedAtRef.current = Date.now();
+      if (restoredState && config.mode === 'total_time') {
+        const curPlayer = restoredState.currentPlayer;
+        setPlayerTimers((prev) => {
+          if (!prev) return prev;
+          turnStartRemainingRef.current = prev[curPlayer];
+          return prev;
+        });
+      }
+    }
+
     setBuildState(EMPTY_BUILD_STATE);
   }
 
+  /** 時間切れ処理 */
+  const handleTimeout = useCallback((timedOutPlayer: 'black' | 'white') => {
+    const winner: Player = timedOutPlayer === 'black' ? 'white' : 'black';
+    setState((prev) => {
+      if (prev.gameEnded) return prev;
+      return {
+        ...prev,
+        gameEnded: true,
+        winner,
+        endReason: 'timeout',
+        endedAt: new Date().toISOString(),
+      };
+    });
+    if (timerIntervalRef.current !== null) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  }, []);
+
   const canUndo = !isCpuTurn && undoStack.length > 0 && !state.gameEnded;
 
-  // ── Human action handlers ──────────────────────────────────
+  // ── Phase T-1: 手番切り替え時のタイマー処理 ─────────────────────────────────
+  // state.currentPlayer 変化時（手番切り替わり）にタイマーを切り替える
+  useEffect(() => {
+    if (!state.timerConfig || state.timerConfig.mode === 'none' || state.gameEnded) return;
+    const config = state.timerConfig;
+    if (config.mode === 'total_time') {
+      // 手番開始時刻をリセット
+      turnStartedAtRef.current = Date.now();
+      setPlayerTimers((prev) => {
+        if (!prev) return prev;
+        turnStartRemainingRef.current = prev[state.currentPlayer];
+        return prev;
+      });
+    } else if (config.mode === 'per_move') {
+      // per_move: 手番開始でリセット
+      moveTimerStartedAtRef.current = Date.now();
+      setCurrentMoveRemainingMs(config.perMoveSeconds * 1000);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentPlayer, state.gameEnded]);
+
+  // ── Phase T-1: タイマー tick (100ms interval) ──────────────────────────
+  useEffect(() => {
+    if (!state.timerConfig || state.timerConfig.mode === 'none' || state.gameEnded || timerPaused) {
+      if (timerIntervalRef.current !== null) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      return;
+    }
+    const config = state.timerConfig;
+    const currentPlayer = state.currentPlayer;
+
+    // PvC: CPU 手番中はタイマーを動かさない
+    if (state.cpuPlayer !== null && currentPlayer === state.cpuPlayer) {
+      if (timerIntervalRef.current !== null) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      return;
+    }
+
+    timerIntervalRef.current = setInterval(() => {
+      if (config.mode === 'total_time') {
+        const startedAt = turnStartedAtRef.current;
+        if (startedAt === null) return;
+        const elapsed = Date.now() - startedAt;
+        const newRemaining = Math.max(0, turnStartRemainingRef.current - elapsed);
+        setPlayerTimers((prev) => {
+          if (!prev) return prev;
+          const updated = { ...prev, [currentPlayer]: newRemaining };
+          if (newRemaining <= 0) {
+            // 時間切れ
+            setTimeout(() => handleTimeout(currentPlayer), 0);
+          }
+          return updated;
+        });
+      } else if (config.mode === 'per_move') {
+        const startedAt = moveTimerStartedAtRef.current;
+        if (startedAt === null) return;
+        const elapsed = Date.now() - startedAt;
+        const newRemaining = Math.max(0, config.perMoveSeconds * 1000 - elapsed);
+        setCurrentMoveRemainingMs(newRemaining);
+        if (newRemaining <= 0) {
+          setTimeout(() => handleTimeout(currentPlayer), 0);
+        }
+      }
+    }, 100);
+
+    return () => {
+      if (timerIntervalRef.current !== null) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentPlayer, state.gameEnded, state.timerConfig, timerPaused, handleTimeout]);
+
+  // ── Phase T-1: Page Visibility 自動 pause ───────────────────────────────
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (!state.timerConfig || state.timerConfig.mode === 'none' || state.gameEnded) return;
+      if (document.visibilityState === 'hidden') {
+        setTimerPaused(true);
+      } else {
+        setTimerPaused(false);
+        // per_move: バックグラウンド時間を除外するため、startedAt をリセット
+        if (state.timerConfig.mode === 'per_move') {
+          const config = state.timerConfig;
+          const current = currentMoveRemainingMs ?? config.perMoveSeconds * 1000;
+          moveTimerStartedAtRef.current = Date.now() - (config.perMoveSeconds * 1000 - current);
+        }
+        if (state.timerConfig.mode === 'total_time') {
+          // 手番開始時刻を現在の残り時間から再計算
+          setPlayerTimers((prev) => {
+            if (!prev) return prev;
+            turnStartedAtRef.current = Date.now();
+            turnStartRemainingRef.current = prev[state.currentPlayer];
+            return prev;
+          });
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.timerConfig, state.gameEnded, state.currentPlayer, currentMoveRemainingMs]);
+
+  // ── Phase T-1: 手番確定時に time_used_ms を MoveRecord に記録 ────────────────
+  // 手番確定後は history の最後の MoveRecord に time_used_ms を patch する
+  useEffect(() => {
+    if (!state.timerConfig || state.timerConfig.mode === 'none') return;
+    if (state.history.length === 0) return;
+    const lastMove = state.history[state.history.length - 1];
+    if (!lastMove || lastMove.time_used_ms !== undefined) return;
+
+    const config = state.timerConfig;
+    let timeUsed: number | undefined;
+
+    if (config.mode === 'total_time') {
+      // 直前の手番プレイヤーの使用時間: turnStartRemainingRef - 現在の残り時間
+      const prevRemaining = turnStartRemainingRef.current;
+      const curRemaining = playerTimers?.[lastMove.player] ?? 0;
+      timeUsed = Math.max(0, prevRemaining - curRemaining);
+    } else if (config.mode === 'per_move') {
+      const perMoveSec = config.perMoveSeconds * 1000;
+      const remaining = currentMoveRemainingMs ?? 0;
+      timeUsed = Math.max(0, perMoveSec - remaining);
+    }
+
+    if (timeUsed !== undefined) {
+      setState((prev) => {
+        const hist = [...prev.history];
+        const last = hist[hist.length - 1];
+        if (!last || last.time_used_ms !== undefined) return prev;
+        hist[hist.length - 1] = { ...last, time_used_ms: timeUsed! };
+        return { ...prev, history: hist };
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.history.length]);
+
+  // ── Human action handlers ─────────────────────────────────────────────────
 
   function handleSelectPosition(positionId: PositionId) {
     if (isCpuTurn) return;
@@ -636,7 +875,8 @@ export default function App() {
       // vsCPU: open settings panel
       setCpuSettingsOpen(true);
     } else {
-      handleNewGame(null);
+      // PvP: タイマー設定を渡す
+      handleNewGame(null, pendingTimerConfig);
     }
   }
 
@@ -644,7 +884,7 @@ export default function App() {
     setCpuSettingsOpen(false);
     // cpuColorChoice is the human's color, so CPU gets the opposite
     const cpuPlayer: Player = cpuColorChoice === 'black' ? 'white' : 'black';
-    handleNewGame(cpuPlayer);
+    handleNewGame(cpuPlayer, pendingTimerConfig);
   }
 
   function handleOnlineGameReady(gameId: string, _color: 'black' | 'white', roomCode?: string) {
@@ -755,6 +995,12 @@ export default function App() {
 
       <main className="layout">
         <div className="board-stage">
+          <TimerDisplay
+            timerConfig={state.timerConfig}
+            playerTimers={playerTimers}
+            currentMoveRemainingMs={currentMoveRemainingMs}
+            currentPlayer={state.currentPlayer}
+          />
           <Board
             state={state}
             buildState={buildState}
@@ -838,6 +1084,10 @@ export default function App() {
             <div className="mode-modal-card">
               <div className="result-eyebrow">New Game</div>
               <div className="mode-modal-title">{t.selectMode}</div>
+              <TimerSettings
+                config={pendingTimerConfig}
+                onChange={setPendingTimerConfig}
+              />
               <div className="mode-modal-actions">
                 <button type="button" className="result-btn result-btn-primary" onClick={() => handleModeSelect(null)}>
                   {t.humanVsHuman}
@@ -899,6 +1149,11 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              <TimerSettings
+                config={pendingTimerConfig}
+                onChange={setPendingTimerConfig}
+              />
 
               <div className="mode-modal-actions" style={{ marginTop: '16px' }}>
                 <button type="button" className="result-btn result-btn-primary" onClick={handleCpuStart}>

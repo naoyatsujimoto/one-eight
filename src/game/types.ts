@@ -1,3 +1,5 @@
+import type { TimerConfig } from './timerTypes';
+
 export type Player = 'black' | 'white';
 
 export type PositionId =
@@ -37,6 +39,8 @@ export type MoveRecord = {
   canonical_hash?: string;
   /** C4-normalized position-ownership hash (optional, backward compat) */
   symmetry_group_id?: string;
+  /** Phase T-1 optional: この手を指すのに使った時間（ミリ秒）。per_move / total_time 時のみ記録 */
+  time_used_ms?: number;
   /** Phase M-1: medium_pattern_id (Position所有 + corner gate dominance) of the state AFTER this move */
   medium_pattern_id?: string;
 };
@@ -58,4 +62,8 @@ export type GameState = {
   startedAt: string | null;
   /** ISO 8601 timestamp when the game ended (gameEnded became true). */
   endedAt: string | null;
+  /** Phase T-1: タイマー設定。null = タイマーなし（後方互換） */
+  timerConfig: TimerConfig | null;
+  /** Phase T-1: 終了理由。null = 後方互換 */
+  endReason: 'normal' | 'timeout' | null;
 };

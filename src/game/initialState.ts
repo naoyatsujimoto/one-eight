@@ -31,5 +31,7 @@ export function createInitialState(cpuPlayer: GameState['cpuPlayer'] = null): Ga
     cpuPlayer,
     startedAt: new Date().toISOString(),
     endedAt: null,
+    timerConfig: null,
+    endReason: null,
   };
 }
