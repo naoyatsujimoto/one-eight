@@ -38,17 +38,19 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-  const { state: workerState, run: runWorker } = usePostmortemWorker();
+  const { getStatus, run: runWorker } = usePostmortemWorker();
+  const jobStatus = getStatus(gameId);
 
-  const analyzing = workerState.status === 'running' && (workerState as { gameId?: string }).gameId === gameId;
+  const analyzing = jobStatus.status === 'running';
 
   const handleAnalyze = useCallback(() => {
-    // 既にこの gameId で running → 何もしない
-    if (workerState.status === 'running' && (workerState as { gameId?: string }).gameId === gameId) return;
+    const st = getStatus(gameId);
+    // 既にこの gameId で queued / running → 何もしない
+    if (st.status === 'queued' || st.status === 'running') return;
 
     // 既に done → result を直接表示（Worker 再起動不要）
-    if (workerState.status === 'done' && (workerState as { gameId?: string }).gameId === gameId) {
-      setResult(workerState.result);
+    if (st.status === 'done') {
+      setResult(st.result);
       return;
     }
 
@@ -57,12 +59,13 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
     setResult(null);
     onAnalyzing?.(true);
     runWorker(gameId, history);
-  }, [workerState.status, workerState, gameId, history, onAnalyzing, runWorker]);
+  }, [getStatus, gameId, history, onAnalyzing, runWorker]);
 
-  // workerState が done / error になったら処理
+  // jobStatus が done / error になったら処理
   useEffect(() => {
-    if (workerState.status === 'done' && (workerState as { gameId?: string }).gameId === gameId) {
-      const base = workerState.result;
+    const st = getStatus(gameId);
+    if (st.status === 'done') {
+      const base = st.result;
       setResult(base);
       onAnalyzing?.(false);
 
@@ -71,12 +74,12 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
         .then(enriched => setResult(enriched))
         .catch(() => {});
     }
-    if (workerState.status === 'error' && (workerState as { gameId?: string }).gameId === gameId) {
+    if (st.status === 'error') {
       setAnalyzeError('分析に失敗しました。再試行してください。');
       onAnalyzing?.(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workerState.status, workerState]);
+  }, [jobStatus.status]);
 
   // autoStart: マウント直後に Worker 起動
   useEffect(() => {

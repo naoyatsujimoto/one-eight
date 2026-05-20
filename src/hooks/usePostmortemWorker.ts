@@ -1,29 +1,52 @@
 // src/hooks/usePostmortemWorker.ts
+//
+// postmortemWorkerManager への React バインディング。
+// useSyncExternalStore で Manager の変化を購読し、
+// getStatus() / run() / dismiss() / cancelAll() を提供する。
+
 import { useSyncExternalStore, useCallback } from 'react'
 import { postmortemWorkerManager } from '../lib/postmortemWorkerManager'
+import type { AnalysisJobStatus } from '../lib/postmortemWorkerManager'
 import type { MoveRecord } from '../game/types'
 
+export type { AnalysisJobStatus }
+
 export function usePostmortemWorker() {
-  // useSyncExternalStore: React 18 海外ストア対応。
-  // マウント直後からシングルトンの状態を正確に読み取り、
-  // 将来の変更もリアルタイムに追従する。
-  const state = useSyncExternalStore(
-    (callback) => postmortemWorkerManager.subscribeNotify(callback),
-    () => postmortemWorkerManager.state,
-    () => postmortemWorkerManager.state,
+  // Manager の変化を購読（snapshot は runningId で代用 — 変化検出が目的）
+  const runningId = useSyncExternalStore(
+    (cb) => postmortemWorkerManager.subscribeNotify(cb),
+    ()  => postmortemWorkerManager.runningId,
+    ()  => postmortemWorkerManager.runningId,
   )
 
-  const run = useCallback((gameId: string, history: MoveRecord[], humanColor?: 'black' | 'white' | null) => {
-    postmortemWorkerManager.run(gameId, history, humanColor)
-  }, [])
+  const getStatus = useCallback(
+    (gameId: string): AnalysisJobStatus =>
+      postmortemWorkerManager.getStatus(gameId),
+    // runningId を依存に含めることで、状態変化時に getStatus も新しい参照を返す
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [runningId],
+  )
 
-  const cancel = useCallback(() => {
-    postmortemWorkerManager.cancel()
-  }, [])
+  const run = useCallback(
+    (gameId: string, history: MoveRecord[], humanColor?: 'black' | 'white' | null) =>
+      postmortemWorkerManager.run(gameId, history, humanColor),
+    [],
+  )
 
-  const dismiss = useCallback(() => {
-    postmortemWorkerManager.dismiss()
-  }, [])
+  const dismiss = useCallback(
+    (gameId: string) => postmortemWorkerManager.dismiss(gameId),
+    [],
+  )
 
-  return { state, run, cancel, dismiss }
+  const cancelJob = useCallback(
+    (gameId: string) => postmortemWorkerManager.cancelJob(gameId),
+    [],
+  )
+
+  const cancelAll = useCallback(
+    () => postmortemWorkerManager.cancelAll(),
+    [],
+  )
+
+  return { runningId, getStatus, run, dismiss, cancelJob, cancelAll }
 }

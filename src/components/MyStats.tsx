@@ -22,21 +22,12 @@ export function MyStats({ userId, onClose }: Props) {
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [proActive, setProActive] = useState<boolean>(false);
 
-  // シングルトン Worker の状態・履歴（コンポーネントのマウント状態に依存しない）
-  const { state: workerState, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
-  const analyzingId = workerState.status === 'running' ? workerState.gameId : null;
-
-  // [DEBUG] MyStats マウント時のシングルトン状態を記録
-  useEffect(() => {
-    console.log('[MyStats mount] workerState:', JSON.stringify({ status: workerState.status, gameId: 'gameId' in workerState ? workerState.gameId : null, hasHistory: 'history' in workerState && workerState.history != null }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // モーダル表示判定: history はスナップショットに含まれるのでリアクティブに追従
-  const showModal =
-    workerState.status !== 'idle' &&
-    'history' in workerState &&
-    workerState.history != null;
+  // シングルトン Worker（gameId 単位管理・キュー処理）
+  const { getStatus, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
+  // モーダル表示対象の gameId
+  const [pendingModalGameId, setPendingModalGameId] = useState<string | null>(null);
+  const pendingStatus = pendingModalGameId ? getStatus(pendingModalGameId) : null;
+  const showModal = pendingStatus?.status === 'done' && pendingStatus.history != null;
 
   useEffect(() => {
     fetchMyStats(userId).then((s) => {
@@ -57,24 +48,29 @@ export function MyStats({ userId, onClose }: Props) {
   const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
 
   function handleAnalyzeClick(record: GameRecord) {
-    if (analyzingId === record.game_id) return; // 二重押し防止
+    const st = getStatus(record.game_id);
+    if (st.status === 'queued' || st.status === 'running') return;
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
+    setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
   }
 
   // 更新ボタンのハンドラ: cache 削除→再分析
   function handleRefresh(record: GameRecord) {
+    dismissWorker(record.game_id);
     clearPostmortemCache(record.game_id);
     setRefreshingGameId(record.game_id);
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
+    setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
   }
 
-  // モーダル close: シングルトンを dismiss して idle に戻す
+  // モーダル close
   function handlePostmortemClose() {
-    dismissWorker();
+    if (pendingModalGameId) dismissWorker(pendingModalGameId);
+    setPendingModalGameId(null);
     setRefreshingGameId(null);
     setCurrentHumanColor(null);
   }
@@ -135,11 +131,11 @@ export function MyStats({ userId, onClose }: Props) {
                               <div style={styles.btnGroup}>
                                 <button
                                   type="button"
-                                  style={analyzingId === local.game_id ? styles.analyzingBtn : styles.analyzeBtn}
-                                  disabled={analyzingId === local.game_id}
+                                  style={(() => { const _st = getStatus(local.game_id); return (_st.status === 'queued' || _st.status === 'running') ? styles.analyzingBtn : styles.analyzeBtn; })()}
+                                  disabled={(() => { const _st = getStatus(local.game_id); return _st.status === 'queued' || _st.status === 'running'; })()}
                                   onClick={() => handleAnalyzeClick(local)}
                                 >
-                                  {analyzingId === local.game_id ? t.analyzing : t.analyze}
+                                  {(() => { const _st = getStatus(local.game_id); return (_st.status === 'queued' ? t.analyzing + '…' : _st.status === 'running' ? t.analyzing : t.analyze); })()}
                                 </button>
                                 <button
                                   type="button"
@@ -168,11 +164,11 @@ export function MyStats({ userId, onClose }: Props) {
                           <div style={styles.btnGroup}>
                             <button
                               type="button"
-                              style={analyzingId === r.game_id ? styles.analyzingBtn : styles.analyzeBtn}
-                              disabled={analyzingId === r.game_id}
+                              style={(() => { const _st = getStatus(r.game_id); return (_st.status === 'queued' || _st.status === 'running') ? styles.analyzingBtn : styles.analyzeBtn; })()}
+                              disabled={(() => { const _st = getStatus(r.game_id); return _st.status === 'queued' || _st.status === 'running'; })()}
                               onClick={() => handleAnalyzeClick(r)}
                             >
-                              {analyzingId === r.game_id ? t.analyzing : t.analyze}
+                              {(() => { const _st = getStatus(r.game_id); return (_st.status === 'queued' ? t.analyzing + '…' : _st.status === 'running' ? t.analyzing : t.analyze); })()}
                             </button>
                             <button
                               type="button"
@@ -201,10 +197,10 @@ export function MyStats({ userId, onClose }: Props) {
       </div>
 
       {/* 分析モーダル: シングルトンの running/done/error 状態で表示。STATS開閉をまたいで継続する */}
-      {showModal && 'history' in workerState && 'gameId' in workerState && (
+      {showModal && pendingModalGameId && pendingStatus?.status === 'done' && (
         <PostmortemModal
-          history={workerState.history}
-          gameId={workerState.gameId}
+          history={pendingStatus.history}
+          gameId={pendingModalGameId}
           onClose={handlePostmortemClose}
           autoStart
           humanColor={currentHumanColor}

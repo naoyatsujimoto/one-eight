@@ -11,7 +11,7 @@
  *   7. 大会実績（Coming Soon）
  *   8. 称号 / バッジ（Coming Soon）
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
@@ -48,14 +48,13 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [stats, setStats] = useState<UserPageStats | null>(null);
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
-  // シングルトン Worker（UserPage アンマウント後も継続動作）
-  const { state: workerState, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
-  const analyzingId = workerState.status === 'running' ? workerState.gameId : null;
-  // モーダル表示判定: history がスナップショットに含まれる場合のみ表示
-  const showModal =
-    workerState.status !== 'idle' &&
-    'history' in workerState &&
-    workerState.history != null;
+  // シングルトン Worker（gameId 単位管理・キュー処理）
+  const { getStatus, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
+  // モーダル表示対象の gameId（分析ボタンを押した対局）
+  const [pendingModalGameId, setPendingModalGameId] = useState<string | null>(null);
+  const pendingStatus = pendingModalGameId ? getStatus(pendingModalGameId) : null;
+  // done になったら自動でモーダルを開く
+  const showModal = pendingStatus?.status === 'done' && pendingStatus.history != null;
   const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
@@ -127,12 +126,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   // 候補手表示用: 現在分析中の対局の human_color
   const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
   // 分析ボタンのハンドラ: シングルトン Worker に委譲
-  function handleAnalyzeClick(record: GameRecord) {
-    if (analyzingId === record.game_id) return;
+  const handleAnalyzeClick = useCallback((record: GameRecord) => {
+    const st = getStatus(record.game_id);
+    if (st.status === 'queued' || st.status === 'running') return;
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
+    setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
-  }
+  }, [getStatus, runWorker]);
 
   function handleCancelEdit() {
     setEditingName(false);
@@ -299,14 +300,15 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               <RecentGamesTable
                 games={stats.recentGames}
                 localMap={localMap}
-                onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); runWorker(r.game_id, r.full_record, hc); }}
+                onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
                 refreshingGameId={refreshingGameId}
                 onRefresh={(record) => {
+                  dismissWorker(record.game_id);
                   clearPostmortemCache(record.game_id);
                   setRefreshingGameId(record.game_id);
                   handleAnalyzeClick(record);
                 }}
-                analyzingId={analyzingId}
+                getStatus={getStatus}
                 onAnalyzeClick={handleAnalyzeClick}
                 proActive={proActive}
               />
@@ -319,7 +321,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <section style={s.section}>
             <SectionTitle title={t.userFeaturedGames} />
             {loading ? <Muted text="Loading…" /> : stats && (
-              <FeaturedGames stats={stats} onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); runWorker(r.game_id, r.full_record, hc); }} />
+              <FeaturedGames stats={stats} onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }} />
             )}
           </section>
         )}
@@ -363,11 +365,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <CpuProfile difficulty={openCpuDiff} onClose={() => setOpenCpuDiff(null)} />
       )}
 
-      {showModal && 'history' in workerState && 'gameId' in workerState && (
+      {showModal && pendingModalGameId && pendingStatus?.status === 'done' && (
         <PostmortemModal
-          history={workerState.history}
-          gameId={workerState.gameId}
-          onClose={() => { dismissWorker(); setRefreshingGameId(null); setCurrentHumanColor(null); }}
+          history={pendingStatus.history}
+          gameId={pendingModalGameId}
+          onClose={() => { dismissWorker(pendingModalGameId); setPendingModalGameId(null); setRefreshingGameId(null); setCurrentHumanColor(null); }}
           autoStart
           proActive={proActive}
           humanColor={currentHumanColor}
@@ -476,7 +478,7 @@ function RecentGamesTable({
   onPostmortem,
   refreshingGameId = null,
   onRefresh,
-  analyzingId = null,
+  getStatus,
   onAnalyzeClick,
   proActive = false,
 }: {
@@ -485,7 +487,7 @@ function RecentGamesTable({
   onPostmortem: (r: GameRecord) => void;
   refreshingGameId?: string | null;
   onRefresh?: (r: GameRecord) => void;
-  analyzingId?: string | null;
+  getStatus?: (gameId: string) => import('../hooks/usePostmortemWorker').AnalysisJobStatus;
   onAnalyzeClick?: (r: GameRecord) => void;
   proActive?: boolean;
 }) {
@@ -555,14 +557,21 @@ function RecentGamesTable({
                 <td style={s.td}>
                   {gameRecord ? (
                     <div style={s.btnGroup}>
-                      <button
-                        type="button"
-                        style={analyzingId === r.game_id ? s.analyzingBtn : s.analyzeBtn}
-                        disabled={analyzingId === r.game_id}
-                        onClick={() => onAnalyzeClick ? onAnalyzeClick(gameRecord) : handleAnalyze()}
-                      >
-                        {analyzingId === r.game_id ? t.analyzing : t.analyze}
-                      </button>
+                      {(() => {
+                        const st = getStatus ? getStatus(r.game_id) : { status: 'idle' as const };
+                        const busy = st.status === 'queued' || st.status === 'running';
+                        const label = st.status === 'queued' ? (t.analyzing + '…') : st.status === 'running' ? t.analyzing : st.status === 'error' ? (t.analyze + ' ↩') : t.analyze;
+                        return (
+                          <button
+                            type="button"
+                            style={busy ? s.analyzingBtn : s.analyzeBtn}
+                            disabled={busy}
+                            onClick={() => onAnalyzeClick ? onAnalyzeClick(gameRecord) : handleAnalyze()}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })()}
                       {onRefresh && (
                         <button
                           type="button"
