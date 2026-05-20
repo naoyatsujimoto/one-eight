@@ -29,27 +29,30 @@ export function TimerSettings({ config, onChange }: TimerSettingsProps) {
     onChange({ ...config, mode: 'per_move', perMoveSeconds: seconds });
   }
 
+  const modeOptions: { mode: TimeMode; label: string }[] = [
+    { mode: 'none', label: 'なし' },
+    { mode: 'total_time', label: '持ち時間制' },
+    { mode: 'per_move', label: '1手制限' },
+  ];
+
   return (
-    <div className="timer-settings">
-      <div className="timer-settings-label">タイムクロック</div>
-      <div className="timer-settings-modes">
-        {(['none', 'total_time', 'per_move'] as TimeMode[]).map((mode) => (
-          <label key={mode} className="timer-settings-mode-option">
-            <input
-              type="radio"
-              name="timer-mode"
-              checked={config.mode === mode}
-              onChange={() => handleModeChange(mode)}
-            />
-            <span>
-              {mode === 'none' ? 'なし' : mode === 'total_time' ? '持ち時間制' : '1手制限'}
-            </span>
-          </label>
+    <div className="cpu-settings-group">
+      <div className="cpu-settings-label">タイムクロック</div>
+      <div className="cpu-settings-row">
+        {modeOptions.map(({ mode, label }) => (
+          <button
+            key={mode}
+            type="button"
+            className={`cpu-settings-btn${config.mode === mode ? ' active' : ''}`}
+            onClick={() => handleModeChange(mode)}
+          >
+            {label}
+          </button>
         ))}
       </div>
 
       {config.mode === 'total_time' && (
-        <div className="timer-settings-options">
+        <div className="cpu-settings-row" style={{ marginTop: '8px' }}>
           {TOTAL_TIME_OPTIONS.map(({ label, seconds }) => (
             <button
               key={seconds}
@@ -64,7 +67,7 @@ export function TimerSettings({ config, onChange }: TimerSettingsProps) {
       )}
 
       {config.mode === 'per_move' && (
-        <div className="timer-settings-options">
+        <div className="cpu-settings-row" style={{ marginTop: '8px' }}>
           {PER_MOVE_OPTIONS.map(({ label, seconds }) => (
             <button
               key={seconds}

@@ -1,5 +1,6 @@
 import { getBuildOptionsForSelected } from '../game/engine';
 import type { GameState } from '../game/types';
+import type { TimerConfig } from '../game/timerTypes';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
 
@@ -11,14 +12,31 @@ function derivePhase(state: GameState): Phase {
   return 'select-build';
 }
 
+function formatMs(ms: number): string {
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function timerClass(ms: number): string {
+  if (ms <= 10000) return ' timer-danger';
+  if (ms <= 30000) return ' timer-warning';
+  return '';
+}
+
 export function TurnInfo({
   state, modeLabel, buildState, onSkip, onClear,
+  timerConfig, playerTimers, currentMoveRemainingMs,
 }: {
   state: GameState;
   modeLabel?: string;
   buildState?: BoardBuildState;
   onSkip?: () => void;
   onClear?: () => void;
+  timerConfig?: TimerConfig | null;
+  playerTimers?: { black: number; white: number } | null;
+  currentMoveRemainingMs?: number | null;
 }) {
   const { t } = useLang();
   const phase = derivePhase(state);
@@ -82,6 +100,36 @@ export function TurnInfo({
           )}
         </div>
         <div className="phase-hint-text">{hint}</div>
+
+        {timerConfig && timerConfig.mode !== 'none' && (
+          <div className="timer-panel">
+            {timerConfig.mode === 'total_time' && playerTimers && (
+              <>
+                {(['black', 'white'] as const).map((p) => {
+                  const ms = playerTimers[p];
+                  const isActive = p === state.currentPlayer && !state.gameEnded;
+                  return (
+                    <div key={p} className={`timer-panel-row${isActive ? ' timer-panel-row-active' : ''}`}>
+                      <span className={`turn-chip turn-chip-${p} timer-panel-chip`} />
+                      <span className={`timer-panel-value${isActive ? timerClass(ms) : ' timer-panel-inactive'}`}>
+                        {formatMs(ms)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            {timerConfig.mode === 'per_move' && (() => {
+              const ms = currentMoveRemainingMs ?? timerConfig.perMoveSeconds * 1000;
+              return (
+                <div className="timer-panel-row timer-panel-row-active">
+                  <span className={`turn-chip turn-chip-${state.currentPlayer} timer-panel-chip`} />
+                  <span className={`timer-panel-value${timerClass(ms)}`}>{formatMs(ms)}</span>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       <div className="panel-section">

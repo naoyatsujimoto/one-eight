@@ -251,6 +251,45 @@ html, body {
   min-height: 20px;
 }
 
+/* ── Timer Panel (in TurnInfo) ── */
+.timer-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.timer-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.timer-panel-chip {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+.timer-panel-row-active .timer-panel-chip {
+  opacity: 1;
+}
+.timer-panel-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  transition: color 0.2s;
+}
+.timer-panel-row-active .timer-panel-value {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 15px;
+}
+.timer-panel-inactive { color: var(--ink-4); }
+.timer-warning { color: #e06c26 !important; }
+.timer-danger  { color: #e03a26 !important; }
+
 /* ── Actions ── */
 .actions-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .action-btn {

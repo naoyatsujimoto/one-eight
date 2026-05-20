@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Board } from '../components/Board';
-import { TimerDisplay } from '../components/TimerDisplay';
 import { TimerSettings } from '../components/TimerSettings';
 import { HowToPlay } from '../components/HowToPlay';
 import { ImportRecord } from '../components/ImportRecord';
@@ -995,12 +994,6 @@ export default function App() {
 
       <main className="layout">
         <div className="board-stage">
-          <TimerDisplay
-            timerConfig={state.timerConfig}
-            playerTimers={playerTimers}
-            currentMoveRemainingMs={currentMoveRemainingMs}
-            currentPlayer={state.currentPlayer}
-          />
           <Board
             state={state}
             buildState={buildState}
@@ -1021,6 +1014,9 @@ export default function App() {
             buildState={buildState}
             onSkip={handleSkip}
             onClear={handleClearSelection}
+            timerConfig={state.timerConfig}
+            playerTimers={playerTimers}
+            currentMoveRemainingMs={currentMoveRemainingMs}
           />
           <HowToPlay />
           <ImportRecord onImport={handleImport} />
