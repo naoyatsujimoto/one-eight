@@ -123,8 +123,17 @@ export async function joinOrCreateRandomGame(
     p_initial_state: initialState,
   });
   if (error) return { error: error.message };
-  const result = data as { game_id: string; color: 'black' | 'white'; room_code: string };
-  return { gameId: result.game_id, color: result.color, roomCode: result.room_code };
+  // Supabase JS v2 では RETURNS json の RPC が data=null を返すバグがある。
+  // ネストされた形式 ({ data: { game_id, ... } }) にも対応する。
+  const raw = data as { game_id?: string; color?: string; room_code?: string } | null;
+  const nested = (data as { data?: { game_id?: string; color?: string; room_code?: string } } | null)?.data;
+  const gameId = raw?.game_id ?? nested?.game_id;
+  const color = (raw?.color ?? nested?.color) as 'black' | 'white' | undefined;
+  const roomCode = raw?.room_code ?? nested?.room_code ?? '';
+  if (!gameId || !color) {
+    return { error: `join_or_create_random_game returned unexpected data: ${JSON.stringify(data)}` };
+  }
+  return { gameId, color, roomCode };
 }
 
 // ─── 手を送信 ─────────────────────────────────────────────────────────────────
