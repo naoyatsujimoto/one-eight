@@ -139,13 +139,18 @@ BEGIN
   WHERE id = p_game_id;
 
   -- ── 終局時: match_logs に保存 ───────────────────────────────────────────
+  -- user_id: SECURITY DEFINER 関数内では auth.uid() = 着手者（black or white）
+  -- online_pvp はどちらのプレイヤーの記録かを user_id で示す
+  -- タイムアウト終局時: 時間切れを起こしたプレイヤー（着手者）の記録として保存
+  -- 通常終局時: 最後に着手したプレイヤー（auth.uid()）の記録として保存
   IF v_timed_out OR v_effective_winner IS NOT NULL THEN
     INSERT INTO match_logs (
-      game_id, started_at, ended_at, mode,
+      user_id, game_id, started_at, ended_at, mode,
       human_color, winner, move_count, full_record,
       timer_config, end_reason
     )
     SELECT
+      auth.uid(),
       v_game.id::text,
       v_game.created_at,
       v_now,
@@ -262,11 +267,15 @@ BEGIN
   WHERE id = p_game_id;
 
   -- match_logs 保存
+  -- user_id: claim_timeout を呼び出したプレイヤー（auth.uid()）の記録として保存
+  -- 通常は「待っていた側（勝者）」が claim_timeout を呼ぶが、
+  -- 両プレイヤーどちらが呼んでも auth.uid() を使うことで NOT NULL 制約を満たす
   INSERT INTO match_logs (
-    game_id, started_at, ended_at, mode, human_color,
+    user_id, game_id, started_at, ended_at, mode, human_color,
     winner, move_count, full_record, timer_config, end_reason
   )
   SELECT
+    auth.uid(),
     v_game.id::text,
     v_game.created_at,
     v_now,

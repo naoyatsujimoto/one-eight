@@ -159,17 +159,13 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   }, [onlineStatus, gameId]);
 
   // Phase T-2a: claim_timeout ポーリング（5秒間隔）
-  // - 相手の手番中（!isMyTurn）でタイマー設定がある場合に実行
+  // - playing 中、常時 5秒ごとに gameRowRef から最新状態を確認
+  // - 相手の手番かつタイマー設定ありの時のみ claim_timeout RPC を呼び出す
   // - DB側の標準時刻で検証するため、虚偽申告は不可
+  // 注意: onlineStatusは依存配列に含めるが、手番変更時の再起動はしない
+  //         インターバル内部で gameRowRef を動的に専照することでカバーする
   useEffect(() => {
     if (onlineStatus !== 'playing' || !gameId || !myUserId) return;
-    const currentRow = gameRowRef.current;
-    if (!currentRow?.timer_config || currentRow.timer_config.mode === 'none') return;
-
-    // 自分の手番中はポーリング不要（apply_online_move内で自動判定）
-    const isMyTurnNow =
-      currentRow.current_player_id === myUserId;
-    if (isMyTurnNow) return;
 
     const id = setInterval(async () => {
       const row = gameRowRef.current;
