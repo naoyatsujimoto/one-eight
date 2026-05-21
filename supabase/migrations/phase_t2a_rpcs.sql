@@ -9,6 +9,9 @@
 --    - per_move: elapsed >= perMoveMs → timeout → 相手勝利
 --    - total_time: remaining -= elapsed → 0以下で timeout → 相手勝利
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 戻り値型変更のため既存関数を先に削除する
+DROP FUNCTION IF EXISTS apply_online_move(uuid, integer, jsonb, uuid, text);
+
 CREATE OR REPLACE FUNCTION apply_online_move(
   p_game_id              uuid,
   p_expected_move_number int,
@@ -178,6 +181,9 @@ REVOKE EXECUTE ON FUNCTION apply_online_move(uuid, int, jsonb, uuid, text) FROM 
 --    - DBのturn_started_at + timer_config基準で検証（クライアント時刻無視）
 --    - 実際に時間切れでなければ 'not_timed_out_yet' エラー
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 戻り値型変更のため既存関数を先に削除する
+DROP FUNCTION IF EXISTS claim_timeout(uuid);
+
 CREATE OR REPLACE FUNCTION claim_timeout(p_game_id uuid)
 RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -288,6 +294,9 @@ REVOKE EXECUTE ON FUNCTION claim_timeout(uuid) FROM anon;
 --    - ホストが部屋作成時に設定した timer_config をそのまま使用
 --    - waiting → playing 遷移時に turn_started_at を設定（Black先手）
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 戻り値型変更のため既存関数を先に削除する
+DROP FUNCTION IF EXISTS join_online_game(text);
+
 CREATE OR REPLACE FUNCTION join_online_game(p_room_code text)
 RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -352,6 +361,9 @@ REVOKE EXECUTE ON FUNCTION join_online_game(text) FROM anon;
 --    - 既存ゲームに参加: timer_config / remaining_ms を初期化
 --    - 新規ゲーム作成: timer_config = {"mode":"per_move","perMoveSeconds":60,...} をデフォルト設定
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 戻り値型変更のため既存関数を先に削除する
+DROP FUNCTION IF EXISTS join_or_create_random_game(uuid, jsonb);
+
 CREATE OR REPLACE FUNCTION join_or_create_random_game(
   p_user_id      uuid,
   p_initial_state jsonb
