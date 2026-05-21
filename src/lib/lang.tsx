@@ -114,6 +114,10 @@ export const T = {
     onlineYouWin: 'You win!',
     onlineYouLose: 'You lose.',
     onlineDraw: 'Draw.',
+    onlineTimeoutWin: 'Time out — You win!',
+    onlineTimeoutLose: 'Time out — You lose.',
+    onlineTimeoutDraw: 'Time out — Draw.',
+    onlineOpponentTimeout: "Opponent's time ran out!",
     onlineExit: 'Exit',
     onlineBackToMenu: 'Back to Menu',
     onlineRoomNotFound: 'Room not found or already started.',
@@ -297,6 +301,10 @@ export const T = {
     onlineYouWin: 'あなたの勝利！',
     onlineYouLose: '敗北。',
     onlineDraw: '引き分け。',
+    onlineTimeoutWin: '時間切れ — あなたの勝利！',
+    onlineTimeoutLose: '時間切れ — 敗北。',
+    onlineTimeoutDraw: '時間切れ — 引き分け。',
+    onlineOpponentTimeout: '相手の時間が切れました！',
     onlineExit: '退出',
     onlineBackToMenu: 'メニューに戻る',
     onlineRoomNotFound: 'ルームが見つからないか、すでに開始済みです。',
@@ -455,6 +463,10 @@ export type Translations = {
   onlineYouWin: string;
   onlineYouLose: string;
   onlineDraw: string;
+  onlineTimeoutWin: string;
+  onlineTimeoutLose: string;
+  onlineTimeoutDraw: string;
+  onlineOpponentTimeout: string;
   onlineExit: string;
   onlineBackToMenu: string;
   onlineRoomNotFound: string;

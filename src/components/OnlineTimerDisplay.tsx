@@ -15,6 +15,7 @@ interface OnlineTimerDisplayProps {
   turnStartedAt: string | null;
   serverUpdatedAt: string | null;
   currentPlayer: 'black' | 'white';
+  gameFinished?: boolean;
 }
 
 function formatMs(ms: number): string {
@@ -72,6 +73,7 @@ export function OnlineTimerDisplay({
   turnStartedAt,
   serverUpdatedAt,
   currentPlayer,
+  gameFinished = false,
 }: OnlineTimerDisplayProps) {
   const localReceiveTimeRef = useRef<number>(Date.now());
   const [tick, setTick] = useState(0);
@@ -81,12 +83,13 @@ export function OnlineTimerDisplay({
     localReceiveTimeRef.current = Date.now();
   }, [serverUpdatedAt, turnStartedAt]);
 
-  // 200ms ごとに再描画
+  // 200ms ごとに再描画（ゲーム終了時はタイマー停止）
   useEffect(() => {
     if (!timerConfig || timerConfig.mode === 'none') return;
+    if (gameFinished) return; // 終局後はカウントダウン停止
     const id = setInterval(() => setTick((t) => t + 1), 200);
     return () => clearInterval(id);
-  }, [timerConfig]);
+  }, [timerConfig, gameFinished]);
 
   if (!timerConfig || timerConfig.mode === 'none') return null;
 

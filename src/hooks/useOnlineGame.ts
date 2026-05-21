@@ -139,19 +139,24 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   }, [onlineStatus, gameId]);
 
   // playing 中のフォールバックポーリング（iOS Safari 対策: 相手手番更新の Realtime 漏れ対策）
-  // move_number が変化した時だけ適用（自分のターン中の操作をリセットしない）
+  // move_number 変化 OR status 変化（timeout終局）どちらも検知する
   useEffect(() => {
     if (onlineStatus !== 'playing' || !gameId) return;
 
     const id = setInterval(async () => {
       const fresh = await fetchOnlineGame(gameId);
       if (!fresh) return;
+      // status が finished になったら即遷移（move_number 変化なし timeout でも検知）
+      if (fresh.status === 'finished') {
+        setGameRow(fresh);
+        syncTimerFromRow(fresh);
+        setOnlineStatus('finished');
+        clearInterval(id);
+        return;
+      }
       if (fresh.move_number !== gameRowRef.current?.move_number) {
         setGameRow(fresh);
         syncTimerFromRow(fresh);
-        if (fresh.status === 'finished') {
-          setOnlineStatus('finished');
-        }
       }
     }, 3000);
 
@@ -176,8 +181,19 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
 
       const result = await claimTimeout(gameId);
       if ('error' in result) {
-        // 'not_timed_out_yet' は正常なエラー（まだ時間切れでない）
-        // その他のエラーは無視（次のリトライで公正）
+        // 'not_timed_out_yet' は正常なエラー（まだ時間切れでない） → 無視
+        // 'game_not_active': ゲームが既に終了している → 終局状態をフェッチして遷移
+        if (
+          result.error.includes('game_not_active') ||
+          result.error.includes('not_active')
+        ) {
+          const fresh = await fetchOnlineGame(gameId);
+          if (fresh && fresh.status === 'finished') {
+            setGameRow(fresh);
+            syncTimerFromRow(fresh);
+            setOnlineStatus('finished');
+          }
+        }
         return;
       }
       // timeout確定: 最新状態をフェッチ
@@ -237,7 +253,23 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         if (fresh) {
           setGameRow(fresh);
           syncTimerFromRow(fresh);
-          setOnlineStatus('playing');
+          if (fresh.status === 'finished') {
+            setOnlineStatus('finished');
+          } else {
+            setOnlineStatus('playing');
+          }
+        }
+      } else if (result.error.includes('game_not_active') || result.error.includes('not_active')) {
+        // game_not_active: DB から最新状態を取得して終局UIへ遷移
+        const fresh = await fetchOnlineGame(gameId);
+        if (fresh && fresh.status === 'finished') {
+          setGameRow(fresh);
+          syncTimerFromRow(fresh);
+          setOnlineStatus('finished');
+        } else {
+          // 万一 finished でなければ error 扱い
+          setOnlineStatus('error');
+          setErrorMsg(result.error);
         }
       } else {
         setOnlineStatus('error');

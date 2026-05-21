@@ -342,7 +342,17 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
       )}
       {onlineStatus === 'finished' && (
         <div style={{ ...styles.banner, background: '#fff3e0', color: '#e65100', fontWeight: 700 }}>
-          {gameRow.winner === myColor ? t.onlineYouWin : gameRow.winner === 'draw' ? t.onlineDraw : t.onlineYouLose}
+          {(() => {
+            const isTimeout = gameRow.end_reason === 'timeout';
+            if (isTimeout) {
+              if (gameRow.winner === myColor) return t.onlineTimeoutWin;
+              if (gameRow.winner === 'draw') return t.onlineTimeoutDraw;
+              return t.onlineTimeoutLose;
+            }
+            if (gameRow.winner === myColor) return t.onlineYouWin;
+            if (gameRow.winner === 'draw') return t.onlineDraw;
+            return t.onlineYouLose;
+          })()}
         </div>
       )}
       {onlineStatus === 'error' && (
@@ -362,6 +372,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
               turnStartedAt={turnStartedAt}
               serverUpdatedAt={serverUpdatedAt}
               currentPlayer={state.currentPlayer}
+              gameFinished={onlineStatus === 'finished'}
             />
           )}
           <div className="board-stage">
