@@ -7,10 +7,13 @@
  * - iOS Safari 対策: Realtime が届かない場合のフォールバックポーリング
  *   - waiting 中: 3秒ごとに status を確認
  *   - playing 中: 3秒ごとに move_number を確認（相手の手番更新を検知）
+ * - Phase T-2a: タイムクロック対応
+ *   - タイマー状態管理 (black/white_remaining_ms, turn_started_at, server_updated_at)
+ *   - claim_timeout ポーリング（5秒間隔）
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { fetchOnlineGame, submitOnlineMove, type OnlineGameRow } from '../lib/onlineGame';
+import { fetchOnlineGame, submitOnlineMove, claimTimeout, type OnlineGameRow } from '../lib/onlineGame';
 import { getWinner, isGameEnded } from '../game/selectors';
 import type { GameState, Player } from '../game/types';
 
@@ -28,6 +31,11 @@ export interface UseOnlineGameResult {
   onlineStatus: OnlineStatus;
   errorMsg: string | null;
   submitMove: (newState: GameState) => Promise<void>;
+  // Phase T-2a: タイマー情報
+  blackRemainingMs: number | null;
+  whiteRemainingMs: number | null;
+  turnStartedAt: string | null;
+  serverUpdatedAt: string | null;
 }
 
 export function useOnlineGame(gameId: string | null, myUserId: string | null): UseOnlineGameResult {
@@ -36,6 +44,20 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const gameRowRef = useRef<OnlineGameRow | null>(null);
+
+  // Phase T-2a: タイマー状態
+  const [blackRemainingMs, setBlackRemainingMs] = useState<number | null>(null);
+  const [whiteRemainingMs, setWhiteRemainingMs] = useState<number | null>(null);
+  const [turnStartedAt, setTurnStartedAt] = useState<string | null>(null);
+  const [serverUpdatedAt, setServerUpdatedAt] = useState<string | null>(null);
+
+  // タイマー状態を gameRow から同期するヘルパー
+  function syncTimerFromRow(row: OnlineGameRow) {
+    setBlackRemainingMs(row.black_remaining_ms ?? null);
+    setWhiteRemainingMs(row.white_remaining_ms ?? null);
+    setTurnStartedAt(row.turn_started_at ?? null);
+    setServerUpdatedAt(row.server_updated_at ?? null);
+  }
 
   // gameRowRef を gameRow と同期
   useEffect(() => {
@@ -48,9 +70,11 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
     fetchOnlineGame(gameId).then((row) => {
       if (row) {
         setGameRow(row);
+        syncTimerFromRow(row);
         setOnlineStatus(row.status === 'finished' ? 'finished' : row.status === 'playing' ? 'playing' : 'waiting');
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   // Realtime 購読
@@ -65,6 +89,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         (payload) => {
           const updated = payload.new as OnlineGameRow;
           setGameRow(updated);
+          syncTimerFromRow(updated);
           if (updated.status === 'finished') {
             setOnlineStatus('finished');
           } else if (updated.status === 'playing') {
@@ -77,6 +102,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
           const fresh = await fetchOnlineGame(gameId);
           if (fresh) {
             setGameRow(fresh);
+            syncTimerFromRow(fresh);
             setOnlineStatus(
               fresh.status === 'finished' ? 'finished'
               : fresh.status === 'playing' ? 'playing'
@@ -102,12 +128,14 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
       const fresh = await fetchOnlineGame(gameId);
       if (fresh?.status === 'playing') {
         setGameRow(fresh);
+        syncTimerFromRow(fresh);
         setOnlineStatus('playing');
         clearInterval(id);
       }
     }, 3000);
 
     return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onlineStatus, gameId]);
 
   // playing 中のフォールバックポーリング（iOS Safari 対策: 相手手番更新の Realtime 漏れ対策）
@@ -120,6 +148,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
       if (!fresh) return;
       if (fresh.move_number !== gameRowRef.current?.move_number) {
         setGameRow(fresh);
+        syncTimerFromRow(fresh);
         if (fresh.status === 'finished') {
           setOnlineStatus('finished');
         }
@@ -128,6 +157,45 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
 
     return () => clearInterval(id);
   }, [onlineStatus, gameId]);
+
+  // Phase T-2a: claim_timeout ポーリング（5秒間隔）
+  // - 相手の手番中（!isMyTurn）でタイマー設定がある場合に実行
+  // - DB側の標準時刻で検証するため、虚偽申告は不可
+  useEffect(() => {
+    if (onlineStatus !== 'playing' || !gameId || !myUserId) return;
+    const currentRow = gameRowRef.current;
+    if (!currentRow?.timer_config || currentRow.timer_config.mode === 'none') return;
+
+    // 自分の手番中はポーリング不要（apply_online_move内で自動判定）
+    const isMyTurnNow =
+      currentRow.current_player_id === myUserId;
+    if (isMyTurnNow) return;
+
+    const id = setInterval(async () => {
+      const row = gameRowRef.current;
+      if (!row || row.status !== 'playing') return;
+      // 相手の手番かつタイマー設定ありの時のみ
+      if (row.current_player_id === myUserId) return;
+      if (!row.timer_config || row.timer_config.mode === 'none') return;
+
+      const result = await claimTimeout(gameId);
+      if ('error' in result) {
+        // 'not_timed_out_yet' は正常なエラー（まだ時間切れでない）
+        // その他のエラーは無視（次のリトライで公正）
+        return;
+      }
+      // timeout確定: 最新状態をフェッチ
+      const fresh = await fetchOnlineGame(gameId);
+      if (fresh) {
+        setGameRow(fresh);
+        syncTimerFromRow(fresh);
+        setOnlineStatus('finished');
+      }
+    }, 5000);
+
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineStatus, gameId, myUserId]);
 
   // 自分の色を決定
   const myColor: Player | null = gameRow
@@ -157,7 +225,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
     const ended = isGameEnded(newState);
     const winner = ended ? (getWinner(newState) ?? null) : null;
 
-    const { error } = await submitOnlineMove(
+    const result = await submitOnlineMove(
       gameId,
       gameRow.move_number,
       newState,
@@ -165,21 +233,57 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
       winner,
     );
 
-    if (error) {
-      if (error.includes('conflict')) {
+    if (result.error) {
+      if (result.error.includes('conflict')) {
         // 楽観ロック競合: 再取得して状態を更新
         setOnlineStatus('conflict');
         const fresh = await fetchOnlineGame(gameId);
         if (fresh) {
           setGameRow(fresh);
+          syncTimerFromRow(fresh);
           setOnlineStatus('playing');
         }
       } else {
         setOnlineStatus('error');
-        setErrorMsg(error);
+        setErrorMsg(result.error);
+      }
+    } else {
+      // 成功: RPC返却値でタイマー状態を即座反映（Realtime補完用）
+      if (result.turnStartedAt !== undefined) {
+        setTurnStartedAt(result.turnStartedAt ?? null);
+      }
+      if (result.serverUpdatedAt !== undefined) {
+        setServerUpdatedAt(result.serverUpdatedAt ?? null);
+      }
+      if (result.blackRemainingMs !== undefined) {
+        setBlackRemainingMs(result.blackRemainingMs ?? null);
+      }
+      if (result.whiteRemainingMs !== undefined) {
+        setWhiteRemainingMs(result.whiteRemainingMs ?? null);
+      }
+      // timeout確定: 終局処理
+      if (result.timedOut) {
+        const fresh = await fetchOnlineGame(gameId);
+        if (fresh) {
+          setGameRow(fresh);
+          syncTimerFromRow(fresh);
+          setOnlineStatus('finished');
+        }
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, gameRow, myUserId]);
 
-  return { gameRow, myColor, isMyTurn, onlineStatus, errorMsg, submitMove };
+  return {
+    gameRow,
+    myColor,
+    isMyTurn,
+    onlineStatus,
+    errorMsg,
+    submitMove,
+    blackRemainingMs,
+    whiteRemainingMs,
+    turnStartedAt,
+    serverUpdatedAt,
+  };
 }

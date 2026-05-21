@@ -4,6 +4,7 @@
 import { supabase } from './supabase';
 import { createInitialState } from '../game/initialState';
 import type { GameState } from '../game/types';
+import type { TimerConfig } from '../game/timerTypes';
 
 export type OnlineGameRow = {
   id: string;
@@ -17,6 +18,14 @@ export type OnlineGameRow = {
   winner: string | null;
   created_at: string;
   updated_at: string;
+  // Phase T-2a: タイムクロック
+  timer_config: TimerConfig | null;
+  black_remaining_ms: number | null;
+  white_remaining_ms: number | null;
+  turn_started_at: string | null;
+  end_reason: 'normal' | 'timeout' | 'resign' | 'draw_agreement' | null;
+  timeout_player: 'black' | 'white' | null;
+  server_updated_at: string | null;
 };
 
 // ─── 6文字ルームコード生成 ────────────────────────────────────────────────────
@@ -32,12 +41,20 @@ function generateRoomCode(): string {
 
 // ─── ゲーム作成 ───────────────────────────────────────────────────────────────
 
-export async function createOnlineGame(userId: string): Promise<{ gameId: string; roomCode: string } | { error: string }> {
+export async function createOnlineGame(
+  userId: string,
+  timerConfig?: TimerConfig | null,
+): Promise<{ gameId: string; roomCode: string } | { error: string }> {
   const initialState = createInitialState(null);
 
   // room_code 衝突時は最大5回リトライ
   for (let attempt = 0; attempt < 5; attempt++) {
     const roomCode = generateRoomCode();
+
+    // timer_config: noneまたはnullの場合はNULLを保存（既存動作準拠）
+    const resolvedTimerConfig =
+      timerConfig && timerConfig.mode !== 'none' ? timerConfig : null;
+
     const { data, error } = await supabase
       .from('online_games')
       .insert({
@@ -47,6 +64,7 @@ export async function createOnlineGame(userId: string): Promise<{ gameId: string
         status: 'waiting',
         game_state: initialState,
         move_number: 1,
+        timer_config: resolvedTimerConfig,
       })
       .select('id, room_code')
       .single();
@@ -111,14 +129,24 @@ export async function joinOrCreateRandomGame(
 
 // ─── 手を送信 ─────────────────────────────────────────────────────────────────
 
+export type SubmitMoveResult = {
+  error: string | null;
+  timedOut?: boolean;
+  winner?: string | null;
+  blackRemainingMs?: number | null;
+  whiteRemainingMs?: number | null;
+  turnStartedAt?: string | null;
+  serverUpdatedAt?: string | null;
+};
+
 export async function submitOnlineMove(
   gameId: string,
   expectedMoveNumber: number,
   newGameState: GameState,
   nextPlayerId: string,
   winner: string | null,
-): Promise<{ error: string | null }> {
-  const { error } = await supabase.rpc('apply_online_move', {
+): Promise<SubmitMoveResult> {
+  const { data, error } = await supabase.rpc('apply_online_move', {
     p_game_id: gameId,
     p_expected_move_number: expectedMoveNumber,
     p_new_game_state: newGameState,
@@ -127,5 +155,37 @@ export async function submitOnlineMove(
   });
 
   if (error) return { error: error.message };
-  return { error: null };
+
+  const result = data as {
+    ok: boolean;
+    timed_out: boolean;
+    winner: string | null;
+    black_remaining_ms: number | null;
+    white_remaining_ms: number | null;
+    turn_started_at: string | null;
+    server_updated_at: string | null;
+  };
+
+  return {
+    error: null,
+    timedOut: result?.timed_out ?? false,
+    winner: result?.winner ?? null,
+    blackRemainingMs: result?.black_remaining_ms ?? null,
+    whiteRemainingMs: result?.white_remaining_ms ?? null,
+    turnStartedAt: result?.turn_started_at ?? null,
+    serverUpdatedAt: result?.server_updated_at ?? null,
+  };
+}
+
+// ─── タイムアウト宣言 ─────────────────────────────────────────────────────────
+
+export async function claimTimeout(
+  gameId: string,
+): Promise<{ winner: string; timeoutPlayer: string } | { error: string }> {
+  const { data, error } = await supabase.rpc('claim_timeout', {
+    p_game_id: gameId,
+  });
+  if (error) return { error: error.message };
+  const result = data as { winner: string; timeout_player: string };
+  return { winner: result.winner, timeoutPlayer: result.timeout_player };
 }

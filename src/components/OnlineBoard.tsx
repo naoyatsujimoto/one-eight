@@ -11,6 +11,7 @@ import { TurnInfo } from './TurnInfo';
 import { ConfirmModal } from './ConfirmModal';
 import { MoveHistory } from './MoveHistory';
 import { useOnlineGame } from '../hooks/useOnlineGame';
+import { OnlineTimerDisplay } from './OnlineTimerDisplay';
 import { useLang } from '../lib/lang';
 import { getPublicProfile, getProfile, isProActive } from '../lib/profile';
 import { fetchGhostMoves } from '../lib/matchLog';
@@ -59,7 +60,18 @@ interface Props {
 
 export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   const { t } = useLang();
-  const { gameRow, myColor, isMyTurn, onlineStatus, errorMsg, submitMove } = useOnlineGame(gameId, myUserId);
+  const {
+    gameRow,
+    myColor,
+    isMyTurn,
+    onlineStatus,
+    errorMsg,
+    submitMove,
+    blackRemainingMs,
+    whiteRemainingMs,
+    turnStartedAt,
+    serverUpdatedAt,
+  } = useOnlineGame(gameId, myUserId);
   const [localState, setLocalState] = useState<GameState | null>(null);
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -356,6 +368,17 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
           />
         </div>
         <aside className="panel-col">
+          {/* Phase T-2a: タイムクロック表示（timer_config がある場合のみ） */}
+          {gameRow.timer_config && gameRow.timer_config.mode !== 'none' && (
+            <OnlineTimerDisplay
+              timerConfig={gameRow.timer_config}
+              blackRemainingMs={blackRemainingMs}
+              whiteRemainingMs={whiteRemainingMs}
+              turnStartedAt={turnStartedAt}
+              serverUpdatedAt={serverUpdatedAt}
+              currentPlayer={state.currentPlayer}
+            />
+          )}
           <TurnInfo
             state={state}
             modeLabel={modeLabel}

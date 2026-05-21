@@ -11,6 +11,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createOnlineGame, joinOnlineGame, joinOrCreateRandomGame } from '../lib/onlineGame';
 import { createInitialState } from '../game/initialState';
 import { useLang } from '../lib/lang';
+import { TimerSettings } from './TimerSettings';
+import { DEFAULT_TIMER_CONFIG, type TimerConfig } from '../game/timerTypes';
 
 interface Props {
   userId: string;
@@ -108,11 +110,13 @@ function FriendMatch({
   const [createdRoomCode, setCreatedRoomCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Phase T-2a: タイマー設定（部屋作成者が選択）
+  const [timerConfig, setTimerConfig] = useState<TimerConfig>(DEFAULT_TIMER_CONFIG);
 
   async function handleCreate() {
     setLoading(true);
     setError(null);
-    const result = await createOnlineGame(userId);
+    const result = await createOnlineGame(userId, timerConfig);
     setLoading(false);
     if ('error' in result) {
       setError(result.error);
@@ -165,6 +169,8 @@ function FriendMatch({
           {!createdRoomCode ? (
             <>
               <p style={styles.desc}>{t.onlineCreateDesc}</p>
+              {/* Phase T-2a: タイマー設定 UI */}
+              <TimerSettings config={timerConfig} onChange={setTimerConfig} />
               <button
                 type="button"
                 style={styles.primaryBtn}
