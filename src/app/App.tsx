@@ -381,26 +381,18 @@ export default function App() {
       restoredState = prev;
     }
 
-    // タイマー時間復元 (Phase T-1)
+    // タイマー処理 (Phase T-1 確定仕様)
     if (restoredState && state.timerConfig) {
       const config = state.timerConfig;
-      const undoneMove = state.history[state.history.length - 1];
-      if (config.mode === 'total_time' && undoneMove?.time_used_ms) {
-        const undonePlayer = undoneMove.player;
-        setPlayerTimers((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            [undonePlayer]: prev[undonePlayer] + undoneMove.time_used_ms!,
-          };
-        });
-      } else if (config.mode === 'per_move') {
+      if (config.mode === 'per_move') {
+        // per_move: その手番の制限時間をリセット（再スタート）
         moveTimerStartedAtRef.current = Date.now();
         setCurrentMoveRemainingMs(config.perMoveSeconds * 1000);
       }
-      // total_time: 手番切り替え後の turnStartedAt をリセット
+      // total_time: 残り時間は戻さない（実時間消費を維持）
+      // 手番開始時刻のみリセット（インターバル計算の基準点更新）
       turnStartedAtRef.current = Date.now();
-      if (restoredState && config.mode === 'total_time') {
+      if (config.mode === 'total_time') {
         const curPlayer = restoredState.currentPlayer;
         setPlayerTimers((prev) => {
           if (!prev) return prev;
