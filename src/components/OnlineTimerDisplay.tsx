@@ -24,10 +24,10 @@ function formatMs(ms: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function getTimerColor(ms: number): string {
-  if (ms <= 10000) return '#e03a26';
-  if (ms <= 30000) return '#e06c26';
-  return 'inherit';
+function getTimerClassName(ms: number): string {
+  if (ms <= 10000) return 'online-timer-danger';
+  if (ms <= 30000) return 'online-timer-warning';
+  return '';
 }
 
 /**
@@ -94,7 +94,7 @@ export function OnlineTimerDisplay({
 
   if (mode === 'total_time') {
     return (
-      <div className="timer-display timer-display-total">
+      <div className="online-timer-bar">
         {(['black', 'white'] as const).map((player) => {
           const rawRemaining = player === 'black' ? blackRemainingMs : whiteRemainingMs;
           const isActive = player === currentPlayer;
@@ -108,17 +108,14 @@ export function OnlineTimerDisplay({
                 localReceiveTime: localReceiveTimeRef.current,
               })
             : (rawRemaining ?? 0);
-          const color = getTimerColor(remaining);
+          const colorClass = isActive ? getTimerClassName(remaining) : '';
           return (
             <div
               key={player}
-              className={`timer-player ${isActive ? 'timer-player-active' : 'timer-player-inactive'}`}
+              className={`online-timer-player ${isActive ? 'online-timer-player-active' : 'online-timer-player-inactive'}`}
             >
-              <span className="timer-label">{player === 'black' ? '●' : '○'}</span>
-              <span
-                className="timer-value"
-                style={{ color: isActive ? color : undefined }}
-              >
+              <span className="online-timer-symbol">{player === 'black' ? '●' : '○'}</span>
+              <span className={`online-timer-value ${colorClass}`}>
                 {formatMs(remaining)}
               </span>
             </div>
@@ -137,11 +134,13 @@ export function OnlineTimerDisplay({
       serverUpdatedAt,
       localReceiveTime: localReceiveTimeRef.current,
     });
-    const color = getTimerColor(remaining);
+    const colorClass = getTimerClassName(remaining);
     return (
-      <div className="timer-display timer-display-per-move">
-        <span className="timer-label">{currentPlayer === 'black' ? '●' : '○'}</span>
-        <span className="timer-value" style={{ color }}>
+      <div className="online-timer-per-move">
+        <span className="online-timer-per-move-symbol">
+          {currentPlayer === 'black' ? '●' : '○'}
+        </span>
+        <span className={`online-timer-per-move-value ${colorClass}`}>
           {/* tick は再描画トリガーとして使用 */}
           {tick >= 0 ? formatMs(remaining) : ''}
         </span>

@@ -352,23 +352,8 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
       )}
 
       <main className="layout">
-        <div className="board-stage">
-          <Board
-            state={state}
-            buildState={buildState}
-            onSelectPosition={handleSelectPosition}
-            onLargePocketClick={handleLargePocketClick}
-            onMiddlePocketClick={handleMiddlePocketClick}
-            onSmallPocketClick={handleSmallPocketClick}
-            labelPerspective={myColor === 'white' ? 'white' : 'black'}
-            ghostMoves={ghostMoves}
-            ghostModeActive={ghostModeActive}
-            showGhostToggle={showGhostToggle}
-            onGhostModeToggle={() => setGhostModeActive(v => !v)}
-          />
-        </div>
-        <aside className="panel-col">
-          {/* Phase T-2a: タイムクロック表示（timer_config がある場合のみ） */}
+        <div className="board-col">
+          {/* Phase T-2a: タイムクロック — ボード直上に配置 */}
           {gameRow.timer_config && gameRow.timer_config.mode !== 'none' && (
             <OnlineTimerDisplay
               timerConfig={gameRow.timer_config}
@@ -379,6 +364,23 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
               currentPlayer={state.currentPlayer}
             />
           )}
+          <div className="board-stage">
+            <Board
+              state={state}
+              buildState={buildState}
+              onSelectPosition={handleSelectPosition}
+              onLargePocketClick={handleLargePocketClick}
+              onMiddlePocketClick={handleMiddlePocketClick}
+              onSmallPocketClick={handleSmallPocketClick}
+              labelPerspective={myColor === 'white' ? 'white' : 'black'}
+              ghostMoves={ghostMoves}
+              ghostModeActive={ghostModeActive}
+              showGhostToggle={showGhostToggle}
+              onGhostModeToggle={() => setGhostModeActive(v => !v)}
+            />
+          </div>
+        </div>
+        <aside className="panel-col">
           <TurnInfo
             state={state}
             modeLabel={modeLabel}

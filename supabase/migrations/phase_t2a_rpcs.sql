@@ -152,7 +152,7 @@ BEGIN
       'online_pvp',
       NULL,
       v_effective_winner,
-      (p_new_game_state->'history'),
+      jsonb_array_length(p_new_game_state->'history'),
       p_new_game_state->'history',
       v_game.timer_config,
       CASE WHEN v_timed_out THEN 'timeout' ELSE 'normal' END
@@ -273,7 +273,7 @@ BEGIN
     'online_pvp',
     NULL,
     v_winner,
-    (v_game.game_state->'history'),
+    jsonb_array_length(v_game.game_state->'history'),
     v_game.game_state->'history',
     v_game.timer_config,
     'timeout'

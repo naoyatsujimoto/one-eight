@@ -156,6 +156,10 @@ html, body {
   min-height: calc(100vh - 64px);
   align-items: start;
 }
+.board-col {
+  display: flex;
+  flex-direction: column;
+}
 .board-stage {
   display: flex;
   align-items: center;
@@ -252,6 +256,77 @@ html, body {
 }
 
 /* ── Timer Panel (in TurnInfo) ── */
+/* ── Online Timer Display (OnlineTimerDisplay.tsx) ── */
+.online-timer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 32px;
+  background: #f5f0eb;
+  border-bottom: 1px solid var(--rule);
+}
+.online-timer-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.online-timer-player-active {
+  background: #ede6dc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.online-timer-player-inactive {
+  opacity: 0.5;
+}
+.online-timer-symbol {
+  font-size: 18px;
+  line-height: 1;
+}
+.online-timer-value {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  min-width: 3.5ch;
+  text-align: right;
+  transition: color 0.2s;
+}
+.online-timer-player-inactive .online-timer-value {
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--ink-4);
+}
+.online-timer-sep {
+  color: var(--ink-4);
+  font-size: 13px;
+}
+.online-timer-per-move {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 32px;
+  background: #f5f0eb;
+  border-bottom: 1px solid var(--rule);
+}
+.online-timer-per-move-symbol {
+  font-size: 18px;
+}
+.online-timer-per-move-value {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  transition: color 0.2s;
+}
+.online-timer-warning { color: #e06c26 !important; }
+.online-timer-danger  { color: #e03a26 !important; }
+
 .timer-panel {
   margin-top: 14px;
   padding-top: 14px;
@@ -1427,6 +1502,15 @@ ol { padding-left: 20px; }
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .panel-col { border-left: none; border-top: 1px solid var(--rule); }
+}
+
+/* ─── Online Timer: Mobile adjustments ── */
+@media (max-width: 640px) {
+  .online-timer-bar { padding: 8px 16px; gap: 8px; }
+  .online-timer-per-move { padding: 8px 16px; }
+  .online-timer-per-move-value { font-size: 20px; }
+  .online-timer-value { font-size: 16px; }
+  .online-timer-player-inactive .online-timer-value { font-size: 14px; }
 }
 
 /* ─── Mobile (≤ 640px): compact UI ── */
