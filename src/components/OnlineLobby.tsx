@@ -205,6 +205,11 @@ function FriendMatch({
               maxLength={6}
               style={styles.codeInput}
               autoFocus
+              autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
             />
             <button
               type="submit"
