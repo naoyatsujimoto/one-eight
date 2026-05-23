@@ -20,8 +20,7 @@ import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
-import { CpuProfile } from './CpuProfile';
-import type { CpuDifficulty } from '../game/ai';
+
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
 
@@ -59,7 +58,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
   const [proActive, setProActive] = useState(false);
-  const [openCpuDiff, setOpenCpuDiff] = useState<CpuDifficulty | null>(null);
+
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
   const [username, setUsername] = useState<string>(() => {
@@ -252,28 +251,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 <StatCard label={t.userCpuWinRate} value={pct(stats.cpuWinRate)} />
                 <StatCard label={t.userPvpWinRate} value={pct(stats.pvpWinRate)} />
               </div>
-              {stats.recent20.length > 0 && (
-                <div style={s.recent20Wrap}>
-                  <div style={s.sectionLabel}>{t.userRecent20}</div>
-                  <div style={s.dotRow}>
-                    {stats.recent20.map((r, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          ...s.dot,
-                          background: r.win === null ? '#bbb' : r.win ? '#2e7d32' : '#c62828',
-                        }}
-                        title={r.win === null ? '△' : r.win ? '○' : '×'}
-                      />
-                    ))}
-                  </div>
-                  <div style={s.dotLegend}>
-                    <span style={{ color: '#2e7d32' }}>● Win</span>
-                    <span style={{ color: '#c62828', marginLeft: 10 }}>● Loss</span>
-                    <span style={{ color: '#bbb', marginLeft: 10 }}>● Draw</span>
-                  </div>
-                </div>
-              )}
+
             </>
           )}
         </section>
@@ -316,16 +294,6 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           </section>
         )}
 
-        {/* ── Section 6: 代表棋譜（viewOnly時は非表示）── */}
-        {!viewOnly && (
-          <section style={s.section}>
-            <SectionTitle title={t.userFeaturedGames} />
-            {loading ? <Muted text="Loading…" /> : stats && (
-              <FeaturedGames stats={stats} onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }} />
-            )}
-          </section>
-        )}
-
         {/* ── Section 7: 大会実績（Coming Soon）── */}
         <section style={s.section}>
           <SectionTitle title={t.userTournamentHistory} soon />
@@ -338,32 +306,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <Muted text={t.onlineComingSoon} />
         </section>
 
-        {/* ── CPU Profiles ── */}
-        {!viewOnly && (
-          <section style={s.section}>
-            <SectionTitle title={t.cpuProfiles} />
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {(['normal', 'hard', 'very_hard'] as CpuDifficulty[]).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  style={s.cpuBtn}
-                  onClick={() => setOpenCpuDiff(d)}
-                >
-                  {d === 'normal' ? 'Agnesi' : d === 'hard' ? 'al-Kashi' : 'Maupertuis'}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
         </>
         )}
 
       </div>
-
-      {openCpuDiff && (
-        <CpuProfile difficulty={openCpuDiff} onClose={() => setOpenCpuDiff(null)} />
-      )}
 
       {showModal && pendingModalGameId && pendingStatus?.status === 'done' && (
         <PostmortemModal
@@ -590,45 +536,6 @@ function RecentGamesTable({
           })}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-// ── 代表棋譜 ──────────────────────────────────────────────────────────────────
-
-function FeaturedGames({
-  stats,
-  onPostmortem,
-}: {
-  stats: UserPageStats;
-  onPostmortem: (r: GameRecord) => void;
-}) {
-  const { t } = useLang();
-  const cards: { label: string; game: GameRecord | null; soon?: boolean }[] = [
-    { label: t.userBestWin, game: stats.bestWin },
-    { label: t.userLongestGame, game: stats.longestGame },
-    { label: t.userUpsetWin, game: stats.upsetWin },
-    { label: t.userTournamentGame, game: null, soon: true },
-    { label: t.userPinnedGame, game: null, soon: true },
-  ];
-
-  return (
-    <div style={s.featuredScroll}>
-      {cards.map(({ label, game, soon }) => (
-        <div key={label} style={{ ...s.featuredCard, ...(soon || !game ? { opacity: 0.5 } : {}) }}>
-          <div style={s.featuredLabel}>{label}</div>
-          {soon ? (
-            <span style={s.soonBadge}>{t.onlineComingSoon}</span>
-          ) : game ? (
-            <>
-              <div style={s.featuredMeta}>{game.move_count} moves · {game.winner ?? '—'}</div>
-              <button type="button" style={s.analyzeBtn} onClick={() => onPostmortem(game)}>{t.userViewGame}</button>
-            </>
-          ) : (
-            <div style={{ color: '#bbb', fontSize: '0.78rem' }}>{t.userNoData}</div>
-          )}
-        </div>
-      ))}
     </div>
   );
 }
