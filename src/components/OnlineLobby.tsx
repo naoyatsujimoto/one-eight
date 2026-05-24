@@ -107,7 +107,6 @@ function FriendMatch({
   const { t } = useLang();
   const [tab, setTab] = useState<FriendTab>('create');
   const [roomCode, setRoomCode] = useState('');
-  const isComposingRef = useRef(false);
   const [createdRoomCode, setCreatedRoomCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -202,18 +201,17 @@ function FriendMatch({
               type="text"
               value={roomCode}
               onChange={(e) => {
-                // composition中（iOS IME仮確定フェーズ）はstateを更新しない
-                // → commitと競合してCCEのような重複入力になるのを防ぐ
-                if (isComposingRef.current) return;
+                // nativeEvent.isComposing が true のとき（IME仮確定中）はスキップ
+                // → Reactの合成イベントより正確にIME状態を判定できる
+                if ((e.nativeEvent as InputEvent).isComposing) return;
                 const val = e.target.value
                   .replace(/[^A-Za-z0-9]/g, '')
                   .toUpperCase()
                   .slice(0, 6);
                 setRoomCode(val);
               }}
-              onCompositionStart={() => { isComposingRef.current = true; }}
               onCompositionEnd={(e) => {
-                isComposingRef.current = false;
+                // IME確定後（compositionEnd）に最終値を反映
                 const val = (e.target as HTMLInputElement).value
                   .replace(/[^A-Za-z0-9]/g, '')
                   .toUpperCase()
