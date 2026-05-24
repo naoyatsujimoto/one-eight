@@ -816,9 +816,28 @@ export default function App() {
     void (async () => {
       try {
         const hash = computeCanonicalHashString(state);
+        // [GHOST_DIAG] Layer A/B
+        console.log('[GHOST_DIAG] fetch trigger', {
+          ghostModeActive,
+          showGhostToggle,
+          'state.history.length': state.history.length,
+          'state.currentPlayer': state.currentPlayer,
+          humanColor,
+          computed_hash: hash,
+          p_move_index: state.history.length,
+          expected_hash: '61f227bbe714b5ea',
+          hash_match: hash === '61f227bbe714b5ea',
+        });
         const moves = await fetchGhostMoves(hash, humanColor, state.history.length);
+        // [GHOST_DIAG] Layer C
+        console.log('[GHOST_DIAG] fetchGhostMoves result', {
+          count: moves.length,
+          rows: moves.slice(0, 10),
+          has_G_massive_7: moves.some(m => m.positioning === 'G' && m.build_type === 'massive' && m.build_gate === 7),
+        });
         setGhostMoves(moves);
-      } catch {
+      } catch (e) {
+        console.error('[GHOST_DIAG] fetch error', e);
         setGhostMoves([]);
       }
     })();
