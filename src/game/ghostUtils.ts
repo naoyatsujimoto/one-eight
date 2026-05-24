@@ -55,7 +55,10 @@ export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDispla
 
   for (const gm of ghostMoves) {
     const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-    const opacity = 0.4 + ratio * 0.6; // min=0.4 / max=1.0
+    // 非線形コントラスト補正: pow(ratio, 1.5) で中〜低頻度を圧縮し、高頻度を際立たせる
+    // 低頻度(ratio≈0.1): opacity≈0.31  中頻度(ratio=0.5): opacity≈0.55  最大(ratio=1.0): opacity=1.0
+    const contrastRatio = Math.pow(ratio, 1.5);
+    const opacity = 0.3 + contrastRatio * 0.7; // min=0.30 / max=1.0
 
     // ── Position opacity ───────────────────────────────────────────────
     const existingOpacity = opacityMap.get(gm.positioning) ?? 0;

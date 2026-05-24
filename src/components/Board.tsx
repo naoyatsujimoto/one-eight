@@ -7,12 +7,15 @@ import type { GhostMove } from '../lib/matchLog';
 import { ghostMovesToDisplayTargets, getGhostPocketOpacity } from '../game/ghostUtils';
 
 // Diagonal-hatch SVG for Ghost Mode overlay on round pockets (Position owner-dot)
-// Hatch density: width=5/height=5 + strokeWidth=4.5 gives ~2× visual density vs old 8/8+2.5
+// ハッチコントラスト: opacity に連動して strokeWidth も変化させる。
+//   低頻度(opacity≈0.30): strokeWidth≈3.0 → 少し藁い線
+//   高頻度(opacity≈1.00): strokeWidth≈5.5 → 濃く太い線
 function GhostHatchCircle({ opacity }: { opacity: number }) {
   const uid = useId();
   const patternId = `ghost-hatch-c-${uid}`;
   const clipId = `ghost-clip-c-${uid}`;
-  // opacity is already normalized (max=1.0, min~0.4) — use as-is
+  // strokeWidth を opacity に連動させて濃度差を強調する
+  const sw = 3.0 + opacity * 2.5; // min=3.0 / max=5.5
   return (
     <svg
       aria-hidden="true"
@@ -30,7 +33,7 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
     >
       <defs>
         <pattern id={patternId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="5" stroke="#6495ed" strokeWidth="4.5" opacity={opacity} />
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#6495ed" strokeWidth={sw} opacity={opacity} />
         </pattern>
         <clipPath id={clipId}>
           <circle cx="50" cy="50" r="50" />
@@ -43,12 +46,12 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
 
 // Diagonal-hatch SVG for Ghost Mode overlay on diamond-shaped pockets (Gate DiamondPip)
 // Note: .diamond-pip has transform:rotate(45deg) so the DOM element is a square that appears diamond.
-// We fill the entire square; the parent element's border clips the visual shape naturally.
-// Hatch density: width=5/height=5 + strokeWidth=4.5 gives ~2× visual density vs old 8/8+2.5
+// ハッチコントラスト: opacity に連動して strokeWidth も変化させる。
 function GhostHatchDiamond({ opacity }: { opacity: number }) {
   const uid = useId();
   const patternId = `ghost-hatch-d-${uid}`;
-  // opacity is already normalized (max=1.0, min~0.4) — use as-is
+  // strokeWidth を opacity に連動させて濃度差を強調する
+  const sw = 3.0 + opacity * 2.5; // min=3.0 / max=5.5
   return (
     <svg
       aria-hidden="true"
@@ -64,7 +67,7 @@ function GhostHatchDiamond({ opacity }: { opacity: number }) {
     >
       <defs>
         <pattern id={patternId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="5" stroke="#6495ed" strokeWidth="4.5" opacity={opacity} />
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#6495ed" strokeWidth={sw} opacity={opacity} />
         </pattern>
       </defs>
       <rect x="0" y="0" width="100" height="100" fill={`url(#${patternId})`} />

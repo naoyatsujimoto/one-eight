@@ -268,7 +268,7 @@ describe('Ghost Mode — opacity 計算', () => {
     expect(gateMap.get('3:large')).toBe(1.0);
   });
 
-  it('frequency=1, max=10 → opacity = 0.4 + (1/10)*0.6 = 0.46', () => {
+  it('frequency=1, max=10 → opacity = 0.3 + pow(1/10,1.5)*0.7 ≈ 0.322', () => {
     const moves: GhostMove[] = [
       {
         positioning: 'D', build_type: 'massive', build_gate: 3,
@@ -281,7 +281,9 @@ describe('Ghost Mode — opacity 計算', () => {
     ];
     const { gateMap } = ghostMovesToDisplayTargets(moves);
     expect(gateMap.get('3:large')).toBeCloseTo(1.0, 5);
-    expect(gateMap.get('7:large')).toBeCloseTo(0.46, 5);
+    // ratio=0.1, pow(0.1,1.5)≈0.03162, opacity≈0.3+0.03162*0.7≈0.322
+    const expected71 = 0.3 + Math.pow(0.1, 1.5) * 0.7;
+    expect(gateMap.get('7:large')).toBeCloseTo(expected71, 4);
   });
 
   it('同 gateId + 同 pocketSize に複数エントリ競合時、opacity が高い方が残る', () => {
@@ -315,10 +317,11 @@ describe('Ghost Mode — opacity 計算', () => {
       },
     ];
     const { gateMap } = ghostMovesToDisplayTargets(moves);
-    // maxFreq=10: massive opacity=1.0, quad opacity=0.7
+    // maxFreq=10: massive(freq=10)→opacity=1.0, quad(freq=5)→pow(0.5,1.5)≈0.354,opacity≈0.548
     // Gate1: large と small が独立して保持される（上書きしない）
+    const expectedSmall = 0.3 + Math.pow(0.5, 1.5) * 0.7;
     expect(gateMap.get('1:large')).toBeCloseTo(1.0, 5);
-    expect(gateMap.get('1:small')).toBeCloseTo(0.7, 5);
+    expect(gateMap.get('1:small')).toBeCloseTo(expectedSmall, 4);
   });
 });
 
