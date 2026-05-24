@@ -280,9 +280,11 @@ export async function fetchPublicUserPageStats(userId: string): Promise<UserPage
 // ─── Ghost Mode ─────────────────────────────────────────────────────────────
 
 export interface GhostMove {
-  positioning: string;    // PositionId ('A'〜'M') | 'P'
-  build_type: string;     // 'massive' | 'selective' | 'quad' | 'skip'
-  gate_ids_str: string | null; // massive:単一gate / selective:カンマ区切り2gate / quad:複数gate
+  positioning: string;              // PositionId ('A'〜'M') | 'P'
+  build_type: string;               // 'massive' | 'selective' | 'quad' | 'skip'
+  build_gate: number | null;        // massive: gate id / others: null
+  build_gates: number[] | null;     // selective: valid gate ids (0 removed, asc) / others: null
+  build_placed_gate_ids: number[] | null; // quad: placed gate ids (asc) / others: null
   frequency: number;
 }
 

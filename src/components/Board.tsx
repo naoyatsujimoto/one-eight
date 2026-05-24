@@ -4,6 +4,7 @@ import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build'
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import type { GhostMove } from '../lib/matchLog';
+import { ghostMovesToDisplayTargets } from '../game/ghostUtils';
 
 // Diagonal-hatch SVG for Ghost Mode overlay on round pockets (Position owner-dot)
 // Hatch density: width=5/height=5 + strokeWidth=4.5 gives ~2× visual density vs old 8/8+2.5
@@ -597,43 +598,14 @@ export function Board({
 }) {
   const selectedId = state.selectedPosition;
 
-  // Ghost Mode: positioning → opacity マップ（比率ベース正規化: max頻度=1.0, min≈0.4）
-  const ghostOpacityMap = (() => {
-    if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0) return new Map<string, number>();
-    const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
-    const map = new Map<string, number>();
-    for (const gm of ghostMoves) {
-      const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.4 + ratio * 0.6; // min=0.4, max=1.0 (ratio-based)
-      const existing = map.get(gm.positioning) ?? 0;
-      if (opacity > existing) map.set(gm.positioning, opacity);
-    }
-    return map;
-  })();
-
-  // Ghost Mode: gateId → {opacity, pocketSize} マップ（比率ベース正規化: max頻度=1.0, min≈0.4）
-  const ghostGateMap = (() => {
-    if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0)
-      return new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
-    const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
-    const map = new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
-    for (const gm of ghostMoves) {
-      if (!gm.gate_ids_str) continue;
-      const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.4 + ratio * 0.6; // min=0.4, max=1.0 (ratio-based)
-      const pocketSize: 'large' | 'middle' | 'small' =
-        gm.build_type === 'massive' ? 'large' :
-        gm.build_type === 'selective' ? 'middle' : 'small';
-      const ids = gm.gate_ids_str.split(',').map(Number).filter((n) => !isNaN(n) && n > 0);
-      for (const gateId of ids) {
-        const existing = map.get(gateId);
-        if (!existing || opacity > existing.opacity) {
-          map.set(gateId, { opacity, pocketSize });
-        }
-      }
-    }
-    return map;
-  })();
+  // Ghost Mode: opacityMap / gateMap を ghostUtils で生成
+  // - gate_ids_str 文字列 split に依存しない構造化カラムを使用
+  // - massive→large / selective→middle(0除去済み) / quad→small
+  const { opacityMap: ghostOpacityMap, gateMap: ghostGateMap } = (
+    ghostModeActive && ghostMoves && ghostMoves.length > 0
+      ? ghostMovesToDisplayTargets(ghostMoves)
+      : { opacityMap: new Map<string, number>(), gateMap: new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>() }
+  );
 
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
 
