@@ -1,11 +1,75 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useId } from 'react';
 import { POSITION_TO_GATES } from '../game/constants';
 import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build';
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import type { GhostMove } from '../lib/matchLog';
 
-function OwnerDot({ owner, isLastOpponentMove }: { owner: 'black' | 'white' | null; isLastOpponentMove?: boolean }) {
+// Diagonal-hatch SVG for Ghost Mode overlay on round pockets (Position owner-dot)
+function GhostHatchCircle({ opacity }: { opacity: number }) {
+  const uid = useId();
+  const patternId = `ghost-hatch-c-${uid}`;
+  const clipId = `ghost-clip-c-${uid}`;
+  const effectiveOpacity = Math.min(0.92, opacity + 0.15);
+  return (
+    <svg
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={effectiveOpacity} />
+        </pattern>
+        <clipPath id={clipId}>
+          <circle cx="50" cy="50" r="50" />
+        </clipPath>
+      </defs>
+      <rect x="0" y="0" width="100" height="100" fill={`url(#${patternId})`} clipPath={`url(#${clipId})`} />
+    </svg>
+  );
+}
+
+// Diagonal-hatch SVG for Ghost Mode overlay on diamond-shaped pockets (Gate DiamondPip)
+// Note: .diamond-pip has transform:rotate(45deg) so the DOM element is a square that appears diamond.
+// We fill the entire square; the parent element’s border clips the visual shape naturally.
+function GhostHatchDiamond({ opacity }: { opacity: number }) {
+  const uid = useId();
+  const patternId = `ghost-hatch-d-${uid}`;
+  const effectiveOpacity = Math.min(0.92, opacity + 0.15);
+  return (
+    <svg
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+      }}
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={effectiveOpacity} />
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="100" height="100" fill={`url(#${patternId})`} />
+    </svg>
+  );
+}
+
+function OwnerDot({ owner, isLastOpponentMove, ghostOpacity = 0 }: { owner: 'black' | 'white' | null; isLastOpponentMove?: boolean; ghostOpacity?: number }) {
   return (
     <span
       className={[
@@ -13,8 +77,11 @@ function OwnerDot({ owner, isLastOpponentMove }: { owner: 'black' | 'white' | nu
         `owner-dot-${owner ?? 'none'}`,
         isLastOpponentMove ? 'last-opponent-move' : '',
       ].filter(Boolean).join(' ')}
+      style={{ position: 'relative' }}
       aria-label={owner ?? 'empty'}
-    />
+    >
+      {ghostOpacity > 0 && <GhostHatchCircle opacity={ghostOpacity} />}
+    </span>
   );
 }
 
@@ -240,16 +307,9 @@ function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove, ghos
     isLastOpponentMove && clickState !== 'selected' ? 'last-opponent-move' : '',
   ].filter(Boolean).join(' ');
 
-  // Ghost Mode: ポケット輪郭リングのみ。fill なし。
-  // selected 状態のときは ghost ring を無効化（CSS pocket-selected リングを優先）
+  // Ghost Mode: 斜線ハッチでポケット内部を塗る。selected 状態では無効化。
   const isSelected = clickState === 'selected';
-  const ringOpacity = ghostHighlight > 0 ? Math.min(0.9, ghostHighlight + 0.18) : 0;
-  const glowOpacity = ghostHighlight > 0 ? ghostHighlight * 0.55 : 0;
-  const ghostRingStyle: React.CSSProperties = ghostHighlight > 0 && !isSelected
-    ? {
-        boxShadow: `0 0 0 2px rgba(100,149,237,${ringOpacity}), 0 0 7px 1px rgba(100,149,237,${glowOpacity})`,
-      }
-    : {};
+  const showGhostHatch = ghostHighlight > 0 && !isSelected;
 
   return (
     <span
@@ -259,9 +319,10 @@ function DiamondPip({ owner, size, clickState, onClick, isLastOpponentMove, ghos
       aria-pressed={clickState === 'selected' ? true : undefined}
       onClick={interactive ? onClick : undefined}
       onKeyDown={interactive && onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
-      style={{ position: 'relative', ...ghostRingStyle }}
+      style={{ position: 'relative' }}
     >
       {(owner === 'black' || owner === 'white') && <SilverCap owner={owner} />}
+      {showGhostHatch && <GhostHatchDiamond opacity={ghostHighlight} />}
     </span>
   );
 }
@@ -866,7 +927,7 @@ export function Board({
                 }}
               >
                 <span className="pos-id">{getDisplayPositionLabel(id, labelPerspective)}</span>
-                <OwnerDot owner={displayOwner} isLastOpponentMove={isLastOpponent} />
+                <OwnerDot owner={displayOwner} isLastOpponentMove={isLastOpponent} ghostOpacity={posGhostOpacity} />
               </button>
             );
           })}
