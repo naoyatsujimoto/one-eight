@@ -128,10 +128,11 @@ function FriendMatch({
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
-    if (!roomCode.trim()) return;
+    const code = roomCode.trim().replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+    if (!code) return;
     setLoading(true);
     setError(null);
-    const result = await joinOnlineGame(roomCode.trim());
+    const result = await joinOnlineGame(code);
     setLoading(false);
     if ('error' in result) {
       const msg = result.error.includes('room_not_found')
@@ -200,33 +201,14 @@ function FriendMatch({
             <input
               type="text"
               value={roomCode}
-              onChange={(e) => {
-                // nativeEvent.isComposing が true のとき（IME仮確定中）はスキップ
-                // → Reactの合成イベントより正確にIME状態を判定できる
-                if ((e.nativeEvent as InputEvent).isComposing) return;
-                const val = e.target.value
-                  .replace(/[^A-Za-z0-9]/g, '')
-                  .toUpperCase()
-                  .slice(0, 6);
-                setRoomCode(val);
-              }}
-              onCompositionEnd={(e) => {
-                // IME確定後（compositionEnd）に最終値を反映
-                const val = (e.target as HTMLInputElement).value
-                  .replace(/[^A-Za-z0-9]/g, '')
-                  .toUpperCase()
-                  .slice(0, 6);
-                setRoomCode(val);
-              }}
+              onChange={(e) => setRoomCode(e.target.value)}
               placeholder="XXXXXX"
-              maxLength={6}
               style={styles.codeInput}
               autoFocus
               autoComplete="off"
-              autoCapitalize="none"
               autoCorrect="off"
+              autoCapitalize="characters"
               spellCheck={false}
-              inputMode="text"
             />
             <button
               type="submit"
