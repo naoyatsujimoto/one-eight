@@ -6,11 +6,12 @@ import type { BoardBuildState } from '../app/App';
 import type { GhostMove } from '../lib/matchLog';
 
 // Diagonal-hatch SVG for Ghost Mode overlay on round pockets (Position owner-dot)
+// Hatch density: width=5/height=5 + strokeWidth=4.5 gives ~2× visual density vs old 8/8+2.5
 function GhostHatchCircle({ opacity }: { opacity: number }) {
   const uid = useId();
   const patternId = `ghost-hatch-c-${uid}`;
   const clipId = `ghost-clip-c-${uid}`;
-  // opacity is already normalized (max=1.0, min~0.25) — use as-is
+  // opacity is already normalized (max=1.0, min~0.4) — use as-is
   return (
     <svg
       aria-hidden="true"
@@ -27,8 +28,8 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={opacity} />
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#6495ed" strokeWidth="4.5" opacity={opacity} />
         </pattern>
         <clipPath id={clipId}>
           <circle cx="50" cy="50" r="50" />
@@ -41,11 +42,12 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
 
 // Diagonal-hatch SVG for Ghost Mode overlay on diamond-shaped pockets (Gate DiamondPip)
 // Note: .diamond-pip has transform:rotate(45deg) so the DOM element is a square that appears diamond.
-// We fill the entire square; the parent element’s border clips the visual shape naturally.
+// We fill the entire square; the parent element's border clips the visual shape naturally.
+// Hatch density: width=5/height=5 + strokeWidth=4.5 gives ~2× visual density vs old 8/8+2.5
 function GhostHatchDiamond({ opacity }: { opacity: number }) {
   const uid = useId();
   const patternId = `ghost-hatch-d-${uid}`;
-  // opacity is already normalized (max=1.0, min~0.25) — use as-is
+  // opacity is already normalized (max=1.0, min~0.4) — use as-is
   return (
     <svg
       aria-hidden="true"
@@ -60,8 +62,8 @@ function GhostHatchDiamond({ opacity }: { opacity: number }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={opacity} />
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#6495ed" strokeWidth="4.5" opacity={opacity} />
         </pattern>
       </defs>
       <rect x="0" y="0" width="100" height="100" fill={`url(#${patternId})`} />
@@ -197,7 +199,7 @@ interface DiamondPipProps {
 }
 
 /**
- * SilverCap — boomerang / L-shaped silver patch.
+ * SilverCap - boomerang / L-shaped silver patch.
  *
  * The pip element is a square (viewBox 0 0 1 1) rotated 45° so that:
  *   (0,0) TL corner → TOP    vertex of diamond  (white player)
@@ -240,7 +242,7 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
       `L 1,${t - r}`,
       `A ${r},${r} 0 0,1 ${1 - r},${t}`,     // round arm end (1,t)
       `L ${t + r},${t}`,
-      `A ${r},${r} 0 0,0 ${t},${t + r}`,     // round inner concave (t,t) — sweep=0
+      `A ${r},${r} 0 0,0 ${t},${t + r}`,     // round inner concave (t,t) - sweep=0
       `L ${t},${1 - r}`,
       `A ${r},${r} 0 0,1 ${t - r},1`,        // round arm end (t,1)
       `L ${r},1`,
@@ -259,7 +261,7 @@ function SilverCap({ owner }: { owner: 'black' | 'white' }) {
       `L 0,${t2 + r}`,
       `A ${r},${r} 0 0,1 ${r},${t2}`,        // round arm end (0,t2)
       `L ${t2 - r},${t2}`,
-      `A ${r},${r} 0 0,0 ${t2},${t2 - r}`,   // round inner concave (t2,t2) — sweep=0
+      `A ${r},${r} 0 0,0 ${t2},${t2 - r}`,   // round inner concave (t2,t2) - sweep=0
       `L ${t2},${r}`,
       `A ${r},${r} 0 0,1 ${t2 + r},0`,       // round arm end (t2,0)
       `L ${1 - r},0`,
@@ -526,18 +528,18 @@ const ALL_GATES: GateId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 // Corner gates (1, 4, 7, 10) left adjusted by ±2 for x-symmetry around x=300.
 // Result: every corner is equidistant from the position-grid corner (~dx=40, dy=64).
 const GATE_COORDS: Record<number, { left: number; top: number }> = {
-  1:  { left: 56,  top: 55  },  // centre (104, 103) — symmetric with Gate 7
-  2:  { left: 220, top: 25  },  // centre (268, 73)  — base point (268, 121)
-  3:  { left: 366, top: 25  },  // centre (414, 73)  — base point (414, 121)
-  4:  { left: 529, top: 55  },  // centre (577, 103) — symmetric with Gate 10
-  5:  { left: 560, top: 219 },  // centre (608, 267) — base point (560, 267)
-  6:  { left: 560, top: 365 },  // centre (608, 413) — base point (560, 413)
-  7:  { left: 529, top: 528 },  // centre (577, 576) — symmetric with Gate 1
-  8:  { left: 366, top: 559 },  // centre (414, 607) — base point (414, 559)
-  9:  { left: 220, top: 559 },  // centre (268, 607) — base point (268, 559)
-  10: { left: 56,  top: 528 },  // centre (104, 576) — symmetric with Gate 4
-  11: { left: 26,  top: 365 },  // centre (74, 413)  — base point (122, 413)
-  12: { left: 26,  top: 219 },  // centre (74, 267)  — base point (122, 267)
+  1:  { left: 56,  top: 55  },  // centre (104, 103) - symmetric with Gate 7
+  2:  { left: 220, top: 25  },  // centre (268, 73)  - base point (268, 121)
+  3:  { left: 366, top: 25  },  // centre (414, 73)  - base point (414, 121)
+  4:  { left: 529, top: 55  },  // centre (577, 103) - symmetric with Gate 10
+  5:  { left: 560, top: 219 },  // centre (608, 267) - base point (560, 267)
+  6:  { left: 560, top: 365 },  // centre (608, 413) - base point (560, 413)
+  7:  { left: 529, top: 528 },  // centre (577, 576) - symmetric with Gate 1
+  8:  { left: 366, top: 559 },  // centre (414, 607) - base point (414, 559)
+  9:  { left: 220, top: 559 },  // centre (268, 607) - base point (268, 559)
+  10: { left: 56,  top: 528 },  // centre (104, 576) - symmetric with Gate 4
+  11: { left: 26,  top: 365 },  // centre (74, 413)  - base point (122, 413)
+  12: { left: 26,  top: 219 },  // centre (74, 267)  - base point (122, 267)
 };
 
 interface LineCoord { x1: number; y1: number; x2: number; y2: number }
@@ -546,14 +548,14 @@ interface LineCoord { x1: number; y1: number; x2: number; y2: number }
 // gate-card は padding:2px なので layout box ≈ 98×98px
 // ラベルはゲートセルと重ならないよう外周側に配置する
 const GATE_LABEL_OFFSET: Record<GateType, { left: number; top: number }> = {
-  'top-edge':    { left: 46, top: -18 },   // ゲート上辺の外（上方向）
-  'bottom-edge': { left: 46, top: 108 },   // ゲート下辺の外（下方向）
-  'left-edge':   { left: -18, top: 46 },   // ゲート左辺の外（左方向）
-  'right-edge':  { left: 108, top: 46 },   // ゲート右辺の外（右方向）
-  'corner-tl':   { left: 3, top: 3 },  // 左上コーナー（中心から1px離す）
-  'corner-tr':   { left: 87, top: 3 },  // 右上コーナー（中心から1px離す）
-  'corner-br':   { left: 87, top: 87 },  // 右下コーナー（中心から1px離す）
-  'corner-bl':   { left: 3, top: 87 },  // 左下コーナー（中心から1px離す）
+  'top-edge':    { left: 46, top: -18 },   // ゲート上辺の外(上方向)
+  'bottom-edge': { left: 46, top: 108 },   // ゲート下辺の外(下方向)
+  'left-edge':   { left: -18, top: 46 },   // ゲート左辺の外(左方向)
+  'right-edge':  { left: 108, top: 46 },   // ゲート右辺の外(右方向)
+  'corner-tl':   { left: 3, top: 3 },  // 左上コーナー(中心から1px離す)
+  'corner-tr':   { left: 87, top: 3 },  // 右上コーナー(中心から1px離す)
+  'corner-br':   { left: 87, top: 87 },  // 右下コーナー(中心から1px離す)
+  'corner-bl':   { left: 3, top: 87 },  // 左下コーナー(中心から1px離す)
 };
 
 // ── Board component ───────────────────────────────────────────────────────────
@@ -595,21 +597,21 @@ export function Board({
 }) {
   const selectedId = state.selectedPosition;
 
-  // Ghost Mode: positioning → opacity マップ（比率ベース正規化: max頻度=1.0, min≈0.25）
+  // Ghost Mode: positioning → opacity マップ（比率ベース正規化: max頻度=1.0, min≈0.4）
   const ghostOpacityMap = (() => {
     if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0) return new Map<string, number>();
     const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
     const map = new Map<string, number>();
     for (const gm of ghostMoves) {
       const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.25 + ratio * 0.75; // min=0.25, max=1.0 (ratio-based)
+      const opacity = 0.4 + ratio * 0.6; // min=0.4, max=1.0 (ratio-based)
       const existing = map.get(gm.positioning) ?? 0;
       if (opacity > existing) map.set(gm.positioning, opacity);
     }
     return map;
   })();
 
-  // Ghost Mode: gateId → {opacity, pocketSize} マップ（比率ベース正規化: max頻度=1.0, min≈0.25）
+  // Ghost Mode: gateId → {opacity, pocketSize} マップ（比率ベース正規化: max頻度=1.0, min≈0.4）
   const ghostGateMap = (() => {
     if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0)
       return new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
@@ -618,7 +620,7 @@ export function Board({
     for (const gm of ghostMoves) {
       if (!gm.gate_ids_str) continue;
       const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.25 + ratio * 0.75; // min=0.25, max=1.0 (ratio-based)
+      const opacity = 0.4 + ratio * 0.6; // min=0.4, max=1.0 (ratio-based)
       const pocketSize: 'large' | 'middle' | 'small' =
         gm.build_type === 'massive' ? 'large' :
         gm.build_type === 'selective' ? 'middle' : 'small';
@@ -641,7 +643,7 @@ export function Board({
     const last = state.history[state.history.length - 1];
     if (!last) return null;
     if (last.player === state.currentPlayer) return null; // opponent's last move
-    if (last.positioning === 'P') return null; // skip/pass — no position
+    if (last.positioning === 'P') return null; // skip/pass - no position
     return last.positioning as PositionId;
   })();
 
@@ -708,7 +710,7 @@ export function Board({
     // Re-apply after first paint to ensure DOM dimensions are settled
     // (mobile Safari may report clientWidth=0 during the initial synchronous render).
     const rafId = requestAnimationFrame(applyScale);
-    // Observe the board-stage (grandparent) — stable container whose size is not
+    // Observe the board-stage (grandparent) - stable container whose size is not
     // affected by applyScale, so no feedback loop is triggered.
     const stage = scalerRef.current?.parentElement?.parentElement ?? scalerRef.current?.parentElement;
     const ro = new ResizeObserver(applyScale);
@@ -767,22 +769,22 @@ export function Board({
           ty = centerY;
           break;
         case 'corner-tl':
-          // Gate 1: board top-left — position-facing corner = bottom-right
+          // Gate 1: board top-left - position-facing corner = bottom-right
           tx = (gRect.right - cRect.left) / scale;
           ty = (gRect.bottom - cRect.top) / scale;
           break;
         case 'corner-tr':
-          // Gate 4: board top-right — position-facing corner = bottom-left
+          // Gate 4: board top-right - position-facing corner = bottom-left
           tx = (gRect.left - cRect.left) / scale;
           ty = (gRect.bottom - cRect.top) / scale;
           break;
         case 'corner-br':
-          // Gate 7: board bottom-right — position-facing corner = top-left
+          // Gate 7: board bottom-right - position-facing corner = top-left
           tx = (gRect.left - cRect.left) / scale;
           ty = (gRect.top - cRect.top) / scale;
           break;
         case 'corner-bl':
-          // Gate 10: board bottom-left — position-facing corner = top-right
+          // Gate 10: board bottom-left - position-facing corner = top-right
           tx = (gRect.right - cRect.left) / scale;
           ty = (gRect.top - cRect.top) / scale;
           break;
@@ -902,7 +904,7 @@ export function Board({
             const displayOwner = isSelected ? state.pendingPositionOwner : pos.owner;
             const coord = POSITION_COORDS[id];
 
-            // Ghost Mode: position ボタンに薄いリングのみ（opacity ベールは付与しない）
+            // Ghost Mode: position ボタンに薄いリングのみ(opacity ベールは付与しない)
             const posGhostOpacity = (!isSelected && !isLastOpponent)
               ? (ghostOpacityMap.get(id) ?? 0)
               : 0;
