@@ -10,7 +10,7 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
   const uid = useId();
   const patternId = `ghost-hatch-c-${uid}`;
   const clipId = `ghost-clip-c-${uid}`;
-  const effectiveOpacity = Math.min(0.92, opacity + 0.15);
+  // opacity is already normalized (max=1.0, min~0.25) — use as-is
   return (
     <svg
       aria-hidden="true"
@@ -28,7 +28,7 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
     >
       <defs>
         <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={effectiveOpacity} />
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={opacity} />
         </pattern>
         <clipPath id={clipId}>
           <circle cx="50" cy="50" r="50" />
@@ -45,7 +45,7 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
 function GhostHatchDiamond({ opacity }: { opacity: number }) {
   const uid = useId();
   const patternId = `ghost-hatch-d-${uid}`;
-  const effectiveOpacity = Math.min(0.92, opacity + 0.15);
+  // opacity is already normalized (max=1.0, min~0.25) — use as-is
   return (
     <svg
       aria-hidden="true"
@@ -61,7 +61,7 @@ function GhostHatchDiamond({ opacity }: { opacity: number }) {
     >
       <defs>
         <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={effectiveOpacity} />
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#6495ed" strokeWidth="2.5" opacity={opacity} />
         </pattern>
       </defs>
       <rect x="0" y="0" width="100" height="100" fill={`url(#${patternId})`} />
@@ -595,21 +595,21 @@ export function Board({
 }) {
   const selectedId = state.selectedPosition;
 
-  // Ghost Mode: positioning → opacity マップ（Position ボタンの薄いリング表示用）
+  // Ghost Mode: positioning → opacity マップ（比率ベース正規化: max頻度=1.0, min≈0.25）
   const ghostOpacityMap = (() => {
     if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0) return new Map<string, number>();
     const maxFreq = Math.max(...ghostMoves.map((m) => m.frequency));
     const map = new Map<string, number>();
     for (const gm of ghostMoves) {
       const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.3 + ratio * 0.4;
+      const opacity = 0.25 + ratio * 0.75; // min=0.25, max=1.0 (ratio-based)
       const existing = map.get(gm.positioning) ?? 0;
       if (opacity > existing) map.set(gm.positioning, opacity);
     }
     return map;
   })();
 
-  // Ghost Mode: gateId → {opacity, pocketSize} マップ
+  // Ghost Mode: gateId → {opacity, pocketSize} マップ（比率ベース正規化: max頻度=1.0, min≈0.25）
   const ghostGateMap = (() => {
     if (!ghostModeActive || !ghostMoves || ghostMoves.length === 0)
       return new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
@@ -618,7 +618,7 @@ export function Board({
     for (const gm of ghostMoves) {
       if (!gm.gate_ids_str) continue;
       const ratio = maxFreq > 0 ? gm.frequency / maxFreq : 0;
-      const opacity = 0.3 + ratio * 0.4;
+      const opacity = 0.25 + ratio * 0.75; // min=0.25, max=1.0 (ratio-based)
       const pocketSize: 'large' | 'middle' | 'small' =
         gm.build_type === 'massive' ? 'large' :
         gm.build_type === 'selective' ? 'middle' : 'small';
