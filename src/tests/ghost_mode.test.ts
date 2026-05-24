@@ -268,7 +268,7 @@ describe('Ghost Mode — opacity 計算', () => {
     expect(gateMap.get('3:large')).toBe(1.0);
   });
 
-  it('frequency=1, max=10 → opacity = 0.3 + pow(1/10,1.5)*0.7 ≈ 0.322', () => {
+  it('frequency=1, max=10 → boosted opacity = min(1.0, baseOpacity*1.5) ≈ 0.483', () => {
     const moves: GhostMove[] = [
       {
         positioning: 'D', build_type: 'massive', build_gate: 3,
@@ -281,8 +281,8 @@ describe('Ghost Mode — opacity 計算', () => {
     ];
     const { gateMap } = ghostMovesToDisplayTargets(moves);
     expect(gateMap.get('3:large')).toBeCloseTo(1.0, 5);
-    // ratio=0.1, pow(0.1,1.5)≈0.03162, opacity≈0.3+0.03162*0.7≈0.322
-    const expected71 = 0.3 + Math.pow(0.1, 1.5) * 0.7;
+    // ratio=0.1, base≈0.322, boosted=min(1.0, 0.322*1.5)≈0.483
+    const expected71 = Math.min(1.0, (0.3 + Math.pow(0.1, 1.5) * 0.7) * 1.5);
     expect(gateMap.get('7:large')).toBeCloseTo(expected71, 4);
   });
 
@@ -317,9 +317,9 @@ describe('Ghost Mode — opacity 計算', () => {
       },
     ];
     const { gateMap } = ghostMovesToDisplayTargets(moves);
-    // maxFreq=10: massive(freq=10)→opacity=1.0, quad(freq=5)→pow(0.5,1.5)≈0.354,opacity≈0.548
+    // maxFreq=10: massive(freq=10)→opacity=1.0, quad(freq=5)→boosted≈0.821
     // Gate1: large と small が独立して保持される（上書きしない）
-    const expectedSmall = 0.3 + Math.pow(0.5, 1.5) * 0.7;
+    const expectedSmall = Math.min(1.0, (0.3 + Math.pow(0.5, 1.5) * 0.7) * 1.5);
     expect(gateMap.get('1:large')).toBeCloseTo(1.0, 5);
     expect(gateMap.get('1:small')).toBeCloseTo(expectedSmall, 4);
   });
@@ -376,8 +376,12 @@ describe('Ghost Mode — pocket size 独立表示（メイン仕様）', () => {
     expect(gateMap.get('1:large')).toBeGreaterThan(0);
     expect(gateMap.get('1:middle')).toBeGreaterThan(0);
     expect(gateMap.get('1:small')).toBeGreaterThan(0);
-    // maxFreq=3: large opacity=1.0, middle opacity≈0.8, small opacity≈0.6
-    expect(gateMap.get('1:large')).toBeGreaterThan(gateMap.get('1:middle')!);
-    expect(gateMap.get('1:middle')).toBeGreaterThan(gateMap.get('1:small')!);
+    // maxFreq=3 + 1.5x boost:
+    //   large(freq=3):  base=1.0 → boosted=min(1.0, 1.5)=1.0
+    //   middle(freq=2): base≈0.681 → boosted=min(1.0, 1.021)=1.0 (clamp)
+    //   small(freq=1):  base≈0.435 → boosted≈0.652
+    // large≥middle≥small（上位2つは clamp で同値になりえる）
+    expect(gateMap.get('1:large')!).toBeGreaterThanOrEqual(gateMap.get('1:middle')!);
+    expect(gateMap.get('1:middle')!).toBeGreaterThan(gateMap.get('1:small')!);
   });
 });

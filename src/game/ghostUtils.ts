@@ -58,7 +58,10 @@ export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDispla
     // 非線形コントラスト補正: pow(ratio, 1.5) で中〜低頻度を圧縮し、高頻度を際立たせる
     // 低頻度(ratio≈0.1): opacity≈0.31  中頻度(ratio=0.5): opacity≈0.55  最大(ratio=1.0): opacity=1.0
     const contrastRatio = Math.pow(ratio, 1.5);
-    const opacity = 0.3 + contrastRatio * 0.7; // min=0.30 / max=1.0
+    const baseOpacity = 0.3 + contrastRatio * 0.7; // min=0.30 / max=1.0
+    // 全体　1.5倍ほど濃くする（上限 clamp）
+    // 濃度差・比率は維持し、全体の見た目だけ引き上げる
+    const opacity = Math.min(1.0, baseOpacity * 1.5);
 
     // ── Position opacity ───────────────────────────────────────────────
     const existingOpacity = opacityMap.get(gm.positioning) ?? 0;
