@@ -4,7 +4,7 @@ import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build'
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import type { GhostMove } from '../lib/matchLog';
-import { ghostMovesToDisplayTargets } from '../game/ghostUtils';
+import { ghostMovesToDisplayTargets, getGhostPocketOpacity } from '../game/ghostUtils';
 
 // Diagonal-hatch SVG for Ghost Mode overlay on round pockets (Position owner-dot)
 // Hatch density: width=5/height=5 + strokeWidth=4.5 gives ~2× visual density vs old 8/8+2.5
@@ -337,14 +337,14 @@ interface ClusterProps {
   gateType: GateType;
   ps: PocketStates;
   lastOpponentPocketSize?: AssetSize | null;
-  ghostPocketSize?: 'large' | 'middle' | 'small' | null;
-  ghostOpacity?: number;
+  /** Ghost: pocket size ごとの独立した opacity（Large/Middle/Small を相互に上書きしない） */
+  ghostPocketOpacities?: { large: number; middle: number; small: number };
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
 }
 
-function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketSize, ghostOpacity = 0, onLarge, onMiddle, onSmall }: ClusterProps) {
+function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketOpacities, onLarge, onMiddle, onSmall }: ClusterProps) {
   const L = gate.largeSlots;
   const M = gate.middleSlots;
   const S = gate.smallSlots;
@@ -353,9 +353,9 @@ function renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPo
   const hlM = lastOpponentPocketSize === 'middle';
   const hlL = lastOpponentPocketSize === 'large';
 
-  // Ghost Mode: ポケットサイズが一致するときの ring 強度を返す
+  // Ghost Mode: pocketSize ごとに独立した opacity を返す（Large/Middle/Small を相互に上書きしない）
   const pocketGhost = (size: 'large' | 'middle' | 'small'): number =>
-    ghostPocketSize === size ? ghostOpacity : 0;
+    ghostPocketOpacities?.[size] ?? 0;
 
   const SmallTL = () => <div className="gate-corner-tl"><DiamondPip owner={S[0]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} ghostHighlight={pocketGhost('small')} /></div>;
   const SmallTR = () => <div className="gate-corner-tr"><DiamondPip owner={S[1]?.owner ?? null} size="small" clickState={ps.small} onClick={onSmall} isLastOpponentMove={hlS} ghostHighlight={pocketGhost('small')} /></div>;
@@ -433,8 +433,7 @@ function GateCard({
   ps,
   lastOpponentPocketSize,
   tutorialHighlight,
-  ghostPocketSize,
-  ghostOpacity,
+  ghostPocketOpacities,
   onLarge,
   onMiddle,
   onSmall,
@@ -447,8 +446,7 @@ function GateCard({
   ps: PocketStates;
   lastOpponentPocketSize?: AssetSize | null;
   tutorialHighlight?: boolean;
-  ghostPocketSize?: 'large' | 'middle' | 'small' | null;
-  ghostOpacity?: number;
+  ghostPocketOpacities?: { large: number; middle: number; small: number };
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
@@ -469,7 +467,7 @@ function GateCard({
       data-gate-id={gateId}
       aria-label={`Gate ${gateId}`}
     >
-      {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketSize, ghostOpacity, onLarge, onMiddle, onSmall })}
+      {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketOpacities, onLarge, onMiddle, onSmall })}
     </div>
   );
 }
@@ -604,7 +602,7 @@ export function Board({
   const { opacityMap: ghostOpacityMap, gateMap: ghostGateMap } = (
     ghostModeActive && ghostMoves && ghostMoves.length > 0
       ? ghostMovesToDisplayTargets(ghostMoves)
-      : { opacityMap: new Map<string, number>(), gateMap: new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>() }
+      : { opacityMap: new Map<string, number>(), gateMap: new Map<string, number>() }
   );
 
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
@@ -850,8 +848,11 @@ export function Board({
                 ps={ps}
                 lastOpponentPocketSize={lastOpponentBuild.gateIds.has(gateId) ? lastOpponentBuild.pocketSize : null}
                 tutorialHighlight={tutorialGateHighlights?.has(gateId)}
-                ghostPocketSize={ghostGateMap.get(gateId)?.pocketSize ?? null}
-                ghostOpacity={ghostGateMap.get(gateId)?.opacity ?? 0}
+                ghostPocketOpacities={{
+                  large:  getGhostPocketOpacity(ghostGateMap, gateId, 'large'),
+                  middle: getGhostPocketOpacity(ghostGateMap, gateId, 'middle'),
+                  small:  getGhostPocketOpacity(ghostGateMap, gateId, 'small'),
+                }}
                 onLarge={() => onLargePocketClick(gateId)}
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}

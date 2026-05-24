@@ -10,6 +10,13 @@
  * - gate ID として 0 や NaN が混入しても ghostGateMap には登録しない。
  * - 不正データ（build_gate=0 等）も同様に除外する。
  *
+ * 仕様（pocket size 独立表示）:
+ * - gateMap のキーは `"${gateId}:${pocketSize}"` の複合キー。
+ * - 同一 Gate 内の Large / Middle / Small は独立して保持し、相互に上書きしない。
+ * - 上書きは「同じ gateId + 同じ pocketSize」でのみ発生し、opacity が高い方を採用。
+ * - 例: Gate8 に massive(large) と selective(middle) の両履歴がある場合、
+ *        "8:large" と "8:middle" の両方が登録され、同時表示される。
+ *
  * 不変条件（テストで保証）:
  * - massive  → GateId 1件 + large pocket
  * - selective → 有効 GateId 1〜2件 + middle pocket（0 は RPC 側で除去済み）
@@ -23,8 +30,13 @@ import type { GhostMove } from '../lib/matchLog';
 export interface GhostDisplayTargets {
   /** positioning → opacity (0.4〜1.0、比率ベース) */
   opacityMap: Map<string, number>;
-  /** gateId → {pocketSize, opacity} */
-  gateMap: Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>;
+  /**
+   * "${gateId}:${pocketSize}" → opacity
+   *
+   * 同一 Gate の Large / Middle / Small は独立したキーで保持される。
+   * 例: "8:large", "8:middle", "8:small" はそれぞれ独立したエントリ。
+   */
+  gateMap: Map<string, number>;
 }
 
 /**
@@ -35,7 +47,7 @@ export interface GhostDisplayTargets {
  */
 export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDisplayTargets {
   const opacityMap = new Map<string, number>();
-  const gateMap = new Map<number, { opacity: number; pocketSize: 'large' | 'middle' | 'small' }>();
+  const gateMap = new Map<string, number>(); // key: "${gateId}:${pocketSize}"
 
   if (!ghostMoves || ghostMoves.length === 0) return { opacityMap, gateMap };
 
@@ -54,7 +66,6 @@ export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDispla
     let pocketSize: 'large' | 'middle' | 'small';
 
     if (gm.build_type === 'massive') {
-      // build_gate が有効な正の整数のときのみ登録
       if (gm.build_gate != null && gm.build_gate > 0) {
         gateIds = [gm.build_gate];
         pocketSize = 'large';
@@ -62,9 +73,8 @@ export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDispla
         continue;
       }
     } else if (gm.build_type === 'selective') {
-      // build_gates は RPC 側で 0 除去・昇順ソート済み
       if (gm.build_gates && gm.build_gates.length > 0) {
-        gateIds = gm.build_gates.filter((g) => g > 0); // 念のため再フィルタ
+        gateIds = gm.build_gates.filter((g) => g > 0);
         pocketSize = 'middle';
       } else {
         continue;
@@ -82,13 +92,31 @@ export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDispla
     }
 
     for (const gateId of gateIds) {
-      const existing = gateMap.get(gateId);
-      // 同一 gateId に複数エントリが競合する場合、opacity が高い方を採用
-      if (!existing || opacity > existing.opacity) {
-        gateMap.set(gateId, { opacity, pocketSize });
+      // キー: "${gateId}:${pocketSize}" — Large/Middle/Small を独立して保持
+      // 同一キー内でのみ opacity の高い方を採用（異なる pocketSize は上書きしない）
+      const key = `${gateId}:${pocketSize}`;
+      const existingOp = gateMap.get(key) ?? 0;
+      if (opacity > existingOp) {
+        gateMap.set(key, opacity);
       }
     }
   }
 
   return { opacityMap, gateMap };
+}
+
+/**
+ * gateMap から特定の Gate + pocketSize の opacity を取得するヘルパー。
+ *
+ * @param gateMap  ghostMovesToDisplayTargets の返却 gateMap
+ * @param gateId   対象 Gate ID
+ * @param pocketSize  'large' | 'middle' | 'small'
+ * @returns opacity (0 = Ghost なし)
+ */
+export function getGhostPocketOpacity(
+  gateMap: Map<string, number>,
+  gateId: number,
+  pocketSize: 'large' | 'middle' | 'small',
+): number {
+  return gateMap.get(`${gateId}:${pocketSize}`) ?? 0;
 }

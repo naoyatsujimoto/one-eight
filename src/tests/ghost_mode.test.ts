@@ -9,6 +9,7 @@
  *      - selective single (mid-game [gate,0]) は 1 Gate middle（互換）
  *      - 不正値 (0 / null / undefined) が gateMap に混入しない
  *   3. ON/OFF: ghostMoves が空なら opacityMap / gateMap が空
+ *   4. pocket size 独立表示: 同一 Gate の Large / Middle / Small が相互に上書きしない
  */
 
 import { describe, it, expect } from 'vitest';
@@ -74,8 +75,10 @@ describe('ghostMovesToDisplayTargets — 基本変換', () => {
     };
     const { opacityMap, gateMap } = ghostMovesToDisplayTargets([gm]);
     expect(opacityMap.get('D')).toBeGreaterThan(0);
-    expect(gateMap.get(3)?.pocketSize).toBe('large');
-    expect(gateMap.get(3)?.opacity).toBeGreaterThan(0);
+    expect(gateMap.get('3:large')).toBeGreaterThan(0);
+    // middle / small は存在しない
+    expect(gateMap.has('3:middle')).toBe(false);
+    expect(gateMap.has('3:small')).toBe(false);
   });
 
   it('selective (2 gates) → Position 丸 + Gate8/Gate12 両方に middle pocket', () => {
@@ -89,10 +92,13 @@ describe('ghostMovesToDisplayTargets — 基本変換', () => {
     };
     const { opacityMap, gateMap } = ghostMovesToDisplayTargets([gm]);
     expect(opacityMap.get('I')).toBeGreaterThan(0);
-    expect(gateMap.get(8)?.pocketSize).toBe('middle');
-    expect(gateMap.get(12)?.pocketSize).toBe('middle');
+    expect(gateMap.get('8:middle')).toBeGreaterThan(0);
+    expect(gateMap.get('12:middle')).toBeGreaterThan(0);
     // 両方同一opacityのはず
-    expect(gateMap.get(8)?.opacity).toBe(gateMap.get(12)?.opacity);
+    expect(gateMap.get('8:middle')).toBe(gateMap.get('12:middle'));
+    // large / small は存在しない
+    expect(gateMap.has('8:large')).toBe(false);
+    expect(gateMap.has('12:large')).toBe(false);
   });
 
   it('quad → Position 丸 + 4 Gate small pocket', () => {
@@ -107,7 +113,9 @@ describe('ghostMovesToDisplayTargets — 基本変換', () => {
     const { opacityMap, gateMap } = ghostMovesToDisplayTargets([gm]);
     expect(opacityMap.get('J')).toBeGreaterThan(0);
     for (const gid of [1, 5, 7, 9]) {
-      expect(gateMap.get(gid)?.pocketSize).toBe('small');
+      expect(gateMap.get(`${gid}:small`)).toBeGreaterThan(0);
+      expect(gateMap.has(`${gid}:large`)).toBe(false);
+      expect(gateMap.has(`${gid}:middle`)).toBe(false);
     }
   });
 });
@@ -126,7 +134,7 @@ describe('Ghost Mode — 初手不変条件', () => {
       frequency: 1,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    const middles = [...gateMap.entries()].filter(([, v]) => v.pocketSize === 'middle');
+    const middles = [...gateMap.keys()].filter((k) => k.endsWith(':middle'));
     // 初手 selective は必ず 2 Gate
     expect(middles.length).toBe(2);
   });
@@ -141,9 +149,9 @@ describe('Ghost Mode — 初手不変条件', () => {
       frequency: 19,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    const larges = [...gateMap.entries()].filter(([, v]) => v.pocketSize === 'large');
+    const larges = [...gateMap.keys()].filter((k) => k.endsWith(':large'));
     expect(larges.length).toBe(1);
-    expect(larges[0]?.[0]).toBe(3);
+    expect(larges[0]).toBe('3:large');
   });
 
   it('初手 quad: 4 Gate small 表示', () => {
@@ -156,7 +164,7 @@ describe('Ghost Mode — 初手不変条件', () => {
       frequency: 1,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    const smalls = [...gateMap.entries()].filter(([, v]) => v.pocketSize === 'small');
+    const smalls = [...gateMap.keys()].filter((k) => k.endsWith(':small'));
     expect(smalls.length).toBe(4);
   });
 });
@@ -176,8 +184,11 @@ describe('Ghost Mode — 中終盤 selective single 互換', () => {
       frequency: 1,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    expect(gateMap.get(4)?.pocketSize).toBe('middle');
-    expect(gateMap.has(0)).toBe(false); // 0 は絶対に登録されない
+    expect(gateMap.get('4:middle')).toBeGreaterThan(0);
+    // 0 は絶対に登録されない
+    expect(gateMap.has('0:middle')).toBe(false);
+    expect(gateMap.has('0:large')).toBe(false);
+    expect(gateMap.has('0:small')).toBe(false);
   });
 });
 
@@ -185,7 +196,7 @@ describe('Ghost Mode — 中終盤 selective single 互換', () => {
 // 不正値の排除
 // ---------------------------------------------------------------------------
 describe('Ghost Mode — 不正値排除', () => {
-  it('build_gate=0 (massive 不正値) → gateMap に 0 が登録されない', () => {
+  it('build_gate=0 (massive 不正値) → gateMap に 0:* が登録されない', () => {
     const gm: GhostMove = {
       positioning: 'D',
       build_type: 'massive',
@@ -195,7 +206,7 @@ describe('Ghost Mode — 不正値排除', () => {
       frequency: 1,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    expect(gateMap.has(0)).toBe(false);
+    expect(gateMap.has('0:large')).toBe(false);
     expect(gateMap.size).toBe(0);
   });
 
@@ -225,7 +236,7 @@ describe('Ghost Mode — 不正値排除', () => {
     expect(gateMap.size).toBe(0);
   });
 
-  it('build_gates に 0 が混入しても gateMap に 0 が登録されない（念のためフィルタ確認）', () => {
+  it('build_gates に 0 が混入しても gateMap に 0:* が登録されない（念のためフィルタ確認）', () => {
     const gm: GhostMove = {
       positioning: 'C',
       build_type: 'selective',
@@ -235,8 +246,8 @@ describe('Ghost Mode — 不正値排除', () => {
       frequency: 1,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    expect(gateMap.has(0)).toBe(false);
-    expect(gateMap.get(4)?.pocketSize).toBe('middle');
+    expect(gateMap.has('0:middle')).toBe(false);
+    expect(gateMap.get('4:middle')).toBeGreaterThan(0);
   });
 });
 
@@ -254,7 +265,7 @@ describe('Ghost Mode — opacity 計算', () => {
       frequency: 10,
     };
     const { gateMap } = ghostMovesToDisplayTargets([gm]);
-    expect(gateMap.get(3)?.opacity).toBe(1.0);
+    expect(gateMap.get('3:large')).toBe(1.0);
   });
 
   it('frequency=1, max=10 → opacity = 0.4 + (1/10)*0.6 = 0.46', () => {
@@ -269,12 +280,30 @@ describe('Ghost Mode — opacity 計算', () => {
       },
     ];
     const { gateMap } = ghostMovesToDisplayTargets(moves);
-    expect(gateMap.get(3)?.opacity).toBeCloseTo(1.0, 5);
-    expect(gateMap.get(7)?.opacity).toBeCloseTo(0.46, 5);
+    expect(gateMap.get('3:large')).toBeCloseTo(1.0, 5);
+    expect(gateMap.get('7:large')).toBeCloseTo(0.46, 5);
   });
 
-  it('同 gateId に複数エントリ競合時、opacity が高い方が残る', () => {
-    // Gate1 に massive(large, freq=10) と quad(small, freq=5) が競合
+  it('同 gateId + 同 pocketSize に複数エントリ競合時、opacity が高い方が残る', () => {
+    // Gate1 に massive(large, freq=10) と別の massive(large, freq=5) が競合
+    const moves: GhostMove[] = [
+      {
+        positioning: 'D', build_type: 'massive', build_gate: 1,
+        build_gates: null, build_placed_gate_ids: null, frequency: 10,
+      },
+      {
+        positioning: 'G', build_type: 'massive', build_gate: 1,
+        build_gates: null, build_placed_gate_ids: null, frequency: 5,
+      },
+    ];
+    const { gateMap } = ghostMovesToDisplayTargets(moves);
+    // maxFreq=10: freq=10 → opacity=1.0, freq=5 → opacity=0.7
+    // 同一キー "1:large" は opacity が高い方(1.0)を採用
+    expect(gateMap.get('1:large')).toBeCloseTo(1.0, 5);
+  });
+
+  it('同 gateId でも pocketSize が異なる場合はそれぞれ独立して保持される', () => {
+    // Gate1 に massive(large, freq=10) と quad(small, freq=5) が混在
     const moves: GhostMove[] = [
       {
         positioning: 'D', build_type: 'massive', build_gate: 1,
@@ -287,8 +316,65 @@ describe('Ghost Mode — opacity 計算', () => {
     ];
     const { gateMap } = ghostMovesToDisplayTargets(moves);
     // maxFreq=10: massive opacity=1.0, quad opacity=0.7
-    // Gate1: massive(1.0) > quad(0.7) → large が残る
-    expect(gateMap.get(1)?.pocketSize).toBe('large');
-    expect(gateMap.get(1)?.opacity).toBeCloseTo(1.0, 5);
+    // Gate1: large と small が独立して保持される（上書きしない）
+    expect(gateMap.get('1:large')).toBeCloseTo(1.0, 5);
+    expect(gateMap.get('1:small')).toBeCloseTo(0.7, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pocket size 独立表示（メイン仕様）
+// ---------------------------------------------------------------------------
+describe('Ghost Mode — pocket size 独立表示（メイン仕様）', () => {
+  it('Gate8 に massive(large) + selective(middle) 履歴があれば両方表示', () => {
+    const moves: GhostMove[] = [
+      { positioning: 'I', build_type: 'massive', build_gate: 8, build_gates: null, build_placed_gate_ids: null, frequency: 1 },
+      { positioning: 'I', build_type: 'selective', build_gate: null, build_gates: [8, 12], build_placed_gate_ids: null, frequency: 1 },
+    ];
+    const { gateMap } = ghostMovesToDisplayTargets(moves);
+    expect(gateMap.get('8:large')).toBeGreaterThan(0);   // massive から
+    expect(gateMap.get('8:middle')).toBeGreaterThan(0);  // selective から（上書きされない）
+    expect(gateMap.get('12:middle')).toBeGreaterThan(0); // selective のペア
+    expect(gateMap.has('12:large')).toBe(false);
+  });
+
+  it('Gate10 に massive(large) + quad(small) 履歴があれば両方表示', () => {
+    const moves: GhostMove[] = [
+      { positioning: 'G', build_type: 'massive', build_gate: 10, build_gates: null, build_placed_gate_ids: null, frequency: 1 },
+      { positioning: 'G', build_type: 'quad', build_gate: null, build_gates: null, build_placed_gate_ids: [1, 4, 7, 10], frequency: 1 },
+    ];
+    const { gateMap } = ghostMovesToDisplayTargets(moves);
+    expect(gateMap.get('10:large')).toBeGreaterThan(0);
+    expect(gateMap.get('10:small')).toBeGreaterThan(0);
+    expect(gateMap.get('1:small')).toBeGreaterThan(0);
+    expect(gateMap.get('4:small')).toBeGreaterThan(0);
+  });
+
+  it('Gate3 に selective(middle) + quad(small) 履歴があれば両方表示', () => {
+    const moves: GhostMove[] = [
+      { positioning: 'D', build_type: 'selective', build_gate: null, build_gates: [3, 6], build_placed_gate_ids: null, frequency: 2 },
+      { positioning: 'D', build_type: 'quad', build_gate: null, build_gates: null, build_placed_gate_ids: [3, 6, 9, 12], frequency: 1 },
+    ];
+    const { gateMap } = ghostMovesToDisplayTargets(moves);
+    expect(gateMap.get('3:middle')).toBeGreaterThan(0);
+    expect(gateMap.get('3:small')).toBeGreaterThan(0);
+    // large は存在しない
+    expect(gateMap.has('3:large')).toBe(false);
+  });
+
+  it('3種すべての履歴がある Gate: large / middle / small がすべて独立して保持される', () => {
+    const moves: GhostMove[] = [
+      { positioning: 'A', build_type: 'massive', build_gate: 1, build_gates: null, build_placed_gate_ids: null, frequency: 3 },
+      { positioning: 'A', build_type: 'selective', build_gate: null, build_gates: [1, 4], build_placed_gate_ids: null, frequency: 2 },
+      { positioning: 'A', build_type: 'quad', build_gate: null, build_gates: null, build_placed_gate_ids: [1, 4, 7, 10], frequency: 1 },
+    ];
+    const { gateMap } = ghostMovesToDisplayTargets(moves);
+    // Gate1 に 3 種すべて存在
+    expect(gateMap.get('1:large')).toBeGreaterThan(0);
+    expect(gateMap.get('1:middle')).toBeGreaterThan(0);
+    expect(gateMap.get('1:small')).toBeGreaterThan(0);
+    // maxFreq=3: large opacity=1.0, middle opacity≈0.8, small opacity≈0.6
+    expect(gateMap.get('1:large')).toBeGreaterThan(gateMap.get('1:middle')!);
+    expect(gateMap.get('1:middle')).toBeGreaterThan(gateMap.get('1:small')!);
   });
 });
