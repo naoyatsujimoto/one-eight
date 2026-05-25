@@ -44,8 +44,14 @@ function getTimerClassName(ms: number): string {
  *
  * OM-1c: frozenUntil が指定された場合は定刻前凍結ロジックを適用する:
  *   - now < frozenUntil の間: elapsed=0 として残り時間を固定表示
- *   - now >= frozenUntil の後: frozenUntil を基準に経過時間を計算
- *   これにより「入室時刻〜定刻」の待機時間が持ち時間に加算されない。
+ *   - now >= frozenUntil の後: 通常の server_updated_at ベースの計算を行う
+ *     ただし turnStartedAt < frozenUntil の場合は frozenUntil を有効な起点とする
+ *     （入室待機中は turn_started_at が定刻前を指している可能性があるため）
+ *
+ * 修正前バグ（2c06079）: 定刻後を「now - frozenUntilMs」固定で計算していたため
+ *   MOVE 2 以降も「定刻からの総経過時間」が手番プレイヤーの持ち時間から引かれ続け、
+ *   非手番プレイヤー（isActive=false）でも DB 値が定刻起点で減少して見えた。
+ *   正しくは turnStartedAt（直近の着手時刻）を起点にすべき。
  */
 function calcDisplayRemainingMs(opts: {
   mode: 'total_time' | 'per_move';
@@ -75,15 +81,20 @@ function calcDisplayRemainingMs(opts: {
       }
       return playerRemainingMs ?? 0;
     }
-    // 定刻後: frozenUntil を起点として経過時間を計算
-    // turnStartedAt ではなく frozenUntil からの経過時間を使う
-    const elapsedMs = now - frozenUntilMs;
+    // 定刻後: 通常と同じ server_updated_at ベースの計算を行う
+    // ただし turnStartedAt が定刻前を指している場合（入室直後の1手目）は frozenUntilMs を起点とする
+    // これにより「入室待機時間」が持ち時間に加算されない
+    const serverNowFrozen = serverUpdatedAt
+      ? new Date(serverUpdatedAt).getTime() + (now - localReceiveTime)
+      : now;
+    const effectiveStart = Math.max(new Date(turnStartedAt).getTime(), frozenUntilMs);
+    const elapsedMsFrozen = serverNowFrozen - effectiveStart;
     if (mode === 'per_move') {
       const limitMs = timerConfig.perMoveSeconds * 1000;
-      return Math.max(0, limitMs - elapsedMs);
+      return Math.max(0, limitMs - elapsedMsFrozen);
     }
     if (mode === 'total_time') {
-      return Math.max(0, (playerRemainingMs ?? 0) - elapsedMs);
+      return Math.max(0, (playerRemainingMs ?? 0) - elapsedMsFrozen);
     }
     return playerRemainingMs ?? 0;
   }
