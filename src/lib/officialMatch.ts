@@ -101,8 +101,16 @@ export async function enterOfficialMatch(
   });
 
   if (error) return { error: error.message };
-  const result = data as { online_game_id: string; color: 'black' | 'white' };
-  return { onlineGameId: result.online_game_id, color: result.color };
+  // Supabase JS v2 では RETURNS json の RPC が data=null を返すバグがある。
+  // joinOrCreateRandomGame と同様のフォールバック対応を実施する。
+  const raw = data as { online_game_id?: string; color?: string } | null;
+  const nested = (data as { data?: { online_game_id?: string; color?: string } } | null)?.data;
+  const onlineGameId = raw?.online_game_id ?? nested?.online_game_id;
+  const color = (raw?.color ?? nested?.color) as 'black' | 'white' | undefined;
+  if (!onlineGameId || !color) {
+    return { error: `enter_official_match returned unexpected data: ${JSON.stringify(data)}` };
+  }
+  return { onlineGameId, color };
 }
 
 /**

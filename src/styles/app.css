@@ -2487,6 +2487,7 @@ ol { padding-left: 20px; }
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 .om-card-date {
   font-size: 0.8rem;

@@ -892,6 +892,18 @@ export default function App() {
     setOnlineRoomCode(roomCode);
   }
 
+  // オンライン対戦中は OnlineBoard を表示（profile 画面の Enter Match からの遷移も含む — この判定を先に行うこと）
+  if (onlineGameId && user) {
+    return (
+      <OnlineBoard
+        gameId={onlineGameId}
+        myUserId={user.id}
+        roomCode={onlineRoomCode}
+        onExit={() => { setOnlineGameId(null); setOnlineRoomCode(undefined); }}
+      />
+    );
+  }
+
   // プロフィール画面
   if (screen === 'profile' && user) {
     return (
@@ -903,18 +915,6 @@ export default function App() {
           setOnlineGameId(gameId);
           setOnlineRoomCode(undefined);
         }}
-      />
-    );
-  }
-
-  // オンライン対戦中は OnlineBoard を表示
-  if (onlineGameId && user) {
-    return (
-      <OnlineBoard
-        gameId={onlineGameId}
-        myUserId={user.id}
-        roomCode={onlineRoomCode}
-        onExit={() => { setOnlineGameId(null); setOnlineRoomCode(undefined); }}
       />
     );
   }
