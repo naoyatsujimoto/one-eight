@@ -2286,3 +2286,360 @@ ol { padding-left: 20px; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ─── Official Match Calendar (OM-1b) ──────────────────────────────────────── */
+
+.om-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Loading / Error / Empty */
+.om-loading {
+  font-size: 0.82rem;
+  color: #aaa;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+.om-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: #c62828;
+  padding: 0.5rem 0;
+}
+.om-retry-btn {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border: 1px solid #c62828;
+  border-radius: 4px;
+  background: none;
+  color: #c62828;
+  cursor: pointer;
+}
+.om-empty {
+  font-size: 0.82rem;
+  color: #aaa;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* Section titles */
+.om-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #555;
+  margin-top: 0.25rem;
+}
+.om-section-title-muted {
+  color: #aaa;
+}
+
+/* ── Mini Calendar ─────────────────────────────────────────────────────────── */
+.om-mini-cal {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  user-select: none;
+}
+.om-mini-cal-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+.om-mini-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.om-mini-cal-dow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #bbb;
+  text-align: center;
+  padding: 2px 0 4px;
+  text-transform: uppercase;
+}
+.om-mini-cal-empty {
+  /* empty cell */
+}
+.om-mini-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: #333;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  padding: 0;
+  gap: 1px;
+}
+.om-mini-cal-day:hover {
+  background: #efefef;
+}
+.om-mini-cal-today {
+  font-weight: 800;
+  color: #111;
+}
+.om-mini-cal-today::after {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #111;
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.om-mini-cal-has-match .om-mini-cal-dot {
+  display: block;
+}
+.om-mini-cal-dot {
+  display: none;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #3a7bd5;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.om-mini-cal-selected {
+  background: #111 !important;
+  color: #fff !important;
+}
+.om-mini-cal-selected .om-mini-cal-dot {
+  background: #7fb3ff;
+}
+.om-mini-cal-clear {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #888;
+  text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  text-decoration: underline;
+}
+
+/* ── Match Cards ───────────────────────────────────────────────────────────── */
+.om-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.om-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: box-shadow 0.15s;
+}
+.om-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.om-card-live {
+  border-left: 3px solid #2e7d32;
+}
+.om-card-joinable {
+  border-left: 3px solid #1565c0;
+}
+.om-card-completed {
+  opacity: 0.75;
+}
+.om-card-cancelled {
+  opacity: 0.6;
+}
+.om-card-forfeited {
+  opacity: 0.6;
+}
+
+/* Card header */
+.om-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.om-card-datetime {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.om-card-date {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #222;
+}
+.om-card-time {
+  font-size: 0.75rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Card body */
+.om-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.om-card-opponent {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.om-card-label {
+  font-size: 0.68rem;
+  color: #aaa;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.om-card-opponent-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #111;
+}
+.om-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: #777;
+}
+.om-card-dot {
+  color: #ccc;
+}
+.om-card-color {
+  font-size: 0.72rem;
+  color: #555;
+}
+.om-card-tc {
+  font-size: 0.72rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+.om-card-countdown {
+  font-size: 0.7rem;
+  color: #1565c0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Card footer */
+.om-card-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+}
+.om-enter-btn {
+  padding: 0.35rem 0.9rem;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, opacity 0.15s;
+}
+.om-enter-btn:hover:not(.om-enter-btn-disabled) {
+  background: #333;
+}
+.om-enter-btn-disabled {
+  background: #e0e0e0 !important;
+  color: #aaa !important;
+  cursor: not-allowed !important;
+}
+.om-enter-note {
+  font-size: 0.68rem;
+  color: #aaa;
+}
+.om-enter-error {
+  font-size: 0.7rem;
+  color: #c62828;
+  width: 100%;
+}
+
+/* ── Status Badge ──────────────────────────────────────────────────────────── */
+.om-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.om-badge-scheduled {
+  background: #f0f0f0;
+  color: #666;
+}
+.om-badge-joinable {
+  background: #e3eeff;
+  color: #1565c0;
+}
+.om-badge-live {
+  background: #e6f4ea;
+  color: #2e7d32;
+}
+.om-badge-completed {
+  background: #f5f5f5;
+  color: #777;
+}
+.om-badge-cancelled {
+  background: #fce8e8;
+  color: #c62828;
+}
+.om-badge-forfeited {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* ── Responsive (≤ 480px) ──────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .om-mini-cal {
+    padding: 0.6rem;
+  }
+  .om-mini-cal-day {
+    font-size: 0.7rem;
+    border-radius: 5px;
+  }
+  .om-card {
+    padding: 0.65rem 0.7rem;
+  }
+  .om-card-opponent-name {
+    font-size: 0.85rem;
+  }
+  .om-enter-btn {
+    font-size: 0.73rem;
+    padding: 0.3rem 0.75rem;
+  }
+}

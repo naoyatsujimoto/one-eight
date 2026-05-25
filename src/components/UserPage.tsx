@@ -20,6 +20,7 @@ import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
+import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
@@ -39,9 +40,11 @@ interface Props {
   viewOnly?: boolean;
   /** viewOnly 時に表示する対象ユーザーの ID */
   targetUserId?: string;
+  /** 公式戦入室後に OnlineBoard へ遷移させるコールバック */
+  onEnterOnlineGame?: (onlineGameId: string) => void;
 }
 
-export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUserId }: Props) {
+export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUserId, onEnterOnlineGame }: Props) {
   const { t, lang, setLangWithSync } = useLang();
   // t is also used in inline JSX below
   const [stats, setStats] = useState<UserPageStats | null>(null);
@@ -291,6 +294,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 proActive={proActive}
               />
             ) : <Muted text={t.userNoData} />}
+          </section>
+        )}
+
+        {/* ── Section 6: Official Match Calendar (OM-1b) ── */}
+        {!viewOnly && onEnterOnlineGame && (
+          <section style={s.section}>
+            <SectionTitle title="Official Matches" />
+            <OfficialMatchCalendar onEnterOnlineGame={onEnterOnlineGame} />
           </section>
         )}
 

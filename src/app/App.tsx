@@ -899,6 +899,10 @@ export default function App() {
         userId={user.id}
         userEmail={user.email ?? null}
         onBack={() => goTo('main')}
+        onEnterOnlineGame={(gameId) => {
+          setOnlineGameId(gameId);
+          setOnlineRoomCode(undefined);
+        }}
       />
     );
   }
