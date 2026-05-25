@@ -418,6 +418,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
               serverUpdatedAt={serverUpdatedAt}
               currentPlayer={state.currentPlayer}
               gameFinished={onlineStatus === 'finished'}
+              frozenUntil={gameRow.official_starts_at ?? null}
             />
           )}
           <div className="board-stage">

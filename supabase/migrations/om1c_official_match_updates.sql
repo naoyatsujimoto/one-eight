@@ -68,22 +68,12 @@ BEGIN
     RAISE EXCEPTION 'invalid_state: match is %, cannot enter', v_match.status;
   END IF;
 
-  -- 時間条件チェック（15分前〜30分後）
-  v_joinable_from  := v_match.starts_at - interval '15 minutes';
-  v_joinable_until := v_match.starts_at + interval '30 minutes';
-
-  IF v_now < v_joinable_from THEN
-    RAISE EXCEPTION 'not_yet_joinable: match opens at %', v_joinable_from;
-  END IF;
-
-  IF v_now > v_joinable_until THEN
-    RAISE EXCEPTION 'too_late: join window closed at %', v_joinable_until;
-  END IF;
-
   -- 色を決定
   v_my_color := CASE WHEN v_match.black_user_id = v_uid THEN 'black' ELSE 'white' END;
 
   -- online_game_id が既にある場合: 冪等返却（再入室）
+  -- 重要: 「新規入室の受付期限」と「既存試合への再入室」を分ける。
+  -- 再入室は時間条件で弾かない（completed/cancelled/forfeited のみ不可）。
   IF v_match.online_game_id IS NOT NULL THEN
     -- status を live に更新（live でなければ）
     IF v_match.status NOT IN ('live','completed') THEN
@@ -98,6 +88,18 @@ BEGIN
       'is_official',    true,
       'starts_at',      v_match.starts_at
     );
+  END IF;
+
+  -- 時間条件チェック（15分前〜30分後）— 新規入室のみ適用
+  v_joinable_from  := v_match.starts_at - interval '15 minutes';
+  v_joinable_until := v_match.starts_at + interval '30 minutes';
+
+  IF v_now < v_joinable_from THEN
+    RAISE EXCEPTION 'not_yet_joinable: match opens at %', v_joinable_from;
+  END IF;
+
+  IF v_now > v_joinable_until THEN
+    RAISE EXCEPTION 'too_late: join window closed at %', v_joinable_until;
   END IF;
 
   -- online_game_id が NULL → online_games レコードを新規作成

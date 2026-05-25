@@ -88,10 +88,16 @@ function MatchCard({
   });
 
   // Enter ボタンの有効・無効判定
+  // 「新規入室」と「再入室」を分けて判定する。
+  // - 新規: status が scheduled/joinable かつ入室ウィンドウ内
+  // - 再入室: status が live かつ online_game_id が存在（游び途中に縬けられる）
   const windowOpen = isEnterWindowOpen(match.starts_at);
+  const isReEntry = match.status === 'live' && match.online_game_id != null;
   const canEnter =
-    (match.status === 'joinable' || match.status === 'scheduled') &&
-    windowOpen &&
+    (
+      ((match.status === 'joinable' || match.status === 'scheduled') && windowOpen)
+      || isReEntry
+    ) &&
     !entering;
 
   // 残り時間表示（scheduled & 未開始時）
@@ -175,10 +181,13 @@ function MatchCard({
             disabled={!canEnter}
             onClick={() => onEnter(match.id)}
           >
-            {entering ? 'Entering…' : 'Enter Match'}
+            {entering ? 'Entering…' : isReEntry ? 'Re-enter Match' : 'Enter Match'}
           </button>
           {match.status === 'scheduled' && !windowOpen && (
             <span className="om-enter-note">Available 15 min before start</span>
+          )}
+          {isReEntry && (
+            <span className="om-enter-note">Rejoin in progress</span>
           )}
         </div>
       )}
