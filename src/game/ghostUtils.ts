@@ -108,15 +108,6 @@ export function ghostMovesToDisplayTargets(ghostMoves: GhostMove[]): GhostDispla
     }
   }
 
-  // [GHOST_DIAG] Layer D
-  console.log('[GHOST_DIAG] ghostMovesToDisplayTargets', {
-    input_count: ghostMoves.length,
-    opacityMap_positions: [...opacityMap.keys()],
-    gateMap_keys: [...gateMap.keys()],
-    has_G_position: opacityMap.has('G'),
-    has_7_large: gateMap.has('7:large'),
-  });
-
   return { opacityMap, gateMap };
 }
 

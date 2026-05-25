@@ -607,17 +607,6 @@ export function Board({
       ? ghostMovesToDisplayTargets(ghostMoves)
       : { opacityMap: new Map<string, number>(), gateMap: new Map<string, number>() }
   );
-  // [GHOST_DIAG] Layer E
-  if (ghostModeActive && (ghostMoves?.length ?? 0) > 0) {
-    console.log('[GHOST_DIAG] Board gateMap', {
-      gateMap_keys: [...ghostGateMap.keys()],
-      has_7_large: ghostGateMap.has('7:large'),
-      gate7_large_opacity: getGhostPocketOpacity(ghostGateMap, 7, 'large'),
-      gate7_middle_opacity: getGhostPocketOpacity(ghostGateMap, 7, 'middle'),
-      gate7_small_opacity: getGhostPocketOpacity(ghostGateMap, 7, 'small'),
-    });
-  }
-
   const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
 
   // Derive the last opponent's positioned move for subtle highlight
