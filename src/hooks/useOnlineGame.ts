@@ -10,6 +10,10 @@
  * - Phase T-2a: タイムクロック対応
  *   - タイマー状態管理 (black/white_remaining_ms, turn_started_at, server_updated_at)
  *   - claim_timeout ポーリング（5秒間隔）
+ * - OM-1c 追加: timeout 自動確定
+ *   - 画面上で残り 0 になった瞬間に claimTimeout を自動呼び出し
+ *   - 手番プレイヤー・非手番プレイヤー両者のクライアントが呼べる
+ *   - claim_timeout RPC は DB 時刻基準で検証するため虚偽申告にはならない
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -206,6 +210,75 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         setOnlineStatus('finished');
       }
     }, 5000);
+
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineStatus, gameId, myUserId]);
+
+  // OM-1c: 残り時間 0 での timeout 自動確定
+  // 画面上で currentPlayer の残り時間が 0 以下になった瞬間に claimTimeout を呼び出す。
+  // 手番プレイヤー・非手番プレイヤー両者のクライアントから呼び出せる。
+  // claim_timeout RPC は DB 時刻基準検証を行うため、実際に時間切れでなければエラーとなり無視される。
+  const autoClaimCalledRef = useRef(false);
+  useEffect(() => {
+    if (onlineStatus !== 'playing' || !gameId || !myUserId) return;
+    autoClaimCalledRef.current = false;
+
+    const id = setInterval(() => {
+      if (autoClaimCalledRef.current) return;
+      const row = gameRowRef.current;
+      if (!row || row.status !== 'playing') return;
+      if (!row.timer_config || row.timer_config.mode === 'none') return;
+      if (!row.turn_started_at) return;
+
+      const now = Date.now();
+      const elapsedMs = now - new Date(row.turn_started_at).getTime();
+      const mode = row.timer_config.mode as string;
+      const moverColor = row.current_player_id === row.black_player_id ? 'black' : 'white';
+
+      let remaining = Infinity;
+      if (mode === 'per_move') {
+        const limitMs = (row.timer_config as { perMoveSeconds?: number }).perMoveSeconds ?? 60;
+        remaining = limitMs * 1000 - elapsedMs;
+      } else if (mode === 'total_time') {
+        const moverMs = moverColor === 'black'
+          ? (row.black_remaining_ms ?? 0)
+          : (row.white_remaining_ms ?? 0);
+        remaining = moverMs - elapsedMs;
+      }
+
+      if (remaining > 0) return;
+
+      // 残り時間 0 以下: 自動 claimTimeout
+      autoClaimCalledRef.current = true;
+      void (async () => {
+        const result = await claimTimeout(gameId);
+        if ('error' in result) {
+          // not_timed_out_yet: DB側はまだ時間切れでない → 再試行を許可
+          if (result.error.includes('not_timed_out_yet')) {
+            autoClaimCalledRef.current = false;
+            return;
+          }
+          // game_not_active: 既に終局済み → 最新状態を取得
+          if (result.error.includes('game_not_active') || result.error.includes('not_active')) {
+            const fresh = await fetchOnlineGame(gameId);
+            if (fresh && fresh.status === 'finished') {
+              setGameRow(fresh);
+              syncTimerFromRow(fresh);
+              setOnlineStatus('finished');
+            }
+          }
+          return;
+        }
+        // timeout 確定: 最新状態を取得して終局遷移
+        const fresh = await fetchOnlineGame(gameId);
+        if (fresh) {
+          setGameRow(fresh);
+          syncTimerFromRow(fresh);
+          setOnlineStatus('finished');
+        }
+      })();
+    }, 200);
 
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps

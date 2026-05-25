@@ -156,7 +156,9 @@ export function OnlineTimerDisplay({
       <div className="online-timer-bar">
         {(['black', 'white'] as const).map((player) => {
           const rawRemaining = player === 'black' ? blackRemainingMs : whiteRemainingMs;
-          const isActive = player === currentPlayer && !isFrozen;
+          // 手番側のみ elapsed を差し引く。非手番側は DB の remaining_ms をそのまま表示する。
+          // これにより「先手が2分考えて着手後も後手のタイマーが減らない」仕様を保証する。
+          const isActive = !isFrozen && player === currentPlayer;
           const remaining = isActive
             ? calcDisplayRemainingMs({
                 mode: 'total_time',
@@ -167,7 +169,7 @@ export function OnlineTimerDisplay({
                 localReceiveTime: localReceiveTimeRef.current,
                 frozenUntil,
               })
-            : (rawRemaining ?? 0);
+            : (rawRemaining ?? 0);  // 非手番側: DB 値をそのまま表示（elapsed を引かない）
           const colorClass = isActive ? getTimerClassName(remaining) : '';
           return (
             <div

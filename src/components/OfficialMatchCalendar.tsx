@@ -153,11 +153,24 @@ function MatchCard({
         <div className="om-card-footer">
           {match.result && (
             <div className="om-card-result">
-              {match.winner === 'black_user'
-                ? (match.my_color === 'black' ? '⚔️ 勝利' : '⚔️ 敗北')
-                : match.winner === 'white_user'
-                ? (match.my_color === 'white' ? '⚔️ 勝利' : '⚔️ 敗北')
-                : match.winner === 'draw' ? '⚔️ 引き分け' : ''}
+              {(() => {
+                const isTimeout = match.end_reason === 'timeout';
+                const isWin =
+                  (match.winner === 'black_user' && match.my_color === 'black') ||
+                  (match.winner === 'white_user' && match.my_color === 'white');
+                const isLoss =
+                  (match.winner === 'black_user' && match.my_color === 'white') ||
+                  (match.winner === 'white_user' && match.my_color === 'black');
+                const isDraw = match.winner === 'draw';
+                if (isTimeout && isWin) return 'Timeout Win';
+                if (isTimeout && isLoss) return 'Timeout Loss';
+                if (isWin) return 'Win';
+                if (isLoss) return 'Loss';
+                if (isDraw) return 'Draw';
+                if (match.status === 'cancelled') return 'Cancelled';
+                if (match.status === 'forfeited') return 'Forfeited';
+                return '';
+              })()}
             </div>
           )}
           <button
