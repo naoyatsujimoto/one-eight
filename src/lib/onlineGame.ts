@@ -26,6 +26,8 @@ export type OnlineGameRow = {
   end_reason: 'normal' | 'timeout' | 'resign' | 'draw_agreement' | null;
   timeout_player: 'black' | 'white' | null;
   server_updated_at: string | null;
+  // OM-1c: 公式戦ゲームのみ設定。starts_at 前はタイマー停止・着手不可。
+  official_starts_at: string | null;
 };
 
 // ─── 6文字ルームコード生成 ────────────────────────────────────────────────────

@@ -40,8 +40,10 @@ interface Props {
   viewOnly?: boolean;
   /** viewOnly 時に表示する対象ユーザーの ID */
   targetUserId?: string;
-  /** 公式戦入室後に OnlineBoard へ遷移させるコールバック */
-  onEnterOnlineGame?: (onlineGameId: string) => void;
+  /** 公式戦入室後に OnlineBoard へ遷移させるコールバック
+   * OM-1c: isOfficial / startsAt を追加引数として渡す。
+   */
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }
 
 export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUserId, onEnterOnlineGame }: Props) {

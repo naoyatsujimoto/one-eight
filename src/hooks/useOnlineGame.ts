@@ -36,6 +36,8 @@ export interface UseOnlineGameResult {
   whiteRemainingMs: number | null;
   turnStartedAt: string | null;
   serverUpdatedAt: string | null;
+  // OM-1c: 公式戦が定刻前かどうか
+  isBeforeOfficialStart: boolean;
 }
 
 export function useOnlineGame(gameId: string | null, myUserId: string | null): UseOnlineGameResult {
@@ -218,10 +220,17 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         : null
     : null;
 
+  // OM-1c: 公式戦の定刻前フラグ（クライアント側チェック。サーバー側でも拒否される）
+  const isBeforeOfficialStart: boolean =
+    gameRow?.official_starts_at != null &&
+    Date.now() < new Date(gameRow.official_starts_at).getTime();
+
+  // 定刻前は着手不可（isMyTurn=false として扱う）
   const isMyTurn =
     onlineStatus === 'playing' &&
     gameRow !== null &&
-    gameRow.current_player_id === myUserId;
+    gameRow.current_player_id === myUserId &&
+    !isBeforeOfficialStart;
 
   // 手を送信
   const submitMove = useCallback(async (newState: GameState) => {
@@ -313,5 +322,6 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
     whiteRemainingMs,
     turnStartedAt,
     serverUpdatedAt,
+    isBeforeOfficialStart,
   };
 }

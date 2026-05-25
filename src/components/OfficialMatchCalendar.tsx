@@ -21,8 +21,10 @@ import { useLang } from '../lib/lang';
 // ─── 型 ──────────────────────────────────────────────────────────────────────
 
 interface Props {
-  /** onEnterOnlineGame(onlineGameId) — 公式戦入室後にOnlineBoardへ遷移させる */
-  onEnterOnlineGame: (onlineGameId: string) => void;
+  /** onEnterOnlineGame(onlineGameId, isOfficial, startsAt) — 公式戦入室後にOnlineBoardへ遷移させる
+   *  OM-1c: isOfficial=true / startsAt を渡す。
+   */
+  onEnterOnlineGame: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -140,6 +142,28 @@ function MatchCard({
       </div>
 
       {/* Enter Match ボタン / エラー */}
+      {/* 完了・キャンセル・不戦敗: 入室不可・結果表示 */}
+      {(match.status === 'completed' || match.status === 'cancelled' || match.status === 'forfeited') && (
+        <div className="om-card-footer">
+          {match.result && (
+            <div className="om-card-result">
+              {match.winner === 'black_user'
+                ? (match.my_color === 'black' ? '⚔️ 勝利' : '⚔️ 敗北')
+                : match.winner === 'white_user'
+                ? (match.my_color === 'white' ? '⚔️ 勝利' : '⚔️ 敗北')
+                : match.winner === 'draw' ? '⚔️ 引き分け' : ''}
+            </div>
+          )}
+          <button
+            type="button"
+            className="om-enter-btn om-enter-btn-disabled"
+            disabled
+          >
+            Enter Match
+          </button>
+        </div>
+      )}
+
       {(match.status === 'joinable' || match.status === 'scheduled' || match.status === 'live') && (
         <div className="om-card-footer">
           {enterError && (
@@ -321,8 +345,8 @@ export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
       setEnteringId(null);
     } else {
       setEnteringId(null);
-      // 公式戦対局画面へ遷移（App.tsx の onlineGameId を使う）
-      onEnterOnlineGame(result.onlineGameId);
+      // OM-1c: isOfficial=true / startsAt を渡す
+      onEnterOnlineGame(result.onlineGameId, result.isOfficial, result.startsAt);
     }
   }, [onEnterOnlineGame]);
 

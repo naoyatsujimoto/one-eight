@@ -91,7 +91,7 @@ export async function listMyOfficialMatches(params?: {
  */
 export async function enterOfficialMatch(
   matchId: string,
-): Promise<{ onlineGameId: string; color: 'black' | 'white' } | { error: string }> {
+): Promise<{ onlineGameId: string; color: 'black' | 'white'; isOfficial: true; startsAt: string } | { error: string }> {
   // initialState はフロントエンドで生成して渡す（game_state NOT NULL 対策）
   const initialState = createInitialState(null);
 
@@ -103,14 +103,15 @@ export async function enterOfficialMatch(
   if (error) return { error: error.message };
   // Supabase JS v2 では RETURNS json の RPC が data=null を返すバグがある。
   // joinOrCreateRandomGame と同様のフォールバック対応を実施する。
-  const raw = data as { online_game_id?: string; color?: string } | null;
-  const nested = (data as { data?: { online_game_id?: string; color?: string } } | null)?.data;
+  const raw = data as { online_game_id?: string; color?: string; is_official?: boolean; starts_at?: string } | null;
+  const nested = (data as { data?: { online_game_id?: string; color?: string; is_official?: boolean; starts_at?: string } } | null)?.data;
   const onlineGameId = raw?.online_game_id ?? nested?.online_game_id;
   const color = (raw?.color ?? nested?.color) as 'black' | 'white' | undefined;
+  const startsAt = raw?.starts_at ?? nested?.starts_at ?? new Date().toISOString();
   if (!onlineGameId || !color) {
     return { error: `enter_official_match returned unexpected data: ${JSON.stringify(data)}` };
   }
-  return { onlineGameId, color };
+  return { onlineGameId, color, isOfficial: true, startsAt };
 }
 
 /**

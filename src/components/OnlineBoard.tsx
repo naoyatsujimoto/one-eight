@@ -56,9 +56,13 @@ interface Props {
   myUserId: string;
   roomCode?: string;
   onExit: () => void;
+  /** OM-1c: 公式戦由来ゲームかどうか。Ghost Mode 無効化制御に使用。 */
+  isOfficialMatch?: boolean;
+  /** OM-1c: 公式戦の開始時刻（ISO）。定刻前待機表示に使用。 */
+  officialStartsAt?: string | null;
 }
 
-export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
+export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatch, officialStartsAt }: Props) {
   const { t } = useLang();
   const {
     gameRow,
@@ -71,7 +75,24 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
     whiteRemainingMs,
     turnStartedAt,
     serverUpdatedAt,
+    isBeforeOfficialStart,
   } = useOnlineGame(gameId, myUserId);
+
+  // OM-1c: 定刻前待機時刻表示用 state
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    if (!isOfficialMatch || !officialStartsAt) return;
+    const ms = new Date(officialStartsAt).getTime() - Date.now();
+    if (ms <= 0) return;
+    // starts_at まで毎秒更新してカウントダウンを表示
+    const id = setInterval(() => {
+      if (new Date(officialStartsAt).getTime() <= Date.now()) {
+        clearInterval(id);
+      }
+      forceUpdate((n) => n + 1);
+    }, 500);
+    return () => clearInterval(id);
+  }, [isOfficialMatch, officialStartsAt]);
   const [localState, setLocalState] = useState<GameState | null>(null);
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -90,7 +111,15 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
   }, [myUserId]);
 
   // online_pvp は常に showGhostToggle = proActive
-  const showGhostToggle = proActive;
+  // OM-1c: 公式戦では Ghost Mode 無効
+  const showGhostToggle = proActive && !isOfficialMatch;
+
+  // OM-1c: 公式戦の場合 ghostModeActive を強制 OFF
+  useEffect(() => {
+    if (isOfficialMatch && ghostModeActive) {
+      setGhostModeActive(false);
+    }
+  }, [isOfficialMatch, ghostModeActive]);
 
   // Ghost Mode ON かつ自分の手番のときのみ fetch
   useEffect(() => {
@@ -335,7 +364,23 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit }: Props) {
           )}
         </div>
       )}
-      {onlineStatus === 'playing' && (
+      {onlineStatus === 'playing' && isBeforeOfficialStart && (
+        <div style={{ ...styles.banner, background: '#fff8e1', color: '#f57f17', fontWeight: 600 }}>
+          {(() => {
+            if (!officialStartsAt) return '開始時刻まで待機中…';
+            const ms = new Date(officialStartsAt).getTime() - Date.now();
+            if (ms <= 0) return '待機中…';
+            const totalSec = Math.ceil(ms / 1000);
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            const countdown = min > 0
+              ? `${min}分${sec > 0 ? ` ${sec}秒` : ''}`
+              : `${sec}秒`;
+            return `対局開始まで待機中 — ${countdown}`;
+          })()}
+        </div>
+      )}
+      {onlineStatus === 'playing' && !isBeforeOfficialStart && (
         <div style={{ ...styles.banner, background: isMyTurn ? '#e8f5e9' : '#f5f5f5', color: isMyTurn ? '#2e7d32' : '#555' }}>
           {pendingSubmit ? t.onlineSending : turnLabel}
         </div>
