@@ -380,11 +380,28 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
           })()}
         </div>
       )}
-      {onlineStatus === 'playing' && !isBeforeOfficialStart && (
-        <div style={{ ...styles.banner, background: isMyTurn ? '#e8f5e9' : '#f5f5f5', color: isMyTurn ? '#2e7d32' : '#555' }}>
-          {pendingSubmit ? t.onlineSending : turnLabel}
-        </div>
-      )}
+      {onlineStatus === 'playing' && !isBeforeOfficialStart && (() => {
+        // OM-1d: Whiteのみ入室時に Black 未入室メッセージを表示
+        // 条件: 公式戦 + 自分が White + 相手（Black）の手番 + 手数 1（未着手）
+        const isOfficialWaitingForBlack =
+          isOfficialMatch &&
+          myColor === 'white' &&
+          gameRow !== null &&
+          gameRow.current_player_id === gameRow.black_player_id &&
+          gameRow.move_number === 1;
+        if (isOfficialWaitingForBlack) {
+          return (
+            <div style={{ ...styles.banner, background: '#fff3e0', color: '#e65100', fontWeight: 600 }}>
+              Black がまだ入室していません。Black の時計は進行中です。
+            </div>
+          );
+        }
+        return (
+          <div style={{ ...styles.banner, background: isMyTurn ? '#e8f5e9' : '#f5f5f5', color: isMyTurn ? '#2e7d32' : '#555' }}>
+            {pendingSubmit ? t.onlineSending : turnLabel}
+          </div>
+        );
+      })()}
       {onlineStatus === 'finished' && (
         <div style={{ ...styles.banner, background: '#fff3e0', color: '#e65100', fontWeight: 700 }}>
           {(() => {

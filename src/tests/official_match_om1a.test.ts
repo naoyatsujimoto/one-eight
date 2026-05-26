@@ -1,8 +1,8 @@
 /**
- * official_match_om1a.test.ts — OM-1a ユニットテスト
+ * official_match_om1a.test.ts — OM-1a / OM-1d ユニットテスト
  *
  * DB / RLS は Supabase 側のため、ここではクライアント側ロジックをテストする:
- * - isEnterWindowOpen: 時間条件判定
+ * - isEnterWindowOpen: 時間条件判定（OM-1d: 上限を totalSeconds ベースに変更）
  * - msUntilStart: 残り時間計算
  * - officialMatch 型定義の整合性確認（コンパイル）
  */
@@ -40,14 +40,30 @@ describe('isEnterWindowOpen', () => {
     expect(isEnterWindowOpen(startsAt)).toBe(false);
   });
 
-  it('試合開始30分後は入室可能（境界値）', () => {
-    const startsAt = new Date(fakeNow - 30 * 60 * 1000).toISOString();
+  // OM-1d: 入室ウィンドウ上限は totalSeconds（デフォルト 600秒 = 10分）
+  it('starts_at + 599秒は入室可能（totalSeconds=600 デフォルト）', () => {
+    const startsAt = new Date(fakeNow - 599 * 1000).toISOString();
     expect(isEnterWindowOpen(startsAt)).toBe(true);
   });
 
-  it('試合開始30分1秒後は入室不可（遅刻締め切り後）', () => {
-    const startsAt = new Date(fakeNow - 30 * 60 * 1000 - 1000).toISOString();
+  it('starts_at + 600秒は入室可能（境界値）', () => {
+    const startsAt = new Date(fakeNow - 600 * 1000).toISOString();
+    expect(isEnterWindowOpen(startsAt)).toBe(true);
+  });
+
+  it('starts_at + 601秒は入室不可（no_contest 範囲外）', () => {
+    const startsAt = new Date(fakeNow - 601 * 1000).toISOString();
     expect(isEnterWindowOpen(startsAt)).toBe(false);
+  });
+
+  it('totalSeconds=120 指定: starts_at + 120秒は入室可能', () => {
+    const startsAt = new Date(fakeNow - 120 * 1000).toISOString();
+    expect(isEnterWindowOpen(startsAt, 120)).toBe(true);
+  });
+
+  it('totalSeconds=120 指定: starts_at + 121秒は入室不可', () => {
+    const startsAt = new Date(fakeNow - 121 * 1000).toISOString();
+    expect(isEnterWindowOpen(startsAt, 120)).toBe(false);
   });
 
   it('試合が2時間先なら入室不可', () => {

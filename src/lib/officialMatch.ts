@@ -16,7 +16,8 @@ export type OfficialMatchStatus =
   | 'live'
   | 'completed'
   | 'cancelled'
-  | 'forfeited';
+  | 'forfeited'
+  | 'no_contest';
 
 /** list_my_official_matches RPC の返却行 */
 export type OfficialMatchListItem = {
@@ -134,17 +135,21 @@ export async function cancelOfficialMatch(
 // ─── ユーティリティ ───────────────────────────────────────────────────────────
 
 const JOINABLE_BEFORE_MIN = 15; // 試合開始 N 分前から入室可能
-const LATE_JOIN_MAX_MIN = 30;   // 試合開始 N 分後まで入室可能
+// OM-1d: 入室ウィンドウ上限は totalSeconds ベースに変更（旧: 30分固定）
+// → Black の持ち時間 = starts_at 後の入室猶予。超過後は no_contest。
 
 /**
  * 現在時刻と starts_at を比較し、入室ウィンドウ内かを判定する（クライアント側）。
  * 実際の権限チェックはサーバー側 enter_official_match で行う。
+ *
+ * @param startsAt    公式戦の開始時刻 (ISO)
+ * @param totalSeconds timer_config.totalSeconds（デフォルト 600 = 10分）
  */
-export function isEnterWindowOpen(startsAt: string): boolean {
+export function isEnterWindowOpen(startsAt: string, totalSeconds = 600): boolean {
   const now = Date.now();
   const start = new Date(startsAt).getTime();
-  const joinableFrom = start - JOINABLE_BEFORE_MIN * 60 * 1000;
-  const joinableUntil = start + LATE_JOIN_MAX_MIN * 60 * 1000;
+  const joinableFrom  = start - JOINABLE_BEFORE_MIN * 60 * 1000;
+  const joinableUntil = start + totalSeconds * 1000;
   return now >= joinableFrom && now <= joinableUntil;
 }
 
@@ -153,4 +158,18 @@ export function isEnterWindowOpen(startsAt: string): boolean {
  */
 export function msUntilStart(startsAt: string): number {
   return new Date(startsAt).getTime() - Date.now();
+}
+
+/**
+ * 両者未入室かつ starts_at + totalSeconds 超過時に no_contest を確定させる RPC。
+ * User Page ロード時などに参加者のクライアントから呼び出す（冪等）。
+ */
+export async function checkOfficialMatchExpiry(
+  matchId: string,
+): Promise<{ ok: boolean; status?: string; reason?: string }> {
+  const { data, error } = await supabase.rpc('check_official_match_expiry', {
+    p_match_id: matchId,
+  });
+  if (error) return { ok: false, reason: error.message };
+  return (data as { ok: boolean; status?: string; reason?: string }) ?? { ok: false };
 }

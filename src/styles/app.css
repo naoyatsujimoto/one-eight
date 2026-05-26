@@ -2623,6 +2623,10 @@ ol { padding-left: 20px; }
   background: #fff3e0;
   color: #e65100;
 }
+.om-badge-no-contest {
+  background: #f0f0f0;
+  color: #757575;
+}
 
 /* ── Responsive (≤ 480px) ──────────────────────────────────────────────────── */
 @media (max-width: 480px) {

@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   listMyOfficialMatches,
   enterOfficialMatch,
+  checkOfficialMatchExpiry,
   isEnterWindowOpen,
   msUntilStart,
   type OfficialMatchListItem,
@@ -33,12 +34,13 @@ const STATUS_CONFIG: Record<
   OfficialMatchStatus,
   { label: string; className: string }
 > = {
-  scheduled: { label: 'Scheduled', className: 'om-badge om-badge-scheduled' },
-  joinable:  { label: 'Join Now',  className: 'om-badge om-badge-joinable' },
-  live:      { label: 'Live',      className: 'om-badge om-badge-live' },
-  completed: { label: 'Completed', className: 'om-badge om-badge-completed' },
-  cancelled: { label: 'Cancelled', className: 'om-badge om-badge-cancelled' },
-  forfeited: { label: 'Forfeited', className: 'om-badge om-badge-forfeited' },
+  scheduled:  { label: 'Scheduled',  className: 'om-badge om-badge-scheduled' },
+  joinable:   { label: 'Join Now',   className: 'om-badge om-badge-joinable' },
+  live:       { label: 'Live',       className: 'om-badge om-badge-live' },
+  completed:  { label: 'Completed',  className: 'om-badge om-badge-completed' },
+  cancelled:  { label: 'Cancelled',  className: 'om-badge om-badge-cancelled' },
+  forfeited:  { label: 'Forfeited',  className: 'om-badge om-badge-forfeited' },
+  no_contest: { label: 'No Contest', className: 'om-badge om-badge-no-contest' },
 };
 
 function StatusBadge({ status }: { status: OfficialMatchStatus }) {
@@ -52,15 +54,15 @@ function formatTimerConfig(cfg: Record<string, unknown> | null): string {
   if (!cfg) return '—';
   const mode = cfg.mode as string | undefined;
   if (mode === 'total_time') {
-    const ms = cfg.total_time_ms as number | undefined;
-    if (!ms) return 'Total';
-    const min = Math.round(ms / 60000);
-    return `${min}min Total`;
+    const sec = cfg.totalSeconds as number | undefined;
+    if (!sec) return 'Total';
+    const min = Math.floor(sec / 60);
+    const rem = sec % 60;
+    return rem > 0 ? `${min}m${rem}s / Player` : `${min}min / Player`;
   }
   if (mode === 'per_move') {
-    const ms = cfg.per_move_ms as number | undefined;
-    if (!ms) return 'Per Move';
-    const sec = Math.round(ms / 1000);
+    const sec = cfg.perMoveSeconds as number | undefined;
+    if (!sec) return 'Per Move';
     return `${sec}s / Move`;
   }
   return 'No Clock';
@@ -91,8 +93,11 @@ function MatchCard({
   // 「新規入室」と「再入室」を分けて判定する。
   // - 新規: status が scheduled/joinable かつ入室ウィンドウ内
   // - 再入室: status が live かつ online_game_id が存在（游び途中に縬けられる）
-  const windowOpen = isEnterWindowOpen(match.starts_at);
-  const isReEntry = match.status === 'live' && match.online_game_id != null;
+  // OM-1d: isEnterWindowOpen の上限は totalSeconds ベース（旧: 30分固定）
+  const totalSeconds = (match.timer_config?.totalSeconds as number | undefined) ?? 600;
+  const windowOpen = isEnterWindowOpen(match.starts_at, totalSeconds);
+  const isReEntry = (match.status === 'live' || match.status === 'scheduled' || match.status === 'joinable')
+    && match.online_game_id != null;
   const canEnter =
     (
       ((match.status === 'joinable' || match.status === 'scheduled') && windowOpen)
@@ -149,35 +154,34 @@ function MatchCard({
 
       {/* Enter Match ボタン / エラー */}
       {/* 完了・キャンセル・不戦敗: 入室不可・結果表示 */}
-      {(match.status === 'completed' || match.status === 'cancelled' || match.status === 'forfeited') && (
+      {(match.status === 'completed' || match.status === 'cancelled' ||
+        match.status === 'forfeited' || match.status === 'no_contest') && (
         <div className="om-card-footer">
-          {match.result && (
-            <div className="om-card-result">
-              {(() => {
-                const isTimeout = match.end_reason === 'timeout';
-                const isWin =
-                  (match.winner === 'black_user' && match.my_color === 'black') ||
-                  (match.winner === 'white_user' && match.my_color === 'white');
-                const isLoss =
-                  (match.winner === 'black_user' && match.my_color === 'white') ||
-                  (match.winner === 'white_user' && match.my_color === 'black');
-                const isDraw = match.winner === 'draw';
-                if (isTimeout && isWin) return 'Timeout Win';
-                if (isTimeout && isLoss) return 'Timeout Loss';
-                if (isWin) return 'Win';
-                if (isLoss) return 'Loss';
-                if (isDraw) return 'Draw';
+          <div className="om-card-result">
+            {(() => {
+              if (match.status === 'no_contest') return 'No Contest — 不成立';
+              if (!match.result) {
                 if (match.status === 'cancelled') return 'Cancelled';
                 if (match.status === 'forfeited') return 'Forfeited';
                 return '';
-              })()}
-            </div>
-          )}
-          <button
-            type="button"
-            className="om-enter-btn om-enter-btn-disabled"
-            disabled
-          >
+              }
+              const isTimeout = match.end_reason === 'timeout';
+              const isWin =
+                (match.winner === 'black_user' && match.my_color === 'black') ||
+                (match.winner === 'white_user' && match.my_color === 'white');
+              const isLoss =
+                (match.winner === 'black_user' && match.my_color === 'white') ||
+                (match.winner === 'white_user' && match.my_color === 'black');
+              const isDraw = match.winner === 'draw';
+              if (isTimeout && isWin) return 'Timeout Win';
+              if (isTimeout && isLoss) return 'Timeout Loss';
+              if (isWin) return 'Win';
+              if (isLoss) return 'Loss';
+              if (isDraw) return 'Draw';
+              return '';
+            })()}
+          </div>
+          <button type="button" className="om-enter-btn om-enter-btn-disabled" disabled>
             Enter Match
           </button>
         </div>
@@ -390,8 +394,26 @@ export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
     (m) => m.status === 'scheduled' || m.status === 'joinable' || m.status === 'live'
   );
   const pastMatches = filteredMatches.filter(
-    (m) => m.status === 'completed' || m.status === 'cancelled' || m.status === 'forfeited'
+    (m) => m.status === 'completed' || m.status === 'cancelled' ||
+           m.status === 'forfeited' || m.status === 'no_contest'
   );
+
+  // OM-1d: stale な scheduled/joinable match を no_contest チェック（副作用のみ・非同期）
+  useEffect(() => {
+    const stale = matches.filter((m) => {
+      if (m.status !== 'scheduled' && m.status !== 'joinable') return false;
+      if (m.online_game_id != null) return false;
+      const totalSec = (m.timer_config?.totalSeconds as number | undefined) ?? 600;
+      const expiresAt = new Date(m.starts_at).getTime() + totalSec * 1000;
+      return Date.now() > expiresAt;
+    });
+    if (stale.length === 0) return;
+    void Promise.all(stale.map((m) => checkOfficialMatchExpiry(m.id))).then(() => {
+      // チェック後に一覧を再取得して no_contest 表示を反映
+      void loadMatches();
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches]);
 
   if (loading) {
     return (
