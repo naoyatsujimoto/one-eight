@@ -134,15 +134,19 @@ export function OnlineTimerDisplay({
     localReceiveTimeRef.current = Date.now();
   }, [serverUpdatedAt, turnStartedAt]);
 
-  // frozenUntil が設定されている場合、定刻到達後に localReceiveTime を更新して凍結解除
+  // frozenUntil が設定されている場合、定刻到達後に再描画トリガーのみ行う
+  // NOTE: localReceiveTimeRef.current をここでリセットしてはいけない。
+  // リセットすると (now - localReceiveTime) ≈ 0 になり、
+  // serverNowFrozen ≈ serverUpdatedAt（入室時刻）になってしまう。
+  // effectiveStart = starts_at（入室時刻より後）との差が負となり、
+  // per_move なら 30000 - 負値 = 数分超の値を表示するバグが発生する。
+  // localReceiveTime は serverUpdatedAt 変化時のみ更新する（上の useEffect）。
   useEffect(() => {
     if (!frozenUntil) return;
     const ms = new Date(frozenUntil).getTime() - Date.now();
     if (ms <= 0) return; // 既に定刻後
     const id = setTimeout(() => {
-      // 定刻到達: localReceiveTime をリセットしてタイマーを正確な起点から再開
-      localReceiveTimeRef.current = Date.now();
-      setTick((t) => t + 1);
+      setTick((t) => t + 1); // 再描画のみ。localReceiveTimeRef はリセットしない。
     }, ms);
     return () => clearTimeout(id);
   }, [frozenUntil]);
