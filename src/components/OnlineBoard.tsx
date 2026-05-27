@@ -365,18 +365,18 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
         </div>
       )}
       {onlineStatus === 'playing' && isBeforeOfficialStart && (
-        <div style={{ ...styles.banner, background: '#fff8e1', color: '#f57f17', fontWeight: 600 }}>
+        <div style={{ ...styles.banner, background: '#e8f0fe', color: '#3949ab', fontWeight: 600 }}>
           {(() => {
-            if (!officialStartsAt) return '開始時刻まで待機中…';
+            if (!officialStartsAt) return 'Waiting for match start…';
             const ms = new Date(officialStartsAt).getTime() - Date.now();
-            if (ms <= 0) return '待機中…';
+            if (ms <= 0) return 'Starting soon…';
             const totalSec = Math.ceil(ms / 1000);
             const min = Math.floor(totalSec / 60);
             const sec = totalSec % 60;
             const countdown = min > 0
-              ? `${min}分${sec > 0 ? ` ${sec}秒` : ''}`
-              : `${sec}秒`;
-            return `対局開始まで待機中 — ${countdown}`;
+              ? `${min}m${sec > 0 ? ` ${sec}s` : ''}`
+              : `${sec}s`;
+            return `Match starts in ${countdown}`;
           })()}
         </div>
       )}
@@ -391,8 +391,8 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
           gameRow.move_number === 1;
         if (isOfficialWaitingForBlack) {
           return (
-            <div style={{ ...styles.banner, background: '#fff3e0', color: '#e65100', fontWeight: 600 }}>
-              Black がまだ入室していません。Black の時計は進行中です。
+            <div style={{ ...styles.banner, background: '#e8f0fe', color: '#3949ab', fontWeight: 600 }}>
+              Black has not entered yet. Black’s clock is running.
             </div>
           );
         }

@@ -159,13 +159,17 @@ function MatchCard({
         <div className="om-card-footer">
           <div className="om-card-result">
             {(() => {
-              if (match.status === 'no_contest') return 'No Contest — 不成立';
-              if (!match.result) {
-                if (match.status === 'cancelled') return 'Cancelled';
-                if (match.status === 'forfeited') return 'Forfeited';
-                return '';
-              }
-              const isTimeout = match.end_reason === 'timeout';
+              // ─── neutral 表示（終局理由が勝敗と無関係） ───────────────────────
+              if (match.status === 'no_contest')
+                return <span className="om-result-neutral">— No contest</span>;
+              if (match.status === 'cancelled')
+                return <span className="om-result-neutral">— Cancelled</span>;
+              if (match.status === 'forfeited')
+                return <span className="om-result-neutral">— Forfeited</span>;
+
+              // ─── 勝敗判定 ─────────────────────────────────────────────────────
+              // winner: 'black_user' | 'white_user' | 'draw' | null
+              // my_color: 'black' | 'white'
               const isWin =
                 (match.winner === 'black_user' && match.my_color === 'black') ||
                 (match.winner === 'white_user' && match.my_color === 'white');
@@ -173,12 +177,20 @@ function MatchCard({
                 (match.winner === 'black_user' && match.my_color === 'white') ||
                 (match.winner === 'white_user' && match.my_color === 'black');
               const isDraw = match.winner === 'draw';
-              if (isTimeout && isWin) return 'Timeout Win';
-              if (isTimeout && isLoss) return 'Timeout Loss';
-              if (isWin) return 'Win';
-              if (isLoss) return 'Loss';
-              if (isDraw) return 'Draw';
-              return '';
+              const isTimeout = match.end_reason === 'timeout';
+
+              if (isDraw)
+                return <span className="om-result-draw">△ Draw</span>;
+              if (isWin)
+                return <span className="om-result-win">
+                  ○{isTimeout ? ' Win by timeout' : ' Win'}
+                </span>;
+              if (isLoss)
+                return <span className="om-result-loss">
+                  × {isTimeout ? 'Loss by timeout' : 'Loss'}
+                </span>;
+              // winner 未確定 or null（完了状態で結果不明）
+              return <span className="om-result-neutral">— </span>;
             })()}
           </div>
           <button type="button" className="om-enter-btn om-enter-btn-disabled" disabled>

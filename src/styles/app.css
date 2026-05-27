@@ -2616,8 +2616,8 @@ ol { padding-left: 20px; }
   color: #777;
 }
 .om-badge-cancelled {
-  background: #fce8e8;
-  color: #c62828;
+  background: #f0f0f0;
+  color: #757575;
 }
 .om-badge-forfeited {
   background: #fff3e0;
@@ -2626,6 +2626,37 @@ ol { padding-left: 20px; }
 .om-badge-no-contest {
   background: #f0f0f0;
   color: #757575;
+}
+
+/* ── Result display ───────────────────────────────────────────────────── */
+.om-card-result {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.om-result-win {
+  color: #2e7d32;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.om-result-loss {
+  color: #c62828;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.om-result-draw {
+  color: #6d4c41;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.om-result-neutral {
+  color: #999;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 /* ── Responsive (≤ 480px) ──────────────────────────────────────────────────── */

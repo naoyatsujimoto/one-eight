@@ -474,8 +474,10 @@ function RecentGamesTable({
           {games.map((r) => {
             const isWin = r.winner !== null && r.winner !== 'draw' && r.human_color !== null && r.winner === r.human_color;
             const isDraw = r.winner === 'draw';
-            const result = isDraw ? '△' : isWin ? '○' : '×';
-            const resultColor = isDraw ? '#888' : isWin ? '#2e7d32' : '#c62828';
+            // online_pvp は human_color = null の場合があり、勝敗不明なので × でなく — を表示
+            const isUnknown = !isDraw && r.human_color === null;
+            const result = isDraw ? '△' : isUnknown ? '—' : isWin ? '○' : '×';
+            const resultColor = isDraw ? '#888' : isUnknown ? '#999' : isWin ? '#2e7d32' : '#c62828';
             const side = r.human_color === 'black' ? t.userSideBlack : r.human_color === 'white' ? t.userSideWhite : '—';
             const modeLabel = r.mode === 'human_vs_cpu' ? t.userTypeCpu : r.mode === 'online_pvp' ? t.userTypeOnline : t.userTypeHuman;
 
