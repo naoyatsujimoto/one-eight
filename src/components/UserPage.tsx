@@ -21,6 +21,7 @@ import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
+import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
 
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
@@ -63,6 +64,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
   const [proActive, setProActive] = useState(false);
+  // online_game_id → OfficialMatchListItem のマップ
+  // RecentGamesTable で human_color=null の online 対局の勝敗判定に使用
+  const [officialGameMap, setOfficialGameMap] = useState<Map<string, OfficialMatchListItem>>(new Map());
 
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
@@ -85,6 +89,22 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
       const map = new Map<string, GameRecord>();
       for (const r of records) map.set(r.game_id, r);
       setLocalMap(map);
+
+      // 公式戦マップを構築: online_game_id → OfficialMatchListItem
+      // RecentGamesTable で human_color=null の勝敗判定に使用
+      const from = new Date();
+      from.setMonth(from.getMonth() - 6);
+      from.setHours(0, 0, 0, 0);
+      const to = new Date();
+      to.setMonth(to.getMonth() + 3);
+      listMyOfficialMatches({ from: from.toISOString(), to: to.toISOString() }).then((res) => {
+        if ('error' in res) return;
+        const omMap = new Map<string, OfficialMatchListItem>();
+        for (const om of res) {
+          if (om.online_game_id) omMap.set(om.online_game_id, om);
+        }
+        setOfficialGameMap(omMap);
+      });
     }
     // Load profile: stats_public + display name
     getProfile(displayUserId).then((profile) => {
@@ -283,6 +303,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               <RecentGamesTable
                 games={stats.recentGames}
                 localMap={localMap}
+                officialGameMap={officialGameMap}
                 onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
                 refreshingGameId={refreshingGameId}
                 onRefresh={(record) => {
@@ -434,6 +455,7 @@ function TrendSection({ agg }: { agg: Aggregates }) {
 function RecentGamesTable({
   games,
   localMap,
+  officialGameMap = new Map(),
   onPostmortem,
   refreshingGameId = null,
   onRefresh,
@@ -443,6 +465,7 @@ function RecentGamesTable({
 }: {
   games: MatchLogRow[];
   localMap: Map<string, GameRecord>;
+  officialGameMap?: Map<string, OfficialMatchListItem>;
   onPostmortem: (r: GameRecord) => void;
   refreshingGameId?: string | null;
   onRefresh?: (r: GameRecord) => void;
@@ -472,12 +495,37 @@ function RecentGamesTable({
         </thead>
         <tbody>
           {games.map((r) => {
-            const isWin = r.winner !== null && r.winner !== 'draw' && r.human_color !== null && r.winner === r.human_color;
+            // ── 勝敗判定 ──────────────────────────────────────────────────────────
+            // 1) 通常ゲーム: human_color があればそちらで判定
             const isDraw = r.winner === 'draw';
-            // online_pvp は human_color = null の場合があり、勝敗不明なので × でなく — を表示
-            const isUnknown = !isDraw && r.human_color === null;
-            const result = isDraw ? '△' : isUnknown ? '—' : isWin ? '○' : '×';
-            const resultColor = isDraw ? '#888' : isUnknown ? '#999' : isWin ? '#2e7d32' : '#c62828';
+            const isWin = !isDraw && r.human_color !== null && r.winner === r.human_color;
+            const isLoss = !isDraw && r.human_color !== null && r.winner !== null && r.winner !== r.human_color;
+
+            // 2) online_pvp 且つ human_color=null の場合: 公式戦マップでクロス参照
+            //    game_id = online_games.id = official_matches.online_game_id
+            const om = (r.mode === 'online_pvp' && r.human_color === null)
+              ? officialGameMap.get(r.game_id)
+              : undefined;
+            const omIsWin = om !== undefined &&
+              ((om.winner === 'black_user' && om.my_color === 'black') ||
+               (om.winner === 'white_user' && om.my_color === 'white'));
+            const omIsLoss = om !== undefined &&
+              ((om.winner === 'black_user' && om.my_color === 'white') ||
+               (om.winner === 'white_user' && om.my_color === 'black'));
+            const omIsDraw = om !== undefined && om.winner === 'draw';
+            const omIsNeutral = om !== undefined &&
+              (om.status === 'no_contest' || om.status === 'cancelled' || om.status === 'forfeited');
+
+            // 3) 結果結合
+            const effectiveWin  = isWin  || omIsWin;
+            const effectiveLoss = isLoss || omIsLoss;
+            const effectiveDraw = isDraw || omIsDraw;
+            // human_color=null 且つ公式戦データなし → 勝敗不明
+            const isUnknown = !effectiveWin && !effectiveLoss && !effectiveDraw && !omIsNeutral;
+
+            const result = effectiveDraw ? '△' : effectiveWin ? '○' : effectiveLoss ? '×' : '—';
+            const resultColor = effectiveDraw ? '#888' : effectiveWin ? '#2e7d32' : effectiveLoss ? '#c62828' : '#999';
+            void isUnknown; // lint抑制
             const side = r.human_color === 'black' ? t.userSideBlack : r.human_color === 'white' ? t.userSideWhite : '—';
             const modeLabel = r.mode === 'human_vs_cpu' ? t.userTypeCpu : r.mode === 'online_pvp' ? t.userTypeOnline : t.userTypeHuman;
 
