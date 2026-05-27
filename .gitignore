@@ -13,3 +13,10 @@ scripts/archive/
 om1a_*.cjs
 *.tsbuildinfo
 scripts/tmp/
+
+# Secrets — never commit
+*.env
+*service_role*
+*service_key*
+*_service*.cjs
+*_service*.ts
