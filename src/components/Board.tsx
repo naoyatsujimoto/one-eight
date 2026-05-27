@@ -1,4 +1,11 @@
 import { useRef, useEffect, useState, useCallback, useId } from 'react';
+
+// Safari (iOS WebKit) は useId() が生成する ":r0:" 等コロン入りIDを
+// SVG の url(#id) 参照で解決できないため、コロンを除去したIDを生成する。
+function useSafeSvgId(): string {
+  const raw = useId();
+  return raw.replace(/:/g, '');
+}
 import { POSITION_TO_GATES } from '../game/constants';
 import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build';
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
@@ -11,7 +18,7 @@ import { ghostMovesToDisplayTargets, getGhostPocketOpacity } from '../game/ghost
 //   低頻度(opacity≈0.30): strokeWidth≈3.0 → 少し藁い線
 //   高頻度(opacity≈1.00): strokeWidth≈5.5 → 濃く太い線
 function GhostHatchCircle({ opacity }: { opacity: number }) {
-  const uid = useId();
+  const uid = useSafeSvgId();
   const patternId = `ghost-hatch-c-${uid}`;
   const clipId = `ghost-clip-c-${uid}`;
   // strokeWidth を opacity に連動させて濃度差を強調する
@@ -48,7 +55,7 @@ function GhostHatchCircle({ opacity }: { opacity: number }) {
 // Note: .diamond-pip has transform:rotate(45deg) so the DOM element is a square that appears diamond.
 // ハッチコントラスト: opacity に連動して strokeWidth も変化させる。
 function GhostHatchDiamond({ opacity }: { opacity: number }) {
-  const uid = useId();
+  const uid = useSafeSvgId();
   const patternId = `ghost-hatch-d-${uid}`;
   // strokeWidth を opacity に連動させて濃度差を強調する
   const sw = 3.0 + opacity * 2.5; // min=3.0 / max=5.5
