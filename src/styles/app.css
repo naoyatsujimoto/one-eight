@@ -268,9 +268,9 @@ html, body {
     repeating-linear-gradient(
       135deg,
       rgba(0,0,0,0.012) 0px,
-      rgba(0,0,0,0.012) 0.6px,
-      transparent   0.6px,
-      transparent   3px
+      rgba(0,0,0,0.012) 1.8px,
+      transparent   1.8px,
+      transparent   9px
     ),
     #ffffff;
   border-bottom: 1px solid rgba(0,0,0,0.10);
