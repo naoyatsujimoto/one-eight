@@ -814,17 +814,22 @@ export default function App() {
       return;
     }
     // 現局面の canonical_hash を算出して Ghost Move を取得
+    let cancelled = false;
     void (async () => {
       try {
         const hash = computeCanonicalHashString(state);
+        console.log('[Ghost DEBUG] fetch', { hash, humanColor, moveIndex: state.history.length, isHumanTurn, showGhostToggle, ghostModeActive });
         const moves = await fetchGhostMoves(hash, humanColor, state.history.length);
-        setGhostMoves(moves);
-      } catch {
-        setGhostMoves([]);
+        console.log('[Ghost DEBUG] result', { count: moves.length, moves });
+        if (!cancelled) setGhostMoves(moves);
+      } catch (e) {
+        console.error('[Ghost DEBUG] error', e);
+        if (!cancelled) setGhostMoves([]);
       }
     })();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ghostModeActive, showGhostToggle, state.history.length, state.currentPlayer]);
+  }, [ghostModeActive, showGhostToggle, isHumanTurn, state.history.length, state.currentPlayer]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
