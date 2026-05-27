@@ -267,13 +267,13 @@ html, body {
   background:
     repeating-linear-gradient(
       -45deg,
-      rgba(0,0,0,0.045) 0px,
-      rgba(0,0,0,0.045) 1px,
+      rgba(0,0,0,0.035) 0px,
+      rgba(0,0,0,0.035) 1px,
       transparent   1px,
-      transparent   7px
+      transparent   8px
     ),
-    #e8e6e3;
-  border-bottom: 1px solid rgba(0,0,0,0.12);
+    #ffffff;
+  border-bottom: 1px solid rgba(0,0,0,0.10);
 }
 
 /* ── Status Pill ── */
