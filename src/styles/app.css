@@ -265,9 +265,15 @@ html, body {
   gap: 10px;
   padding: 12px 18px 14px;
   background:
-    radial-gradient(120% 80% at 50% 0%, rgba(90,58,31,0.04) 0%, transparent 60%),
-    #f6f4ef;
-  border-bottom: 1px solid var(--rule);
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0,0,0,0.045) 0px,
+      rgba(0,0,0,0.045) 1px,
+      transparent   1px,
+      transparent   7px
+    ),
+    #e8e6e3;
+  border-bottom: 1px solid rgba(0,0,0,0.12);
 }
 
 /* ── Status Pill ── */
