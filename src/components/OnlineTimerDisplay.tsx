@@ -13,11 +13,10 @@
  *   - frozenUntil 前は perMoveMs で凍結（starts_at 前の待機時間を持ち時間に加算しない）
  *
  * ## total_time
- *   - server_updated_at + (now - localReceiveTime) でサーバー時刻を近似
- *   - 手番側のみ elapsed を差し引く（非手番は DB の remaining_ms をそのまま表示）
+ *   - Date.now() ベースで turnStartedAt（または frozenUntil）からの経過時間を計算
+ *   - serverUpdatedAt + drift 近似は廃止（clock offset の正/負どちらでも表示バグを起こすため）
  *   - frozenUntil 前は全プレイヤー凍結
- *   - elapsed は必ず 0 以上にクランプ（サーバー-クライアント clock offset で serverNow < effectiveStart
- *     になる場合の持ち時間上振れを防ぐ）
+ *   - elapsed は 0 以上にクランプ（turnStartedAt が未来の場合）
  *   - 表示残り時間は [0, initialTotalMs] にクランプ（初期持ち時間を超えた表示を防ぐ）
  *
  * ## 共通
@@ -25,11 +24,19 @@
  *   - timer_config が null / mode === 'none' のときは何も表示しない
  *   - gameFinished=true のときはカウントダウン停止
  *
- * ## 2:40 バグの原因と修正
- *   - サーバークロックがクライアントより N 秒遅れている場合、serverNow が effectiveStart(=starts_at)
- *     より N 秒小さくなり elapsed = -N*1000 ms（負値）になる
- *   - 修正前: Math.max(0, remaining) は下限のみ保護 → remaining = 120000+40000 = 160000 が素通り
- *   - 修正後: elapsed = Math.max(0, ...) + clamp(result, 0, initialTotalMs) で双方向保護
+ * ## 過去のバグ履歴
+ *   [OM-1d Bug 1] 2:40 表示（起動直後）
+ *     原因: サーバークロックがクライアントより N 秒遅れ → serverNow < starts_at → elapsed 負値
+ *            → remaining = 120000 + N*1000 に上振れ
+ *     修正: elapsed = Math.max(0, ...) + clamp(result, 0, initialTotalMs)
+ *
+ *   [OM-1d Bug 2] 2:00 のまま止まる（Black 初手中）
+ *     原因: Bug1 の修正で elapsed = Math.max(0, serverNow - starts_at) としたが、
+ *            サーバークロックが N 秒遅れている限り serverNow = actual_UTC - N sec のまま。
+ *            starts_at 後も serverNow < starts_at が続き elapsed = 0 → カウントダウン停止。
+ *     修正: serverNow 近似を完全廃止し Date.now() を直接使用。
+ *            apply_online_move は同一 v_now で turn_started_at / server_updated_at を更新するため
+ *            serverNow ≈ turnStartedAt になり elapsed=0 になる問題もこれで解消。
  */
 import { useEffect, useRef, useState } from 'react';
 import type { TimerConfig } from '../game/timerTypes';
@@ -106,46 +113,46 @@ function calcPerMoveRemainingMs(
 /**
  * total_time の手番プレイヤーの表示残り時間を計算する（手番側専用）。
  *
- * server_updated_at + (now - localReceiveTime) でサーバー現在時刻を近似し、
- * turnStartedAt からの経過時間を playerRemainingMs から差し引く。
- * Realtime 経由の更新では精度が高い（serverUpdatedAt ≈ now のため drift が小さい）。
+ * 【設計方針】
+ * serverUpdatedAt + (now - localReceiveTime) によるサーバー時刻近似は廃止。
+ * 理由:
+ *   1. サーバークロックがクライアントより N 秒遅れている場合、serverNow = actual_UTC - N sec。
+ *      ・N 秒遅れ → serverNow < effectiveStart → elapsed 負値 → 表示上振れ（例: 2:40）
+ *      ・Math.max(0, elapsed) で 0 クランプすると、starts_at 後も N 秒間 elapsed = 0 のまま
+ *        → タイマーが N 秒間止まって見える（今回のバグ）
+ *   2. apply_online_move は turn_started_at = server_updated_at = v_now（同一トランザクション）。
+ *      再入室直後に localReceiveTime がリセットされると serverNow ≈ turnStartedAt になり elapsed=0。
+ *      per_move が Date.now() に切り替えた理由と同じ。
  *
- * 【clock offset 対策】
- * サーバークロックがクライアントより遅れている場合、serverNow < effectiveStart になり
- * elapsed が負値になる。これを許すと表示残時間が initialTotalMs を超える（例: 2:40）。
- * elapsed = Math.max(0, ...) でこれを防ぎ、さらに戻り値を [0, initialTotalMs] にクランプする。
+ * Date.now() を直接使うことでいずれの問題も解消する。
+ * タイムアウト判定は RPC 側が行うため、表示での ±数秒のずれは許容範囲。
  *
  * 戻り値: [0, initialTotalMs]
  */
 function calcTotalTimeActiveRemainingMs(
   playerRemainingMs: number | null,
   turnStartedAt: string | null,
-  serverUpdatedAt: string | null,
-  localReceiveTime: number,
   frozenUntil: string | null | undefined,
   initialTotalMs: number,
 ): number {
   if (!turnStartedAt) return Math.min(playerRemainingMs ?? initialTotalMs, initialTotalMs);
 
   const now = Date.now();
-  const serverNow = serverUpdatedAt
-    ? new Date(serverUpdatedAt).getTime() + (now - localReceiveTime)
-    : now;
 
-  // frozenUntil が設定されている場合、effectiveStart を定刻以降に限定
+  // effectiveStart: frozenUntil（公式戦 starts_at）以降に限定
+  // 公式戦では turn_started_at = starts_at なので max は常に starts_at
+  // 通常対戦では frozenUntil = null なので turnStartedAt をそのまま使う
   let effectiveStart = new Date(turnStartedAt).getTime();
   if (frozenUntil) {
     const frozenUntilMs = new Date(frozenUntil).getTime();
     effectiveStart = Math.max(effectiveStart, frozenUntilMs);
   }
 
-  // elapsed を 0 以上にクランプ:
-  //   serverNow < effectiveStart（サーバー-クライアント clock offset による）の場合に
-  //   elapsed が負値になり、表示残時間が initialTotalMs を超えるのを防ぐ
-  const elapsed = Math.max(0, serverNow - effectiveStart);
+  // elapsed: Date.now() 基準。turnStartedAt が未来の場合は 0 にクランプ
+  const elapsed = Math.max(0, now - effectiveStart);
 
   // 結果を [0, initialTotalMs] にクランプ:
-  //   上限: 初期持ち時間を超えた表示（2:40 等）を防ぐ
+  //   上限: 初期持ち時間を超えた表示を防ぐ
   //   下限: 0 未満の表示を防ぐ
   return Math.min(initialTotalMs, Math.max(0, (playerRemainingMs ?? initialTotalMs) - elapsed));
 }
@@ -156,25 +163,14 @@ export function OnlineTimerDisplay({
   blackRemainingMs,
   whiteRemainingMs,
   turnStartedAt,
-  serverUpdatedAt,
+  serverUpdatedAt: _serverUpdatedAt,  // Date.now() 方式に移行したため未使用（互換性のため残す）
   currentPlayer,
   gameFinished = false,
   frozenUntil = null,
 }: OnlineTimerDisplayProps) {
-  // total_time 専用: serverUpdatedAt の受信時刻を保持
-  // per_move はこの ref を使わない
-  const localReceiveTimeRef = useRef<number>(Date.now());
   const [tick, setTick] = useState(0);
 
-  // total_time 用: serverUpdatedAt または turnStartedAt が変化したら受信時刻を更新
-  // per_move はこの useEffect の影響を受けない（calcPerMoveRemainingMs は ref を参照しない）
-  useEffect(() => {
-    localReceiveTimeRef.current = Date.now();
-  }, [serverUpdatedAt, turnStartedAt]);
-
   // 公式戦: frozenUntil 到達後に再描画のみトリガー
-  // localReceiveTimeRef.current をここでリセットしてはいけない
-  // （リセットすると total_time の serverNow ≈ serverUpdatedAt になり elapsed=0 になる）
   useEffect(() => {
     if (!frozenUntil) return;
     const msUntilFrozen = new Date(frozenUntil).getTime() - Date.now();
@@ -230,8 +226,6 @@ export function OnlineTimerDisplay({
             ? calcTotalTimeActiveRemainingMs(
                 rawRemaining,
                 turnStartedAt,
-                serverUpdatedAt,
-                localReceiveTimeRef.current,
                 frozenUntil,
                 initialTotalMs,
               )
