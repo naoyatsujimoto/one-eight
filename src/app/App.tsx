@@ -19,6 +19,7 @@ import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import type { Lang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
+import { GameBoardHeader } from '../components/GameBoardHeader';
 import { UserPage } from '../components/UserPage';
 import { AdminInbox } from '../components/AdminInbox';
 import { CpuProfile } from '../components/CpuProfile';
@@ -1027,9 +1028,19 @@ export default function App() {
         </div>
       </header>
 
-      {isCpuTurn && <div className="cpu-thinking-banner">{t.cpuThinking}</div>}
-
       <main className="layout">
+        <div className="board-col">
+          {/* V5 Arc Progress ヘッダー: timer使用時のみ表示 */}
+          <GameBoardHeader
+            mode="local"
+            timerConfig={state.timerConfig ?? null}
+            currentPlayer={state.currentPlayer}
+            gameFinished={state.gameEnded}
+            playerTimers={playerTimers}
+            currentMoveRemainingMs={currentMoveRemainingMs}
+            isCpuTurn={isCpuTurn}
+          />
+          {isCpuTurn && <div className="cpu-thinking-banner">{t.cpuThinking}</div>}
         <div className="board-stage">
           <Board
             state={state}
@@ -1044,6 +1055,7 @@ export default function App() {
             onGhostModeToggle={() => setGhostModeActive(v => !v)}
           />
         </div>
+        </div>{/* end board-col */}
         <aside className="panel-col">
           <TurnInfo
             state={state}

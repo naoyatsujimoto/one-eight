@@ -12,6 +12,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { MoveHistory } from './MoveHistory';
 import { useOnlineGame } from '../hooks/useOnlineGame';
 import { OnlineTimerDisplay } from './OnlineTimerDisplay';
+import { GameBoardHeader } from './GameBoardHeader';
 import { useLang } from '../lib/lang';
 import { getPublicProfile, getProfile, isProActive } from '../lib/profile';
 import { fetchGhostMoves } from '../lib/matchLog';
@@ -425,19 +426,20 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
 
       <main className="layout">
         <div className="board-col">
-          {/* Phase T-2a: タイムクロック — ボード直上に配置 */}
-          {gameRow.timer_config && gameRow.timer_config.mode !== 'none' && (
-            <OnlineTimerDisplay
-              timerConfig={gameRow.timer_config}
-              blackRemainingMs={blackRemainingMs}
-              whiteRemainingMs={whiteRemainingMs}
-              turnStartedAt={turnStartedAt}
-              serverUpdatedAt={serverUpdatedAt}
-              currentPlayer={state.currentPlayer}
-              gameFinished={onlineStatus === 'finished'}
-              frozenUntil={gameRow.official_starts_at ?? null}
-            />
-          )}
+          {/* Phase T-2a: タイムクロック — V5 Arc Progress ヘッダー */}
+          <GameBoardHeader
+            mode="online"
+            timerConfig={gameRow.timer_config ?? null}
+            currentPlayer={state.currentPlayer}
+            gameFinished={onlineStatus === 'finished'}
+            blackRemainingMs={blackRemainingMs}
+            whiteRemainingMs={whiteRemainingMs}
+            turnStartedAt={turnStartedAt}
+            serverUpdatedAt={serverUpdatedAt}
+            frozenUntil={gameRow.official_starts_at ?? null}
+            isMyTurn={isMyTurn}
+            isBeforeOfficialStart={isBeforeOfficialStart}
+          />
           <div className="board-stage">
             <Board
               state={state}

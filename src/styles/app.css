@@ -255,6 +255,308 @@ html, body {
   min-height: 20px;
 }
 
+/* ── GameBoardHeader — V5 Arc Progress (gbh-) ── */
+/* プレフィックス gbh- で既存クラスとの衝突を防ぐ */
+
+.gbh-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px 14px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(90,58,31,0.04) 0%, transparent 60%),
+    #f6f4ef;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ── Status Pill ── */
+.gbh-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gbh-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.025);
+  border: 1px solid var(--rule);
+}
+.gbh-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  animation: gbh-breathe 2.4s ease-in-out infinite;
+}
+.gbh-status-text {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* pregame */
+.gbh-status-pregame {
+  background: rgba(200,149,69,0.08);
+  border-color: rgba(200,149,69,0.3);
+}
+.gbh-status-pregame .gbh-status-dot {
+  background: #c89545;
+}
+.gbh-status-pregame .gbh-status-text {
+  color: #946a2d;
+}
+/* your-turn */
+.gbh-status-your-turn {
+  background: rgba(74,152,102,0.08);
+  border-color: rgba(74,152,102,0.3);
+}
+.gbh-status-your-turn .gbh-status-dot {
+  background: #4a9866;
+}
+.gbh-status-your-turn .gbh-status-text {
+  color: #2e6d44;
+}
+/* opp-turn */
+.gbh-status-opp-turn {
+  background: rgba(0,0,0,0.025);
+  border-color: var(--rule);
+}
+.gbh-status-opp-turn .gbh-status-dot {
+  background: #8b8275;
+  animation: none;
+}
+.gbh-status-opp-turn .gbh-status-text {
+  color: var(--ink-2);
+}
+/* warn */
+.gbh-status-warn {
+  background: rgba(196,138,62,0.10);
+  border-color: rgba(196,138,62,0.35);
+}
+.gbh-status-warn .gbh-status-dot {
+  background: #c48a3e;
+  animation: gbh-breathe 1.5s ease-in-out infinite;
+}
+.gbh-status-warn .gbh-status-text {
+  color: #8a5a16;
+}
+/* crit */
+.gbh-status-crit {
+  background: rgba(196,73,62,0.12);
+  border-color: rgba(196,73,62,0.45);
+}
+.gbh-status-crit .gbh-status-dot {
+  background: #c4493e;
+  animation: gbh-breathe 0.7s ease-in-out infinite;
+}
+.gbh-status-crit .gbh-status-text {
+  color: #8c2f25;
+}
+
+/* ── Clocks Row ── */
+.gbh-clocks-row {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  max-width: 320px;
+}
+.gbh-axis {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--rule) 20%,
+    var(--rule) 80%,
+    transparent 100%
+  );
+}
+
+/* ── Clock Unit ── */
+.gbh-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  transition: opacity 0.3s;
+}
+.gbh-clock:not(.gbh-clock-active) {
+  opacity: 0.40;
+}
+.gbh-clock-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+/* 駒ドット */
+.gbh-piece-mini {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.gbh-piece-black {
+  background: radial-gradient(ellipse at 38% 30%, #7a4a1e 0%, #4a2c0e 55%, #2e1808 100%);
+  box-shadow: inset 1px 1px 2px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.3);
+}
+.gbh-piece-white {
+  background: radial-gradient(ellipse at 38% 30%, #f5e8cc 0%, #e0c898 55%, #c8a870 100%);
+  border: 1px solid #bcb29c;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+}
+.gbh-clock-name {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.gbh-clock-active .gbh-clock-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.gbh-clock-warn-warn.gbh-clock-active .gbh-clock-name {
+  color: #8a5a16;
+}
+.gbh-clock-warn-crit.gbh-clock-active .gbh-clock-name {
+  color: #8c2f25;
+}
+
+/* ── Arc Face ── */
+.gbh-face-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.gbh-arc-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.gbh-arc-bg {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 1.5;
+}
+.gbh-arc-fg {
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  opacity: 0.45;
+  transition: stroke-dasharray 0.9s linear, stroke-width 0.3s, opacity 0.3s;
+}
+.gbh-clock-active .gbh-arc-fg {
+  stroke-width: 2.6;
+  opacity: 1;
+}
+.gbh-tick {
+  stroke: var(--ink-4);
+  stroke-width: 0.6;
+  opacity: 0.45;
+}
+.gbh-tick-major {
+  stroke-width: 1;
+  opacity: 0.75;
+}
+.gbh-clock-active .gbh-tick-major {
+  opacity: 1;
+}
+.gbh-face-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gbh-time-text {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-2);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.gbh-clock-active .gbh-time-text {
+  color: var(--ink);
+  font-weight: 500;
+}
+.gbh-clock-warn-warn.gbh-clock-active .gbh-time-text {
+  color: #8a5a16;
+  font-weight: 600;
+}
+.gbh-clock-warn-crit.gbh-clock-active .gbh-time-text {
+  color: #c4493e;
+  font-weight: 700;
+  animation: gbh-crit-blink 0.9s ease-in-out infinite;
+}
+
+/* ── Pulse Ring (手番中) ── */
+.gbh-pulse-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  border: 1px solid #4a9866;
+  opacity: 0;
+  animation: gbh-pulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+.gbh-clock-warn-warn .gbh-pulse-ring {
+  border-color: #c48a3e;
+  animation-duration: 1.4s;
+}
+.gbh-clock-warn-crit .gbh-pulse-ring {
+  border-color: #c4493e;
+  border-width: 1.5px;
+  animation-duration: 0.7s;
+}
+
+/* ── Animations ── */
+@keyframes gbh-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+@keyframes gbh-pulse {
+  0%   { transform: scale(0.92); opacity: 0; }
+  30%  { opacity: 0.45; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+@keyframes gbh-crit-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .gbh-wrap {
+    padding: 10px 12px 12px;
+  }
+  .gbh-face-wrap {
+    width: 56px;
+    height: 56px;
+  }
+  .gbh-time-text {
+    font-size: 13px;
+  }
+  .gbh-clock-name {
+    font-size: 8.5px;
+  }
+  .gbh-status-text {
+    font-size: 9px;
+  }
+  .gbh-clocks-row {
+    max-width: 280px;
+  }
+}
+
 /* ── Timer Panel (in TurnInfo) ── */
 /* ── Online Timer Display (OnlineTimerDisplay.tsx) ── */
 .online-timer-bar {
