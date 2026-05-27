@@ -818,9 +818,6 @@ export default function App() {
     void (async () => {
       try {
         const hash = computeCanonicalHashString(state);
-        // 初手（history.length === 0）は full_record[0] が常に Black の手番。
-        // humanColor='white' で呼ぶと player フィルタで全件除外されるため、
-        // 初手は p_human_color=null で呼んで両色の手を返す。
         const effectiveHumanColor = state.history.length === 0 ? null : humanColor;
         const moves = await fetchGhostMoves(hash, effectiveHumanColor, state.history.length);
         if (!cancelled) setGhostMoves(moves);
