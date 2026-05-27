@@ -311,7 +311,41 @@ export async function fetchGhostMoves(
     p_move_index: moveIndex,
   });
   if (error || !data) return [];
-  return data as GhostMove[];
+
+  // v1/v2 互換変換: RPC が gate_ids_str を返す旧 v1 形式の場合、v2 形式に変換する
+  // (ghost_mode_get_ghost_moves_v2.sql が本番未適用の場合のフォールバック)
+  return (data as any[]).map((row) => {
+    if ('build_gate' in row || 'build_gates' in row || 'build_placed_gate_ids' in row) {
+      // v2 形式: そのまま返す
+      return row as GhostMove;
+    }
+    // v1 形式 (gate_ids_str あり): v2 形式に変換
+    const gateIdsStr: string | null = row.gate_ids_str ?? null;
+    const buildType: string = row.build_type ?? 'skip';
+    let build_gate: number | null = null;
+    let build_gates: number[] | null = null;
+    let build_placed_gate_ids: number[] | null = null;
+
+    if (gateIdsStr && gateIdsStr.trim() !== '') {
+      const ids = gateIdsStr.split(',').map(Number).filter((n) => !isNaN(n) && n > 0);
+      if (buildType === 'massive') {
+        build_gate = ids[0] ?? null;
+      } else if (buildType === 'selective') {
+        build_gates = ids.length > 0 ? ids : null;
+      } else if (buildType === 'quad') {
+        build_placed_gate_ids = ids.length > 0 ? ids : null;
+      }
+    }
+
+    return {
+      positioning: row.positioning,
+      build_type: buildType,
+      build_gate,
+      build_gates,
+      build_placed_gate_ids,
+      frequency: row.frequency,
+    } as GhostMove;
+  });
 }
 
 export async function fetchMyStats(_userId: string): Promise<MyStats> {

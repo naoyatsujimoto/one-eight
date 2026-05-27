@@ -818,12 +818,9 @@ export default function App() {
     void (async () => {
       try {
         const hash = computeCanonicalHashString(state);
-        console.log('[Ghost DEBUG] fetch', { hash, humanColor, moveIndex: state.history.length, isHumanTurn, showGhostToggle, ghostModeActive });
         const moves = await fetchGhostMoves(hash, humanColor, state.history.length);
-        console.log('[Ghost DEBUG] result', { count: moves.length, moves });
         if (!cancelled) setGhostMoves(moves);
-      } catch (e) {
-        console.error('[Ghost DEBUG] error', e);
+      } catch {
         if (!cancelled) setGhostMoves([]);
       }
     })();
