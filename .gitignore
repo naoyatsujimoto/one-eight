@@ -8,3 +8,8 @@ dist/
 
 # Batch-specific sim scripts (one-time use, not for repo)
 scripts/archive/
+
+# Investigation/debug scripts (not for repo)
+om1a_*.cjs
+*.tsbuildinfo
+scripts/tmp/
