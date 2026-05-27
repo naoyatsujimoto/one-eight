@@ -314,9 +314,11 @@ export async function fetchGhostMoves(
 
   // v1/v2 互換変換: RPC が gate_ids_str を返す旧 v1 形式の場合、v2 形式に変換する
   // (ghost_mode_get_ghost_moves_v2.sql が本番未適用の場合のフォールバック)
+  // v1 判定: gate_ids_str カラムが存在する場合のみ v1 変換する
+  // (v2 では gate_ids_str は返らない; build_gate/build_gates 等の有無に依存しない)
   return (data as any[]).map((row) => {
-    if ('build_gate' in row || 'build_gates' in row || 'build_placed_gate_ids' in row) {
-      // v2 形式: そのまま返す
+    if (!('gate_ids_str' in row)) {
+      // v2 形式 (gate_ids_str なし): そのまま返す
       return row as GhostMove;
     }
     // v1 形式 (gate_ids_str あり): v2 形式に変換
