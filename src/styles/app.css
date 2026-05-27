@@ -266,11 +266,11 @@ html, body {
   padding: 12px 18px 14px;
   background:
     repeating-linear-gradient(
-      135deg,
-      rgba(0,0,0,0.012) 0px,
-      rgba(0,0,0,0.012) 1.8px,
-      transparent   1.8px,
-      transparent   9px
+      125deg,
+      rgba(0,0,0,0.07) 0px,
+      rgba(0,0,0,0.07) 0.5px,
+      transparent   0.5px,
+      transparent   3px
     ),
     #ffffff;
   border-bottom: 1px solid rgba(0,0,0,0.10);
