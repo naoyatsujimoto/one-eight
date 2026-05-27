@@ -16,11 +16,20 @@
  *   - server_updated_at + (now - localReceiveTime) でサーバー時刻を近似
  *   - 手番側のみ elapsed を差し引く（非手番は DB の remaining_ms をそのまま表示）
  *   - frozenUntil 前は全プレイヤー凍結
+ *   - elapsed は必ず 0 以上にクランプ（サーバー-クライアント clock offset で serverNow < effectiveStart
+ *     になる場合の持ち時間上振れを防ぐ）
+ *   - 表示残り時間は [0, initialTotalMs] にクランプ（初期持ち時間を超えた表示を防ぐ）
  *
  * ## 共通
  *   - frozenUntil (公式戦 starts_at): この時刻まで時計を凍結
  *   - timer_config が null / mode === 'none' のときは何も表示しない
  *   - gameFinished=true のときはカウントダウン停止
+ *
+ * ## 2:40 バグの原因と修正
+ *   - サーバークロックがクライアントより N 秒遅れている場合、serverNow が effectiveStart(=starts_at)
+ *     より N 秒小さくなり elapsed = -N*1000 ms（負値）になる
+ *   - 修正前: Math.max(0, remaining) は下限のみ保護 → remaining = 120000+40000 = 160000 が素通り
+ *   - 修正後: elapsed = Math.max(0, ...) + clamp(result, 0, initialTotalMs) で双方向保護
  */
 import { useEffect, useRef, useState } from 'react';
 import type { TimerConfig } from '../game/timerTypes';
@@ -101,7 +110,12 @@ function calcPerMoveRemainingMs(
  * turnStartedAt からの経過時間を playerRemainingMs から差し引く。
  * Realtime 経由の更新では精度が高い（serverUpdatedAt ≈ now のため drift が小さい）。
  *
- * 戻り値: [0, ∞)
+ * 【clock offset 対策】
+ * サーバークロックがクライアントより遅れている場合、serverNow < effectiveStart になり
+ * elapsed が負値になる。これを許すと表示残時間が initialTotalMs を超える（例: 2:40）。
+ * elapsed = Math.max(0, ...) でこれを防ぎ、さらに戻り値を [0, initialTotalMs] にクランプする。
+ *
+ * 戻り値: [0, initialTotalMs]
  */
 function calcTotalTimeActiveRemainingMs(
   playerRemainingMs: number | null,
@@ -109,8 +123,9 @@ function calcTotalTimeActiveRemainingMs(
   serverUpdatedAt: string | null,
   localReceiveTime: number,
   frozenUntil: string | null | undefined,
+  initialTotalMs: number,
 ): number {
-  if (!turnStartedAt) return playerRemainingMs ?? 0;
+  if (!turnStartedAt) return Math.min(playerRemainingMs ?? initialTotalMs, initialTotalMs);
 
   const now = Date.now();
   const serverNow = serverUpdatedAt
@@ -124,8 +139,15 @@ function calcTotalTimeActiveRemainingMs(
     effectiveStart = Math.max(effectiveStart, frozenUntilMs);
   }
 
-  const elapsed = serverNow - effectiveStart;
-  return Math.max(0, (playerRemainingMs ?? 0) - elapsed);
+  // elapsed を 0 以上にクランプ:
+  //   serverNow < effectiveStart（サーバー-クライアント clock offset による）の場合に
+  //   elapsed が負値になり、表示残時間が initialTotalMs を超えるのを防ぐ
+  const elapsed = Math.max(0, serverNow - effectiveStart);
+
+  // 結果を [0, initialTotalMs] にクランプ:
+  //   上限: 初期持ち時間を超えた表示（2:40 等）を防ぐ
+  //   下限: 0 未満の表示を防ぐ
+  return Math.min(initialTotalMs, Math.max(0, (playerRemainingMs ?? initialTotalMs) - elapsed));
 }
 
 // ─── コンポーネント ────────────────────────────────────────────────────────────
@@ -197,6 +219,7 @@ export function OnlineTimerDisplay({
 
   // ─── total_time ────────────────────────────────────────────────────────────
   if (mode === 'total_time') {
+    const initialTotalMs = timerConfig.totalSeconds * 1000;
     return (
       <div className="online-timer-bar">
         {(['black', 'white'] as const).map((player) => {
@@ -210,8 +233,10 @@ export function OnlineTimerDisplay({
                 serverUpdatedAt,
                 localReceiveTimeRef.current,
                 frozenUntil,
+                initialTotalMs,
               )
-            : (rawRemaining ?? 0);
+            // 非手番側も [0, initialTotalMs] にクランプ（安全策）
+            : Math.min(rawRemaining ?? initialTotalMs, initialTotalMs);
           const colorClass = isActive ? getTimerClassName(remaining) : '';
           return (
             <div
