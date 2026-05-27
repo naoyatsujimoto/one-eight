@@ -365,22 +365,6 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
           )}
         </div>
       )}
-      {onlineStatus === 'playing' && isBeforeOfficialStart && (
-        <div style={{ ...styles.banner, background: '#e8f0fe', color: '#3949ab', fontWeight: 600 }}>
-          {(() => {
-            if (!officialStartsAt) return 'Waiting for match start…';
-            const ms = new Date(officialStartsAt).getTime() - Date.now();
-            if (ms <= 0) return 'Starting soon…';
-            const totalSec = Math.ceil(ms / 1000);
-            const min = Math.floor(totalSec / 60);
-            const sec = totalSec % 60;
-            const countdown = min > 0
-              ? `${min}m${sec > 0 ? ` ${sec}s` : ''}`
-              : `${sec}s`;
-            return `Match starts in ${countdown}`;
-          })()}
-        </div>
-      )}
       {onlineStatus === 'playing' && !isBeforeOfficialStart && (() => {
         // OM-1d: Whiteのみ入室時に Black 未入室メッセージを表示
         // 条件: 公式戦 + 自分が White + 相手（Black）の手番 + 手数 1（未着手）

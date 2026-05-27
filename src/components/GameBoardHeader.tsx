@@ -268,6 +268,19 @@ export function GameBoardHeader(props: GameBoardHeaderProps) {
   return null;
 }
 
+// ─── 待機カウントダウン文字列生成 ──────────────────────────────────────────────
+
+function buildWaitingText(frozenUntil: string | null | undefined): string {
+  if (!frozenUntil) return 'WAITING';
+  const ms = new Date(frozenUntil).getTime() - Date.now();
+  if (ms <= 0) return 'WAITING';
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
+  return `WAITING · ${timeStr}`;
+}
+
 // ─── per_move サブコンポーネント ──────────────────────────────────────────────
 
 function PerMoveHeader({
@@ -297,12 +310,13 @@ function PerMoveHeader({
   // ステータス判定
   const isCpuTurn = props.mode === 'local' ? (props.isCpuTurn ?? false) : false;
   const isMyTurn = props.mode === 'online' ? (props.isMyTurn ?? true) : !isCpuTurn;
+  const frozenUntilOnline = props.mode === 'online' ? (props.frozenUntil ?? null) : null;
   const statusKind: StatusKind = isFrozen ? 'pregame'
     : warn === 'crit' ? 'crit'
     : warn === 'warn' ? 'warn'
     : isMyTurn ? 'your-turn'
     : 'opp-turn';
-  const statusText = isFrozen ? 'WAITING'
+  const statusText = isFrozen ? buildWaitingText(frozenUntilOnline)
     : isMyTurn ? 'YOUR MOVE'
     : 'THINKING';
 
@@ -405,9 +419,11 @@ function TotalTimeHeader({
   let statusKind: StatusKind;
   let statusText: string;
 
+  const frozenUntilForText = props.mode === 'online' ? (props.frozenUntil ?? null) : null;
+
   if (isFrozen || isBeforeOfficialStart) {
     statusKind = 'pregame';
-    statusText = 'WAITING';
+    statusText = buildWaitingText(frozenUntilForText);
   } else if (warn === 'crit') {
     statusKind = 'crit';
     statusText = isMyTurn ? 'YOUR MOVE' : 'THINKING';
