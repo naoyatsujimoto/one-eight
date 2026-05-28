@@ -430,3 +430,50 @@ describe('integration with engine moves', () => {
     expect(hA).not.toBe(hB);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 8. canonical_hash の決定論性 — getMoveNumberKey 呼び出し順非依存
+// ---------------------------------------------------------------------------
+
+describe('canonical_hash is deterministic regardless of moveNumber query order', () => {
+  it('computing moveNumber=5 first, then 1-4, then 5 again yields same hash', () => {
+    const s5a = buildTestState({ A: 'black', G: 'white' }, { 1: ['black', null] }, 'black', 5);
+    const h5a = computeCanonicalHashString(s5a);
+
+    // moveNumber=1~4 を先に評価して内部状態を変化させる
+    [1, 2, 3, 4].forEach(mn => {
+      const s = buildTestState({ A: 'black', G: 'white' }, { 1: ['black', null] }, 'black', mn);
+      computeCanonicalHashString(s);
+    });
+
+    const h5b = computeCanonicalHashString(s5a);
+    expect(h5b).toBe(h5a);
+  });
+
+  it('same state produces same hash when computed in isolated calls', () => {
+    const sA = buildTestState({ A: 'black', M: 'white' }, { 3: [null, 'white'] }, 'white', 3);
+    const h1 = computeCanonicalHashString(sA);
+    const h2 = computeCanonicalHashString(sA);
+    expect(h1).toBe(h2);
+  });
+
+  it('moveNumber still included: same board different moveNumber → different hash', () => {
+    const sLow  = buildTestState({ A: 'black' }, {}, 'black', 2);
+    const sHigh = buildTestState({ A: 'black' }, {}, 'black', 7);
+    expect(computeCanonicalHashString(sLow)).not.toBe(computeCanonicalHashString(sHigh));
+  });
+
+  it('refresh simulation: moveNumber=5 computed first (as after page reload) matches normal-play order', () => {
+    // 通常プレイ: moveNumber=1,2,3,4,5 の順で hash を計算
+    const states = [1, 2, 3, 4, 5].map(mn =>
+      buildTestState({ G: 'black', H: 'white' }, { 2: ['black', null] }, 'black', mn)
+    );
+    const hashNormalPlay = computeCanonicalHashString(states[4]!); // moveNumber=5
+
+    // リフレッシュ後: moveNumber=5 を最初に計算
+    const stateRefresh = buildTestState({ G: 'black', H: 'white' }, { 2: ['black', null] }, 'black', 5);
+    const hashAfterRefresh = computeCanonicalHashString(stateRefresh);
+
+    expect(hashAfterRefresh).toBe(hashNormalPlay);
+  });
+});

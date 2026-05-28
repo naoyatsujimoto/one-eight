@@ -109,16 +109,17 @@ const ZOBRIST_GATE_SMALL: [[ZobristKey, ZobristKey, ZobristKey], [ZobristKey, Zo
 // Current player table: [0=black, 1=white]
 const ZOBRIST_PLAYER: [ZobristKey, ZobristKey] = [randKey(), randKey()];
 
-// Move number table: lazy map (moveNumber → ZobristKey)
-const ZOBRIST_MOVE_NUMBER = new Map<number, ZobristKey>();
-
+// Move number key: moveNumber 単体から決定論的に派生する。
+// 共有 rng を消費しないため、呼び出し順序に依存しない。
+// これにより canonical_hash はブラウザリフレッシュ後や Ghost ON/OFF 起動を
+// またいでも常に同一の値を返す。
 function getMoveNumberKey(n: number): ZobristKey {
-  let k = ZOBRIST_MOVE_NUMBER.get(n);
-  if (k === undefined) {
-    k = randKey();
-    ZOBRIST_MOVE_NUMBER.set(n, k);
-  }
-  return k;
+  // SEED と n を組み合わせたローカルシードからローカル PRNG を展開する
+  const localSeed = (SEED ^ Math.imul((n + 1) >>> 0, 0x9e3779b1)) >>> 0;
+  const local = mulberry32(localSeed);
+  const hi = Math.floor(local() * 0x100000000) >>> 0;
+  const lo = Math.floor(local() * 0x100000000) >>> 0;
+  return [hi, lo];
 }
 
 // ---------------------------------------------------------------------------
