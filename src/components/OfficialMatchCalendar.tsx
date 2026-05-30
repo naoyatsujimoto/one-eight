@@ -210,7 +210,7 @@ function MatchCard({
             disabled={!canEnter}
             onClick={() => onEnter(match.id)}
           >
-            {entering ? 'Entering…' : isReEntry ? 'Re-enter Match' : 'Enter Match'}
+            {entering ? 'Entering…' : 'Enter Match'}
           </button>
           {match.status === 'scheduled' && !windowOpen && (
             <span className="om-enter-note">Available 15 min before start</span>

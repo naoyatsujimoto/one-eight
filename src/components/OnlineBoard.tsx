@@ -1,5 +1,5 @@
 /**
- * OnlineBoard.tsx — オンライン対戦中のゲーム画面
+ * OnlineBoard.tsx - オンライン対戦中のゲーム画面
  *
  * - useOnlineGame フックで Realtime 同期
  * - 自分のターンのみ操作可
@@ -59,7 +59,7 @@ interface Props {
   onExit: () => void;
   /** OM-1c: 公式戦由来ゲームかどうか。Ghost Mode 無効化制御に使用。 */
   isOfficialMatch?: boolean;
-  /** OM-1c: 公式戦の開始時刻（ISO）。定刻前待機表示に使用。 */
+  /** OM-1c: 公式戦の開始時刻(ISO)。定刻前待機表示に使用。 */
   officialStartsAt?: string | null;
 }
 
@@ -201,7 +201,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
   }, [localState?.selectedPosition]);
 
   if (!gameRow || !localState) {
-    return <div style={styles.center}><p style={styles.muted}>Connecting…</p></div>;
+    return <div style={styles.center}><p style={styles.muted}>Connecting...</p></div>;
   }
 
   const state = localState;
@@ -367,7 +367,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
       )}
       {onlineStatus === 'playing' && !isBeforeOfficialStart && (() => {
         // OM-1d: Whiteのみ入室時に Black 未入室メッセージを表示
-        // 条件: 公式戦 + 自分が White + 相手（Black）の手番 + 手数 1（未着手）
+        // 条件: 公式戦 + 自分が White + 相手(Black)の手番 + 手数 1(未着手)
         const isOfficialWaitingForBlack =
           isOfficialMatch &&
           myColor === 'white' &&
@@ -377,7 +377,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
         if (isOfficialWaitingForBlack) {
           return (
             <div style={{ ...styles.banner, background: '#e8f0fe', color: '#3949ab', fontWeight: 600 }}>
-              Black has not entered yet. Black’s clock is running.
+              Waiting for Black’s first move. Black’s clock is running.
             </div>
           );
         }
@@ -410,7 +410,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
 
       <main className="layout">
         <div className="board-col">
-          {/* Phase T-2a: タイムクロック — V5 Arc Progress ヘッダー */}
+          {/* Phase T-2a: タイムクロック - V5 Arc Progress ヘッダー */}
           <GameBoardHeader
             mode="online"
             timerConfig={gameRow.timer_config ?? null}
