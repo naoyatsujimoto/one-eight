@@ -24,8 +24,21 @@ import { useLang } from '../lib/lang';
 interface Props {
   /** onEnterOnlineGame(onlineGameId, isOfficial, startsAt) — 公式戦入室後にOnlineBoardへ遷移させる
    *  OM-1c: isOfficial=true / startsAt を渡す。
+   *  enableEntry=false の場合は呼ばれない（Enter Match ボタン非表示）。
    */
-  onEnterOnlineGame: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  /** Enter Match ボタンを表示するか。デフォルト true（既存互換）。
+   *  false にすると Enter Match ボタンを非表示にし、Online Play 誘導メッセージを表示する。
+   */
+  enableEntry?: boolean;
+  /** tournament_id によるフィルタ。
+   *  'ranked'     = tournament_id IS NULL のみ
+   *  'tournament' = tournament_id IS NOT NULL のみ
+   *  'all'        = 全件（デフォルト・既存互換）
+   */
+  filter?: 'ranked' | 'tournament' | 'all';
+  /** フィルタ後に対局がなかった場合の空メッセージ（省略時はデフォルト文言）。 */
+  emptyMessage?: string;
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -75,11 +88,13 @@ function MatchCard({
   onEnter,
   entering,
   enterError,
+  enableEntry,
 }: {
   match: OfficialMatchListItem;
   onEnter: (matchId: string) => void;
   entering: boolean;
   enterError: string | null;
+  enableEntry: boolean;
 }) {
   const startsAt = new Date(match.starts_at);
   const dateStr = startsAt.toLocaleDateString('ja-JP', {
@@ -201,23 +216,27 @@ function MatchCard({
 
       {(match.status === 'joinable' || match.status === 'scheduled' || match.status === 'live') && (
         <div className="om-card-footer">
-          {enterError && (
-            <div className="om-enter-error">{enterError}</div>
-          )}
-          <button
-            type="button"
-            className={canEnter ? 'om-enter-btn' : 'om-enter-btn om-enter-btn-disabled'}
-            disabled={!canEnter}
-            onClick={() => onEnter(match.id)}
-          >
-            {entering ? 'Entering…' : 'Enter Match'}
-          </button>
-          {match.status === 'scheduled' && !windowOpen && (
-            <span className="om-enter-note">Available 15 min before start</span>
-          )}
-          {isReEntry && (
-            <span className="om-enter-note">Rejoin in progress</span>
-          )}
+          {enableEntry ? (
+            <>
+              {enterError && (
+                <div className="om-enter-error">{enterError}</div>
+              )}
+              <button
+                type="button"
+                className={canEnter ? 'om-enter-btn' : 'om-enter-btn om-enter-btn-disabled'}
+                disabled={!canEnter}
+                onClick={() => onEnter(match.id)}
+              >
+                {entering ? 'Entering…' : 'Enter Match'}
+              </button>
+              {match.status === 'scheduled' && !windowOpen && (
+                <span className="om-enter-note">Available 15 min before start</span>
+              )}
+              {isReEntry && (
+                <span className="om-enter-note">Rejoin in progress</span>
+              )}
+            </>
+          ) : null}
         </div>
       )}
     </div>
@@ -320,7 +339,12 @@ function MiniCalendar({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
+export function OfficialMatchCalendar({
+  onEnterOnlineGame,
+  enableEntry = true,
+  filter = 'all',
+  emptyMessage,
+}: Props) {
   const { t } = useLang();
   const [matches, setMatches] = useState<OfficialMatchListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -384,14 +408,21 @@ export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
     } else {
       setEnteringId(null);
       // OM-1c: isOfficial=true / startsAt を渡す
-      onEnterOnlineGame(result.onlineGameId, result.isOfficial, result.startsAt);
+      onEnterOnlineGame?.(result.onlineGameId, result.isOfficial, result.startsAt);
     }
   }, [onEnterOnlineGame]);
 
+  // filter prop によるフィルタリング（ranked / tournament / all）
+  const typeFilteredMatches = filter === 'ranked'
+    ? matches.filter((m) => m.tournament_id == null)
+    : filter === 'tournament'
+    ? matches.filter((m) => m.tournament_id != null)
+    : matches;
+
   // Mini-Calendar でフィルタリング
   const filteredMatches = selectedDay === null
-    ? matches
-    : matches.filter((m) => {
+    ? typeFilteredMatches
+    : typeFilteredMatches.filter((m) => {
         const d = new Date(m.starts_at);
         const now = new Date();
         return (
@@ -460,11 +491,12 @@ export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
 
       {upcomingMatches.length === 0 && (
         <div className="om-empty">
-          {matches.length === 0
-            ? 'No upcoming official matches'
-            : selectedDay
-            ? 'No matches on this date'
-            : 'No upcoming matches'}
+          {emptyMessage ??
+            (typeFilteredMatches.length === 0 && matches.length === 0
+              ? 'No upcoming official matches'
+              : selectedDay
+              ? 'No matches on this date'
+              : 'No upcoming matches')}
         </div>
       )}
 
@@ -476,11 +508,12 @@ export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
             onEnter={handleEnter}
             entering={enteringId === m.id}
             enterError={enterErrors[m.id] ?? null}
+            enableEntry={enableEntry}
           />
         ))}
       </div>
 
-      {/* Past Matches（折りたたみなし・最大5件表示） */}
+      {/* Past Matches（折りたたみなし・最大 5件表示） */}
       {pastMatches.length > 0 && (
         <>
           <div className="om-section-title om-section-title-muted">Recent Results</div>
@@ -492,6 +525,7 @@ export function OfficialMatchCalendar({ onEnterOnlineGame }: Props) {
                 onEnter={handleEnter}
                 entering={enteringId === m.id}
                 enterError={enterErrors[m.id] ?? null}
+                enableEntry={enableEntry}
               />
             ))}
           </div>

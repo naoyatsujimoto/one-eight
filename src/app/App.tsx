@@ -1121,6 +1121,13 @@ export default function App() {
           userId={user.id}
           onGameReady={handleOnlineGameReady}
           onCancel={() => setOnlineLobbyOpen(false)}
+          onEnterOnlineGame={(gameId, isOfficial, startsAt) => {
+            setOnlineGameId(gameId);
+            setOnlineRoomCode(undefined);
+            setIsOfficialMatch(isOfficial ?? false);
+            setOfficialStartsAt(startsAt ?? null);
+            setOnlineLobbyOpen(false);
+          }}
         />
       )}
 

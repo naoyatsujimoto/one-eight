@@ -13,17 +13,22 @@ import { createInitialState } from '../game/initialState';
 import { useLang } from '../lib/lang';
 import { TimerSettings } from './TimerSettings';
 import { DEFAULT_TIMER_CONFIG, type TimerConfig } from '../game/timerTypes';
+import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 
 interface Props {
   userId: string;
   onGameReady: (gameId: string, color: 'black' | 'white', roomCode?: string) => void;
   onCancel: () => void;
+  /** 公式戦入室後に OnlineBoard へ遷移させる callback。
+   * Ranked Match / Competition で使用。
+   */
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }
 
 type Mode = 'select' | 'friend' | 'random' | 'ranked' | 'tournament';
 type FriendTab = 'create' | 'join';
 
-export function OnlineLobby({ userId, onGameReady, onCancel }: Props) {
+export function OnlineLobby({ userId, onGameReady, onCancel, onEnterOnlineGame }: Props) {
   const { t } = useLang();
   const [mode, setMode] = useState<Mode>('select');
 
@@ -54,10 +59,20 @@ export function OnlineLobby({ userId, onGameReady, onCancel }: Props) {
           <RandomMatch userId={userId} onGameReady={onGameReady} onCancel={handleBack} />
         )}
         {mode === 'ranked' && (
-          <ComingSoon label={t.onlineRanked} desc={t.onlineRankedDesc} />
+          <OfficialMatchCalendar
+            onEnterOnlineGame={onEnterOnlineGame}
+            enableEntry={true}
+            filter="ranked"
+            emptyMessage={t.onlineNoRankedMatches}
+          />
         )}
         {mode === 'tournament' && (
-          <ComingSoon label={t.onlineTournament} desc={t.onlineTournamentDesc} />
+          <OfficialMatchCalendar
+            onEnterOnlineGame={onEnterOnlineGame}
+            enableEntry={true}
+            filter="tournament"
+            emptyMessage={t.onlineNoCompetitions}
+          />
         )}
       </div>
     </div>
@@ -72,8 +87,8 @@ function ModeSelect({ onSelect }: { onSelect: (m: Mode) => void }) {
   const modes: { key: Mode; label: string; desc: string; soon?: boolean }[] = [
     { key: 'friend',     label: t.onlineFriendMatch,  desc: t.onlineFriendMatchDesc },
     { key: 'random',     label: t.onlineRandomMatch,  desc: t.onlineRandomMatchDesc },
-    { key: 'ranked',     label: t.onlineRanked,       desc: t.onlineRankedDesc,      soon: true },
-    { key: 'tournament', label: t.onlineTournament,   desc: t.onlineTournamentDesc,  soon: true },
+    { key: 'ranked',     label: t.onlineRanked,       desc: t.onlineRankedDesc },
+    { key: 'tournament', label: t.onlineTournament,   desc: t.onlineTournamentDesc },
   ];
 
   return (

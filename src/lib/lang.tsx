@@ -132,6 +132,9 @@ export const T = {
     onlineTournament: 'Competition',
     onlineTournamentDesc: 'Enter with an official competition key.',
     onlineComingSoon: 'Coming Soon',
+    officialMatchEnterFromOnlinePlay: 'Enter matches from Online Play → Ranked Match / Competition.',
+    onlineNoRankedMatches: 'No ranked matches scheduled.',
+    onlineNoCompetitions: 'No competitions scheduled.',
     onlineRandomSearching: 'Searching for opponent…',
     onlineRandomCancel: 'Cancel',
     // User Page
@@ -319,6 +322,9 @@ export const T = {
     onlineTournament: 'コンペティション',
     onlineTournamentDesc: '運営発行のキーで参加する公式コンペティション。',
     onlineComingSoon: 'Coming Soon',
+    officialMatchEnterFromOnlinePlay: 'Online Play の Ranked Match / Competition から入室してください。',
+    onlineNoRankedMatches: '公式戦の予定はありません。',
+    onlineNoCompetitions: '大会の予定はありません。',
     onlineRandomSearching: '対戦相手を検索中…',
     onlineRandomCancel: 'キャンセル',
     // User Page
@@ -480,6 +486,9 @@ export type Translations = {
   onlineTournament: string;
   onlineTournamentDesc: string;
   onlineComingSoon: string;
+  officialMatchEnterFromOnlinePlay: string;
+  onlineNoRankedMatches: string;
+  onlineNoCompetitions: string;
   onlineRandomSearching: string;
   onlineRandomCancel: string;
   userPage: string;

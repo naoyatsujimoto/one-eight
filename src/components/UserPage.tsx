@@ -321,10 +321,17 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         )}
 
         {/* ── Section 6: Official Match Calendar (OM-1b) ── */}
-        {!viewOnly && onEnterOnlineGame && (
+        {!viewOnly && (
           <section style={s.section}>
             <SectionTitle title="Official Matches" />
-            <OfficialMatchCalendar onEnterOnlineGame={onEnterOnlineGame} />
+            {/* STATS / UserPage からは入室不可。Online Play 誘導のみ表示。 */}
+            <p style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.5rem' }}>
+              {t.officialMatchEnterFromOnlinePlay}
+            </p>
+            <OfficialMatchCalendar
+              enableEntry={false}
+              filter="all"
+            />
           </section>
         )}
 
