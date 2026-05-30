@@ -32,6 +32,7 @@ interface MoveRecord {
 
 interface MatchLogPayload {
   id: string;
+  user_id: string | null;
   mode: string;
   human_color: string | null;
   winner: string | null;
@@ -201,7 +202,7 @@ Deno.serve(async (req: Request) => {
   // ─── match_logs から対象レコードを取得 ─────────────────────────────────────
   const { data: logRow, error: fetchError } = await supabaseAdmin
     .from('match_logs')
-    .select('id, mode, human_color, winner, cpu_difficulty, full_record')
+    .select('id, user_id, mode, human_color, winner, cpu_difficulty, full_record')
     .eq('id', match_log_id)
     .single();
 
@@ -214,6 +215,23 @@ Deno.serve(async (req: Request) => {
   }
 
   const row = logRow as MatchLogPayload;
+
+  // ─── is_test_account チェック（テストアカウントの棋譜は集計除外） ────────────
+  if (row.user_id) {
+    const { data: profileRow } = await supabaseAdmin
+      .from('profiles')
+      .select('is_test_account')
+      .eq('id', row.user_id)
+      .maybeSingle();
+
+    if (profileRow?.is_test_account === true) {
+      console.log(`[update-position-stats] Skipping: test_account user_id=${row.user_id}`);
+      return new Response(
+        JSON.stringify({ skipped: true, reason: 'test_account' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  }
 
   // ─── winner バリデーション ──────────────────────────────────────────────────
   const winner = normalizeWinner(row.winner);
