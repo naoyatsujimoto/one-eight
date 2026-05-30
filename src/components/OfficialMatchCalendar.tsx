@@ -39,6 +39,11 @@ interface Props {
   filter?: 'ranked' | 'tournament' | 'all';
   /** フィルタ後に対局がなかった場合の空メッセージ（省略時はデフォルト文言）。 */
   emptyMessage?: string;
+  /** Recent Results（過去履歴）セクションを表示するか。デフォルト true（既存互換）。
+   *  Online Play 側では false を渡して非表示にする。
+   *  STATS / UserPage 側は省略（true 相当）のまま。
+   */
+  showRecentResults?: boolean;
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -344,6 +349,7 @@ export function OfficialMatchCalendar({
   enableEntry = true,
   filter = 'all',
   emptyMessage,
+  showRecentResults = true,
 }: Props) {
   const { t } = useLang();
   const [matches, setMatches] = useState<OfficialMatchListItem[]>([]);
@@ -513,8 +519,9 @@ export function OfficialMatchCalendar({
         ))}
       </div>
 
-      {/* Past Matches（折りたたみなし・最大 5件表示） */}
-      {pastMatches.length > 0 && (
+      {/* Past Matches（折りたたみなし・最大 5件表示）
+           showRecentResults=false の場合（Online Play側）は非表示 */}
+      {showRecentResults && pastMatches.length > 0 && (
         <>
           <div className="om-section-title om-section-title-muted">Recent Results</div>
           <div className="om-cards">

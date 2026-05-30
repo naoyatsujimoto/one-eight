@@ -39,7 +39,8 @@ export function OnlineLobby({ userId, onGameReady, onCancel, onEnterOnlineGame }
   return (
     <div style={styles.overlay} onClick={mode === 'select' ? onCancel : undefined}>
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
+        {/* ヘッダー: 固定注意・スクロールしない */}
+        <div style={{ ...styles.header, ...styles.cardHeader }}>
           {mode !== 'select' ? (
             <button type="button" onClick={handleBack} style={styles.backBtn}>←</button>
           ) : (
@@ -49,31 +50,36 @@ export function OnlineLobby({ userId, onGameReady, onCancel, onEnterOnlineGame }
           <button type="button" onClick={onCancel} style={styles.closeBtn}>✕</button>
         </div>
 
-        {mode === 'select' && (
-          <ModeSelect onSelect={setMode} />
-        )}
-        {mode === 'friend' && (
-          <FriendMatch userId={userId} onGameReady={onGameReady} />
-        )}
-        {mode === 'random' && (
-          <RandomMatch userId={userId} onGameReady={onGameReady} onCancel={handleBack} />
-        )}
-        {mode === 'ranked' && (
-          <OfficialMatchCalendar
-            onEnterOnlineGame={onEnterOnlineGame}
-            enableEntry={true}
-            filter="ranked"
-            emptyMessage={t.onlineNoRankedMatches}
-          />
-        )}
-        {mode === 'tournament' && (
-          <OfficialMatchCalendar
-            onEnterOnlineGame={onEnterOnlineGame}
-            enableEntry={true}
-            filter="tournament"
-            emptyMessage={t.onlineNoCompetitions}
-          />
-        )}
+        {/* コンテンツ: モーダル内でスクロール */}
+        <div style={styles.cardBody}>
+          {mode === 'select' && (
+            <ModeSelect onSelect={setMode} />
+          )}
+          {mode === 'friend' && (
+            <FriendMatch userId={userId} onGameReady={onGameReady} />
+          )}
+          {mode === 'random' && (
+            <RandomMatch userId={userId} onGameReady={onGameReady} onCancel={handleBack} />
+          )}
+          {mode === 'ranked' && (
+            <OfficialMatchCalendar
+              onEnterOnlineGame={onEnterOnlineGame}
+              enableEntry={true}
+              filter="ranked"
+              emptyMessage={t.onlineNoRankedMatches}
+              showRecentResults={false}
+            />
+          )}
+          {mode === 'tournament' && (
+            <OfficialMatchCalendar
+              onEnterOnlineGame={onEnterOnlineGame}
+              enableEntry={true}
+              filter="tournament"
+              emptyMessage={t.onlineNoCompetitions}
+              showRecentResults={false}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -335,9 +341,25 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     background: '#fff',
     borderRadius: 10,
-    padding: '1.25rem',
     width: '90%',
     maxWidth: 380,
+    /* モーダル高さ制限・スクロール固定 */
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    padding: '1.25rem 1.25rem 0',
+    flexShrink: 0,
+  },
+  cardBody: {
+    padding: '0 1.25rem 1.25rem',
+    overflowY: 'auto' as const,
+    overscrollBehavior: 'contain' as const,
+    /* iPhone Safari タッチスクロール有効化 */
+    WebkitOverflowScrolling: 'touch' as const,
+    flex: 1,
   },
   header: {
     display: 'flex',
