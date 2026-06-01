@@ -195,7 +195,48 @@ export const T = {
     cpuDraws: 'Draws',
     cpuWinRate: 'Win Rate',
     cpuNoGames: 'No games recorded yet.',
+    // Official Match Calendar
+    omStatusScheduled: 'Scheduled',
+    omStatusJoinNow: 'Join Now',
+    omStatusLive: 'Live',
+    omStatusCompleted: 'Completed',
+    omStatusCancelled: 'Cancelled',
+    omStatusForfeited: 'Forfeited',
+    omStatusNoContest: 'No Contest',
+    omTimerTotal: 'Total',
+    omTimerPerMove: 'Per Move',
+    omTimerNoClock: 'No Clock',
+    omResultDraw: 'Draw',
+    omResultWin: 'Win',
+    omResultWinNoShow: 'Win by no-show',
+    omResultWinTimeout: 'Win by timeout',
+    omResultLoss: 'Loss',
+    omResultLossNoShow: 'Loss by no-show',
+    omResultLossTimeout: 'Loss by timeout',
+    omResultNeutralNoContest: 'No contest',
+    omResultNeutralCancelled: 'Cancelled',
+    omResultNeutralForfeited: 'Forfeited',
+    omStartsIn: (label: string) => `Starts in ${label}`,
+    omAvailable15Min: 'Available 15 min before start',
+    omRejoinInProgress: 'Rejoin in progress',
+    omEnterMatch: 'Enter Match',
+    omEntering: 'Entering…',
+    omUpcomingMatches: 'Upcoming Matches',
+    omRecentResults: 'Recent Results',
+    omNoUpcomingOfficial: 'No upcoming official matches',
+    omNoMatchesOnDate: 'No matches on this date',
+    omNoUpcomingMatches: 'No upcoming matches',
+    omShowAllMatches: 'Show all matches',
+    omToday: 'Today',
+    omMatchesOn: (dateStr: string) => `Matches on ${dateStr}`,
+    omLoading: 'Loading official matches…',
+    omLoadFailed: 'Failed to load matches.',
+    omRetry: 'Retry',
+    omOfficialMatches: 'Official Matches',
+    omWaitingForBlack: "Waiting for Black's first move. Black's clock is running.",
+    loading: 'Loading…',
   },
+
 
 
   ja: {
@@ -385,7 +426,48 @@ export const T = {
     cpuDraws: '引き分け',
     cpuWinRate: '勝率',
     cpuNoGames: 'まだ対局記録がありません。',
+    // Official Match Calendar
+    omStatusScheduled: '予定',
+    omStatusJoinNow: '入室可',
+    omStatusLive: '進行中',
+    omStatusCompleted: '完了',
+    omStatusCancelled: 'キャンセル',
+    omStatusForfeited: '不戦',
+    omStatusNoContest: '無効試合',
+    omTimerTotal: '持ち時間',
+    omTimerPerMove: '一手ごと',
+    omTimerNoClock: '時計なし',
+    omResultDraw: '引き分け',
+    omResultWin: '勝利',
+    omResultWinNoShow: '不戦勝',
+    omResultWinTimeout: '時間切れ勝ち',
+    omResultLoss: '敗北',
+    omResultLossNoShow: '不戦敗',
+    omResultLossTimeout: '時間切れ負け',
+    omResultNeutralNoContest: '無効試合',
+    omResultNeutralCancelled: 'キャンセル',
+    omResultNeutralForfeited: '不戦',
+    omStartsIn: (label: string) => `開始まで ${label}`,
+    omAvailable15Min: '開始15分前から入室できます',
+    omRejoinInProgress: '進行中の対局に再入室できます',
+    omEnterMatch: '入室',
+    omEntering: '入室中…',
+    omUpcomingMatches: '今後の公式戦',
+    omRecentResults: '最近の結果',
+    omNoUpcomingOfficial: '今後の公式戦はありません',
+    omNoMatchesOnDate: 'この日の公式戦はありません',
+    omNoUpcomingMatches: '予定の対局はありません',
+    omShowAllMatches: 'すべて表示',
+    omToday: '今日',
+    omMatchesOn: (dateStr: string) => `${dateStr} の公式戦`,
+    omLoading: '公式戦を読み込み中…',
+    omLoadFailed: '公式戦の読み込みに失敗しました',
+    omRetry: '再試行',
+    omOfficialMatches: '公式戦',
+    omWaitingForBlack: 'Black の初手待ちです。Black の時計が進んでいます。',
+    loading: '読み込み中…',
   },
+
 } as const;
 
 export type Translations = {
@@ -548,6 +630,46 @@ export type Translations = {
   cpuDraws: string;
   cpuWinRate: string;
   cpuNoGames: string;
+  // Official Match Calendar
+  omStatusScheduled: string;
+  omStatusJoinNow: string;
+  omStatusLive: string;
+  omStatusCompleted: string;
+  omStatusCancelled: string;
+  omStatusForfeited: string;
+  omStatusNoContest: string;
+  omTimerTotal: string;
+  omTimerPerMove: string;
+  omTimerNoClock: string;
+  omResultDraw: string;
+  omResultWin: string;
+  omResultWinNoShow: string;
+  omResultWinTimeout: string;
+  omResultLoss: string;
+  omResultLossNoShow: string;
+  omResultLossTimeout: string;
+  omResultNeutralNoContest: string;
+  omResultNeutralCancelled: string;
+  omResultNeutralForfeited: string;
+  omStartsIn: (label: string) => string;
+  omAvailable15Min: string;
+  omRejoinInProgress: string;
+  omEnterMatch: string;
+  omEntering: string;
+  omUpcomingMatches: string;
+  omRecentResults: string;
+  omNoUpcomingOfficial: string;
+  omNoMatchesOnDate: string;
+  omNoUpcomingMatches: string;
+  omShowAllMatches: string;
+  omToday: string;
+  omMatchesOn: (dateStr: string) => string;
+  omLoading: string;
+  omLoadFailed: string;
+  omRetry: string;
+  omOfficialMatches: string;
+  omWaitingForBlack: string;
+  loading: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────

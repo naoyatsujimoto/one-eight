@@ -377,7 +377,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
         if (isOfficialWaitingForBlack) {
           return (
             <div style={{ ...styles.banner, background: '#e8f0fe', color: '#3949ab', fontWeight: 600 }}>
-              Waiting for Black’s first move. Black’s clock is running.
+              {t.omWaitingForBlack}
             </div>
           );
         }

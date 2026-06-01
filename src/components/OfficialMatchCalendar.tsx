@@ -17,7 +17,7 @@ import {
   type OfficialMatchListItem,
   type OfficialMatchStatus,
 } from '../lib/officialMatch';
-import { useLang } from '../lib/lang';
+import { useLang, type Translations } from '../lib/lang';
 
 // ─── 型 ──────────────────────────────────────────────────────────────────────
 
@@ -53,42 +53,39 @@ interface Props {
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
-  OfficialMatchStatus,
-  { label: string; className: string }
-> = {
-  scheduled:  { label: 'Scheduled',  className: 'om-badge om-badge-scheduled' },
-  joinable:   { label: 'Join Now',   className: 'om-badge om-badge-joinable' },
-  live:       { label: 'Live',       className: 'om-badge om-badge-live' },
-  completed:  { label: 'Completed',  className: 'om-badge om-badge-completed' },
-  cancelled:  { label: 'Cancelled',  className: 'om-badge om-badge-cancelled' },
-  forfeited:  { label: 'Forfeited',  className: 'om-badge om-badge-forfeited' },
-  no_contest: { label: 'No Contest', className: 'om-badge om-badge-no-contest' },
-};
-
 function StatusBadge({ status }: { status: OfficialMatchStatus }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, className: 'om-badge om-badge-scheduled' };
-  return <span className={cfg.className}>{cfg.label}</span>;
+  const { t } = useLang();
+  const STATUS_LABELS: Record<OfficialMatchStatus, string> = {
+    scheduled:  t.omStatusScheduled,
+    joinable:   t.omStatusJoinNow,
+    live:       t.omStatusLive,
+    completed:  t.omStatusCompleted,
+    cancelled:  t.omStatusCancelled,
+    forfeited:  t.omStatusForfeited,
+    no_contest: t.omStatusNoContest,
+  };
+  const className = `om-badge om-badge-${status}`;
+  return <span className={className}>{STATUS_LABELS[status] ?? status}</span>;
 }
 
 // ─── Time Control 表示 ────────────────────────────────────────────────────────
 
-function formatTimerConfig(cfg: Record<string, unknown> | null): string {
+function formatTimerConfig(cfg: Record<string, unknown> | null, t: Translations): string {
   if (!cfg) return '—';
   const mode = cfg.mode as string | undefined;
   if (mode === 'total_time') {
     const sec = cfg.totalSeconds as number | undefined;
-    if (!sec) return 'Total';
+    if (!sec) return t.omTimerTotal;
     const min = Math.floor(sec / 60);
     const rem = sec % 60;
     return rem > 0 ? `${min}m${rem}s / Player` : `${min}min / Player`;
   }
   if (mode === 'per_move') {
     const sec = cfg.perMoveSeconds as number | undefined;
-    if (!sec) return 'Per Move';
+    if (!sec) return t.omTimerPerMove;
     return `${sec}s / Move`;
   }
-  return 'No Clock';
+  return t.omTimerNoClock;
 }
 
 // ─── Match Card ───────────────────────────────────────────────────────────────
@@ -106,6 +103,7 @@ function MatchCard({
   enterError: string | null;
   enableEntry: boolean;
 }) {
+  const { t } = useLang();
   const startsAt = new Date(match.starts_at);
   const dateStr = startsAt.toLocaleDateString('ja-JP', {
     month: 'short', day: 'numeric', weekday: 'short',
@@ -167,11 +165,11 @@ function MatchCard({
         <div className="om-card-meta">
           <span className="om-card-color">{myColorLabel}</span>
           <span className="om-card-dot">·</span>
-          <span className="om-card-tc">{formatTimerConfig(match.timer_config)}</span>
+          <span className="om-card-tc">{formatTimerConfig(match.timer_config, t)}</span>
           {countdownLabel && (
             <>
               <span className="om-card-dot">·</span>
-              <span className="om-card-countdown">Starts in {countdownLabel}</span>
+              <span className="om-card-countdown">{t.omStartsIn(countdownLabel)}</span>
             </>
           )}
         </div>
@@ -186,11 +184,11 @@ function MatchCard({
             {(() => {
               // ─── neutral 表示（終局理由が勝敗と無関係） ───────────────────────
               if (match.status === 'no_contest')
-                return <span className="om-result-neutral">— No contest</span>;
+                return <span className="om-result-neutral">— {t.omResultNeutralNoContest}</span>;
               if (match.status === 'cancelled')
-                return <span className="om-result-neutral">— Cancelled</span>;
+                return <span className="om-result-neutral">— {t.omResultNeutralCancelled}</span>;
               if (match.status === 'forfeited')
-                return <span className="om-result-neutral">— Forfeited</span>;
+                return <span className="om-result-neutral">— {t.omResultNeutralForfeited}</span>;
 
               // ─── 勝敗判定 ─────────────────────────────────────────────────────
               // winner: 'black_user' | 'white_user' | 'draw' | null
@@ -207,21 +205,21 @@ function MatchCard({
               const isNoShow = match.end_reason === 'forfeit_black' || match.end_reason === 'forfeit_white';
 
               if (isDraw)
-                return <span className="om-result-draw">△ Draw</span>;
+                return <span className="om-result-draw">△ {t.omResultDraw}</span>;
               if (isWin)
                 return <span className="om-result-win">
-                  ○{isNoShow ? ' Win by no-show' : isTimeout ? ' Win by timeout' : ' Win'}
+                  ○ {isNoShow ? t.omResultWinNoShow : isTimeout ? t.omResultWinTimeout : t.omResultWin}
                 </span>;
               if (isLoss)
                 return <span className="om-result-loss">
-                  × {isNoShow ? 'Loss by no-show' : isTimeout ? 'Loss by timeout' : 'Loss'}
+                  × {isNoShow ? t.omResultLossNoShow : isTimeout ? t.omResultLossTimeout : t.omResultLoss}
                 </span>;
               // winner 未確定 or null（完了状態で結果不明）
               return <span className="om-result-neutral">— </span>;
             })()}
           </div>
           <button type="button" className="om-enter-btn om-enter-btn-disabled" disabled>
-            Enter Match
+            {t.omEnterMatch}
           </button>
         </div>
       )}
@@ -239,13 +237,13 @@ function MatchCard({
                 disabled={!canEnter}
                 onClick={() => onEnter(match.id)}
               >
-                {entering ? 'Entering…' : 'Enter Match'}
+                {entering ? t.omEntering : t.omEnterMatch}
               </button>
               {match.status === 'scheduled' && !windowOpen && (
-                <span className="om-enter-note">Available 15 min before start</span>
+                <span className="om-enter-note">{t.omAvailable15Min}</span>
               )}
               {isReEntry && (
-                <span className="om-enter-note">Rejoin in progress</span>
+                <span className="om-enter-note">{t.omRejoinInProgress}</span>
               )}
             </>
           ) : null}
@@ -290,6 +288,7 @@ function MiniCalendar({
     }
   }
 
+  const { t } = useLang();
   const now = new Date();
   const todayYear = now.getFullYear();
   const todayMonth = now.getMonth();
@@ -345,7 +344,7 @@ function MiniCalendar({
             className="om-mini-cal-today-btn"
             onClick={onToday}
           >
-            Today
+            {t.omToday}
           </button>
         </div>
       )}
@@ -382,7 +381,7 @@ function MiniCalendar({
           className="om-mini-cal-clear"
           onClick={() => onSelectDate(null)}
         >
-          Show all matches
+          {t.omShowAllMatches}
         </button>
       )}
     </div>
@@ -537,16 +536,16 @@ export function OfficialMatchCalendar({
 
   if (loading) {
     return (
-      <div className="om-loading">Loading official matches…</div>
+      <div className="om-loading">{t.omLoading}</div>
     );
   }
 
   if (loadError) {
     return (
       <div className="om-error">
-        <span>Failed to load matches.</span>
+        <span>{t.omLoadFailed}</span>
         <button type="button" className="om-retry-btn" onClick={loadMatches}>
-          Retry
+          {t.omRetry}
         </button>
       </div>
     );
@@ -569,19 +568,19 @@ export function OfficialMatchCalendar({
       {/* Upcoming Matches */}
       <div className="om-section-title">
         {selectedDay
-          ? `Matches on ${new Date(visibleYear, visibleMonth, selectedDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-          : 'Upcoming Matches'}
+          ? t.omMatchesOn(new Date(visibleYear, visibleMonth, selectedDay).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }))
+          : t.omUpcomingMatches}
       </div>
 
       {upcomingMatches.length === 0 && (
         <div className="om-empty">
           {emptyMessage ??
             (typeFilteredMatches.length === 0 && matches.length === 0
-              ? 'No upcoming official matches'
+              ? t.omNoUpcomingOfficial
               : selectedDay && pastMatches.length === 0
-              ? 'No matches on this date'
+              ? t.omNoMatchesOnDate
               : !selectedDay
-              ? 'No upcoming matches'
+              ? t.omNoUpcomingMatches
               : null)}
         </div>
       )}
@@ -603,7 +602,7 @@ export function OfficialMatchCalendar({
            showRecentResults=false の場合（Online Play側）は非表示 */}
       {showRecentResults && pastMatches.length > 0 && (
         <>
-          <div className="om-section-title om-section-title-muted">Recent Results</div>
+          <div className="om-section-title om-section-title-muted">{t.omRecentResults}</div>
           <div className="om-cards">
             {pastMatches.slice(0, 5).map((m) => (
               <MatchCard

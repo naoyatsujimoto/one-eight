@@ -267,7 +267,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <>
         <section style={s.section}>
           <SectionTitle title={t.userProfile} />
-          {loading ? <Muted text="Loading…" /> : stats && (
+          {loading ? <Muted text={t.loading} /> : stats && (
             <>
               <div style={s.statGrid}>
                 <StatCard label={t.userTotalGames} value={stats.total} />
@@ -294,7 +294,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         {!viewOnly && (
           <section style={s.section}>
             <SectionTitle title={t.userRecentGames} />
-            {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? (() => {
+            {loading ? <Muted text={t.loading} /> : stats && stats.recentGames.length > 0 ? (() => {
               const PAGE_SIZE = 20;
               const allGames = stats.recentGames;
               const totalPages = Math.ceil(allGames.length / PAGE_SIZE);
@@ -350,7 +350,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         {/* ── Section 6: Official Match Calendar (OM-1b) ── */}
         {!viewOnly && (
           <section style={s.section}>
-            <SectionTitle title="Official Matches" />
+            <SectionTitle title={t.omOfficialMatches} />
             {/* STATS / UserPage からは入室不可。Online Play 誘導のみ表示。 */}
             <p style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.5rem' }}>
               {t.officialMatchEnterFromOnlinePlay}
