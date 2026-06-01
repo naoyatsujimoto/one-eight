@@ -261,15 +261,21 @@ function MiniCalendar({
   matches,
   selectedDate,
   onSelectDate,
+  year,
+  month,
+  onPrevMonth,
+  onNextMonth,
+  onToday,
 }: {
   matches: OfficialMatchListItem[];
   selectedDate: number | null;
   onSelectDate: (day: number | null) => void;
+  year: number;
+  month: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onToday: () => void;
 }) {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0-indexed
-
   // 月初の曜日（0=Sun）
   const firstDay = new Date(year, month, 1).getDay();
   // 月の日数
@@ -284,7 +290,10 @@ function MiniCalendar({
     }
   }
 
-  const today = now.getDate();
+  const now = new Date();
+  const todayYear = now.getFullYear();
+  const todayMonth = now.getMonth();
+  const todayDate = now.getDate();
   const DOW_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   // グリッド: 最大 6 週 × 7 = 42 セル
@@ -306,9 +315,40 @@ function MiniCalendar({
     }
   }
 
+  const isCurrentMonth = year === todayYear && month === todayMonth;
+
   return (
     <div className="om-mini-cal">
-      <div className="om-mini-cal-header">{monthLabel}</div>
+      <div className="om-mini-cal-nav">
+        <button
+          type="button"
+          className="om-mini-cal-nav-btn"
+          onClick={onPrevMonth}
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+        <span className="om-mini-cal-header">{monthLabel}</span>
+        <button
+          type="button"
+          className="om-mini-cal-nav-btn"
+          onClick={onNextMonth}
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
+      {!isCurrentMonth && (
+        <div className="om-mini-cal-today-row">
+          <button
+            type="button"
+            className="om-mini-cal-today-btn"
+            onClick={onToday}
+          >
+            Today
+          </button>
+        </div>
+      )}
       <div className="om-mini-cal-grid">
         {DOW_LABELS.map((d, i) => (
           <div key={i} className="om-mini-cal-dow">{d}</div>
@@ -316,7 +356,7 @@ function MiniCalendar({
         {cells.map((day, i) => {
           if (!day) return <div key={i} className="om-mini-cal-empty" />;
           const hasMatch = matchDays.has(day);
-          const isToday = day === today;
+          const isToday = day === todayDate && isCurrentMonth;
           const isSelected = day === selectedDate;
           let cls = 'om-mini-cal-day';
           if (isToday) cls += ' om-mini-cal-today';
@@ -367,15 +407,21 @@ export function OfficialMatchCalendar({
   const [enterErrors, setEnterErrors] = useState<Record<string, string>>({});
   const [selectedDay, setSelectedDay] = useState<number | null>(initialDay);
 
-  // 公式戦一覧を取得（今月 + 今後3ヶ月）
+  // 表示中の年月 state（初期値: today）
+  const nowInit = new Date();
+  const [visibleYear, setVisibleYear] = useState<number>(nowInit.getFullYear());
+  const [visibleMonth, setVisibleMonth] = useState<number>(nowInit.getMonth());
+
+  // 公式戦一覧を取得（過去12ヶ月 + 今後3ヶ月）
   const loadMatches = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
       const from = new Date();
+      from.setMonth(from.getMonth() - 12);
       from.setDate(1);
       from.setHours(0, 0, 0, 0);
-      const to = new Date(from);
+      const to = new Date();
       to.setMonth(to.getMonth() + 3);
 
       const result = await listMyOfficialMatches({
@@ -433,18 +479,33 @@ export function OfficialMatchCalendar({
     ? matches.filter((m) => m.tournament_id != null)
     : matches;
 
-  // Mini-Calendar でフィルタリング
-  const filteredMatches = selectedDay === null
-    ? typeFilteredMatches
-    : typeFilteredMatches.filter((m) => {
-        const d = new Date(m.starts_at);
-        const now = new Date();
-        return (
-          d.getDate() === selectedDay &&
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth()
-        );
-      });
+  // 月移動ハンドラ
+  const handlePrevMonth = useCallback(() => {
+    setVisibleYear((y) => visibleMonth === 0 ? y - 1 : y);
+    setVisibleMonth((m) => m === 0 ? 11 : m - 1);
+    setSelectedDay(null);
+  }, [visibleMonth]);
+
+  const handleNextMonth = useCallback(() => {
+    setVisibleYear((y) => visibleMonth === 11 ? y + 1 : y);
+    setVisibleMonth((m) => m === 11 ? 0 : m + 1);
+    setSelectedDay(null);
+  }, [visibleMonth]);
+
+  const handleToday = useCallback(() => {
+    const now = new Date();
+    setVisibleYear(now.getFullYear());
+    setVisibleMonth(now.getMonth());
+    setSelectedDay(now.getDate());
+  }, []);
+
+  // Mini-Calendar でフィルタリング（常に visibleYear/visibleMonth で絞る）
+  const filteredMatches = typeFilteredMatches.filter((m) => {
+    const d = new Date(m.starts_at);
+    if (d.getFullYear() !== visibleYear || d.getMonth() !== visibleMonth) return false;
+    if (selectedDay !== null) return d.getDate() === selectedDay;
+    return true;
+  });
 
   // 表示: scheduled/joinable/live を Upcoming、completed 以降を Past に分ける
   const upcomingMatches = filteredMatches.filter(
@@ -498,11 +559,18 @@ export function OfficialMatchCalendar({
         matches={matches}
         selectedDate={selectedDay}
         onSelectDate={setSelectedDay}
+        year={visibleYear}
+        month={visibleMonth}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onToday={handleToday}
       />
 
       {/* Upcoming Matches */}
       <div className="om-section-title">
-        {selectedDay ? `Matches on ${selectedDay}` : 'Upcoming Matches'}
+        {selectedDay
+          ? `Matches on ${new Date(visibleYear, visibleMonth, selectedDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+          : 'Upcoming Matches'}
       </div>
 
       {upcomingMatches.length === 0 && (

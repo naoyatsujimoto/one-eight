@@ -2655,13 +2655,50 @@ ol { padding-left: 20px; }
   padding: 0.75rem;
   user-select: none;
 }
+.om-mini-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.om-mini-cal-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #555;
+  padding: 0 0.35rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.om-mini-cal-nav-btn:hover {
+  background: #efefef;
+}
 .om-mini-cal-header {
   font-size: 0.8rem;
   font-weight: 700;
   color: #333;
   text-align: center;
-  margin-bottom: 0.5rem;
   letter-spacing: 0.03em;
+  flex: 1;
+}
+.om-mini-cal-today-row {
+  text-align: center;
+  margin-bottom: 0.35rem;
+}
+.om-mini-cal-today-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  color: #555;
+  cursor: pointer;
+  padding: 1px 8px;
+  transition: background 0.15s;
+}
+.om-mini-cal-today-btn:hover {
+  background: #efefef;
 }
 .om-mini-cal-grid {
   display: grid;
