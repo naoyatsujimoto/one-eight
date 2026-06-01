@@ -578,9 +578,11 @@ export function OfficialMatchCalendar({
           {emptyMessage ??
             (typeFilteredMatches.length === 0 && matches.length === 0
               ? 'No upcoming official matches'
-              : selectedDay
+              : selectedDay && pastMatches.length === 0
               ? 'No matches on this date'
-              : 'No upcoming matches')}
+              : !selectedDay
+              ? 'No upcoming matches'
+              : null)}
         </div>
       )}
 
