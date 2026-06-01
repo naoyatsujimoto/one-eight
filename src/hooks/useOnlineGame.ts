@@ -250,6 +250,13 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
       if (remaining > 0) return;
 
       // 残り時間 0 以下: 自動 claimTimeout
+      // ただし手番者が自分の場合は自分のタイムアウトを自ら申告しない。
+      // 相手クライアントが 5 秒ポーリング（Phase T-2a）または
+      // この OM-1c ブロックで claimTimeout を呼ぶ。
+      // これにより「入室していない相手側のタイムアウトを自分が申告する」
+      // ケースのみに限定でき、自分のタイムアウトを誤って確定させるバグを防ぐ。
+      if (row.current_player_id === myUserId) return;
+
       autoClaimCalledRef.current = true;
       void (async () => {
         const result = await claimTimeout(gameId);
