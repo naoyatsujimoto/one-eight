@@ -44,6 +44,11 @@ interface Props {
    *  STATS / UserPage 側は省略（true 相当）のまま。
    */
   showRecentResults?: boolean;
+  /** カレンダーの初期選択日（1〜31）。
+   *  省略時は null（全件表示）。
+   *  STATS / UserPage 側は Today を渡して今日フィルタを初期適用する。
+   */
+  initialDay?: number | null;
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -352,6 +357,7 @@ export function OfficialMatchCalendar({
   filter = 'all',
   emptyMessage,
   showRecentResults = true,
+  initialDay = null,
 }: Props) {
   const { t } = useLang();
   const [matches, setMatches] = useState<OfficialMatchListItem[]>([]);
@@ -359,7 +365,7 @@ export function OfficialMatchCalendar({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [enteringId, setEnteringId] = useState<string | null>(null);
   const [enterErrors, setEnterErrors] = useState<Record<string, string>>({});
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(initialDay);
 
   // 公式戦一覧を取得（今月 + 今後3ヶ月）
   const loadMatches = useCallback(async () => {

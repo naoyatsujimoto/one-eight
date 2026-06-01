@@ -331,6 +331,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             <OfficialMatchCalendar
               enableEntry={false}
               filter="all"
+              initialDay={new Date().getDate()}
             />
           </section>
         )}
