@@ -198,16 +198,18 @@ function MatchCard({
                 (match.winner === 'white_user' && match.my_color === 'black');
               const isDraw = match.winner === 'draw';
               const isTimeout = match.end_reason === 'timeout';
+              // forfeit_black / forfeit_white = no-show（timeout とは別概念）
+              const isNoShow = match.end_reason === 'forfeit_black' || match.end_reason === 'forfeit_white';
 
               if (isDraw)
                 return <span className="om-result-draw">△ Draw</span>;
               if (isWin)
                 return <span className="om-result-win">
-                  ○{isTimeout ? ' Win by timeout' : ' Win'}
+                  ○{isNoShow ? ' Win by no-show' : isTimeout ? ' Win by timeout' : ' Win'}
                 </span>;
               if (isLoss)
                 return <span className="om-result-loss">
-                  × {isTimeout ? 'Loss by timeout' : 'Loss'}
+                  × {isNoShow ? 'Loss by no-show' : isTimeout ? 'Loss by timeout' : 'Loss'}
                 </span>;
               // winner 未確定 or null（完了状態で結果不明）
               return <span className="om-result-neutral">— </span>;
@@ -450,8 +452,10 @@ export function OfficialMatchCalendar({
   // OM-1d: stale な scheduled/joinable match を no_contest チェック（副作用のみ・非同期）
   useEffect(() => {
     const stale = matches.filter((m) => {
-      if (m.status !== 'scheduled' && m.status !== 'joinable') return false;
-      if (m.online_game_id != null) return false;
+      // 確定済みステータスは除外
+      if (['completed', 'cancelled', 'forfeited', 'no_contest'].includes(m.status)) return false;
+      // starts_at + totalSeconds を過ぎていれば expiry チェック対象
+      // 注意: online_game_id の有無は問わない。片方入室済みケースも expiry を呼ぶ必要があるため。
       const totalSec = (m.timer_config?.totalSeconds as number | undefined) ?? 600;
       const expiresAt = new Date(m.starts_at).getTime() + totalSec * 1000;
       return Date.now() > expiresAt;
