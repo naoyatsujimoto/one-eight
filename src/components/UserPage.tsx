@@ -53,6 +53,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [stats, setStats] = useState<UserPageStats | null>(null);
   const [agg, setAgg] = useState<Aggregates | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recentGamesPage, setRecentGamesPage] = useState(0);
   // シングルトン Worker（gameId 単位管理・キュー処理）
   const { getStatus, run: runWorker, dismiss: dismissWorker } = usePostmortemWorker();
   // モーダル表示対象の gameId（分析ボタンを押した対局）
@@ -289,34 +290,60 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           </section>
         )}
 
-        {/* ── Section 4: プレイ傾向 ── */}
-        <section style={s.section}>
-          <SectionTitle title={t.userTrends} />
-          {agg ? <TrendSection agg={agg} /> : <Muted text={t.userNoData} />}
-        </section>
-
         {/* ── Section 5: 最近の対局（viewOnly時は非表示）── */}
         {!viewOnly && (
           <section style={s.section}>
             <SectionTitle title={t.userRecentGames} />
-            {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? ( // eslint-disable-line
-              <RecentGamesTable
-                games={stats.recentGames}
-                localMap={localMap}
-                officialGameMap={officialGameMap}
-                onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
-                refreshingGameId={refreshingGameId}
-                onRefresh={(record) => {
-                  dismissWorker(record.game_id);
-                  clearPostmortemCache(record.game_id);
-                  setRefreshingGameId(record.game_id);
-                  handleAnalyzeClick(record);
-                }}
-                getStatus={getStatus}
-                onAnalyzeClick={handleAnalyzeClick}
-                proActive={proActive}
-              />
-            ) : <Muted text={t.userNoData} />}
+            {loading ? <Muted text="Loading…" /> : stats && stats.recentGames.length > 0 ? (() => {
+              const PAGE_SIZE = 20;
+              const allGames = stats.recentGames;
+              const totalPages = Math.ceil(allGames.length / PAGE_SIZE);
+              const safePage = Math.min(recentGamesPage, totalPages - 1);
+              const pageGames = allGames.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+              return (
+                <>
+                  <RecentGamesTable
+                    games={pageGames}
+                    localMap={localMap}
+                    officialGameMap={officialGameMap}
+                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
+                    refreshingGameId={refreshingGameId}
+                    onRefresh={(record) => {
+                      dismissWorker(record.game_id);
+                      clearPostmortemCache(record.game_id);
+                      setRefreshingGameId(record.game_id);
+                      handleAnalyzeClick(record);
+                    }}
+                    getStatus={getStatus}
+                    onAnalyzeClick={handleAnalyzeClick}
+                    proActive={proActive}
+                  />
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setRecentGamesPage((p) => Math.max(0, p - 1))}
+                        disabled={safePage === 0}
+                        style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: 4, border: '1px solid #ccc', background: safePage === 0 ? '#f5f5f5' : '#fff', cursor: safePage === 0 ? 'default' : 'pointer', color: safePage === 0 ? '#aaa' : '#333' }}
+                      >
+                        ← Prev
+                      </button>
+                      <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                        {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, allGames.length)} / {allGames.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setRecentGamesPage((p) => Math.min(totalPages - 1, p + 1))}
+                        disabled={safePage === totalPages - 1}
+                        style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: 4, border: '1px solid #ccc', background: safePage === totalPages - 1 ? '#f5f5f5' : '#fff', cursor: safePage === totalPages - 1 ? 'default' : 'pointer', color: safePage === totalPages - 1 ? '#aaa' : '#333' }}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })() : <Muted text={t.userNoData} />}
           </section>
         )}
 
