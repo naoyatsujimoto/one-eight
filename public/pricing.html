@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
   <style>
     :root {
       --ink: #14141a;
@@ -146,6 +147,23 @@
       border-radius: 3px;
       margin-bottom: 4px;
     }
+    .btn-subscribe {
+      display: block;
+      width: 100%;
+      margin-top: 28px;
+      padding: 14px 24px;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-subscribe:hover { opacity: 0.8; }
     .note {
       font-size: 13px;
       color: var(--ink-3);
@@ -222,6 +240,7 @@
         <li>Competition entry (with official key)</li>
         <li>Priority access to new competitive features</li>
       </ul>
+      <button class="btn-subscribe" id="btn-subscribe-member">Subscribe — $14.99 / mo</button>
     </div>
 
     <p class="note">Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.</p>
@@ -235,5 +254,14 @@
     <a href="/refund.html">Refund Policy</a>
     <a href="mailto:contact@oneeightgame.com">Contact</a>
   </footer>
+  <script>
+    Paddle.Initialize({ token: 'live_f1d896bad73885318f4d81d5923' });
+
+    document.getElementById('btn-subscribe-member').addEventListener('click', function () {
+      Paddle.Checkout.open({
+        items: [{ priceId: 'pri_01kt39z89k9qbv3egaacsppz2r', quantity: 1 }]
+      });
+    });
+  </script>
 </body>
 </html>
