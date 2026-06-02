@@ -789,6 +789,15 @@ export default function App() {
     });
   }, [user?.id]);
 
+  // pricing.html からのログイン誘導: ?return=pricing でログイン後にリダイレクト
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('return') === 'pricing') {
+      window.location.replace('/pricing.html');
+    }
+  }, [user?.id]);
+
   // Ghost Mode: 自分の手番になったときに fetchGhostMoves
   const humanColor: 'black' | 'white' | null = state.cpuPlayer !== null
     ? (state.cpuPlayer === 'black' ? 'white' : 'black')  // PvC: cpuが blackなら humanは white

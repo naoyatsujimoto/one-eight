@@ -254,12 +254,35 @@
     <a href="/refund.html">Refund Policy</a>
     <a href="mailto:contact@oneeightgame.com">Contact</a>
   </footer>
-  <script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // ANON KEY はクライアント公開値（RLS で保護済み）
+    const _SU = 'https://farieecfyajbtmjxelop.supabase.co';
+    const _SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmllZWNmeWFqYnRtanhlbG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1ODExMjgsImV4cCI6MjA5MjE1NzEyOH0.YI_XFRTtF83Cy7BeNDq0D-40mxU1hEgMoE2wF-fqHlA';
+    const supabase = createClient(_SU, _SK);
+
     Paddle.Initialize({ token: 'live_f1d896bad73885318f4d81d5923' });
 
-    document.getElementById('btn-subscribe-member').addEventListener('click', function () {
+    document.getElementById('btn-subscribe-member').addEventListener('click', async function () {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session || !session.user) {
+        // 未ログイン → login ページへ誘導
+        // 未ログイン → ログイン後に pricing.html へ戻るよう ?return=pricing を付与
+        window.location.href = '/?return=pricing';
+        return;
+      }
+
       Paddle.Checkout.open({
-        items: [{ priceId: 'pri_01kt39z89k9qbv3egaacsppz2r', quantity: 1 }]
+        items: [{ priceId: 'pri_01kt39z89k9qbv3egaacsppz2r', quantity: 1 }],
+        customer: {
+          email: session.user.email,
+        },
+        customData: {
+          supabase_uid:   session.user.id,
+          supabase_email: session.user.email,
+        },
       });
     });
   </script>

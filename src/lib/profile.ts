@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 import type { Lang } from './lang';
 
 export type SubscriptionPlan = 'free' | 'pro'
-export type SubscriptionStatus = 'inactive' | 'active' | 'trial' | 'canceled'
+export type SubscriptionStatus = 'inactive' | 'active' | 'trial' | 'canceled' | 'past_due'
 
 export interface Profile {
   id: string;
@@ -25,18 +25,34 @@ export function isProActive(profile: {
   current_period_end: string | null;
 }): boolean {
   if (profile.plan !== 'pro') return false;
-  if (profile.subscription_status !== 'active') return false;
-  if (profile.current_period_end) {
-    return new Date(profile.current_period_end) > new Date();
+
+  const now = new Date();
+
+  // active: current_period_end があればその期限内、なければ有効
+  if (profile.subscription_status === 'active') {
+    if (profile.current_period_end) {
+      return new Date(profile.current_period_end) > now;
+    }
+    return true;
   }
-  return true;
+
+  // canceled: 解約済みでも current_period_end までは Pro 維持
+  if (profile.subscription_status === 'canceled') {
+    if (profile.current_period_end) {
+      return new Date(profile.current_period_end) > now;
+    }
+    return false; // current_period_end が null なら即無効
+  }
+
+  // past_due / inactive / trial: Pro 無効
+  return false;
 }
 
 /** Fetch profile for the given user. Returns null if not found. */
 export async function getProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, display_name, lang, stats_public, created_at, plan, subscription_status, current_period_end')
     .eq('id', userId)
     .single();
   if (error || !data) return null;
