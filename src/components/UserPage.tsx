@@ -216,20 +216,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             <ProfileItem label={t.userSeasonRank} value="— (Coming Soon)" muted />
           </div>
 
-          {/* Pro ステータスバナー（自分のページのみ） */}
-          {!viewOnly && (
-            <div style={proActive ? s.proBadgeRow : s.proUpgradeBanner}>
-              {proActive ? (
-                <span style={s.proBadge}>{t.proBadge}</span>
-              ) : (
-                <>
-                  <div>
-                    <div style={s.proUpgradeTitle}>{t.proUpgradeBannerTitle}</div>
-                    <div style={s.proUpgradeDesc}>{t.proUpgradeBannerDesc}</div>
-                  </div>
-                  <a href="/pro.html" style={s.proUpgradeBtn}>{t.proUpgradeBtn}</a>
-                </>
-              )}
+          {/* Pro ステータスバナー: 非Proユーザー向け Upgrade 導線のみ（自分のページのみ） */}
+          {!viewOnly && !proActive && (
+            <div style={s.proUpgradeBanner}>
+              <div>
+                <div style={s.proUpgradeTitle}>{t.proUpgradeBannerTitle}</div>
+                <div style={s.proUpgradeDesc}>{t.proUpgradeBannerDesc}</div>
+              </div>
+              <a href="/pro.html" style={s.proUpgradeBtn}>{t.proUpgradeBtn}</a>
             </div>
           )}
 

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { getProfile, isProActive } from '../lib/profile';
 
 interface Props {
   children: ReactNode;
@@ -13,6 +14,14 @@ export function AuthGate({ children }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [sent, setSent] = useState(false);
+  const [proActive, setProActive] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setProActive(false); return; }
+    getProfile(user.id).then((profile) => {
+      setProActive(profile ? isProActive(profile) : false);
+    });
+  }, [user?.id]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState<LoginMode>('magic');
@@ -150,6 +159,9 @@ export function AuthGate({ children }: Props) {
     <>
       <div style={styles.signOutBar}>
         <span style={styles.emailLabel}>{user.email}</span>
+        {proActive && (
+          <span style={styles.proBadge}>PRO</span>
+        )}
         <button type="button" onClick={signOut} style={styles.signOutBtn}>
           Sign out
         </button>
@@ -258,6 +270,18 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: 0,
     flex: 1,
     textAlign: 'right' as const,
+  },
+  proBadge: {
+    display: 'inline-block',
+    background: '#111',
+    color: '#fff',
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    padding: '2px 7px',
+    borderRadius: '3px',
+    flexShrink: 0,
+    whiteSpace: 'nowrap' as const,
   },
   signOutBtn: {
     background: 'none',
