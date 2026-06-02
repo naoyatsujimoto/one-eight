@@ -219,6 +219,15 @@ export const T = {
     omStartsIn: (label: string) => `Starts in ${label}`,
     omAvailable15Min: 'Available 15 min before start',
     omRejoinInProgress: 'Rejoin in progress',
+
+    // Pro status
+    proBadge: 'PRO',
+    proUpgradeBannerTitle: 'Unlock Pro Features',
+    proUpgradeBannerDesc: 'Ghost analysis, Postmortem candidate moves, and more.',
+    proUpgradeBtn: 'Upgrade to Pro',
+    proAlreadyActive: 'You are already Pro',
+    proRenewsOn: (date: string) => `Renews ${date}`,
+    proUpgradeGames: 'View all past games (Pro only)',
     omEnterMatch: 'Enter Match',
     omEntering: 'Entering…',
     omUpcomingMatches: 'Upcoming Matches',
@@ -450,6 +459,15 @@ export const T = {
     omStartsIn: (label: string) => `開始まで ${label}`,
     omAvailable15Min: '開始15分前から入室できます',
     omRejoinInProgress: '進行中の対局に再入室できます',
+
+    // Pro status
+    proBadge: 'PRO',
+    proUpgradeBannerTitle: 'Pro機能を解除',
+    proUpgradeBannerDesc: 'Ghost分析、Postmortem候補手表示、その他の機能。',
+    proUpgradeBtn: 'Proにアップグレード',
+    proAlreadyActive: 'Proプラン加入済み',
+    proRenewsOn: (date: string) => `次回更新日: ${date}`,
+    proUpgradeGames: '過去の全対局を見る（Pro限定）',
     omEnterMatch: '入室',
     omEntering: '入室中…',
     omUpcomingMatches: '今後の公式戦',
@@ -654,6 +672,15 @@ export type Translations = {
   omStartsIn: (label: string) => string;
   omAvailable15Min: string;
   omRejoinInProgress: string;
+
+  // Pro status
+  proBadge: string;
+  proUpgradeBannerTitle: string;
+  proUpgradeBannerDesc: string;
+  proUpgradeBtn: string;
+  proAlreadyActive: string;
+  proRenewsOn: (date: string) => string;
+  proUpgradeGames: string;
   omEnterMatch: string;
   omEntering: string;
   omUpcomingMatches: string;

@@ -216,6 +216,23 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             <ProfileItem label={t.userSeasonRank} value="— (Coming Soon)" muted />
           </div>
 
+          {/* Pro ステータスバナー（自分のページのみ） */}
+          {!viewOnly && (
+            <div style={proActive ? s.proBadgeRow : s.proUpgradeBanner}>
+              {proActive ? (
+                <span style={s.proBadge}>{t.proBadge}</span>
+              ) : (
+                <>
+                  <div>
+                    <div style={s.proUpgradeTitle}>{t.proUpgradeBannerTitle}</div>
+                    <div style={s.proUpgradeDesc}>{t.proUpgradeBannerDesc}</div>
+                  </div>
+                  <a href="/pro.html" style={s.proUpgradeBtn}>{t.proUpgradeBtn}</a>
+                </>
+              )}
+            </div>
+          )}
+
           {/* 言語設定・公開設定（自分のページのみ） */}
           {!viewOnly && (
             <>
@@ -513,8 +530,8 @@ function RecentGamesTable({
     <div style={{ overflowX: 'auto' }}>
       {!proActive && (
         <div style={s.upgradeBanner}>
-          {/* Upgrade prompt: free users see latest 10 games only */}
-          過去の全対局を見るには Pro プランへ
+          <span>{t.proUpgradeGames}</span>
+          <a href="/pro.html" style={s.upgradeBannerLink}>{t.proUpgradeBtn} →</a>
         </div>
       )}
       <table style={s.table}>
@@ -950,10 +967,73 @@ const s: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap' as const,
   },
   upgradeBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.5rem',
     fontSize: '0.75rem',
     color: '#888',
-    textAlign: 'center' as const,
-    padding: '6px 0 4px',
+    padding: '6px 4px 4px',
+    borderTop: '1px solid #f0f0f0',
+    marginTop: '4px',
+  },
+  upgradeBannerLink: {
+    color: '#555',
+    fontSize: '0.72rem',
+    whiteSpace: 'nowrap' as const,
+    textDecoration: 'none',
+    flexShrink: 0,
+  },
+  // Pro status banner (profile section)
+  proBadgeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 0 4px',
+    borderTop: '1px solid #f0f0f0',
+    marginTop: '8px',
+  },
+  proBadge: {
+    display: 'inline-block',
+    background: '#111',
+    color: '#fff',
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    padding: '3px 9px',
+    borderRadius: '3px',
+  },
+  proUpgradeBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    padding: '10px 12px',
+    marginTop: '12px',
+    background: '#fafafa',
+    border: '1px solid #e8e8e8',
+    borderRadius: '8px',
+  },
+  proUpgradeTitle: {
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: '#222',
+    marginBottom: '2px',
+  },
+  proUpgradeDesc: {
+    fontSize: '0.72rem',
+    color: '#888',
+  },
+  proUpgradeBtn: {
+    display: 'inline-block',
+    background: '#111',
+    color: '#fff',
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    padding: '6px 12px',
+    borderRadius: '5px',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
   },
   btnGroup: {
     display: 'flex',

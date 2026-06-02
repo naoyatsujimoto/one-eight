@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pro Membership — ONE EIGHT</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14141a;
+      --ink-2: #4a4a55;
+      --ink-3: #8a8a92;
+      --rule: #e6e2d9;
+      --rule-strong: #c9c4b8;
+      --highlight: #c9a24a;
+      --sans: 'Inter', system-ui, sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
+      --display: 'Archivo', 'Inter', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: #ffffff;
+    }
+    header {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0;
+    }
+    .wordmark {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    nav a {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      margin-left: 24px;
+    }
+    nav a:hover { color: var(--ink); }
+    main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 64px 32px 80px;
+    }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-family: var(--display);
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin: 0 0 10px;
+    }
+    .lead {
+      font-size: 15px;
+      color: var(--ink-2);
+      margin: 0 0 48px;
+      line-height: 1.7;
+    }
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 48px;
+      border-top: 1px solid var(--rule);
+    }
+    .feature-item {
+      display: flex;
+      gap: 20px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .feature-icon {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--ink-3);
+      padding-top: 2px;
+      flex-shrink: 0;
+      width: 72px;
+    }
+    .feature-body {}
+    .feature-name {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 0 0 6px;
+    }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.65;
+      margin: 0;
+    }
+    .cta-block {
+      border: 1px solid var(--rule-strong);
+      border-radius: 12px;
+      padding: 36px;
+      text-align: center;
+    }
+    .cta-price {
+      font-family: var(--mono);
+      font-size: 32px;
+      font-weight: 500;
+      margin: 0 0 4px;
+    }
+    .cta-note {
+      font-size: 13px;
+      color: var(--ink-3);
+      margin: 0 0 28px;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 6px;
+      transition: opacity 0.15s;
+    }
+    .cta-btn:hover { opacity: 0.8; }
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 24px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+    }
+    footer a {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+    }
+    footer a:hover { color: var(--ink); }
+    @media (max-width: 600px) {
+      header { padding: 16px 20px; }
+      main { padding: 40px 20px 60px; }
+      h1 { font-size: 24px; }
+      .cta-block { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="wordmark" href="/">ONE EIGHT</a>
+    <nav>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="eyebrow">Pro Membership</div>
+    <h1>Play deeper.</h1>
+    <p class="lead">ONE EIGHT Pro unlocks analytical tools and competitive features built for players who want to improve.</p>
+
+    <ul class="feature-list">
+
+      <li class="feature-item">
+        <span class="feature-icon">Ghost</span>
+        <div class="feature-body">
+          <p class="feature-name">Ghost Analysis</p>
+          <p class="feature-desc">See the strongest moves the engine considered at each point in the game. Available during CPU matches and online play.</p>
+        </div>
+      </li>
+
+      <li class="feature-item">
+        <span class="feature-icon">Postmortem</span>
+        <div class="feature-body">
+          <p class="feature-name">Postmortem Candidate Moves</p>
+          <p class="feature-desc">After any game, review the engine's top candidate moves at every turn. Understand where your choices diverged from optimal play.</p>
+        </div>
+      </li>
+
+      <li class="feature-item">
+        <span class="feature-icon">History</span>
+        <div class="feature-body">
+          <p class="feature-name">Full Game History</p>
+          <p class="feature-desc">Access your complete game archive. Free accounts see the most recent games only.</p>
+        </div>
+      </li>
+
+      <li class="feature-item">
+        <span class="feature-icon">More</span>
+        <div class="feature-body">
+          <p class="feature-name">Priority Access</p>
+          <p class="feature-desc">Pro members get early access to new competitive features as the game evolves.</p>
+        </div>
+      </li>
+
+    </ul>
+
+    <div class="cta-block">
+      <div class="cta-price">$14.99 <span style="font-size:16px;color:var(--ink-3)">/mo</span></div>
+      <p class="cta-note">Billed monthly · Cancel anytime</p>
+      <a class="cta-btn" href="/pricing.html">See Pricing &amp; Subscribe →</a>
+    </div>
+  </main>
+
+  <footer>
+    <a href="/">Home</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/terms.html">Terms of Service</a>
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/refund.html">Refund Policy</a>
+    <a href="mailto:contact@oneeightgame.com">Contact</a>
+  </footer>
+</body>
+</html>

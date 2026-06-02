@@ -164,6 +164,16 @@
       transition: opacity 0.15s;
     }
     .btn-subscribe:hover { opacity: 0.8; }
+    .btn-subscribe:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .already-pro {
+      text-align: center;
+      font-size: 13px;
+      color: var(--ink-3);
+      margin-top: 10px;
+    }
     .note {
       font-size: 13px;
       color: var(--ink-3);
@@ -241,6 +251,7 @@
         <li>Priority access to new competitive features</li>
       </ul>
       <button class="btn-subscribe" id="btn-subscribe-member">Subscribe — $14.99 / mo</button>
+      <p class="already-pro" id="already-pro-msg" style="display:none"></p>
     </div>
 
     <p class="note">Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.</p>
@@ -264,11 +275,49 @@
 
     Paddle.Initialize({ token: 'live_f1d896bad73885318f4d81d5923' });
 
+    // Pro判定ロジック (isProActive と同一条件)
+    function isProActive(profile) {
+      if (profile.plan !== 'pro') return false;
+      const now = new Date();
+      if (profile.subscription_status === 'active') {
+        return profile.current_period_end ? new Date(profile.current_period_end) > now : true;
+      }
+      if (profile.subscription_status === 'canceled') {
+        return profile.current_period_end ? new Date(profile.current_period_end) > now : false;
+      }
+      return false;
+    }
+
+    // ページ読み込み時に Pro 状態を確認してボタン状態を更新
+    (async function initPricingState() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan, subscription_status, current_period_end')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile && isProActive(profile)) {
+        const btn = document.getElementById('btn-subscribe-member');
+        const msg = document.getElementById('already-pro-msg');
+        btn.disabled = true;
+        btn.style.display = 'none';
+        msg.style.display = 'block';
+        if (profile.current_period_end) {
+          const d = new Date(profile.current_period_end).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+          msg.textContent = 'You are already Pro — renews ' + d;
+        } else {
+          msg.textContent = 'You are already Pro.';
+        }
+      }
+    })();
+
     document.getElementById('btn-subscribe-member').addEventListener('click', async function () {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session || !session.user) {
-        // 未ログイン → login ページへ誘導
         // 未ログイン → ログイン後に pricing.html へ戻るよう ?return=pricing を付与
         window.location.href = '/?return=pricing';
         return;
