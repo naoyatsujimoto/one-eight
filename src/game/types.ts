@@ -66,4 +66,6 @@ export type GameState = {
   timerConfig: TimerConfig | null;
   /** Phase T-1: 終了理由。null = 後方互換 */
   endReason: 'normal' | 'timeout' | null;
+  /** Training Mode flag (Phase T-1: stub only) */
+  trainingMode?: true;
 };

@@ -8,6 +8,7 @@ import { ResultModal } from '../components/ResultModal';
 import { TurnInfo } from '../components/TurnInfo';
 import { TitleScreen } from '../components/TitleScreen';
 import { TutorialScreen } from '../components/TutorialScreen';
+import { TrainingView } from '../components/TrainingView';
 import { AuthGate } from '../components/AuthGate';
 import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
@@ -27,7 +28,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { useUnreadCount } from '../hooks/useUnreadCount';
 // import { useSound } from '../hooks/useSound'; // SOUND OFF
 
-type Screen = 'title' | 'tutorial' | 'main' | 'profile';
+type Screen = 'title' | 'tutorial' | 'main' | 'profile' | 'training';
 import {
   applyMassiveBuild,
   applyQuadBuildForGates,
@@ -83,7 +84,7 @@ function calcQuadMax(state: GameState): number {
 /** Delay (ms) before CPU executes its move — gives the player a moment to see the board */
 const CPU_MOVE_DELAY_MS = 600;
 
-const SCREENS: Screen[] = ['title', 'tutorial', 'main'];
+const SCREENS: Screen[] = ['title', 'tutorial', 'main', 'training'];
 
 export default function App() {
   const { user } = useAuth();
@@ -93,7 +94,7 @@ export default function App() {
     // Restore screen from sessionStorage to survive reloads
     try {
       const saved = sessionStorage.getItem('one_eight_screen');
-      if (saved === 'main' || saved === 'tutorial' || saved === 'profile') return saved as Screen;
+      if (saved === 'main' || saved === 'tutorial' || saved === 'profile' || saved === 'training') return saved as Screen;
     } catch { /* sessionStorage unavailable */ }
     return 'title';
   });
@@ -990,6 +991,10 @@ export default function App() {
     );
   }
 
+  if (screen === 'training') {
+    return <TrainingView onExit={() => goTo('main')} />;
+  }
+
   return (
     <div
       className={`app-shell${screenTransition ? ' screen-out' : ''}`}
@@ -1158,6 +1163,9 @@ export default function App() {
                 </button>
                 <button type="button" className="result-btn" onClick={() => handleModeSelect('white')}>
                   {t.humanVsCpu}
+                </button>
+                <button type="button" className="result-btn" onClick={() => { setModeModalOpen(false); goTo('training'); }}>
+                  {t.modeTraining}
                 </button>
               </div>
               <button type="button" className="mode-modal-cancel" onClick={() => setModeModalOpen(false)}>

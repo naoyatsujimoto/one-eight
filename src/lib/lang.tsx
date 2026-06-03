@@ -72,6 +72,10 @@ export const T = {
     moveHistory: 'Move History',
     humanVsHuman: 'Human × Human',
     humanVsCpu: 'Human × CPU',
+    modeTraining: 'Training',
+    trainingTitle: 'TRAINING',
+    trainingRecordeTitle: 'Recorde Training',
+    trainingPlaceholderMsg: 'Training mode is in development.',
     selectMode: 'Select Mode',
     cancel: 'Cancel',
     cpuSettings: 'CPU Settings',
@@ -313,6 +317,10 @@ export const T = {
     moveHistory: '手順履歴',
     humanVsHuman: '人間 × 人間',
     humanVsCpu: '人間 × CPU',
+    modeTraining: 'トレーニング',
+    trainingTitle: 'TRAINING',
+    trainingRecordeTitle: 'Recorde Training',
+    trainingPlaceholderMsg: 'トレーニングモードは開発中です。',
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
     cpuSettings: 'CPU 設定',
@@ -528,6 +536,10 @@ export type Translations = {
   moveHistory: string;
   humanVsHuman: string;
   humanVsCpu: string;
+  modeTraining: string;
+  trainingTitle: string;
+  trainingRecordeTitle: string;
+  trainingPlaceholderMsg: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;
