@@ -137,6 +137,62 @@ describe('loadTrainingProgress — localStorage (userId null)', () => {
 
 // ── bestAttemptCount keeps smaller value ─────────────────────────────────────
 
+// ── attempt count normalization (minimum 1) ──────────────────────────────────
+
+describe('attempt count normalization (minimum 1)', () => {
+  it('attemptCount=0 is normalized to 1 on localStorage save', async () => {
+    await saveTrainingProgress(null, {
+      taskId: 'T1_build_basics',
+      completedAt: '2026-06-03T00:00:00.000Z',
+      attemptCount: 0,
+      bestAttemptCount: 0,
+    });
+    const records = await loadTrainingProgress(null);
+    expect(records[0]?.attemptCount).toBe(1);
+    expect(records[0]?.bestAttemptCount).toBe(1);
+  });
+
+  it('undefined attemptCount is normalized to 1', async () => {
+    await saveTrainingProgress(null, {
+      taskId: 'T2_capture_build',
+      completedAt: '2026-06-03T00:00:00.000Z',
+    });
+    const records = await loadTrainingProgress(null);
+    expect(records[0]?.attemptCount).toBe(1);
+    expect(records[0]?.bestAttemptCount).toBe(1);
+  });
+
+  it('attemptCount>=2 is preserved as-is', async () => {
+    await saveTrainingProgress(null, {
+      taskId: 'T1_build_basics',
+      completedAt: '2026-06-03T00:00:00.000Z',
+      attemptCount: 3,
+      bestAttemptCount: 3,
+    });
+    const records = await loadTrainingProgress(null);
+    expect(records[0]?.attemptCount).toBe(3);
+    expect(records[0]?.bestAttemptCount).toBe(3);
+  });
+
+  it('Supabase upsert row has attempt_count>=1 even when input is 0', async () => {
+    const selectChain = makeChain(null);
+    const upsertChain = makeChain(null);
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValueOnce(upsertChain);
+
+    await saveTrainingProgress('user-123', {
+      taskId: 'T1_build_basics',
+      completedAt: '2026-06-03T00:00:00.000Z',
+      attemptCount: 0,
+      bestAttemptCount: 0,
+    });
+
+    const upsertFn = upsertChain['upsert'] as ReturnType<typeof vi.fn>;
+    const row = (upsertFn.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(row['attempt_count']).toBe(1);
+    expect(row['best_attempt_count']).toBe(1);
+  });
+});
+
 describe('bestAttemptCount keeps the smaller value', () => {
   it('retains original bestAttemptCount when new is larger', async () => {
     await saveTrainingProgress(null, { taskId: 'T1_build_basics', completedAt: '2026-06-01T00:00:00.000Z', attemptCount: 2, bestAttemptCount: 2 });

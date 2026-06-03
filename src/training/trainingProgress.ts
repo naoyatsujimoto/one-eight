@@ -63,6 +63,20 @@ function mergeIntoStorage(record: TrainingProgressRecord): void {
   writeToStorage(all);
 }
 
+// ── Normalization ────────────────────────────────────────────────────────────────
+
+/**
+ * Normalize attempt counts: minimum 1.
+ * A completed task is at least 1 attempt even with 0 wrong moves.
+ */
+function normalizeRecord(record: TrainingProgressRecord): TrainingProgressRecord {
+  return {
+    ...record,
+    attemptCount: Math.max(1, record.attemptCount ?? 0),
+    bestAttemptCount: Math.max(1, record.bestAttemptCount ?? 0),
+  };
+}
+
 // ── DB row type ────────────────────────────────────────────────────────────────
 
 interface DbRow {
@@ -96,19 +110,23 @@ export async function saveTrainingProgress(
   userId: string | null,
   record: TrainingProgressRecord,
 ): Promise<void> {
+  // Normalize: attempt counts must be at least 1
+  const r = normalizeRecord(record);
+
   if (!userId) {
     // localStorage path
     const all = readFromStorage();
-    const idx = all.findIndex((r) => r.taskId === record.taskId);
+    const idx = all.findIndex((rec) => rec.taskId === r.taskId);
     if (idx === -1) {
-      all.push(record);
+      all.push(r);
     } else {
       const existing = all[idx]!;
-      const bestAttemptCount =
-        record.bestAttemptCount !== undefined && existing.bestAttemptCount !== undefined
-          ? Math.min(existing.bestAttemptCount, record.bestAttemptCount)
-          : record.bestAttemptCount ?? existing.bestAttemptCount;
-      all[idx] = { ...existing, ...record, bestAttemptCount };
+      const bestAttemptCount = Math.max(1,
+        r.bestAttemptCount !== undefined && existing.bestAttemptCount !== undefined
+          ? Math.min(existing.bestAttemptCount, r.bestAttemptCount)
+          : r.bestAttemptCount ?? existing.bestAttemptCount ?? 0
+      );
+      all[idx] = { ...existing, ...r, bestAttemptCount };
     }
     writeToStorage(all);
     return;
@@ -119,7 +137,7 @@ export async function saveTrainingProgress(
     .from('training_progress')
     .select('best_attempt_count')
     .eq('user_id', userId)
-    .eq('task_id', record.taskId)
+    .eq('task_id', r.taskId)
     .single();
 
   const existingBest: number | undefined =
@@ -127,18 +145,19 @@ export async function saveTrainingProgress(
       ? (existing as DbRow).best_attempt_count
       : undefined;
 
-  const finalBest =
-    record.bestAttemptCount !== undefined && existingBest !== undefined
-      ? Math.min(existingBest, record.bestAttemptCount)
-      : record.bestAttemptCount ?? existingBest ?? 0;
+  const finalBest = Math.max(1,
+    r.bestAttemptCount !== undefined && existingBest !== undefined
+      ? Math.min(existingBest, r.bestAttemptCount)
+      : r.bestAttemptCount ?? existingBest ?? 0
+  );
 
   const row: DbRow = {
     user_id: userId,
-    task_id: record.taskId,
-    completed_at: record.completedAt ?? new Date().toISOString(),
-    attempt_count: record.attemptCount ?? 0,
+    task_id: r.taskId,
+    completed_at: r.completedAt ?? new Date().toISOString(),
+    attempt_count: r.attemptCount ?? 1,
     best_attempt_count: finalBest,
-    last_completed_step: record.lastCompletedStep ?? 0,
+    last_completed_step: r.lastCompletedStep ?? 0,
   };
 
   const { error } = await supabase
@@ -150,7 +169,7 @@ export async function saveTrainingProgress(
   }
 
   // Always update localStorage cache
-  mergeIntoStorage({ ...record, bestAttemptCount: finalBest });
+  mergeIntoStorage({ ...r, bestAttemptCount: finalBest });
 }
 
 /**
