@@ -5,7 +5,7 @@ import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
-import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, TRAINING_TASK_META } from '../training/tasks/index';
+import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T3_BUILD_REQUIRED_SKIP_BLOCKED, T7_DIAGONAL_GATES, TRAINING_TASK_META } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { saveTrainingProgress, isTaskCompleted } from '../training/trainingProgress';
@@ -55,6 +55,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const set = new Set<TrainingTaskId>();
     if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
     if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
+    if (isTaskCompleted('T3_build_required_skip_blocked')) set.add('T3_build_required_skip_blocked');
+    if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
     return set;
   });
 
@@ -64,6 +66,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const set = new Set<TrainingTaskId>();
       if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
       if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
+      if (isTaskCompleted('T3_build_required_skip_blocked')) set.add('T3_build_required_skip_blocked');
+      if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
       setCompletedTasks(set);
     }
   }, [mode]);
@@ -320,10 +324,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   }
 
   function handleNextTraining() {
-    // T1 complete -> go to intro, T2 will appear as available
-    if (session.task.id === 'T1_build_basics') {
-      setMode('intro');
-    }
+    // On task complete -> return to intro so the next task becomes available
+    setMode('intro');
   }
 
   // ── Intro screen ─────────────────────────────────────────────────────────
@@ -359,7 +361,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               ? t.trainingTaskStatusLocked
               : t.trainingTaskStatusAvailable;
 
-            const descKey = taskId === 'T1_build_basics' ? 'trainingT1Desc' : 'trainingT2Desc';
+            const descKeyMap: Record<TrainingTaskId, string> = {
+              T1_build_basics: 'trainingT1Desc',
+              T2_capture_build: 'trainingT2Desc',
+              T3_build_required_skip_blocked: 'trainingT3Desc',
+              T7_diagonal_gates: 'trainingT7Desc',
+            };
+            const descKey = descKeyMap[taskId] ?? '';
             const descText = (t as Record<string, unknown>)[descKey] as string | undefined;
 
             return (
@@ -374,7 +382,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                   <div style={{ fontWeight: 700, fontSize: '15px', color: isLocked ? '#aaa' : '#222' }}>
-                    {meta.order === 1 ? 'T1' : 'T2'} — {(t as Record<string, unknown>)[meta.titleKey] as string}
+                    T{meta.order} — {(t as Record<string, unknown>)[meta.titleKey] as string}
                   </div>
                   <div style={{
                     fontSize: '11px',
@@ -416,6 +424,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // ── Task screen ───────────────────────────────────────────────────────────
   const completeTitle: string = (() => {
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
+    if (session.task.id === 'T3_build_required_skip_blocked') return t.trainingT3Complete;
+    if (session.task.id === 'T7_diagonal_gates') return t.trainingT7Complete;
     return t.trainingCompleteTitle;
   })();
 
@@ -484,7 +494,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
         {session.status === 'complete' ? (
           <>
-            {session.task.id === 'T1_build_basics' && (
+            {session.task.id !== 'T7_diagonal_gates' && (
               <button type="button" className="result-btn result-btn-primary" onClick={handleNextTraining}>
                 {t.trainingNextTraining}
               </button>

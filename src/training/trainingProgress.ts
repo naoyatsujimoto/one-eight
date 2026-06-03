@@ -12,7 +12,7 @@
 
 import { supabase } from '../lib/supabase';
 
-export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build';
+export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T3_build_required_skip_blocked' | 'T7_diagonal_gates';
 
 export interface TrainingProgressRecord {
   taskId: TrainingTaskId;

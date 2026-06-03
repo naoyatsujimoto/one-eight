@@ -101,6 +101,15 @@ export const T = {
     trainingLockedMessage: 'Complete the previous task to unlock.',
     trainingT1Desc: 'Learn Massive, Selective, and Quad builds.',
     trainingT2Desc: 'Learn how to capture and build.',
+    trainingT3Title: 'Build Required / Skip Blocked',
+    trainingT3Step1: 'Select position B. Build is possible — Skip is not allowed. Apply Massive Build to Gate 2.',
+    trainingT3Complete: 'Build Required / Skip Blocked Complete',
+    trainingT3SkipBlocked: 'Build possible — Skip is not allowed',
+    trainingT3Desc: 'Learn that Skip is not allowed when a Build is possible.',
+    trainingT7Title: 'Diagonal Gates',
+    trainingT7Step1: 'Select Position H and apply Massive Build to one of its connected Gates (2, 5, 6, or 9). Build Gate 5.',
+    trainingT7Complete: 'Diagonal Gates Complete',
+    trainingT7Desc: 'Learn which Gates are connected to each Position.',
 
     selectMode: 'Select Mode',
     cancel: 'Cancel',
@@ -372,6 +381,15 @@ export const T = {
     trainingLockedMessage: '前のタスクを完了するとアンロックされます。',
     trainingT1Desc: 'Massive、Selective、Quad の Build を学ぶ。',
     trainingT2Desc: 'Capture して Build する方法を学ぶ。',
+    trainingT3Title: 'Build必須 / Skip禁止',
+    trainingT3Step1: 'ポジション B を選び、Buildが可能なためSkipはできません。ゲート 2 に Massive Build を行ってください。',
+    trainingT3Complete: 'Build必須 / Skip禁止 完了',
+    trainingT3SkipBlocked: 'Buildが可能です — Skipはできません',
+    trainingT3Desc: 'Buildが可能なときはSkipができないことを学ぶ。',
+    trainingT7Title: 'Diagonal Gate',
+    trainingT7Step1: 'ポジション H を選び、接続しているゲート（2, 5, 6, 9 のいずれか）に Massive Build を行ってください。ゲート 5 をBuildしてください。',
+    trainingT7Complete: 'Diagonal Gate 完了',
+    trainingT7Desc: '各ポジションに接続しているゲートを学ぶ。',
 
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
@@ -617,6 +635,15 @@ export type Translations = {
   trainingLockedMessage: string;
   trainingT1Desc: string;
   trainingT2Desc: string;
+  trainingT3Title: string;
+  trainingT3Step1: string;
+  trainingT3Complete: string;
+  trainingT3SkipBlocked: string;
+  trainingT3Desc: string;
+  trainingT7Title: string;
+  trainingT7Step1: string;
+  trainingT7Complete: string;
+  trainingT7Desc: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;
