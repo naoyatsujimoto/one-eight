@@ -5,7 +5,7 @@ import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
-import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T3_BUILD_REQUIRED_SKIP_BLOCKED, T7_DIAGONAL_GATES, TRAINING_TASK_META } from '../training/tasks/index';
+import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, TRAINING_TASK_META } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { saveTrainingProgress, isTaskCompleted } from '../training/trainingProgress';
@@ -55,7 +55,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const set = new Set<TrainingTaskId>();
     if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
     if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
-    if (isTaskCompleted('T3_build_required_skip_blocked')) set.add('T3_build_required_skip_blocked');
     if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
     return set;
   });
@@ -66,7 +65,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const set = new Set<TrainingTaskId>();
       if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
       if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
-      if (isTaskCompleted('T3_build_required_skip_blocked')) set.add('T3_build_required_skip_blocked');
       if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
       setCompletedTasks(set);
     }
@@ -364,7 +362,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             const descKeyMap: Record<TrainingTaskId, string> = {
               T1_build_basics: 'trainingT1Desc',
               T2_capture_build: 'trainingT2Desc',
-              T3_build_required_skip_blocked: 'trainingT3Desc',
               T7_diagonal_gates: 'trainingT7Desc',
             };
             const descKey = descKeyMap[taskId] ?? '';
@@ -424,7 +421,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // ── Task screen ───────────────────────────────────────────────────────────
   const completeTitle: string = (() => {
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
-    if (session.task.id === 'T3_build_required_skip_blocked') return t.trainingT3Complete;
     if (session.task.id === 'T7_diagonal_gates') return t.trainingT7Complete;
     return t.trainingCompleteTitle;
   })();

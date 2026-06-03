@@ -1,7 +1,6 @@
 import type { TrainingTask } from '../types';
 import { T1_BUILD_BASICS } from './T1_build_basics';
 import { T2_CAPTURE_BUILD } from './T2_capture_build';
-import { T3_BUILD_REQUIRED_SKIP_BLOCKED } from './T3_build_required_skip_blocked';
 import { T7_DIAGONAL_GATES } from './T7_diagonal_gates';
 
 export interface TrainingTaskMeta {
@@ -29,23 +28,16 @@ export const TRAINING_TASK_META: TrainingTaskMeta[] = [
     prerequisite: 'T1_build_basics',
   },
   {
-    task: T3_BUILD_REQUIRED_SKIP_BLOCKED,
-    order: 3,
-    titleKey: 'trainingT3Title',
-    prerequisite: 'T2_capture_build',
-  },
-  {
     task: T7_DIAGONAL_GATES,
-    order: 7,
+    order: 3,
     titleKey: 'trainingT7Title',
-    prerequisite: 'T3_build_required_skip_blocked',
+    prerequisite: 'T2_capture_build',
   },
 ];
 
 export const TRAINING_TASKS: TrainingTask[] = [
   T1_BUILD_BASICS,
   T2_CAPTURE_BUILD,
-  T3_BUILD_REQUIRED_SKIP_BLOCKED,
   T7_DIAGONAL_GATES,
 ];
-export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T3_BUILD_REQUIRED_SKIP_BLOCKED, T7_DIAGONAL_GATES };
+export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES };
