@@ -6,7 +6,7 @@
  * Replace these stubs with real implementations in a future phase.
  */
 
-export type TrainingTaskId = 'T1_build_basics';
+export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build';
 
 export interface TrainingProgressRecord {
   taskId: TrainingTaskId;

@@ -5,11 +5,11 @@ import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
-import { T1_BUILD_BASICS } from '../training/tasks/index';
+import { T1_BUILD_BASICS, T2_CAPTURE_BUILD } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { saveTrainingProgress } from '../training/trainingProgress';
-import type { TrainingSession } from '../training/types';
+import type { TrainingSession, TrainingTask } from '../training/types';
 
 const EMPTY_BUILD: BoardBuildState = {
   mode: 'none',
@@ -19,8 +19,7 @@ const EMPTY_BUILD: BoardBuildState = {
   quadMax: 4,
 };
 
-function makeInitialSession(): TrainingSession {
-  const task = T1_BUILD_BASICS;
+function makeSession(task: TrainingTask): TrainingSession {
   return {
     task,
     stepIndex: 0,
@@ -40,7 +39,7 @@ interface TrainingViewProps {
 
 export function TrainingView({ onExit }: TrainingViewProps) {
   const { t } = useLang();
-  const [session, setSession] = useState<TrainingSession>(makeInitialSession);
+  const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
 
   const currentStep = session.task.steps[session.stepIndex];
@@ -52,7 +51,7 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       const step = s.task.steps[s.stepIndex];
       if (!step) {
         // all steps done
-        saveTrainingProgress(null as unknown as string, { taskId: 'T1_build_basics', completedAt: new Date().toISOString() });
+        saveTrainingProgress(null as unknown as string, { taskId: s.task.id, completedAt: new Date().toISOString() });
         return { ...s, status: 'complete', feedback: null };
       }
       if (step.kind !== 'cpu_fixed_move') break;
@@ -281,13 +280,27 @@ export function TrainingView({ onExit }: TrainingViewProps) {
   }
 
   function handleRestart() {
-    setSession(makeInitialSession());
+    setSession(makeSession(session.task));
     setBuildState(EMPTY_BUILD);
   }
 
+  function handleNextTraining() {
+    // T1 complete -> T2
+    if (session.task.id === 'T1_build_basics') {
+      setSession(makeSession(T2_CAPTURE_BUILD));
+      setBuildState(EMPTY_BUILD);
+    }
+  }
+
+  // Task-specific complete title
+  const completeTitle: string = (() => {
+    if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
+    return t.trainingCompleteTitle;
+  })();
+
   // Step label for current user step
   const stepLabel: string = (() => {
-    if (session.status === 'complete') return t.trainingCompleteTitle;
+    if (session.status === 'complete') return completeTitle;
     if (!currentStep || currentStep.kind !== 'user_move') return '';
     const key = currentStep.labelKey as keyof typeof t;
     return (t[key] as string) ?? currentStep.labelKey;
@@ -308,14 +321,14 @@ export function TrainingView({ onExit }: TrainingViewProps) {
         </button>
         <div style={{ flex: 1 }}>
           <div className="result-eyebrow">{t.trainingTitle}</div>
-          <div style={{ fontWeight: 700, fontSize: '15px' }}>{t.trainingRecordeTitle} — {t.trainingT1Title}</div>
+          <div style={{ fontWeight: 700, fontSize: '15px' }}>{t.trainingRecordeTitle} — {(t[session.task.titleKey as keyof typeof t] as string) ?? session.task.titleKey}</div>
         </div>
       </div>
 
       {/* Step instruction */}
       <div style={{ padding: '12px 16px', background: '#faf7f4', borderBottom: '1px solid #e8e0d8' }}>
         {session.status === 'complete' ? (
-          <div style={{ fontWeight: 700, fontSize: '15px', textAlign: 'center' }}>{t.trainingCompleteTitle}</div>
+          <div style={{ fontWeight: 700, fontSize: '15px', textAlign: 'center' }}>{completeTitle}</div>
         ) : (
           <>
             <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>
@@ -351,9 +364,16 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       {/* Actions */}
       <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
         {session.status === 'complete' ? (
-          <button type="button" className="result-btn result-btn-primary" onClick={handleRestart}>
-            Restart
-          </button>
+          <>
+            {session.task.id === 'T1_build_basics' && (
+              <button type="button" className="result-btn result-btn-primary" onClick={handleNextTraining}>
+                {t.trainingNextTraining}
+              </button>
+            )}
+            <button type="button" className="result-btn" onClick={handleRestart}>
+              Restart
+            </button>
+          </>
         ) : (
           <button type="button" className="result-btn" onClick={handleRestartStep}>
             {t.trainingRestartStep}

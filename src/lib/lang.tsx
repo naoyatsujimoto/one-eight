@@ -83,6 +83,11 @@ export const T = {
     trainingFeedbackWrong: 'That is not the correct move. Try again.',
     trainingFeedbackCleared: 'Correct.',
     trainingCompleteTitle: 'Build Basics Complete',
+    trainingT2Title: 'Capture and Build',
+    trainingT2Intro: 'Learn how to capture an opponent Position and build on its Diagonal Gate.',
+    trainingT2Step1: 'Position E is owned by White. Gate 6 has your large asset. Select position E, apply Massive Build to Gate 10.',
+    trainingT2Complete: 'Capture and Build Complete',
+    trainingNextTraining: 'Next Training',
     trainingRestartStep: 'Restart Step',
     trainingBackToMenu: 'Back',
     selectMode: 'Select Mode',
@@ -337,6 +342,11 @@ export const T = {
     trainingFeedbackWrong: '正解と異なる手です。もう一度試してください。',
     trainingFeedbackCleared: '正解です。',
     trainingCompleteTitle: 'Build Basics 完了',
+    trainingT2Title: 'Capture and Build',
+    trainingT2Intro: '相手のポジションをCapture して、そのDiagonal GateにBuildする方法を学びます。',
+    trainingT2Step1: 'ポジション E はWhiteが所有しています。ゲート 6 にあなたのlarge assetがあります。ポジション E を選び、ゲート 10 に Massive Build を行ってください。',
+    trainingT2Complete: 'Capture and Build 完了',
+    trainingNextTraining: '次のトレーニングへ',
     trainingRestartStep: 'このステップをやり直す',
     trainingBackToMenu: '戻る',
     selectMode: 'モードを選択',
@@ -565,6 +575,11 @@ export type Translations = {
   trainingFeedbackWrong: string;
   trainingFeedbackCleared: string;
   trainingCompleteTitle: string;
+  trainingT2Title: string;
+  trainingT2Intro: string;
+  trainingT2Step1: string;
+  trainingT2Complete: string;
+  trainingNextTraining: string;
   trainingRestartStep: string;
   trainingBackToMenu: string;
   selectMode: string;
