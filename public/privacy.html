@@ -128,6 +128,15 @@
       main { padding: 40px 20px 60px; }
       h1 { font-size: 26px; }
     }
+    body[data-lang="ja"] .lang-en { display: none; }
+    body[data-lang="en"] .lang-ja { display: none; }
+    .lang-toggle { display:flex; gap:8px; align-items:center; margin-left:20px; }
+    .lang-toggle button {
+      font-family: var(--mono); font-size:11px; letter-spacing:0.1em;
+      background:none; border:1px solid var(--rule-strong); border-radius:3px;
+      padding:2px 8px; cursor:pointer; color:var(--ink-3);
+    }
+    .lang-toggle button.active { border-color:var(--ink); color:var(--ink); }
   </style>
 </head>
 <body>
@@ -138,60 +147,68 @@
       <a href="/terms.html">Terms</a>
       <a href="/privacy.html">Privacy</a>
       <a href="/refund.html">Refund</a>
+      <div class="lang-toggle" id="lang-toggle">
+        <button id="btn-lang-en">EN</button>
+        <button id="btn-lang-ja">JA</button>
+      </div>
     </nav>
   </header>
 
   <main>
-    <div class="eyebrow">Legal</div>
-    <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: May 23, 2025</p>
+    <div class="eyebrow"><span class="lang-en">Legal</span><span class="lang-ja">法的事項</span></div>
+    <h1><span class="lang-en">Privacy Policy</span><span class="lang-ja">プライバシーポリシー</span></h1>
+    <p class="updated"><span class="lang-en">Last updated: May 23, 2025</span><span class="lang-ja">最終更新: 2025年5月23日</span></p>
 
-    <h2>1. Overview</h2>
-    <p>ONE EIGHT is operated by TENTOMUSHI Inc. This Privacy Policy describes what data we collect, how we use it, and your rights regarding that data in connection with the ONE EIGHT service available at oneeightgame.com.</p>
+    <h2><span class="lang-en">1. Overview</span><span class="lang-ja">1. 概要</span></h2>
+    <p><span class="lang-en">ONE EIGHT is operated by TENTOMUSHI Inc. This Privacy Policy describes what data we collect, how we use it, and your rights regarding that data in connection with the ONE EIGHT service available at oneeightgame.com.</span><span class="lang-ja">ONE EIGHT は TENTOMUSHI Inc. が運営しています。本プライバシーポリシーは、oneeightgame.com で提供される ONE EIGHT サービスに関して、収集するデータ、その利用方法、およびデータに関するお客様の権利について説明します。</span></p>
 
-    <h2>2. Data We Collect</h2>
-    <p><strong>Account data:</strong> When you create an account, we collect your email address and the display name you choose. Authentication is handled via Supabase Auth.</p>
-    <p><strong>Gameplay data:</strong> We record game results, move histories, ratings, and statistics associated with your account. This data is used to power leaderboards, match history, and analysis features.</p>
-    <p><strong>Payment data:</strong> If you subscribe to a paid plan, payment is processed by Paddle. We do not store your full card number or billing details. Paddle provides us with basic transaction records (subscription status, billing date, amount).</p>
-    <p><strong>Usage data:</strong> We may collect basic technical information such as browser type, device type, and approximate region for operational and security purposes. We do not use advertising trackers.</p>
+    <h2><span class="lang-en">2. Data We Collect</span><span class="lang-ja">2. 収集するデータ</span></h2>
+    <p><strong><span class="lang-en">Account data:</span><span class="lang-ja">アカウントデータ:</span></strong> <span class="lang-en">When you create an account, we collect your email address and the display name you choose. Authentication is handled via Supabase Auth.</span><span class="lang-ja">アカウントを作成する際、メールアドレスおよびお客様が選択した表示名を収集します。認証は Supabase Auth を通じて処理されます。</span></p>
+    <p><strong><span class="lang-en">Gameplay data:</span><span class="lang-ja">ゲームデータ:</span></strong> <span class="lang-en">We record game results, move histories, ratings, and statistics associated with your account. This data is used to power leaderboards, match history, and analysis features.</span><span class="lang-ja">アカウントに関連する対局結果、手順履歴、レーティング、統計情報を記録します。このデータはリーダーボード、対局履歴、分析機能に使用されます。</span></p>
+    <p><strong><span class="lang-en">Payment data:</span><span class="lang-ja">決済データ:</span></strong> <span class="lang-en">If you subscribe to a paid plan, payment is processed by Paddle. We do not store your full card number or billing details. Paddle provides us with basic transaction records (subscription status, billing date, amount).</span><span class="lang-ja">有料プランに登録された場合、決済は Paddle によって処理されます。カード番号や請求先情報の全体を当社で保存することはありません。Paddle からはサブスクリプションの状態、請求日、金額などの基本的な取引記録が提供されます。</span></p>
+    <p><strong><span class="lang-en">Usage data:</span><span class="lang-ja">利用データ:</span></strong> <span class="lang-en">We may collect basic technical information such as browser type, device type, and approximate region for operational and security purposes. We do not use advertising trackers.</span><span class="lang-ja">運営およびセキュリティ目的で、ブラウザの種類、デバイスの種類、およその地域などの基本的な技術情報を収集することがあります。広告トラッカーは使用していません。</span></p>
 
-    <h2>3. How We Use Your Data</h2>
+    <h2><span class="lang-en">3. How We Use Your Data</span><span class="lang-ja">3. データの利用方法</span></h2>
     <ul>
-      <li>To provide and operate the game service</li>
-      <li>To authenticate your account and maintain session security</li>
-      <li>To process subscription payments and manage billing status</li>
-      <li>To display game history, ratings, and competitive standings</li>
-      <li>To communicate service-related updates (account or billing notices)</li>
-      <li>To investigate abuse, cheating, or violations of our Terms of Service</li>
+      <li><span class="lang-en">To provide and operate the game service</span><span class="lang-ja">ゲームサービスの提供・運営のため</span></li>
+      <li><span class="lang-en">To authenticate your account and maintain session security</span><span class="lang-ja">アカウント認証およびセッションセキュリティの維持のため</span></li>
+      <li><span class="lang-en">To process subscription payments and manage billing status</span><span class="lang-ja">サブスクリプション決済の処理および請求状況の管理のため</span></li>
+      <li><span class="lang-en">To display game history, ratings, and competitive standings</span><span class="lang-ja">対局履歴、レーティング、競技順位の表示のため</span></li>
+      <li><span class="lang-en">To communicate service-related updates (account or billing notices)</span><span class="lang-ja">サービス関連のお知らせ（アカウントや請求に関する通知）の送信のため</span></li>
+      <li><span class="lang-en">To investigate abuse, cheating, or violations of our Terms of Service</span><span class="lang-ja">不正行為、チート、利用規約違反の調査のため</span></li>
     </ul>
-    <p>We do not sell your personal data to third parties. We do not use your data for advertising purposes.</p>
+    <p><span class="lang-en">We do not sell your personal data to third parties. We do not use your data for advertising purposes.</span><span class="lang-ja">お客様の個人データを第三者に販売することはありません。お客様のデータを広告目的に使用することはありません。</span></p>
 
-    <h2>4. Third-Party Services</h2>
-    <p><strong>Supabase:</strong> We use Supabase for database storage and authentication. Data is stored on Supabase-managed infrastructure.</p>
-    <p><strong>Paddle:</strong> We use Paddle as our payment processor and merchant of record. Paddle's privacy policy applies to data collected during payment.</p>
-    <p><strong>Google Fonts:</strong> Fonts are loaded from Google Fonts, which may involve data transfer to Google's servers.</p>
+    <h2><span class="lang-en">4. Third-Party Services</span><span class="lang-ja">4. サードパーティサービス</span></h2>
+    <p><strong>Supabase:</strong> <span class="lang-en">We use Supabase for database storage and authentication. Data is stored on Supabase-managed infrastructure.</span><span class="lang-ja">データベースの保存と認証に Supabase を使用しています。データは Supabase が管理するインフラに保存されます。</span></p>
+    <p><strong>Paddle:</strong> <span class="lang-en">We use Paddle as our payment processor and merchant of record. Paddle's privacy policy applies to data collected during payment.</span><span class="lang-ja">決済処理および merchant of record として Paddle を使用しています。決済時に収集されるデータには Paddle のプライバシーポリシーが適用されます。</span></p>
+    <p><strong>Google Fonts:</strong> <span class="lang-en">Fonts are loaded from Google Fonts, which may involve data transfer to Google's servers.</span><span class="lang-ja">フォントは Google Fonts から読み込まれており、Google のサーバーへのデータ転送が発生する場合があります。</span></p>
 
-    <h2>5. Data Retention</h2>
-    <p>We retain account and gameplay data for as long as your account is active. If you request account deletion, we will remove your personal data within a reasonable period, subject to any legal obligations.</p>
+    <h2><span class="lang-en">5. Data Retention</span><span class="lang-ja">5. データ保持</span></h2>
+    <p><span class="lang-en">We retain account and gameplay data for as long as your account is active. If you request account deletion, we will remove your personal data within a reasonable period, subject to any legal obligations.</span><span class="lang-ja">アカウントが有効な期間中、アカウントおよび対局データを保持します。アカウント削除をご要望の場合、法的義務が生じる場合を除き、合理的な期間内に個人データを削除します。</span></p>
 
-    <h2>6. Your Rights</h2>
-    <p>You may request access to, correction of, or deletion of your personal data by contacting us at <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a>. We will respond within a reasonable timeframe.</p>
+    <h2><span class="lang-en">6. Your Rights</span><span class="lang-ja">6. お客様の権利</span></h2>
+    <p><span class="lang-en">You may request access to, correction of, or deletion of your personal data by contacting us at <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a>. We will respond within a reasonable timeframe.</span><span class="lang-ja">個人データへのアクセス、訂正、または削除をご希望の場合は、<a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a> までご連絡ください。合理的な期間内に対応いたします。</span></p>
 
-    <h2>7. Contact</h2>
-    <p>Operator: TENTOMUSHI Inc.<br>
+    <h2><span class="lang-en">7. Contact</span><span class="lang-ja">7. お問い合わせ</span></h2>
+    <p><span class="lang-en">Operator: TENTOMUSHI Inc.<br>
     Service: ONE EIGHT<br>
     Website: <a href="https://oneeightgame.com">https://oneeightgame.com</a><br>
-    Email: <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a></p>
-    <p>For privacy-related inquiries, please contact us at <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a>.</p>
+    Email: <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a></span><span class="lang-ja">運営者: TENTOMUSHI Inc.<br>
+    サービス: ONE EIGHT<br>
+    ウェブサイト: <a href="https://oneeightgame.com">https://oneeightgame.com</a><br>
+    メール: <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a></span></p>
+    <p><span class="lang-en">For privacy-related inquiries, please contact us at <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a>.</span><span class="lang-ja">プライバシーに関するお問い合わせは <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a> までご連絡ください。</span></p>
   </main>
 
   <footer>
     <a href="/">Home</a>
     <a href="/pricing.html">Pricing</a>
-    <a href="/terms.html">Terms of Service</a>
-    <a href="/privacy.html">Privacy Policy</a>
-    <a href="/refund.html">Refund Policy</a>
+    <a href="/terms.html"><span class="lang-en">Terms of Service</span><span class="lang-ja">利用規約</span></a>
+    <a href="/privacy.html"><span class="lang-en">Privacy Policy</span><span class="lang-ja">プライバシーポリシー</span></a>
+    <a href="/refund.html"><span class="lang-en">Refund Policy</span><span class="lang-ja">返金ポリシー</span></a>
     <a href="mailto:contact@oneeightgame.com">Contact</a>
   </footer>
+  <script src="/legal-i18n.js"></script>
 </body>
 </html>

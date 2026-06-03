@@ -231,6 +231,15 @@
       .plan-card { padding: 24px 20px; }
       .plan-price { font-size: 28px; }
     }
+    body[data-lang="ja"] .lang-en { display: none; }
+    body[data-lang="en"] .lang-ja { display: none; }
+    .lang-toggle { display:flex; gap:8px; align-items:center; margin-left:20px; }
+    .lang-toggle button {
+      font-family: var(--mono); font-size:11px; letter-spacing:0.1em;
+      background:none; border:1px solid var(--rule-strong); border-radius:3px;
+      padding:2px 8px; cursor:pointer; color:var(--ink-3);
+    }
+    .lang-toggle button.active { border-color:var(--ink); color:var(--ink); }
   </style>
 </head>
 <body>
@@ -241,26 +250,30 @@
       <a href="/terms.html">Terms</a>
       <a href="/privacy.html">Privacy</a>
       <a href="/refund.html">Refund</a>
+      <div class="lang-toggle" id="lang-toggle">
+        <button id="btn-lang-en">EN</button>
+        <button id="btn-lang-ja">JA</button>
+      </div>
     </nav>
   </header>
 
   <main>
-    <div class="eyebrow">Plans &amp; Pricing</div>
-    <h1>Simple, honest pricing.</h1>
-    <p class="lead">ONE EIGHT is free to play. A membership unlocks competitive features — ranked games, tournament entry, and more as we grow.</p>
+    <div class="eyebrow"><span class="lang-en">Plans &amp; Pricing</span><span class="lang-ja">プラン・料金</span></div>
+    <h1><span class="lang-en">Simple, honest pricing.</span><span class="lang-ja">シンプルで明確な料金体系。</span></h1>
+    <p class="lead"><span class="lang-en">ONE EIGHT is free to play. A membership unlocks competitive features — ranked games, tournament entry, and more as we grow.</span><span class="lang-ja">ONE EIGHT は無料でプレイできます。メンバーシップに登録すると、ランク戦、大会エントリーなど、競技機能がアンロックされます。</span></p>
 
     <!-- Free Plan -->
     <div class="plan-card">
-      <span class="free-tag">Free</span>
+      <span class="free-tag"><span class="lang-en">Free</span><span class="lang-ja">無料</span></span>
       <div class="plan-name">Casual</div>
       <div class="plan-price">$0</div>
-      <div class="plan-price-note">No credit card required</div>
+      <div class="plan-price-note"><span class="lang-en">No credit card required</span><span class="lang-ja">クレジットカード不要</span></div>
       <ul class="plan-features">
-        <li>Full access to local play (Human vs Human)</li>
-        <li>Play against the CPU at all difficulty levels</li>
-        <li>Online friend matches via private room codes</li>
-        <li>Game history and basic stats</li>
-        <li>Tutorial and in-game rules</li>
+        <li><span class="lang-en">Full access to local play (Human vs Human)</span><span class="lang-ja">ローカル対戦（人間 vs 人間）フルアクセス</span></li>
+        <li><span class="lang-en">Play against the CPU at all difficulty levels</span><span class="lang-ja">全難易度で CPU 対戦可能</span></li>
+        <li><span class="lang-en">Online friend matches via private room codes</span><span class="lang-ja">プライベートコードでオンライン友人対戦</span></li>
+        <li><span class="lang-en">Game history and basic stats</span><span class="lang-ja">対局履歴と基本統計</span></li>
+        <li><span class="lang-en">Tutorial and in-game rules</span><span class="lang-ja">チュートリアルとゲーム内ルール</span></li>
       </ul>
     </div>
 
@@ -268,31 +281,31 @@
     <div class="plan-card">
       <div class="plan-name">Member</div>
       <div class="plan-price">$14.99 <span style="font-size:16px;color:var(--ink-3)">/mo</span></div>
-      <div class="plan-price-note">Billed monthly · Cancel anytime</div>
+      <div class="plan-price-note"><span class="lang-en">Billed monthly · Cancel anytime</span><span class="lang-ja">月額請求・いつでもキャンセル可</span></div>
       <ul class="plan-features">
-        <li>Everything in Casual</li>
-        <li>Ranked matches with rating system</li>
-        <li>Domestic and season leaderboards</li>
-        <li>Competition entry (with official key)</li>
-        <li>Priority access to new competitive features</li>
+        <li><span class="lang-en">Everything in Casual</span><span class="lang-ja">Casual の全機能</span></li>
+        <li><span class="lang-en">Ranked matches with rating system</span><span class="lang-ja">レーティングシステム付きランク戦</span></li>
+        <li><span class="lang-en">Domestic and season leaderboards</span><span class="lang-ja">国内・シーズンリーダーボード</span></li>
+        <li><span class="lang-en">Competition entry (with official key)</span><span class="lang-ja">大会エントリー（公式キーが必要）</span></li>
+        <li><span class="lang-en">Priority access to new competitive features</span><span class="lang-ja">新競技機能への優先アクセス</span></li>
       </ul>
-      <button class="btn-subscribe" id="btn-subscribe-member">Subscribe — $14.99 / mo</button>
+      <button class="btn-subscribe" id="btn-subscribe-member"><span class="lang-en">Subscribe — $14.99 / mo</span><span class="lang-ja">登録する — $14.99 / 月</span></button>
       <p class="already-pro" id="already-pro-msg" style="display:none"></p>
       <div class="cancel-section" id="cancel-section" style="display:none">
-        <p>Manage or cancel your subscription through Paddle,<br>our payment provider and merchant of record.</p>
-        <a class="btn-paddle-link" href="https://paddle.net" target="_blank" rel="noopener noreferrer">Manage Subscription at Paddle</a>
+        <p><span class="lang-en">Manage or cancel your subscription through Paddle,<br>our payment provider and merchant of record.</span><span class="lang-ja">Paddle（当サービスの決済代行・merchant of record）でサブスクリプションを管理・キャンセルできます。</span></p>
+        <a class="btn-paddle-link" href="https://paddle.net" target="_blank" rel="noopener noreferrer"><span class="lang-en">Manage Subscription at Paddle</span><span class="lang-ja">Paddle でサブスクリプションを管理</span></a>
       </div>
     </div>
 
-    <p class="note">Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.</p>
+    <p class="note"><span class="lang-en">Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.</span><span class="lang-ja">価格は米ドル表示です。競技機能は開発中のため、今後追加・変更される場合があります。有料プランの価格変更は事前にお知らせします。</span></p>
   </main>
 
   <footer>
     <a href="/">Home</a>
     <a href="/pricing.html">Pricing</a>
-    <a href="/terms.html">Terms of Service</a>
-    <a href="/privacy.html">Privacy Policy</a>
-    <a href="/refund.html">Refund Policy</a>
+    <a href="/terms.html"><span class="lang-en">Terms of Service</span><span class="lang-ja">利用規約</span></a>
+    <a href="/privacy.html"><span class="lang-en">Privacy Policy</span><span class="lang-ja">プライバシーポリシー</span></a>
+    <a href="/refund.html"><span class="lang-en">Refund Policy</span><span class="lang-ja">返金ポリシー</span></a>
     <a href="mailto:contact@oneeightgame.com">Contact</a>
   </footer>
   <script type="module">
@@ -336,11 +349,19 @@
         btn.disabled = true;
         btn.style.display = 'none';
         msg.style.display = 'block';
+        const lang = document.body.dataset.lang || 'en';
         if (profile.current_period_end) {
-          const d = new Date(profile.current_period_end).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-          msg.textContent = 'You are already Pro — renews ' + d;
+          const d = new Date(profile.current_period_end).toLocaleDateString(
+            lang === 'ja' ? 'ja-JP' : 'en-US',
+            { year: 'numeric', month: 'long', day: 'numeric' }
+          );
+          msg.innerHTML =
+            '<span class="lang-en">You are already Pro — renews ' + d + '</span>' +
+            '<span class="lang-ja">すでに Pro です — 更新日: ' + d + '</span>';
         } else {
-          msg.textContent = 'You are already Pro.';
+          msg.innerHTML =
+            '<span class="lang-en">You are already Pro.</span>' +
+            '<span class="lang-ja">すでに Pro です。</span>';
         }
         cancelSection.style.display = 'block';
       }
@@ -367,5 +388,6 @@
       });
     });
   </script>
+  <script src="/legal-i18n.js"></script>
 </body>
 </html>
