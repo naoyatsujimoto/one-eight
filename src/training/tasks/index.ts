@@ -4,6 +4,7 @@ import { T2_CAPTURE_BUILD } from './T2_capture_build';
 import { T7_DIAGONAL_GATES } from './T7_diagonal_gates';
 import { T4_PARTIAL_BUILD } from './T4_partial_build';
 import { T6_ASSET_VALUES } from './T6_asset_values';
+import { T5_CAPTURE_TIE } from './T5_capture_tie';
 
 export interface TrainingTaskMeta {
   task: TrainingTask;
@@ -47,6 +48,12 @@ export const TRAINING_TASK_META: TrainingTaskMeta[] = [
     titleKey: 'trainingT6Title',
     prerequisite: 'T4_partial_build',
   },
+  {
+    task: T5_CAPTURE_TIE,
+    order: 6,
+    titleKey: 'trainingT5Title',
+    prerequisite: 'T6_asset_values',
+  },
 ];
 
 export const TRAINING_TASKS: TrainingTask[] = [
@@ -55,5 +62,6 @@ export const TRAINING_TASKS: TrainingTask[] = [
   T7_DIAGONAL_GATES,
   T4_PARTIAL_BUILD,
   T6_ASSET_VALUES,
+  T5_CAPTURE_TIE,
 ];
-export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES };
+export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE };

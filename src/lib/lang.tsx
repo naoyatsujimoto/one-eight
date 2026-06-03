@@ -113,6 +113,11 @@ export const T = {
     trainingT6Step1: 'Select Position J. Apply Massive Build to Gate 5. A Large Asset (64) dominates any combination of Middle (8) or Small (1) assets.',
     trainingT6Complete: 'Asset Values Complete',
     trainingT6Desc: 'Learn that Small=1, Middle=8, Large=64. One Large Asset outweighs eight Middle Assets.',
+    trainingT5Title: 'Capture Tie',
+    trainingT5Step1: 'Position K is owned by White. Gate 4 (Black) and Gate 9 (White) are tied — capture is blocked. Select Position K and apply Massive Build to Gate 10 to break the tie.',
+    trainingT5Complete: 'Capture Tie Complete',
+    trainingT5Desc: 'Learn that a tie in most-built Gates blocks capture. Build to break the tie.',
+    trainingT5TieExplanation: 'Tied Gates block capture. Build to gain dominance.',
 
     selectMode: 'Select Mode',
     cancel: 'Cancel',
@@ -396,6 +401,11 @@ export const T = {
     trainingT6Step1: 'ポジション J を選んでください。ゲート 5 に Massive Build を行ってください。Large Asset (64) は Middle (8) や Small (1) のどんな組み合わせよりも強い支配力を持ちます。',
     trainingT6Complete: 'Asset Values 完了',
     trainingT6Desc: 'Small=1、Middle=8、Large=64。Large 1つで Middle 8つ分の価力をもつ。',
+    trainingT5Title: 'Capture Tie',
+    trainingT5Step1: 'ポジション K は White が所有しています。ゲート 4（Black）とゲート 9（White）が同点のため奪取できません。ポジション K を選び、ゲート 10 に Massive Build を行って同点を打破してください。',
+    trainingT5Complete: 'Capture Tie 完了',
+    trainingT5Desc: '同点では奪取できない。Build で優勢を作ることを学ぶ。',
+    trainingT5TieExplanation: '同点の Gate があると奪取できません。Build で支配を確立してください。',
 
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
@@ -645,6 +655,11 @@ export type Translations = {
   trainingT7Step1: string;
   trainingT7Complete: string;
   trainingT7Desc: string;
+  trainingT5Title: string;
+  trainingT5Step1: string;
+  trainingT5Complete: string;
+  trainingT5Desc: string;
+  trainingT5TieExplanation: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;
