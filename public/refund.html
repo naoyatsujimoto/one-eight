@@ -105,6 +105,21 @@
     }
     .contact-box p { margin: 0; }
     .contact-box a { color: var(--ink); }
+    .btn-paddle-link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 20px;
+      border: 1px solid var(--rule-strong);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-paddle-link:hover { border-color: var(--ink); color: var(--ink); }
     footer {
       border-top: 1px solid var(--rule);
       padding: 24px 32px;
@@ -154,11 +169,13 @@
     <p>We offer a minimum 14-day refund window for all purchases. Customers may request a refund within 14 days of purchase. We provide this 14-day refund window with no exceptions or additional conditions.</p>
 
     <h2>How to Request a Refund</h2>
-    <p>To request a refund, please contact our support team within 14 days of your purchase with your account email and order details. We aim to process all refund requests promptly.</p>
+    <p>Refund requests are handled by Paddle, our payment provider and merchant of record. Refund availability depends on Paddle's policy and your purchase status.</p>
+    <p>To request a refund, please contact Paddle directly through their support page.</p>
+    <a class="btn-paddle-link" href="https://paddle.net/contact" target="_blank" rel="noopener noreferrer">Request Refund at Paddle</a>
 
-    <div class="contact-box">
-      <p>Email: <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a><br />
-      We aim to respond within 2 business days.</p>
+    <div class="contact-box" style="margin-top: 40px;">
+      <p>For general inquiries, you may also reach us at:<br />
+      <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a></p>
     </div>
   </main>
 

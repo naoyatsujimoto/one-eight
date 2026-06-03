@@ -174,6 +174,32 @@
       color: var(--ink-3);
       margin-top: 10px;
     }
+    .cancel-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--rule);
+      text-align: center;
+    }
+    .cancel-section p {
+      font-size: 13px;
+      color: var(--ink-3);
+      margin: 0 0 12px;
+      line-height: 1.6;
+    }
+    .btn-paddle-link {
+      display: inline-block;
+      padding: 10px 20px;
+      border: 1px solid var(--rule-strong);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-paddle-link:hover { border-color: var(--ink); color: var(--ink); }
     .note {
       font-size: 13px;
       color: var(--ink-3);
@@ -252,6 +278,10 @@
       </ul>
       <button class="btn-subscribe" id="btn-subscribe-member">Subscribe — $14.99 / mo</button>
       <p class="already-pro" id="already-pro-msg" style="display:none"></p>
+      <div class="cancel-section" id="cancel-section" style="display:none">
+        <p>Manage or cancel your subscription through Paddle,<br>our payment provider and merchant of record.</p>
+        <a class="btn-paddle-link" href="https://paddle.net" target="_blank" rel="noopener noreferrer">Manage Subscription at Paddle</a>
+      </div>
     </div>
 
     <p class="note">Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.</p>
@@ -302,6 +332,7 @@
       if (profile && isProActive(profile)) {
         const btn = document.getElementById('btn-subscribe-member');
         const msg = document.getElementById('already-pro-msg');
+        const cancelSection = document.getElementById('cancel-section');
         btn.disabled = true;
         btn.style.display = 'none';
         msg.style.display = 'block';
@@ -311,6 +342,7 @@
         } else {
           msg.textContent = 'You are already Pro.';
         }
+        cancelSection.style.display = 'block';
       }
     })();
 
