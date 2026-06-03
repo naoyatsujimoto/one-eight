@@ -719,16 +719,32 @@ const LangContext = createContext<LangContextValue>({
   t: T.en as unknown as Translations,
 });
 
+const LANG_LS_KEY = 'one8_lang';
+const SUPPORTED_LANGS: Lang[] = ['en', 'ja'];
+
+function readLangFromStorage(): Lang {
+  try {
+    const stored = localStorage.getItem(LANG_LS_KEY);
+    if (stored && (SUPPORTED_LANGS as string[]).includes(stored)) return stored as Lang;
+  } catch { /* noop */ }
+  return 'en';
+}
+
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('en');
+  const [lang, setLangState] = useState<Lang>(readLangFromStorage);
   const [userId, setUserId] = useState<string | null>(null);
+
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l);
+    try { localStorage.setItem(LANG_LS_KEY, l); } catch { /* noop */ }
+  }, []);
 
   const setLangWithSync = useCallback((l: Lang) => {
     setLang(l);
     if (userId) {
       upsertProfile(userId, { lang: l }).catch(() => {/* silent */});
     }
-  }, [userId]);
+  }, [userId, setLang]);
 
   return (
     <LangContext.Provider value={{ lang, setLang, setLangWithSync, setUserId, t: T[lang] as unknown as Translations }}>
