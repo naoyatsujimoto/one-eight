@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { T1_BUILD_BASICS } from '../training/tasks/T1_build_basics';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
-import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuild } from '../game/engine';
+import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuild, applyQuadBuildForGates } from '../game/engine';
 
 describe('T1 Build Basics — initial state', () => {
   it('trainingMode is true, currentPlayer is black, moveNumber is 1', () => {
@@ -115,7 +115,7 @@ describe('applyFixedCpuMove — K,m(4)', () => {
 });
 
 describe('validateMove — quad', () => {
-  it('A,q is correct', () => {
+  function setupBeforeA() {
     let state = T1_BUILD_BASICS.initialState;
     state = selectPosition(state, 'G');
     state = applyMassiveBuild(state, 7);
@@ -124,9 +124,30 @@ describe('validateMove — quad', () => {
     state = applySelectiveBuild(state, [6, 8]);
     state = applyFixedCpuMove(state, { positioning: 'L', build: { type: 'massive', gate: 9 } });
     state = selectPosition(state, 'A');
+    return state;
+  }
+
+  it('A,q with all 4 connected gates [1,2,7,12] is correct', () => {
+    const state = setupBeforeA();
     const next = applyQuadBuild(state);
     const record = next.history[next.history.length - 1];
     expect(record).toBeDefined();
-    expect(validateMove(record!, { positioning: 'A', build: { type: 'quad' } })).toBe(true);
+    expect(validateMove(record!, { positioning: 'A', build: { type: 'quad', minGates: 4 } })).toBe(true);
+  });
+
+  it('A,q with only 1 gate selected is incorrect', () => {
+    const state = setupBeforeA();
+    const next = applyQuadBuildForGates(state, [1]);
+    const record = next.history[next.history.length - 1];
+    expect(record).toBeDefined();
+    expect(validateMove(record!, { positioning: 'A', build: { type: 'quad', minGates: 4 } })).toBe(false);
+  });
+
+  it('A,q with only 3 gates selected is incorrect', () => {
+    const state = setupBeforeA();
+    const next = applyQuadBuildForGates(state, [1, 2, 7]);
+    const record = next.history[next.history.length - 1];
+    expect(record).toBeDefined();
+    expect(validateMove(record!, { positioning: 'A', build: { type: 'quad', minGates: 4 } })).toBe(false);
   });
 });

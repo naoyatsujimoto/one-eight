@@ -25,7 +25,7 @@ export const T1_BUILD_BASICS: TrainingTask = {
     },
     {
       kind: 'user_move',
-      expected: { positioning: 'A', build: { type: 'quad' } },
+      expected: { positioning: 'A', build: { type: 'quad', minGates: 4 } },
       labelKey: 'trainingT1Step5',
     },
   ],

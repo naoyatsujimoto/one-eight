@@ -5,7 +5,7 @@ export type TrainingTaskId = 'T1_build_basics';
 export type ExpectedMove =
   | { positioning: PositionId; build: { type: 'massive'; gate: GateId } }
   | { positioning: PositionId; build: { type: 'selective'; gates: [GateId, GateId] } }
-  | { positioning: PositionId; build: { type: 'quad' } };
+  | { positioning: PositionId; build: { type: 'quad'; minGates?: number } };
 
 export type FixedCpuMove =
   | { positioning: PositionId; build: { type: 'massive'; gate: GateId } }
@@ -32,4 +32,5 @@ export interface TrainingSession {
   status: 'playing' | 'complete';
   feedback: string | null;
   selectiveFirst: GateId | null;
+  quadSelected: GateId[];
 }

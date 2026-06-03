@@ -28,7 +28,10 @@ export function validateMove(record: MoveRecord, expected: ExpectedMove): boolea
   }
 
   if (expected.build.type === 'quad') {
-    return record.build.type === 'quad';
+    if (record.build.type !== 'quad') return false;
+    const min = expected.build.minGates;
+    if (min !== undefined && record.build.placedGateIds.length < min) return false;
+    return true;
   }
 
   return false;

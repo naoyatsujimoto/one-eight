@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Board } from './Board';
-import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuild } from '../game/engine';
+import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from '../game/engine';
+import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
@@ -29,6 +30,7 @@ function makeInitialSession(): TrainingSession {
     status: 'playing',
     feedback: null,
     selectiveFirst: null,
+    quadSelected: [],
   };
 }
 
@@ -173,23 +175,46 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       if (prev.status !== 'playing') return prev;
       const step = prev.task.steps[prev.stepIndex];
       if (!step || step.kind !== 'user_move') return prev;
-      if (!prev.gameState.selectedPosition) return prev;
+      const pos = prev.gameState.selectedPosition;
+      if (!pos) return prev;
       if (step.expected.build.type !== 'quad') return prev;
 
-      // Any small pocket click in quad mode triggers the full quad build
-      const nextState = applyQuadBuild(prev.gameState);
-      const lastRecord = nextState.history[nextState.history.length - 1];
-      if (!lastRecord) return prev;
+      const connectedGates = POSITION_TO_GATES[pos];
+      const quadMax = connectedGates.length;
 
-      const expected = step.expected;
-      if (validateMove(lastRecord, expected)) {
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-        setBuildState(EMPTY_BUILD);
-        return advanced;
-      } else {
-        setBuildState(EMPTY_BUILD);
-        return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
+      // Only allow connected gates
+      if (!connectedGates.includes(gateId)) return prev;
+
+      // Toggle selection
+      const current = prev.quadSelected;
+      let next: GateId[];
+      if (current.includes(gateId)) {
+        next = current.filter((id) => id !== gateId);
+        setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
+        return { ...prev, quadSelected: next };
       }
+      next = [...current, gateId] as GateId[];
+
+      if (next.length >= quadMax) {
+        // All gates selected — apply build and validate
+        const nextState = applyQuadBuildForGates(prev.gameState, next);
+        const lastRecord = nextState.history[nextState.history.length - 1];
+        if (!lastRecord) return prev;
+
+        const expected = step.expected;
+        if (validateMove(lastRecord, expected)) {
+          const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
+          setBuildState(EMPTY_BUILD);
+          return advanced;
+        } else {
+          setBuildState(EMPTY_BUILD);
+          return { ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
+        }
+      }
+
+      // Accumulate — not all gates selected yet
+      setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
+      return { ...prev, quadSelected: next, feedback: null };
     });
   }, [t]);
 
@@ -249,6 +274,7 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       ...prev,
       gameState: prev.snapshot,
       selectiveFirst: null,
+      quadSelected: [],
       feedback: null,
     }));
     setBuildState(EMPTY_BUILD);
