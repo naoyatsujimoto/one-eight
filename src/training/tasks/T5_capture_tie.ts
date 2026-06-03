@@ -15,17 +15,28 @@ import type { TrainingTask } from '../types';
  *   Gate 10: empty
  *   Gate 11: empty
  *   Position K: owned by White
+ *   Position C: owner=null (connects to Gates 3, 4, 5, 10)
  *
  * Tie check:
  *   mostBuilt = Gates with max total value = 64 → [Gate 4, Gate 9]
  *   Gate 4: compareGateDominance(black) = 'player'    → playerWins = 1
  *   Gate 9: compareGateDominance(black) = 'opponent'  → opponentWins = 1
- *   playerWins (1) === opponentWins (1) → canCapturePosition = false
+ *   playerWins (1) === opponentWins (1) → canCapturePosition(black, K) = false
  *
- * Expected move: Position K + Massive Build on Gate 10
- *   Placing Large(64) into Gate 10 makes Black's Gate 10 value = 64,
- *   which creates a new tied most-built Gate dominated by Black.
- *   After this build, the next turn Black can capture Position K.
+ * Why Black cannot select K directly:
+ *   K is owned by White and canCapturePosition(black, K) = false (tied),
+ *   so K is NOT in getSelectablePositions for Black.
+ *   Black must first use another selectable Position to build on Gate 10.
+ *
+ * Expected move: Position C + Massive Build on Gate 10
+ *   Black selects Position C (owner=null, always selectable).
+ *   Placing Large(64) into Gate 10 raises Gate 10 total to 64.
+ *   Now mostBuilt = [Gate 4, Gate 9, Gate 10] (all total 64).
+ *   Gate 4: Black wins → playerWins = 1
+ *   Gate 9: White wins → opponentWins = 1
+ *   Gate 10: Black wins (64 vs 0) → playerWins = 2
+ *   playerWins (2) > opponentWins (1) → canCapturePosition(black, K) = true
+ *   After this move, Black can capture Position K on the next turn.
  */
 function buildT5InitialState() {
   const base = createInitialState('white');
@@ -76,10 +87,10 @@ export const T5_CAPTURE_TIE: TrainingTask = {
   steps: [
     {
       kind: 'user_move',
-      // Position K connects to Gates [4, 9, 10, 11].
-      // Gate 4 (Black Large) and Gate 9 (White Large) are tied as most-built.
-      // Capture is blocked by the tie. Build Gate 10 with Massive to break it.
-      expected: { positioning: 'K', build: { type: 'massive', gate: 10 } },
+      // Position K is NOT selectable for Black (White owns it, capture blocked by tie).
+      // Black selects Position C (owner=null) and does Massive Build on Gate 10.
+      // Gate 10 connects to both C and K, so this build breaks the tie for K capture.
+      expected: { positioning: 'C', build: { type: 'massive', gate: 10 } },
       labelKey: 'trainingT5Step1',
     },
   ],
