@@ -1,14 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Board } from './Board';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from '../game/engine';
 import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
-import { T1_BUILD_BASICS, T2_CAPTURE_BUILD } from '../training/tasks/index';
+import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, TRAINING_TASK_META } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
-import { saveTrainingProgress } from '../training/trainingProgress';
+import { saveTrainingProgress, isTaskCompleted } from '../training/trainingProgress';
+import type { TrainingTaskId } from '../training/trainingProgress';
 import type { TrainingSession, TrainingTask } from '../training/types';
 
 const EMPTY_BUILD: BoardBuildState = {
@@ -33,14 +34,35 @@ function makeSession(task: TrainingTask): TrainingSession {
   };
 }
 
+type ViewMode = 'intro' | 'task';
+
 interface TrainingViewProps {
   onExit: () => void;
 }
 
 export function TrainingView({ onExit }: TrainingViewProps) {
   const { t } = useLang();
+  const [mode, setMode] = useState<ViewMode>('intro');
   const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
+
+  // Completion state loaded from localStorage
+  const [completedTasks, setCompletedTasks] = useState<Set<TrainingTaskId>>(() => {
+    const set = new Set<TrainingTaskId>();
+    if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
+    if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
+    return set;
+  });
+
+  // Re-read completion state whenever we return to intro
+  useEffect(() => {
+    if (mode === 'intro') {
+      const set = new Set<TrainingTaskId>();
+      if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
+      if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
+      setCompletedTasks(set);
+    }
+  }, [mode]);
 
   const currentStep = session.task.steps[session.stepIndex];
 
@@ -50,8 +72,17 @@ export function TrainingView({ onExit }: TrainingViewProps) {
     while (s.status === 'playing') {
       const step = s.task.steps[s.stepIndex];
       if (!step) {
-        // all steps done
-        saveTrainingProgress(null as unknown as string, { taskId: s.task.id, completedAt: new Date().toISOString() });
+        // all steps done — save progress
+        const taskId = s.task.id as TrainingTaskId;
+        const newBest = s.attemptCount;
+        saveTrainingProgress(null as unknown as string, {
+          taskId,
+          completedAt: new Date().toISOString(),
+          attemptCount: s.attemptCount,
+          bestAttemptCount: newBest,
+          lastCompletedStep: s.task.steps.filter((st) => st.kind === 'user_move').length,
+        });
+        setCompletedTasks((prev) => new Set([...prev, taskId]));
         return { ...s, status: 'complete', feedback: null };
       }
       if (step.kind !== 'cpu_fixed_move') break;
@@ -66,6 +97,16 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       };
     }
     return s;
+  }
+
+  function startTask(task: TrainingTask) {
+    setSession(makeSession(task));
+    setBuildState(EMPTY_BUILD);
+    setMode('task');
+  }
+
+  function handleBackToIntro() {
+    setMode('intro');
   }
 
   const handleSelectPosition = useCallback((positionId: PositionId) => {
@@ -148,11 +189,9 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       if (!step || step.kind !== 'user_move') return prev;
       if (!prev.gameState.selectedPosition) return prev;
       if (prev.selectiveFirst !== null) {
-        // in selective flow — delegate to selective handler (handled above)
         return prev;
       }
 
-      // Try massive build on middle pocket
       const nextState = applyMassiveBuild(prev.gameState, gateId);
       const lastRecord = nextState.history[nextState.history.length - 1];
       if (!lastRecord) return prev;
@@ -181,10 +220,8 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       const connectedGates = POSITION_TO_GATES[pos];
       const quadMax = connectedGates.length;
 
-      // Only allow connected gates
       if (!connectedGates.includes(gateId)) return prev;
 
-      // Toggle selection
       const current = prev.quadSelected;
       let next: GateId[];
       if (current.includes(gateId)) {
@@ -195,7 +232,6 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       next = [...current, gateId] as GateId[];
 
       if (next.length >= quadMax) {
-        // All gates selected — apply build and validate
         const nextState = applyQuadBuildForGates(prev.gameState, next);
         const lastRecord = nextState.history[nextState.history.length - 1];
         if (!lastRecord) return prev;
@@ -211,13 +247,11 @@ export function TrainingView({ onExit }: TrainingViewProps) {
         }
       }
 
-      // Accumulate — not all gates selected yet
       setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
       return { ...prev, quadSelected: next, feedback: null };
     });
   }, [t]);
 
-  // Combined middle pocket handler: routes to selective or massive
   const handleMiddleOrSelective = useCallback((gateId: GateId) => {
     setSession((prev) => {
       if (prev.status !== 'playing') return prev;
@@ -226,7 +260,6 @@ export function TrainingView({ onExit }: TrainingViewProps) {
       if (!prev.gameState.selectedPosition) return prev;
 
       if (prev.selectiveFirst !== null) {
-        // second selective pick
         if (prev.selectiveFirst === gateId) {
           setBuildState(EMPTY_BUILD);
           return { ...prev, selectiveFirst: null, feedback: null };
@@ -246,13 +279,11 @@ export function TrainingView({ onExit }: TrainingViewProps) {
         }
       }
 
-      // first click: check if expected is selective
       if (step.expected.build.type === 'selective') {
         setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
         return { ...prev, selectiveFirst: gateId, feedback: null };
       }
 
-      // massive
       const nextState = applyMassiveBuild(prev.gameState, gateId);
       const lastRecord = nextState.history[nextState.history.length - 1];
       if (!lastRecord) return prev;
@@ -285,20 +316,105 @@ export function TrainingView({ onExit }: TrainingViewProps) {
   }
 
   function handleNextTraining() {
-    // T1 complete -> T2
+    // T1 complete -> go to intro, T2 will appear as available
     if (session.task.id === 'T1_build_basics') {
-      setSession(makeSession(T2_CAPTURE_BUILD));
-      setBuildState(EMPTY_BUILD);
+      setMode('intro');
     }
   }
 
-  // Task-specific complete title
+  // ── Intro screen ─────────────────────────────────────────────────────────
+  if (mode === 'intro') {
+    return (
+      <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
+          <button type="button" className="mode-modal-cancel" onClick={onExit} style={{ margin: 0 }}>
+            {t.trainingBackToMenu}
+          </button>
+          <div style={{ flex: 1 }}>
+            <div className="result-eyebrow">{t.trainingTitle}</div>
+            <div style={{ fontWeight: 700, fontSize: '15px' }}>{t.trainingIntroSubtitle}</div>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div style={{ padding: '16px', background: '#faf7f4', borderBottom: '1px solid #e8e0d8' }}>
+          <div style={{ fontSize: '14px', color: '#555' }}>{t.trainingIntroDesc}</div>
+        </div>
+
+        {/* Task list */}
+        <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {TRAINING_TASK_META.map((meta) => {
+            const taskId = meta.task.id as TrainingTaskId;
+            const isCompleted = completedTasks.has(taskId);
+            const prerequisite = meta.prerequisite as TrainingTaskId | null;
+            const isLocked = prerequisite !== null && !completedTasks.has(prerequisite);
+            const statusLabel = isCompleted
+              ? t.trainingTaskStatusComplete
+              : isLocked
+              ? t.trainingTaskStatusLocked
+              : t.trainingTaskStatusAvailable;
+
+            const descKey = taskId === 'T1_build_basics' ? 'trainingT1Desc' : 'trainingT2Desc';
+            const descText = (t as Record<string, unknown>)[descKey] as string | undefined;
+
+            return (
+              <div
+                key={taskId}
+                style={{
+                  border: '1px solid #e8e0d8',
+                  borderRadius: '8px',
+                  padding: '14px 16px',
+                  background: isLocked ? '#f7f4f0' : '#ffffff',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: isLocked ? '#aaa' : '#222' }}>
+                    {meta.order === 1 ? 'T1' : 'T2'} — {(t as Record<string, unknown>)[meta.titleKey] as string}
+                  </div>
+                  <div style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: isCompleted ? '#4a7c4a' : isLocked ? '#aaa' : '#7a6a3a',
+                    padding: '2px 8px',
+                    border: `1px solid ${isCompleted ? '#4a7c4a' : isLocked ? '#ccc' : '#c0a060'}`,
+                    borderRadius: '4px',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {statusLabel}
+                  </div>
+                </div>
+                {descText && (
+                  <div style={{ fontSize: '13px', color: isLocked ? '#bbb' : '#666', marginBottom: '10px' }}>
+                    {descText}
+                  </div>
+                )}
+                {isLocked ? (
+                  <div style={{ fontSize: '12px', color: '#aaa' }}>{t.trainingLockedMessage}</div>
+                ) : (
+                  <button
+                    type="button"
+                    className="result-btn result-btn-primary"
+                    style={{ marginTop: '4px' }}
+                    onClick={() => startTask(meta.task)}
+                  >
+                    {isCompleted ? t.trainingReplay : t.trainingStart}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Task screen ───────────────────────────────────────────────────────────
   const completeTitle: string = (() => {
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
     return t.trainingCompleteTitle;
   })();
 
-  // Step label for current user step
   const stepLabel: string = (() => {
     if (session.status === 'complete') return completeTitle;
     if (!currentStep || currentStep.kind !== 'user_move') return '';
@@ -306,7 +422,6 @@ export function TrainingView({ onExit }: TrainingViewProps) {
     return (t[key] as string) ?? currentStep.labelKey;
   })();
 
-  // Step number (1-indexed among user_move steps)
   const userStepNum = session.task.steps
     .slice(0, session.stepIndex + 1)
     .filter((s) => s.kind === 'user_move').length;
@@ -316,8 +431,8 @@ export function TrainingView({ onExit }: TrainingViewProps) {
     <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
-        <button type="button" className="mode-modal-cancel" onClick={onExit} style={{ margin: 0 }}>
-          {t.trainingBackToMenu}
+        <button type="button" className="mode-modal-cancel" onClick={handleBackToIntro} style={{ margin: 0 }}>
+          {t.trainingBackToIntro}
         </button>
         <div style={{ flex: 1 }}>
           <div className="result-eyebrow">{t.trainingTitle}</div>
@@ -371,7 +486,10 @@ export function TrainingView({ onExit }: TrainingViewProps) {
               </button>
             )}
             <button type="button" className="result-btn" onClick={handleRestart}>
-              Restart
+              {t.trainingReplay}
+            </button>
+            <button type="button" className="result-btn" onClick={handleBackToIntro}>
+              {t.trainingBackToIntro}
             </button>
           </>
         ) : (

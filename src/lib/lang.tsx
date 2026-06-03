@@ -90,6 +90,18 @@ export const T = {
     trainingNextTraining: 'Next Training',
     trainingRestartStep: 'Restart Step',
     trainingBackToMenu: 'Back',
+    trainingBackToIntro: 'Back to Training List',
+    trainingIntroSubtitle: 'Recorde Training',
+    trainingIntroDesc: 'Learn ONE EIGHT step by step.',
+    trainingTaskStatusAvailable: 'Available',
+    trainingTaskStatusComplete: 'Complete',
+    trainingTaskStatusLocked: 'Locked',
+    trainingStart: 'Start',
+    trainingReplay: 'Replay',
+    trainingLockedMessage: 'Complete the previous task to unlock.',
+    trainingT1Desc: 'Learn Massive, Selective, and Quad builds.',
+    trainingT2Desc: 'Learn how to capture and build.',
+
     selectMode: 'Select Mode',
     cancel: 'Cancel',
     cpuSettings: 'CPU Settings',
@@ -349,6 +361,18 @@ export const T = {
     trainingNextTraining: '次のトレーニングへ',
     trainingRestartStep: 'このステップをやり直す',
     trainingBackToMenu: '戻る',
+    trainingBackToIntro: 'トレーニング一覧に戻る',
+    trainingIntroSubtitle: 'Recorde Training',
+    trainingIntroDesc: 'ONE EIGHT をステップごとに学ぼう。',
+    trainingTaskStatusAvailable: 'Available',
+    trainingTaskStatusComplete: 'Complete',
+    trainingTaskStatusLocked: 'Locked',
+    trainingStart: 'Start',
+    trainingReplay: 'Replay',
+    trainingLockedMessage: '前のタスクを完了するとアンロックされます。',
+    trainingT1Desc: 'Massive、Selective、Quad の Build を学ぶ。',
+    trainingT2Desc: 'Capture して Build する方法を学ぶ。',
+
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
     cpuSettings: 'CPU 設定',
@@ -582,6 +606,17 @@ export type Translations = {
   trainingNextTraining: string;
   trainingRestartStep: string;
   trainingBackToMenu: string;
+  trainingBackToIntro: string;
+  trainingIntroSubtitle: string;
+  trainingIntroDesc: string;
+  trainingTaskStatusAvailable: string;
+  trainingTaskStatusComplete: string;
+  trainingTaskStatusLocked: string;
+  trainingStart: string;
+  trainingReplay: string;
+  trainingLockedMessage: string;
+  trainingT1Desc: string;
+  trainingT2Desc: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;
