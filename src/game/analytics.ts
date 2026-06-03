@@ -97,6 +97,7 @@ function isWin(record: GameRecord, key: 'human' | 'cpu'): boolean {
 
 /** ゲーム終了時に呼び出す。Human vs CPU / Human vs Human 両方を保存する。 */
 export function saveGameRecord(state: GameState, cpuDifficulty?: string | null): GameRecord | null {
+  if (state.trainingMode) return null;
   if (!state.gameEnded) return null;
 
   const now = new Date().toISOString();

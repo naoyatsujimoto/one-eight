@@ -76,6 +76,15 @@ export const T = {
     trainingTitle: 'TRAINING',
     trainingRecordeTitle: 'Recorde Training',
     trainingPlaceholderMsg: 'Training mode is in development.',
+    trainingT1Title: 'Build Basics',
+    trainingT1Step1: 'Select position G. Apply Massive Build to Gate 7.',
+    trainingT1Step3: 'Select position M. Apply Selective Build to Gates 6 and 8.',
+    trainingT1Step5: 'Select position A. Apply Quad Build.',
+    trainingFeedbackWrong: 'That is not the correct move. Try again.',
+    trainingFeedbackCleared: 'Correct.',
+    trainingCompleteTitle: 'Build Basics Complete',
+    trainingRestartStep: 'Restart Step',
+    trainingBackToMenu: 'Back',
     selectMode: 'Select Mode',
     cancel: 'Cancel',
     cpuSettings: 'CPU Settings',
@@ -321,6 +330,15 @@ export const T = {
     trainingTitle: 'TRAINING',
     trainingRecordeTitle: 'Recorde Training',
     trainingPlaceholderMsg: 'トレーニングモードは開発中です。',
+    trainingT1Title: 'Build Basics',
+    trainingT1Step1: 'ポジション G を選び、ゲート 7 に Massive Build を行ってください。',
+    trainingT1Step3: 'ポジション M を選び、ゲート 6 と 8 に Selective Build を行ってください。',
+    trainingT1Step5: 'ポジション A を選び、Quad Build を行ってください。',
+    trainingFeedbackWrong: '正解と異なる手です。もう一度試してください。',
+    trainingFeedbackCleared: '正解です。',
+    trainingCompleteTitle: 'Build Basics 完了',
+    trainingRestartStep: 'このステップをやり直す',
+    trainingBackToMenu: '戻る',
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
     cpuSettings: 'CPU 設定',
@@ -540,6 +558,15 @@ export type Translations = {
   trainingTitle: string;
   trainingRecordeTitle: string;
   trainingPlaceholderMsg: string;
+  trainingT1Title: string;
+  trainingT1Step1: string;
+  trainingT1Step3: string;
+  trainingT1Step5: string;
+  trainingFeedbackWrong: string;
+  trainingFeedbackCleared: string;
+  trainingCompleteTitle: string;
+  trainingRestartStep: string;
+  trainingBackToMenu: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;

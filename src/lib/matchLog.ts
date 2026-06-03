@@ -24,6 +24,8 @@ export interface MatchLogRow {
 }
 
 export async function saveMatchLog(record: GameRecord, userId: string): Promise<void> {
+  // Training Mode guard: never write training records to match_logs
+  if ((record as { trainingMode?: boolean }).trainingMode) return;
   const row: MatchLogRow = {
     user_id: userId,
     game_id: record.game_id,

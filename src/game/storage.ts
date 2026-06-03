@@ -7,6 +7,7 @@ import type { PostmortemResult } from './postmortem';
 const STORAGE_KEY = 'one_eight_game_state';
 
 export function saveState(state: GameState): void {
+  if (state.trainingMode) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
