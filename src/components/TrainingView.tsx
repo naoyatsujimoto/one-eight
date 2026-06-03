@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Board } from './Board';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from '../game/engine';
 import { POSITION_TO_GATES } from '../game/constants';
@@ -38,9 +38,13 @@ type ViewMode = 'intro' | 'task';
 
 interface TrainingViewProps {
   onExit: () => void;
+  userId?: string | null;
 }
 
-export function TrainingView({ onExit }: TrainingViewProps) {
+export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
+  // Keep a ref so advanceSession always reads the latest userId even in stale callbacks
+  const userIdRef = useRef<string | null>(userId);
+  useEffect(() => { userIdRef.current = userId ?? null; }, [userId]);
   const { t } = useLang();
   const [mode, setMode] = useState<ViewMode>('intro');
   const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
@@ -75,7 +79,7 @@ export function TrainingView({ onExit }: TrainingViewProps) {
         // all steps done — save progress
         const taskId = s.task.id as TrainingTaskId;
         const newBest = s.attemptCount;
-        saveTrainingProgress(null as unknown as string, {
+        saveTrainingProgress(userIdRef.current, {
           taskId,
           completedAt: new Date().toISOString(),
           attemptCount: s.attemptCount,

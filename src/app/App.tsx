@@ -17,6 +17,7 @@ import type { GhostMove } from '../lib/matchLog';
 import { computeCanonicalHashString } from '../game/zobrist';
 import { useLang } from '../lib/lang';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
+import { syncTrainingProgressOnLogin } from '../training/trainingProgress';
 import type { Lang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
 import { OnlineBoard } from '../components/OnlineBoard';
@@ -758,6 +759,8 @@ export default function App() {
       return;
     }
     setUserId(user.id);
+    // Phase T-5: sync localStorage training progress to Supabase on login
+    syncTrainingProgressOnLogin(user.id).catch(() => {/* silent */});
     getProfile(user.id).then((profile) => {
       if (profile?.lang) setLang(profile.lang as Lang);
       // display_name が未設定の場合、ローカル名 or メール prefix で初期化
@@ -992,7 +995,7 @@ export default function App() {
   }
 
   if (screen === 'training') {
-    return <TrainingView onExit={() => goTo('main')} />;
+    return <TrainingView onExit={() => goTo('main')} userId={user?.id ?? null} />;
   }
 
   return (
