@@ -1,6 +1,6 @@
 import type { GameState, GateId, PositionId } from '../game/types';
 
-export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates';
+export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates' | 'T4_partial_build' | 'T6_asset_values';
 
 export type ExpectedMove =
   | { positioning: PositionId; build: { type: 'massive'; gate: GateId } }

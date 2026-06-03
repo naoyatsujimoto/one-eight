@@ -5,7 +5,7 @@ import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
-import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, TRAINING_TASK_META } from '../training/tasks/index';
+import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, TRAINING_TASK_META } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { saveTrainingProgress, isTaskCompleted } from '../training/trainingProgress';
@@ -56,6 +56,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
     if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
     if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
+    if (isTaskCompleted('T4_partial_build')) set.add('T4_partial_build');
+    if (isTaskCompleted('T6_asset_values')) set.add('T6_asset_values');
     return set;
   });
 
@@ -66,6 +68,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
       if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
       if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
+      if (isTaskCompleted('T4_partial_build')) set.add('T4_partial_build');
+      if (isTaskCompleted('T6_asset_values')) set.add('T6_asset_values');
       setCompletedTasks(set);
     }
   }, [mode]);
@@ -363,6 +367,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               T1_build_basics: 'trainingT1Desc',
               T2_capture_build: 'trainingT2Desc',
               T7_diagonal_gates: 'trainingT7Desc',
+              T4_partial_build: 'trainingT4Desc',
+              T6_asset_values: 'trainingT6Desc',
             };
             const descKey = descKeyMap[taskId] ?? '';
             const descText = (t as Record<string, unknown>)[descKey] as string | undefined;
@@ -422,6 +428,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   const completeTitle: string = (() => {
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
     if (session.task.id === 'T7_diagonal_gates') return t.trainingT7Complete;
+    if (session.task.id === 'T4_partial_build') return (t as Record<string, unknown>)['trainingT4Complete'] as string ?? 'Partial Build Complete';
+    if (session.task.id === 'T6_asset_values') return (t as Record<string, unknown>)['trainingT6Complete'] as string ?? 'Asset Values Complete';
     return t.trainingCompleteTitle;
   })();
 
@@ -490,7 +498,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
         {session.status === 'complete' ? (
           <>
-            {session.task.id !== 'T7_diagonal_gates' && (
+            {session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && (
               <button type="button" className="result-btn result-btn-primary" onClick={handleNextTraining}>
                 {t.trainingNextTraining}
               </button>
