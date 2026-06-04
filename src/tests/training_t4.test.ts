@@ -96,6 +96,29 @@ describe('T4_partial_build', () => {
     expect(result).toBe(false);
   });
 
+  it('correct move: Partial Quad with 3 gates (no gate 8) also passes validation', () => {
+    const s = task.steps[0];
+    if (!s || s.kind !== 'user_move') return;
+
+    const stateWithPos = {
+      ...task.initialState,
+      selectedPosition: 'F' as const,
+    };
+    // Apply Quad Build to only gates 3, 11, 12 (excluding gate 8 which is full)
+    const nextState = applyQuadBuildForGates(stateWithPos, [3, 11, 12]);
+    const lastRecord = nextState.history[nextState.history.length - 1];
+    expect(lastRecord).toBeDefined();
+    if (!lastRecord) return;
+
+    // Gate 8 not in placedGateIds — should still pass because minGates: 3
+    if (lastRecord.build.type === 'quad') {
+      expect(lastRecord.build.placedGateIds).not.toContain(8);
+      expect(lastRecord.build.placedGateIds.length).toBeGreaterThanOrEqual(3);
+    }
+    const result = validateMove(lastRecord, s.expected);
+    expect(result).toBe(true);
+  });
+
   // suppress unused import warning
   it('gatePlayerValue is importable', () => {
     expect(typeof gatePlayerValue).toBe('function');

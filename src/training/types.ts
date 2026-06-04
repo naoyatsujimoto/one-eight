@@ -3,7 +3,7 @@ import type { GameState, GateId, PositionId } from '../game/types';
 export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates' | 'T4_partial_build' | 'T6_asset_values' | 'T5_capture_tie';
 
 export type ExpectedMove =
-  | { positioning: PositionId; build: { type: 'massive'; gate: GateId } }
+  | { positioning: PositionId; build: { type: 'massive'; gate: GateId; allowedGates?: GateId[] } }
   | { positioning: PositionId; build: { type: 'selective'; gates: [GateId, GateId] } }
   | { positioning: PositionId; build: { type: 'quad'; minGates?: number } };
 

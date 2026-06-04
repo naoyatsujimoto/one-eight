@@ -243,7 +243,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       }
       next = [...current, gateId] as GateId[];
 
-      if (next.length >= quadMax) {
+      const minGates = step.expected.build.type === 'quad' ? step.expected.build.minGates : undefined;
+      const autoCommitThreshold = minGates !== undefined ? Math.min(minGates, quadMax) : quadMax;
+      if (next.length >= autoCommitThreshold) {
         const nextState = applyQuadBuildForGates(prev.gameState, next);
         const lastRecord = nextState.history[nextState.history.length - 1];
         if (!lastRecord) return prev;

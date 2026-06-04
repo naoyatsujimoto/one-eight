@@ -13,6 +13,11 @@ export function validateMove(record: MoveRecord, expected: ExpectedMove): boolea
 
   if (expected.build.type === 'massive') {
     if (record.build.type !== 'massive') return false;
+    // If allowedGates is specified, any gate in that list is correct
+    if (expected.build.allowedGates !== undefined) {
+      if (record.build.gate === null) return false;
+      return expected.build.allowedGates.includes(record.build.gate);
+    }
     return record.build.gate === expected.build.gate;
   }
 
