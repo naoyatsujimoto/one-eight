@@ -118,6 +118,12 @@ export const T = {
     trainingT5Complete: 'Capture Tie Complete',
     trainingT5Desc: 'Learn that a tie in most-built Gates blocks capture. Build to break the tie.',
     trainingT5TieExplanation: 'Tied Gates block capture. Build to gain dominance.',
+    trainingT8Title: 'Prepare Capture',
+    trainingT8Step1: 'Step 1 / 2 — Prepare the Dominance\n\nWhite owns Position D. You cannot take D yet. White controls Gate 3 and Black controls Gate 7, so the dominance is tied 1 to 1.\n\nChoose Position F, then Massive Build on Gate 11 (F,m(11)). This expands the dominance around D and prepares a future capture.',
+    trainingT8CpuMsg: 'White played E,m(2) to take Position E. The dominance around Position D is unchanged.',
+    trainingT8Step2: 'Step 2 / 2 — Capture and Build\n\nNow you can take D. Choose Position D, then Massive Build on Gate 1 (D,m(1)).',
+    trainingT8Complete: 'By creating Gate dominance first, you set up a capture for your next turn.',
+    trainingT8Desc: 'Learn to prepare Gate dominance before capturing a Position.',
 
     selectMode: 'Select Mode',
     cancel: 'Cancel',
@@ -406,6 +412,12 @@ export const T = {
     trainingT5Complete: 'Capture Tie 完了',
     trainingT5Desc: '同点では奪取できない。Build で優勢を作ることを学ぶ。',
     trainingT5TieExplanation: '同点の Gate があると奪取できません。Build で支配を確立してください。',
+    trainingT8Title: 'Capture を準備する',
+    trainingT8Step1: 'Step 1 / 2 —— 支配を準備する\n\nPosition D は White の所有です。今すぐ D を奪うことはできません。Gate 3 を White が支配し、Gate 7 を Black が支配していて、1 対 1 で拮抗しているからです。\n\nPosition F を選んで、Gate 11 に Massive Build を実行してください（F,m(11)）。これで D の周りの支配Gateが増え、次にDを奪える形を作れます。',
+    trainingT8CpuMsg: 'White は E,m(2) で Position E を取得しました。D 周辺の支配バランスは変わっていません。',
+    trainingT8Step2: 'Step 2 / 2 —— CaptureしてBuildする\n\n今なら D を奪えます。Position D を選んで、Gate 1 に Massive Build を実行してください（D,m(1)）。',
+    trainingT8Complete: '先にGate支配を作ることで、次の手番でPositionを奪えるようになりました。',
+    trainingT8Desc: 'Capture の前にGate支配を準備することを学ぶ。',
 
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
@@ -660,6 +672,12 @@ export type Translations = {
   trainingT5Complete: string;
   trainingT5Desc: string;
   trainingT5TieExplanation: string;
+  trainingT8Title: string;
+  trainingT8Step1: string;
+  trainingT8CpuMsg: string;
+  trainingT8Step2: string;
+  trainingT8Complete: string;
+  trainingT8Desc: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;
