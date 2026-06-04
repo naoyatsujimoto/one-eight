@@ -130,6 +130,12 @@ export const T = {
     trainingT9WhyEnded: 'A ONE EIGHT game ends when all twelve Gates have every slot filled. Your final Massive Build filled the last empty slot in Gate 1, so the endgame condition was met.',
     trainingT9WhyWinner: 'The winner is decided by the simple count of owned Positions. Asset value on Gates does not affect the winner. At endgame, Black has 7 and White has 6, so Black wins.',
     trainingT9Desc: 'Learn how ONE EIGHT ends and how the winner is determined.',
+    trainingT10Title: 'Defensive Build',
+    trainingT10Step1: 'Step 1 / 1 — Defend your Position\n\nWarning. Position E is yours, but White has placed a Massive on Gate 2. If you do nothing, White will be able to capture E on the next turn.\n\nRe-select Position E, then Massive Build on Gate 4 (E,m(4)).\n\nBy placing your own Black Large on another Gate connected to E, the strongest-Gate dominance becomes tied 1 to 1, and White can no longer capture E.',
+    trainingT10Complete: 'Two Gates around E now share the maximum value. Gate 2 is controlled by White, and Gate 4 is controlled by Black.\n\nMost-built dominance count: White 1 — Black 1\n\nWith the count tied, White can no longer capture E. Your Position remains yours.',
+    trainingT10WhyThreat: 'Capture checks only the highest-value Gates connected to the target Position.In the initial state, Gate 2 was the only highest-value Gate, and it was controlled by White. That made E capturable by White.',
+    trainingT10WhyDefended: 'By placing a Black Massive on Gate 4, Gate 4 matches Gate 2 as a highest-value Gate. Gate 2 is won by White, and Gate 4 is won by Black, so the dominance count becomes tied 1 to 1. White can no longer capture E.',
+    trainingT10Desc: 'Learn to defend your Position by building on a connected Gate.',
 
 
     selectMode: 'Select Mode',
@@ -431,6 +437,12 @@ export const T = {
     trainingT9WhyEnded: 'ONE EIGHT の終局条件は、12 個すべての Gate の全 slot が埋まったときです。最後の Massive Build が Gate 1 の最後の slot を埋めたため、終局判定が発生しました。',
     trainingT9WhyWinner: '勝敗は所有 Position 数の単純比較で決まります。Gate のアセット価値は勝敗には影響しません。終局時、Black 7、White 6 のため Black の勝利です。',
     trainingT9Desc: 'ONE EIGHT の終局条件と勝者の決め方を学ぶ。',
+    trainingT10Title: '守りの一手',
+    trainingT10Step1: 'Step 1 / 1 ── あなたの Position を守る\n\n危険です。Position E はあなたの所有ですが、White が Gate 2 に Massive Build を行っているため、このままだと次のWhite手番でEを奪われます。\n\nPosition E を選び直して、Gate 4 に Massive Build を実行してください（E,m(4)）。\n\nEのもう1つのGateにBlackのLargeを置くことで、最強Gateの支配数が1対1で拮抗し、WhiteはEを奪えなくなります。',
+    trainingT10Complete: 'Eの周辺で最大のGateが2つになり、Gate 2はWhite、Gate 4はBlackが支配する形になりました。\n\nmost-built支配数：White 1 ── Black 1\n\n数が拮抗しているため、WhiteはEを奪取できません。Eはあなたの所有のまま守られました。',
+    trainingT10WhyThreat: 'Capture判定では、対象Positionに接続するGateのうち、最も総額が高いGateだけを見ます。初期局面ではGate 2だけが最大で、Whiteが支配していたため、WhiteはEを奪える状態でした。',
+    trainingT10WhyDefended: 'Gate 4にBlackのMassiveを置くことで、Gate 4もGate 2と同じ最大値になりました。Gate 2はWhite、Gate 4はBlackが支配するため、支配数が1対1になり、WhiteはEを奪えなくなります。',
+    trainingT10Desc: '接続Gateにbuildして自分のPositionを守ることを学ぶ。',
 
 
     selectMode: 'モードを選択',
@@ -698,6 +710,12 @@ export type Translations = {
   trainingT9WhyEnded: string;
   trainingT9WhyWinner: string;
   trainingT9Desc: string;
+  trainingT10Title: string;
+  trainingT10Step1: string;
+  trainingT10Complete: string;
+  trainingT10WhyThreat: string;
+  trainingT10WhyDefended: string;
+  trainingT10Desc: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;

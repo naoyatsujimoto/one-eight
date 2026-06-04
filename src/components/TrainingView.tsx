@@ -61,6 +61,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (isTaskCompleted('T5_capture_tie')) set.add('T5_capture_tie');
     if (isTaskCompleted('T8_prepare_capture')) set.add('T8_prepare_capture');
     if (isTaskCompleted('T9_no_build_endgame')) set.add('T9_no_build_endgame');
+    if (isTaskCompleted('T10_defensive_build')) set.add('T10_defensive_build');
     return set;
   });
 
@@ -76,6 +77,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       if (isTaskCompleted('T5_capture_tie')) set.add('T5_capture_tie');
       if (isTaskCompleted('T8_prepare_capture')) set.add('T8_prepare_capture');
       if (isTaskCompleted('T9_no_build_endgame')) set.add('T9_no_build_endgame');
+      if (isTaskCompleted('T10_defensive_build')) set.add('T10_defensive_build');
       setCompletedTasks(set);
     }
   }, [mode]);
@@ -380,6 +382,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               T5_capture_tie: 'trainingT5Desc',
               T8_prepare_capture: 'trainingT8Desc',
               T9_no_build_endgame: 'trainingT9Desc',
+              T10_defensive_build: 'trainingT10Desc',
             };
             const descKey = descKeyMap[taskId] ?? '';
             const descText = (t as Record<string, unknown>)[descKey] as string | undefined;
@@ -444,6 +447,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (session.task.id === 'T5_capture_tie') return (t as Record<string, unknown>)['trainingT5Complete'] as string ?? 'Capture Tie Complete';
     if (session.task.id === 'T8_prepare_capture') return (t as Record<string, unknown>)['trainingT8Complete'] as string ?? 'Prepare Capture Complete';
     if (session.task.id === 'T9_no_build_endgame') return (t as Record<string, unknown>)['trainingT9Complete'] as string ?? 'No-build Endgame Complete';
+    if (session.task.id === 'T10_defensive_build') return (t as Record<string, unknown>)['trainingT10Complete'] as string ?? 'Defensive Build Complete';
     return t.trainingCompleteTitle;
   })();
 
@@ -512,7 +516,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
         {session.status === 'complete' ? (
           <>
-            {session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && session.task.id !== 'T5_capture_tie' && session.task.id !== 'T8_prepare_capture' && session.task.id !== 'T9_no_build_endgame' && (
+            {session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && session.task.id !== 'T5_capture_tie' && session.task.id !== 'T8_prepare_capture' && session.task.id !== 'T9_no_build_endgame' && session.task.id !== 'T10_defensive_build' && (
               <button type="button" className="result-btn result-btn-primary" onClick={handleNextTraining}>
                 {t.trainingNextTraining}
               </button>
