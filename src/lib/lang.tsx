@@ -124,6 +124,13 @@ export const T = {
     trainingT8Step2: 'Step 2 / 2 — Capture and Build\n\nNow you can take D. Choose Position D, then Massive Build on Gate 1 (D,m(1)).',
     trainingT8Complete: 'By creating Gate dominance first, you set up a capture for your next turn.',
     trainingT8Desc: 'Learn to prepare Gate dominance before capturing a Position.',
+    trainingT9Title: 'No-build Endgame',
+    trainingT9Step1: 'Step 1 / 1 — Win with the final move\n\nYou are Black. The board is nearly full. Only Gate 1 has one large slot empty.\n\nPosition D is the only unowned position left. Black owns 6 positions and White owns 6.\n\nChoose Position D, then Massive Build on Gate 1 (D,m(1)).\n\nThis single move claims D, fills the last Gate slot, and ends the game with Black 7 to White 6.',
+    trainingT9Complete: 'Every slot on every Gate is filled. The game has ended.\n\nFinal Position count: Black 7 — White 6\n\nBlack wins by holding one more Position than White.',
+    trainingT9WhyEnded: 'A ONE EIGHT game ends when all twelve Gates have every slot filled. Your final Massive Build filled the last empty slot in Gate 1, so the endgame condition was met.',
+    trainingT9WhyWinner: 'The winner is decided by the simple count of owned Positions. Asset value on Gates does not affect the winner. At endgame, Black has 7 and White has 6, so Black wins.',
+    trainingT9Desc: 'Learn how ONE EIGHT ends and how the winner is determined.',
+
 
     selectMode: 'Select Mode',
     cancel: 'Cancel',
@@ -418,6 +425,13 @@ export const T = {
     trainingT8Step2: 'Step 2 / 2 —— CaptureしてBuildする\n\n今なら D を奪えます。Position D を選んで、Gate 1 に Massive Build を実行してください（D,m(1)）。',
     trainingT8Complete: '先にGate支配を作ることで、次の手番でPositionを奪えるようになりました。',
     trainingT8Desc: 'Capture の前にGate支配を準備することを学ぶ。',
+    trainingT9Title: '終局と勝敗',
+    trainingT9Step1: 'Step 1 / 1 —— 最後の一手で勝つ\n\nあなたは Black です。盤面はほぼすべてが埋まっています。Gate 1 だけが、大駒スロットを 1 つ残しています。\n\n残っている空き Position は D だけです。Black は 6 個、White は 6 個の Position を所有しています。\n\nPosition D を選んで、Gate 1 に Massive Build を実行してください（D,m(1)）。\n\nこのひと手で D を取得し、最後の Gate slot を埋め、Black 7 対 White 6 で勝利します。',
+    trainingT9Complete: '全 Gate の slot がすべて埋まり、ゲームが終了しました。\n\n最終 Position 数：Black 7 —— White 6\n\nPosition を 1 つ多く所有している Black の勝ちです。',
+    trainingT9WhyEnded: 'ONE EIGHT の終局条件は、12 個すべての Gate の全 slot が埋まったときです。最後の Massive Build が Gate 1 の最後の slot を埋めたため、終局判定が発生しました。',
+    trainingT9WhyWinner: '勝敗は所有 Position 数の単純比較で決まります。Gate のアセット価値は勝敗には影響しません。終局時、Black 7、White 6 のため Black の勝利です。',
+    trainingT9Desc: 'ONE EIGHT の終局条件と勝者の決め方を学ぶ。',
+
 
     selectMode: 'モードを選択',
     cancel: 'キャンセル',
@@ -678,6 +692,12 @@ export type Translations = {
   trainingT8Step2: string;
   trainingT8Complete: string;
   trainingT8Desc: string;
+  trainingT9Title: string;
+  trainingT9Step1: string;
+  trainingT9Complete: string;
+  trainingT9WhyEnded: string;
+  trainingT9WhyWinner: string;
+  trainingT9Desc: string;
   selectMode: string;
   cancel: string;
   cpuSettings: string;

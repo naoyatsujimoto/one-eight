@@ -6,6 +6,7 @@ import { T4_PARTIAL_BUILD } from './T4_partial_build';
 import { T6_ASSET_VALUES } from './T6_asset_values';
 import { T5_CAPTURE_TIE } from './T5_capture_tie';
 import { T8_PREPARE_CAPTURE } from './T8_prepare_capture';
+import { T9_NO_BUILD_ENDGAME } from './T9_no_build_endgame';
 
 export interface TrainingTaskMeta {
   task: TrainingTask;
@@ -61,6 +62,12 @@ export const TRAINING_TASK_META: TrainingTaskMeta[] = [
     titleKey: 'trainingT8Title',
     prerequisite: 'T5_capture_tie',
   },
+  {
+    task: T9_NO_BUILD_ENDGAME,
+    order: 8,
+    titleKey: 'trainingT9Title',
+    prerequisite: 'T8_prepare_capture',
+  },
 ];
 
 export const TRAINING_TASKS: TrainingTask[] = [
@@ -71,5 +78,6 @@ export const TRAINING_TASKS: TrainingTask[] = [
   T6_ASSET_VALUES,
   T5_CAPTURE_TIE,
   T8_PREPARE_CAPTURE,
+  T9_NO_BUILD_ENDGAME,
 ];
-export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE, T8_PREPARE_CAPTURE };
+export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE, T8_PREPARE_CAPTURE, T9_NO_BUILD_ENDGAME };
