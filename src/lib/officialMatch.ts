@@ -35,6 +35,10 @@ export type OfficialMatchListItem = {
   opponent_display_name: string | null;
   tournament_id: string | null;
   round_id: string | null;
+  /** Phase C-2c: standalone のみが通常カレンダーに表示される（arena は RPC 側でフィルタ済み）。
+   *  この値は参照用のみ。RPC が 'standalone' 固定を返すため常に 'standalone' または undefined になる。
+   */
+  source_kind?: 'standalone' | 'arena';
   created_at: string;
   updated_at: string;
 };
