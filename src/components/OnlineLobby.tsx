@@ -14,6 +14,7 @@ import { useLang } from '../lib/lang';
 import { TimerSettings } from './TimerSettings';
 import { DEFAULT_TIMER_CONFIG, type TimerConfig } from '../game/timerTypes';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
+import { OfficialArenaOverview } from './OfficialArenaOverview';
 
 interface Props {
   userId: string;
@@ -62,13 +63,16 @@ export function OnlineLobby({ userId, onGameReady, onCancel, onEnterOnlineGame }
             <RandomMatch userId={userId} onGameReady={onGameReady} onCancel={handleBack} />
           )}
           {mode === 'ranked' && (
-            <OfficialMatchCalendar
-              onEnterOnlineGame={onEnterOnlineGame}
-              enableEntry={true}
-              filter="ranked"
-              emptyMessage={t.onlineNoRankedMatches}
-              showRecentResults={false}
-            />
+            <>
+              <OfficialArenaOverview />
+              <OfficialMatchCalendar
+                onEnterOnlineGame={onEnterOnlineGame}
+                enableEntry={true}
+                filter="ranked"
+                emptyMessage={t.onlineNoRankedMatches}
+                showRecentResults={false}
+              />
+            </>
           )}
           {mode === 'tournament' && (
             <OfficialMatchCalendar

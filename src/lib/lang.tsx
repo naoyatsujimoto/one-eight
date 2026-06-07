@@ -310,6 +310,24 @@ export const T = {
     omOfficialMatches: 'Official Matches',
     omWaitingForBlack: "Waiting for Black's first move. Black's clock is running.",
     loading: 'Loading…',
+    // Official Arena (Phase E-1)
+    arenaOfficialArena: 'Official Arena',
+    arenaElephantArena: 'ELEPHANT Arena',
+    arenaJaguarArena: 'JAGUAR Arena',
+    arenaProRequired: 'Pro required',
+    arenaEntrySoon: 'Entry coming soon',
+    arenaNoMaster: 'No Master yet',
+    arenaNoInterim: 'No Interim Master',
+    arenaNextEvent: 'Next event',
+    arenaEntryDeadline: 'Entry deadline',
+    arenaCurrentMaster: 'Current Master',
+    arenaInterimMaster: 'Interim Master',
+    arenaPointRanking: 'Arena Point Ranking',
+    arenaRecentMatchHistory: 'Recent Match History',
+    arenaTapForDetail: 'Tap for detail',
+    arenaMyEntry: 'My entry',
+    arenaNotEntered: 'Not entered',
+    arenaMasterHistory: 'Master History',
   },
 
 
@@ -616,6 +634,24 @@ export const T = {
     omOfficialMatches: '公式戦',
     omWaitingForBlack: 'Black の初手待ちです。Black の時計が進んでいます。',
     loading: '読み込み中…',
+    // Official Arena (Phase E-1)
+    arenaOfficialArena: 'Official Arena',
+    arenaElephantArena: 'ELEPHANT Arena',
+    arenaJaguarArena: 'JAGUAR Arena',
+    arenaProRequired: 'Proが必要',
+    arenaEntrySoon: 'Entry機能は準備中',
+    arenaNoMaster: 'Master未定',
+    arenaNoInterim: 'Interim Masterなし',
+    arenaNextEvent: '次回開催',
+    arenaEntryDeadline: 'Entry締切',
+    arenaCurrentMaster: '現在のMaster',
+    arenaInterimMaster: 'Interim Master',
+    arenaPointRanking: 'Arena Point Ranking',
+    arenaRecentMatchHistory: '最近のMatch履歴',
+    arenaTapForDetail: 'タップして詳細',
+    arenaMyEntry: 'Entry状態',
+    arenaNotEntered: '未Entry',
+    arenaMasterHistory: 'Master履歴',
   },
 
 } as const;
@@ -885,6 +921,24 @@ export type Translations = {
   omOfficialMatches: string;
   omWaitingForBlack: string;
   loading: string;
+  // Official Arena (Phase E-1)
+  arenaOfficialArena: string;
+  arenaElephantArena: string;
+  arenaJaguarArena: string;
+  arenaProRequired: string;
+  arenaEntrySoon: string;
+  arenaNoMaster: string;
+  arenaNoInterim: string;
+  arenaNextEvent: string;
+  arenaEntryDeadline: string;
+  arenaCurrentMaster: string;
+  arenaInterimMaster: string;
+  arenaPointRanking: string;
+  arenaRecentMatchHistory: string;
+  arenaTapForDetail: string;
+  arenaMyEntry: string;
+  arenaNotEntered: string;
+  arenaMasterHistory: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────
