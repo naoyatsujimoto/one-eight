@@ -462,11 +462,37 @@ function TotalTimeHeader({
       whiteTimeStr = formatMs(whiteMs);
     }
   } else {
-    // Local (PvC): playerTimers から取得（byoyomi 非対応）
-    blackMs = props.playerTimers?.black ?? initialTotalMs;
-    whiteMs = props.playerTimers?.white ?? initialTotalMs;
-    blackTimeStr = formatMs(blackMs);
-    whiteTimeStr = formatMs(whiteMs);
+    // Local (PvC): playerTimers から取得（BY-6: byoyomi 対応）
+    const blackRaw = props.playerTimers?.black ?? initialTotalMs;
+    const whiteRaw = props.playerTimers?.white ?? initialTotalMs;
+
+    if (byoyomiMs > 0) {
+      const blackActive = !isFrozen && currentPlayer === 'black';
+      const whiteActive = !isFrozen && currentPlayer === 'white';
+
+      if (blackActive && blackRaw <= 0) {
+        blackMs = 0;
+        blackByoyomi = true;
+        blackTimeStr = `BY ${formatMs(blackRaw)}`;
+      } else {
+        blackMs = blackRaw;
+        blackTimeStr = formatMs(blackMs);
+      }
+
+      if (whiteActive && whiteRaw <= 0) {
+        whiteMs = 0;
+        whiteByoyomi = true;
+        whiteTimeStr = `BY ${formatMs(whiteRaw)}`;
+      } else {
+        whiteMs = whiteRaw;
+        whiteTimeStr = formatMs(whiteMs);
+      }
+    } else {
+      blackMs = blackRaw;
+      whiteMs = whiteRaw;
+      blackTimeStr = formatMs(blackMs);
+      whiteTimeStr = formatMs(whiteMs);
+    }
   }
 
   // 手番側の残り時間で警告判定

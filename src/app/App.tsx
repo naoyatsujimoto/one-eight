@@ -478,15 +478,17 @@ export default function App() {
         const startedAt = turnStartedAtRef.current;
         if (startedAt === null) return;
         const elapsed = Date.now() - startedAt;
+        const byoyomiMs = (config.byoyomiSeconds ?? 0) * 1000;
+        const totalAvailableMs = turnStartRemainingRef.current + byoyomiMs;
+        if (elapsed >= totalAvailableMs && !timeoutFiredRef.current) {
+          timeoutFiredRef.current = true;
+          handleTimeout(currentPlayer);
+        }
         const newRemaining = Math.max(0, turnStartRemainingRef.current - elapsed);
         setPlayerTimers((prev) => {
           if (!prev) return prev;
           return { ...prev, [currentPlayer]: newRemaining };
         });
-        if (newRemaining <= 0 && !timeoutFiredRef.current) {
-          timeoutFiredRef.current = true;
-          handleTimeout(currentPlayer);
-        }
       } else if (config.mode === 'per_move') {
         const startedAt = moveTimerStartedAtRef.current;
         if (startedAt === null) return;
