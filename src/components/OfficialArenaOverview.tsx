@@ -95,10 +95,14 @@ interface MyArenaMatch {
   online_game_id: string | null;
 }
 
-/** Entry deadline の過ぎているかどうか */
-function isDeadlinePassed(deadline: string | null): boolean {
+/** Entry deadline の過ぎているかどうか
+ *  deadline が null / undefined / Invalid Date の場合は false（締切済み扱いしない）
+ */
+function isDeadlinePassed(deadline: string | null | undefined): boolean {
   if (!deadline) return false;
-  return new Date(deadline).getTime() < Date.now();
+  const deadlineTime = Date.parse(deadline);
+  if (!Number.isFinite(deadlineTime)) return false; // Invalid Date → 締切済み扱いしない
+  return Date.now() >= deadlineTime;
 }
 
 /** Entry可能かどうか判定（pro必須・deadline・status チェックはサーバー側で確定） */
@@ -110,6 +114,17 @@ type EntryButtonState =
   | 'login_required'  // 非ログイン
   | 'pro_required';   // Free ユーザー
 
+/**
+ * ボタン状態判定の優先順位:
+ * 1. next_event なし → no_event
+ * 2. 未ログイン → login_required
+ * 3. 非Pro → pro_required
+ * 4. Entry済み → already_entered
+ * 5. 締切後 → deadline_passed
+ *    ・event_status が 'closed' / 'completed' / 'cancelled' の場合
+ *    ・または deadline が有効かつ過去日時の場合
+ * 6. Entry可能 → can_enter
+ */
 function getEntryButtonState(opts: {
   isLoggedIn: boolean;
   isProActive: boolean;
@@ -124,12 +139,15 @@ function getEntryButtonState(opts: {
   if (!isLoggedIn) return 'login_required';
   if (!isProActive) return 'pro_required';
   if (myEntryStatus && myEntryStatus !== 'withdrawn') return 'already_entered';
-  if (eventStatus && !['open', 'entry_open'].includes(eventStatus)) {
-    // event_status が open でない場合 → deadline か event_not_open
-    if (isDeadlinePassed(entryDeadline)) return 'deadline_passed';
-    return 'deadline_passed'; // サーバー側で確認させるため closed 扱い
-  }
+
+  // event_status が明示的に「受付終了」系の場合のみ締切済み扱い
+  // 'scheduled' はEntry受付中（enter_arena_event RPC が status='scheduled' のみ許可）
+  const closedStatuses = ['closed', 'completed', 'cancelled'];
+  if (eventStatus && closedStatuses.includes(eventStatus)) return 'deadline_passed';
+
+  // deadline の日時比較（Invalid Date の場合は締切済みにしない）
   if (isDeadlinePassed(entryDeadline)) return 'deadline_passed';
+
   return 'can_enter';
 }
 
