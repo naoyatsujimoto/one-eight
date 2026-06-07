@@ -6,6 +6,8 @@ export interface TimerConfig {
   totalSeconds: number;
   /** per_move 用: 1手あたりの制限時間（秒）*/
   perMoveSeconds: number;
+  /** total_time 用: 秒読み時間（秒）。0 または未指定の場合は秒読みなし */
+  byoyomiSeconds?: number;
 }
 
 export interface PlayerTimer {

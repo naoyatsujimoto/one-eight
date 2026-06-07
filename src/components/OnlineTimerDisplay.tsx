@@ -109,6 +109,49 @@ function calcPerMoveRemainingMs(
   return Math.min(perMoveMs, Math.max(0, perMoveMs - elapsed));
 }
 
+// ─── BY-4: total_time + byoyomi 表示段階ヘルパー ────────────────────────────────
+/**
+ * BY-4: total_time + byoyomi の表示段階を返す。
+ * - 'normal': 通常持ち時間中（従来表示）
+ * - 'byoyomi': 秒読み中（BY M:SS 表示）
+ *
+ * calcTotalTimeActiveRemainingMs の式は変えない。
+ * 秒読み段階の少ない計算のみ追加する。
+ */
+function calcTotalTimeWithByoyomi(
+  playerRemainingMs: number | null,
+  turnStartedAt: string | null,
+  frozenUntil: string | null | undefined,
+  initialTotalMs: number,
+  byoyomiMs: number,
+): { phase: 'normal' | 'byoyomi'; remainingMs: number } {
+  if (byoyomiMs <= 0) {
+    return {
+      phase: 'normal',
+      remainingMs: calcTotalTimeActiveRemainingMs(playerRemainingMs, turnStartedAt, frozenUntil, initialTotalMs),
+    };
+  }
+
+  const normalRemaining = calcTotalTimeActiveRemainingMs(playerRemainingMs, turnStartedAt, frozenUntil, initialTotalMs);
+  if (normalRemaining > 0) {
+    return { phase: 'normal', remainingMs: normalRemaining };
+  }
+
+  // 通常持ち時間切れ: 秒読み段階
+  const now = Date.now();
+  const rawPlayerMs = playerRemainingMs ?? initialTotalMs;
+  let effectiveStart = turnStartedAt ? new Date(turnStartedAt).getTime() : now;
+  if (frozenUntil) {
+    const frozenUntilMs = new Date(frozenUntil).getTime();
+    effectiveStart = Math.max(effectiveStart, frozenUntilMs);
+  }
+  const elapsed = Math.max(0, now - effectiveStart);
+  const byoyomiUsed = Math.max(0, elapsed - rawPlayerMs);
+  const byoyomiRemaining = Math.max(0, byoyomiMs - byoyomiUsed);
+
+  return { phase: 'byoyomi', remainingMs: byoyomiRemaining };
+}
+
 // ─── total_time 専用計算 ──────────────────────────────────────────────────────
 /**
  * total_time の手番プレイヤーの表示残り時間を計算する（手番側専用）。
@@ -216,22 +259,41 @@ export function OnlineTimerDisplay({
   // ─── total_time ────────────────────────────────────────────────────────────
   if (mode === 'total_time') {
     const initialTotalMs = timerConfig.totalSeconds * 1000;
+    // BY-4: byoyomiMs (0 なら秒読みなし)
+    const byoyomiMs = (timerConfig.byoyomiSeconds ?? 0) * 1000;
     return (
       <div className="online-timer-bar">
         {(['black', 'white'] as const).map((player) => {
           const rawRemaining = player === 'black' ? blackRemainingMs : whiteRemainingMs;
           // 手番側のみ elapsed を差し引く。非手番側は DB の remaining_ms をそのまま表示。
           const isActive = !isFrozen && player === currentPlayer;
-          const remaining = isActive
-            ? calcTotalTimeActiveRemainingMs(
-                rawRemaining,
-                turnStartedAt,
-                frozenUntil,
-                initialTotalMs,
-              )
+
+          // BY-4: 手番側は byoyomi 段階判定、非手番側は従来通り
+          let displayStr: string;
+          let colorClass: string;
+          if (isActive) {
+            const { phase, remainingMs } = calcTotalTimeWithByoyomi(
+              rawRemaining,
+              turnStartedAt,
+              frozenUntil,
+              initialTotalMs,
+              byoyomiMs,
+            );
+            if (phase === 'byoyomi') {
+              displayStr = `BY ${formatMs(remainingMs)}`;
+              // 秒読み中は常に danger 色（残り時間は byoyomiSeconds 以下）
+              colorClass = 'online-timer-danger';
+            } else {
+              displayStr = formatMs(remainingMs);
+              colorClass = getTimerClassName(remainingMs);
+            }
+          } else {
             // 非手番側も [0, initialTotalMs] にクランプ（安全策）
-            : Math.min(rawRemaining ?? initialTotalMs, initialTotalMs);
-          const colorClass = isActive ? getTimerClassName(remaining) : '';
+            const remaining = Math.min(rawRemaining ?? initialTotalMs, initialTotalMs);
+            displayStr = formatMs(remaining);
+            colorClass = '';
+          }
+
           return (
             <div
               key={player}
@@ -239,7 +301,7 @@ export function OnlineTimerDisplay({
             >
               <span className="online-timer-symbol">{player === 'black' ? '●' : '○'}</span>
               <span className={`online-timer-value ${colorClass}`}>
-                {formatMs(remaining)}
+                {displayStr}
               </span>
             </div>
           );

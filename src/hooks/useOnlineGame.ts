@@ -244,7 +244,9 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         const moverMs = moverColor === 'black'
           ? (row.black_remaining_ms ?? 0)
           : (row.white_remaining_ms ?? 0);
-        remaining = moverMs - elapsedMs;
+        // BY-4: byoyomiSeconds を加算して秒読み分も考慮する
+        const byoyomiMs = ((row.timer_config as { byoyomiSeconds?: number })?.byoyomiSeconds ?? 0) * 1000;
+        remaining = moverMs + byoyomiMs - elapsedMs;
       }
 
       if (remaining > 0) return;

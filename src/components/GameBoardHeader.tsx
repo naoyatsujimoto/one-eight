@@ -114,6 +114,46 @@ function calcTotalTimeActiveRemainingMs(
   return Math.min(initialTotalMs, Math.max(0, (playerRemainingMs ?? initialTotalMs) - elapsed));
 }
 
+// ─── BY-4: total_time + byoyomi 表示段階ヘルパー (OnlineTimerDisplay と同一ロジック) ──
+/**
+ * BY-4: total_time + byoyomi の表示段階を返す。
+ * 既存 calcTotalTimeActiveRemainingMs の式は変えない。
+ * 秒読み段階の少ない計算のみ追加。
+ */
+function calcTotalTimeWithByoyomi(
+  playerRemainingMs: number | null,
+  turnStartedAt: string | null,
+  frozenUntil: string | null | undefined,
+  initialTotalMs: number,
+  byoyomiMs: number,
+): { phase: 'normal' | 'byoyomi'; remainingMs: number } {
+  if (byoyomiMs <= 0) {
+    return {
+      phase: 'normal',
+      remainingMs: calcTotalTimeActiveRemainingMs(playerRemainingMs, turnStartedAt, frozenUntil, initialTotalMs),
+    };
+  }
+
+  const normalRemaining = calcTotalTimeActiveRemainingMs(playerRemainingMs, turnStartedAt, frozenUntil, initialTotalMs);
+  if (normalRemaining > 0) {
+    return { phase: 'normal', remainingMs: normalRemaining };
+  }
+
+  // 通常持ち時間切れ: 秒読み段階
+  const now = Date.now();
+  const rawPlayerMs = playerRemainingMs ?? initialTotalMs;
+  let effectiveStart = turnStartedAt ? new Date(turnStartedAt).getTime() : now;
+  if (frozenUntil) {
+    const frozenUntilMs = new Date(frozenUntil).getTime();
+    effectiveStart = Math.max(effectiveStart, frozenUntilMs);
+  }
+  const elapsed = Math.max(0, now - effectiveStart);
+  const byoyomiUsed = Math.max(0, elapsed - rawPlayerMs);
+  const byoyomiRemaining = Math.max(0, byoyomiMs - byoyomiUsed);
+
+  return { phase: 'byoyomi', remainingMs: byoyomiRemaining };
+}
+
 // ─── 警告レベル判定 ────────────────────────────────────────────────────────────
 
 type WarnLevel = 'crit' | 'warn' | null;
@@ -378,10 +418,19 @@ function TotalTimeHeader({
   isBeforeOfficialStart: boolean;
 }) {
   const initialTotalMs = timerConfig.totalSeconds * 1000;
+  // BY-4: byoyomiMs (0 なら秒読みなし)
+  const byoyomiMs = (timerConfig.byoyomiSeconds ?? 0) * 1000;
 
   // 各プレイヤーの残り時間を計算
+  // BY-4: 手番側 (online) は byoyomi 段階判定を使用
   let blackMs: number;
   let whiteMs: number;
+  // BY-4: ArcFace に渡す表示文字列（秒読み中は "BY M:SS"）
+  let blackTimeStr: string;
+  let whiteTimeStr: string;
+  // BY-4: 秒読み中の warn 上書き用
+  let blackByoyomi = false;
+  let whiteByoyomi = false;
 
   if (props.mode === 'online') {
     const turnStartedAt = props.turnStartedAt ?? null;
@@ -389,28 +438,50 @@ function TotalTimeHeader({
     const blackActive = !isFrozen && currentPlayer === 'black';
     const whiteActive = !isFrozen && currentPlayer === 'white';
 
-    blackMs = blackActive
-      ? calcTotalTimeActiveRemainingMs(props.blackRemainingMs ?? null, turnStartedAt, frozenUntil, initialTotalMs)
-      : Math.min(props.blackRemainingMs ?? initialTotalMs, initialTotalMs);
-    whiteMs = whiteActive
-      ? calcTotalTimeActiveRemainingMs(props.whiteRemainingMs ?? null, turnStartedAt, frozenUntil, initialTotalMs)
-      : Math.min(props.whiteRemainingMs ?? initialTotalMs, initialTotalMs);
+    if (blackActive) {
+      const { phase, remainingMs } = calcTotalTimeWithByoyomi(
+        props.blackRemainingMs ?? null, turnStartedAt, frozenUntil, initialTotalMs, byoyomiMs
+      );
+      blackMs = remainingMs;
+      blackByoyomi = phase === 'byoyomi';
+      blackTimeStr = blackByoyomi ? `BY ${formatMs(remainingMs)}` : formatMs(remainingMs);
+    } else {
+      blackMs = Math.min(props.blackRemainingMs ?? initialTotalMs, initialTotalMs);
+      blackTimeStr = formatMs(blackMs);
+    }
+
+    if (whiteActive) {
+      const { phase, remainingMs } = calcTotalTimeWithByoyomi(
+        props.whiteRemainingMs ?? null, turnStartedAt, frozenUntil, initialTotalMs, byoyomiMs
+      );
+      whiteMs = remainingMs;
+      whiteByoyomi = phase === 'byoyomi';
+      whiteTimeStr = whiteByoyomi ? `BY ${formatMs(remainingMs)}` : formatMs(remainingMs);
+    } else {
+      whiteMs = Math.min(props.whiteRemainingMs ?? initialTotalMs, initialTotalMs);
+      whiteTimeStr = formatMs(whiteMs);
+    }
   } else {
-    // Local (PvC): playerTimers から取得
+    // Local (PvC): playerTimers から取得（byoyomi 非対応）
     blackMs = props.playerTimers?.black ?? initialTotalMs;
     whiteMs = props.playerTimers?.white ?? initialTotalMs;
+    blackTimeStr = formatMs(blackMs);
+    whiteTimeStr = formatMs(whiteMs);
   }
 
   // 手番側の残り時間で警告判定
   const activeMs = currentPlayer === 'black' ? blackMs : whiteMs;
-  const warn = isFrozen ? null : warningLevel(activeMs);
+  // BY-4: 秒読み中は crit 固定
+  const activeByoyomi = currentPlayer === 'black' ? blackByoyomi : whiteByoyomi;
+  const warn = isFrozen ? null : activeByoyomi ? 'crit' : warningLevel(activeMs);
 
   const blackPct = blackMs / initialTotalMs;
   const whitePct = whiteMs / initialTotalMs;
   const blackActive = !isFrozen && currentPlayer === 'black';
   const whiteActive = !isFrozen && currentPlayer === 'white';
-  const blackWarn = blackActive ? warn : null;
-  const whiteWarn = whiteActive ? warn : null;
+  // BY-4: 秒読み中は crit 固定
+  const blackWarn: WarnLevel = blackActive ? (blackByoyomi ? 'crit' : warn) : null;
+  const whiteWarn: WarnLevel = whiteActive ? (whiteByoyomi ? 'crit' : warn) : null;
 
   // ステータス判定
   const isCpuTurn = props.mode === 'local' ? (props.isCpuTurn ?? false) : false;
@@ -446,7 +517,7 @@ function TotalTimeHeader({
       <div className="gbh-clocks-row">
         <ArcFace
           pct={blackPct}
-          timeStr={formatMs(blackMs)}
+          timeStr={blackTimeStr}
           color="#3a2a1c"
           active={blackActive}
           warn={blackWarn}
@@ -456,7 +527,7 @@ function TotalTimeHeader({
         <div className="gbh-axis" />
         <ArcFace
           pct={whitePct}
-          timeStr={formatMs(whiteMs)}
+          timeStr={whiteTimeStr}
           color="#9a8d76"
           active={whiteActive}
           warn={whiteWarn}
