@@ -366,6 +366,11 @@ export const T = {
     arenaStartTime: 'Start time',
     arenaEnterMatch: 'Enter Match',
     arenaEnterMatchComingSoon: 'Enter Match coming soon',
+    arenaEnterMatchUnavailable: 'Enter Match unavailable',
+    arenaMatchCompleted: 'Match completed',
+    arenaEnterMatchFailed: 'Failed to enter match',
+    arenaMatchNotStartedYet: 'Match has not started yet',
+    arenaMatchNoLongerAvailable: 'Match is no longer available',
     arenaMatchKindInaugural: 'Inaugural Match',
     arenaMatchKindDefend: 'Defense Match',
     arenaMatchKindMasterSuccession: 'Master Succession',
@@ -733,6 +738,11 @@ export const T = {
     arenaStartTime: '開始時刻',
     arenaEnterMatch: '対局へ入室',
     arenaEnterMatchComingSoon: '入室機能は準備中',
+    arenaEnterMatchUnavailable: '入室情報がまだありません',
+    arenaMatchCompleted: 'Match終了済み',
+    arenaEnterMatchFailed: 'Match入室に失敗しました',
+    arenaMatchNotStartedYet: 'Match開始前です',
+    arenaMatchNoLongerAvailable: 'Matchは利用できません',
     arenaMatchKindInaugural: '初代戦',
     arenaMatchKindDefend: '防衛戦',
     arenaMatchKindMasterSuccession: 'Master継承戦',
@@ -1063,6 +1073,11 @@ export type Translations = {
   arenaStartTime: string;
   arenaEnterMatch: string;
   arenaEnterMatchComingSoon: string;
+  arenaEnterMatchUnavailable: string;
+  arenaMatchCompleted: string;
+  arenaEnterMatchFailed: string;
+  arenaMatchNotStartedYet: string;
+  arenaMatchNoLongerAvailable: string;
   arenaMatchKindInaugural: string;
   arenaMatchKindDefend: string;
   arenaMatchKindMasterSuccession: string;

@@ -1,9 +1,10 @@
 /**
- * OfficialArenaOverview.tsx — Official Arena display + Entry (Phase E-2, E-3)
+ * OfficialArenaOverview.tsx — Official Arena display + Entry (Phase E-2, E-3, E-4)
  *
  * Phase E-1: 読み取り表示
  * Phase E-2: Entry確認モーダル + enter_arena_event() 実行
  * Phase E-3: My Arena Match 表示 + Enter Match導線（coming soon）
+ * Phase E-4: Enter Match本実装 — 既存 enterOfficialMatch() 経路を接続
  *
  * 表示情報:
  *   - ELEPHANT Arena / JAGUAR Arena カード
@@ -35,6 +36,7 @@ import {
   type ArenaDetailData,
   type EnterArenaEventResult,
 } from '../lib/arena';
+import { enterOfficialMatch } from '../lib/officialMatch';
 import { useLang } from '../lib/lang';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -82,8 +84,14 @@ interface MyArenaMatch {
   white_display_name: string | null;
   my_side: 'black' | 'white' | null;
   scheduled_start_at: string | null;
-  official_match_id: string | null; // = arena_matches.online_game_id (生成前はNULL)
+  /** E-3.5: official_matches.id — 入室時は enterOfficialMatch() に渡す */
+  official_match_id: string | null;
+  /** E-3.5: arena_matches.status */
   arena_match_status: string | null;
+  /** E-3.5: official_matches.status */
+  official_match_status: string | null;
+  /** E-3.5: arena_matches.online_game_id（対局開始済みの場合のみ） */
+  online_game_id: string | null;
 }
 
 /** Entry deadline の過ぎているかどうか */
@@ -551,6 +559,9 @@ function MyArenaMatchSection({
   lang: string;
   onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }) {
+  const [entering, setEntering] = useState(false);
+  const [enterError, setEnterError] = useState<string | null>(null);
+
   // my_entry_status: 'no_match' → 不成立表示
   if (myEntryStatus === 'no_match') {
     return (
@@ -597,6 +608,40 @@ function MyArenaMatchSection({
 
   const kindLabel = matchKindLabel(myMatch.match_kind, myMatch.master_subtype);
 
+  // ─── Enter Match 状態判定 ─────────────────────────────────────────────────
+  // Match終了済み判定（arena_match_status / official_match_status）
+  const arenaMatchDone = (
+    myMatch.arena_match_status === 'completed' ||
+    myMatch.arena_match_status === 'processed' ||
+    myMatch.arena_match_status === 'cancelled'
+  );
+  const officialMatchDone = (
+    myMatch.official_match_status === 'completed' ||
+    myMatch.official_match_status === 'cancelled' ||
+    myMatch.official_match_status === 'forfeited' ||
+    myMatch.official_match_status === 'no_contest'
+  );
+  const matchIsDone = arenaMatchDone || officialMatchDone;
+
+  // official_match_idがある場合のみEnterボタン表示対象
+  const hasOfficialMatchId = !!myMatch.official_match_id;
+
+  // Enter Matchハンドラ（既存 enterOfficialMatch() を再利用）
+  const handleEnterMatch = async () => {
+    if (!myMatch.official_match_id || !onEnterOnlineGame) return;
+    setEntering(true);
+    setEnterError(null);
+    const result = await enterOfficialMatch(myMatch.official_match_id);
+    setEntering(false);
+    if ('error' in result) {
+      // 既存エラー文言マッピング
+      const errMsg = mapEnterMatchError(result.error, t);
+      setEnterError(errMsg);
+    } else {
+      onEnterOnlineGame(result.onlineGameId, result.isOfficial, result.startsAt);
+    }
+  };
+
   return (
     <div style={myMatchStyles.root}>
       <div style={modalStyles.sectionLabel}>{t.arenaMyArenaMatch}</div>
@@ -626,28 +671,52 @@ function MyArenaMatchSection({
               : '—'}
           </span>
         </div>
-        {/* Enter Match 導線 */}
-        {/* E-3: RPCがofficial_match_id（official_matches.id）を返さないため coming soon */}
-        {myMatch.official_match_id && onEnterOnlineGame ? (
+        {/* Enter Match 導線 — E-4本実装: enterOfficialMatch() 経路を接続 */}
+        {matchIsDone ? (
+          // Match終了済み
+          <div style={myMatchStyles.matchDone}>{t.arenaMatchCompleted}</div>
+        ) : hasOfficialMatchId && onEnterOnlineGame ? (
+          // 入室可能
           <button
             type="button"
-            style={myMatchStyles.enterBtn}
-            onClick={() => {
-              onEnterOnlineGame(
-                myMatch.official_match_id!,
-                true,
-                myMatch.scheduled_start_at,
-              );
-            }}
+            style={entering ? myMatchStyles.enterBtnDisabled : myMatchStyles.enterBtn}
+            disabled={entering}
+            onClick={handleEnterMatch}
           >
-            {t.arenaEnterMatch}
+            {entering ? '…' : t.arenaEnterMatch}
           </button>
         ) : (
-          <div style={myMatchStyles.comingSoon}>{t.arenaEnterMatchComingSoon}</div>
+          // official_match_idなし（まだMatch生成直後など）
+          <div style={myMatchStyles.comingSoon}>{t.arenaEnterMatchUnavailable}</div>
+        )}
+        {/* エラー表示 */}
+        {enterError && (
+          <div style={myMatchStyles.enterError}>{enterError}</div>
         )}
       </div>
     </div>
   );
+}
+
+/** enter_official_match のエラーを日本語/英語の最低限文言にマッピング */
+function mapEnterMatchError(err: string, t: ReturnType<typeof useLang>['t']): string {
+  const lower = err.toLowerCase();
+  if (lower.includes('not_authenticated') || lower.includes('not authenticated') || lower.includes('jwt')) {
+    return 'Login required';
+  }
+  if (lower.includes('too_early') || lower.includes('not yet')) {
+    return t.arenaMatchNotStartedYet;
+  }
+  if (lower.includes('expired') || lower.includes('already_finished') || lower.includes('no_contest') || lower.includes('forfeited') || lower.includes('completed')) {
+    return t.arenaMatchNoLongerAvailable;
+  }
+  if (lower.includes('match_not_found') || lower.includes('not found')) {
+    return t.arenaMatchNoLongerAvailable;
+  }
+  if (lower.includes('not_participant') || lower.includes('not a participant')) {
+    return t.arenaMatchNoLongerAvailable;
+  }
+  return `${t.arenaEnterMatchFailed}: ${err}`;
 }
 
 function EntryButtonForDetail({
@@ -1409,5 +1478,30 @@ const myMatchStyles: Record<string, React.CSSProperties> = {
     fontSize: '0.78rem',
     color: '#aaa',
     fontStyle: 'italic',
+  },
+  enterBtnDisabled: {
+    marginTop: '0.5rem',
+    padding: '0.5rem 1.1rem',
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    background: '#888',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'not-allowed',
+    minHeight: 40,
+    alignSelf: 'flex-start',
+    opacity: 0.7,
+  },
+  matchDone: {
+    marginTop: '0.5rem',
+    fontSize: '0.78rem',
+    color: '#888',
+  },
+  enterError: {
+    marginTop: '0.3rem',
+    fontSize: '0.75rem',
+    color: '#c0392b',
+    lineHeight: 1.4,
   },
 };
