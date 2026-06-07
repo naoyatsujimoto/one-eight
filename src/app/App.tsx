@@ -184,6 +184,8 @@ export default function App() {
   const [pendingTimerConfig, setPendingTimerConfig] = useState<TimerConfig>(DEFAULT_TIMER_CONFIG);
   /** total_time 用: 各プレイヤーの残り時間 (ms) */
   const [playerTimers, setPlayerTimers] = useState<{ black: number; white: number } | null>(null);
+  /** BY-6: total_time + byoyomi 用: 手番プレイヤーの秒読み残り時間 (ms)。秒読み中でない場合は null */
+  const [byoyomiActiveMs, setByoyomiActiveMs] = useState<number | null>(null);
   /** per_move 用: 手番開始時刻 (Date.now()) */
   const moveTimerStartedAtRef = useRef<number | null>(null);
   /** per_move 用: UI 表示用残り時間 (ms) */
@@ -436,6 +438,8 @@ export default function App() {
     const config = state.timerConfig;
     // 手番切り替わり時にタイムアウト flag をリセット
     timeoutFiredRef.current = false;
+    // BY-6: 手番切り替わり時に秒読みリセット
+    setByoyomiActiveMs(null);
     if (config.mode === 'total_time') {
       // 手番開始時刻をリセット
       turnStartedAtRef.current = Date.now();
@@ -489,6 +493,14 @@ export default function App() {
           if (!prev) return prev;
           return { ...prev, [currentPlayer]: newRemaining };
         });
+        // BY-6: 秒読み中の残り時間を計算して別 state に反映
+        if (byoyomiMs > 0 && newRemaining <= 0) {
+          const byoyomiUsed = Math.max(0, elapsed - turnStartRemainingRef.current);
+          const byoyomiLeft = Math.max(0, byoyomiMs - byoyomiUsed);
+          setByoyomiActiveMs(byoyomiLeft);
+        } else {
+          setByoyomiActiveMs(null);
+        }
       } else if (config.mode === 'per_move') {
         const startedAt = moveTimerStartedAtRef.current;
         if (startedAt === null) return;
@@ -1061,6 +1073,7 @@ export default function App() {
             playerTimers={playerTimers}
             currentMoveRemainingMs={currentMoveRemainingMs}
             isCpuTurn={isCpuTurn}
+            byoyomiActiveMs={byoyomiActiveMs}
           />
           {isCpuTurn && <div className="cpu-thinking-banner">{t.cpuThinking}</div>}
         <div className="board-stage">

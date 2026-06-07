@@ -63,6 +63,8 @@ interface LocalProps extends BaseProps {
   currentMoveRemainingMs?: number | null;
   /** Local: CPU手番中かどうか */
   isCpuTurn?: boolean;
+  /** BY-6: total_time + byoyomi 用: 手番プレイヤーの秒読み残り時間 (ms)。秒読み中でない場合は null */
+  byoyomiActiveMs?: number | null;
 }
 
 export type GameBoardHeaderProps = OnlineProps | LocalProps;
@@ -465,24 +467,26 @@ function TotalTimeHeader({
     // Local (PvC): playerTimers から取得（BY-6: byoyomi 対応）
     const blackRaw = props.playerTimers?.black ?? initialTotalMs;
     const whiteRaw = props.playerTimers?.white ?? initialTotalMs;
+    // BY-6: 秒読み中の残り時間（App.tsxから渡される）
+    const byoyomiLeft = props.mode === 'local' ? (props.byoyomiActiveMs ?? null) : null;
 
     if (byoyomiMs > 0) {
       const blackActive = !isFrozen && currentPlayer === 'black';
       const whiteActive = !isFrozen && currentPlayer === 'white';
 
-      if (blackActive && blackRaw <= 0) {
+      if (blackActive && blackRaw <= 0 && byoyomiLeft !== null) {
         blackMs = 0;
         blackByoyomi = true;
-        blackTimeStr = `BY ${formatMs(blackRaw)}`;
+        blackTimeStr = `BY ${formatMs(byoyomiLeft)}`;
       } else {
         blackMs = blackRaw;
         blackTimeStr = formatMs(blackMs);
       }
 
-      if (whiteActive && whiteRaw <= 0) {
+      if (whiteActive && whiteRaw <= 0 && byoyomiLeft !== null) {
         whiteMs = 0;
         whiteByoyomi = true;
-        whiteTimeStr = `BY ${formatMs(whiteRaw)}`;
+        whiteTimeStr = `BY ${formatMs(byoyomiLeft)}`;
       } else {
         whiteMs = whiteRaw;
         whiteTimeStr = formatMs(whiteMs);
