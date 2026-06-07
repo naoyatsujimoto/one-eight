@@ -1,22 +1,38 @@
 /**
- * OfficialArenaOverview.tsx — Official Arena read-only display (Phase E-1)
+ * OfficialArenaOverview.tsx — Official Arena display + Entry (Phase E-2)
+ *
+ * Phase E-1: 読み取り表示
+ * Phase E-2: Entry確認モーダル + enter_arena_event() 実行
  *
  * 表示情報:
  *   - ELEPHANT Arena / JAGUAR Arena カード
  *   - 次回開催日時・Entry締切
  *   - 現在のMaster / Interim Master
- *   - 自分のEntry状態
- *   - Pro required 表示
- *   - Entry coming soon ボタン（非活性）
+ *   - 自分のEntry状態（Entry済み / 締切済み / Pro required 等）
+ *   - Entryボタン（条件付き表示）
+ *
+ * Entry確認モーダル:
+ *   - キャンセル不可注記
+ *   - no-show penalty (-3 AP)
+ *   - 確定 / 戻るボタン
  *
  * 禁止事項:
- *   - enter_arena_event() を呼ばない
- *   - Entry確認モーダルを作らない
- *   - DB/RPC/schema変更なし
+ *   - DB migration を変更しない
+ *   - RPC を変更しない
+ *   - cron / pg_cron を変更しない
+ *   - generate_arena_matches() / process_arena_results() を変更しない
+ *   - OfficialMatchCalendar を変更しない
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { getArenaOverview, getArenaDetail, type ArenaOverviewItem, type ArenaDetailData } from '../lib/arena';
+import {
+  getArenaOverview,
+  getArenaDetail,
+  enterArenaEvent,
+  type ArenaOverviewItem,
+  type ArenaDetailData,
+  type EnterArenaEventResult,
+} from '../lib/arena';
 import { useLang } from '../lib/lang';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -52,66 +68,313 @@ function formatTime(isoStr: string | null, lang: string): string {
   });
 }
 
-// ─── Arena Detail Modal ───────────────────────────────────────────────────────
+/** Entry deadline の過ぎているかどうか */
+function isDeadlinePassed(deadline: string | null): boolean {
+  if (!deadline) return false;
+  return new Date(deadline).getTime() < Date.now();
+}
 
-function ArenaDetailModal({
-  arenaId,
-  onClose,
-}: {
-  arenaId: string;
-  onClose: () => void;
-}) {
-  const { t, lang } = useLang();
-  const [detail, setDetail] = useState<ArenaDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+/** Entry可能かどうか判定（pro必須・deadline・status チェックはサーバー側で確定） */
+type EntryButtonState =
+  | 'can_enter'       // Entryボタンを表示
+  | 'already_entered' // Entry済み
+  | 'deadline_passed' // 締切後
+  | 'no_event'        // next_event なし
+  | 'login_required'  // 非ログイン
+  | 'pro_required';   // Free ユーザー
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getArenaDetail(arenaId).then((result) => {
-      if (cancelled) return;
-      setLoading(false);
-      if ('error' in result) {
-        setError(result.error);
-      } else {
-        setDetail(result);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [arenaId]);
+function getEntryButtonState(opts: {
+  isLoggedIn: boolean;
+  isProActive: boolean;
+  myEntryStatus: string | null;
+  entryDeadline: string | null;
+  hasNextEvent: boolean;
+  eventStatus: string | null;
+}): EntryButtonState {
+  const { isLoggedIn, isProActive, myEntryStatus, entryDeadline, hasNextEvent, eventStatus } = opts;
+
+  if (!hasNextEvent) return 'no_event';
+  if (!isLoggedIn) return 'login_required';
+  if (!isProActive) return 'pro_required';
+  if (myEntryStatus && myEntryStatus !== 'withdrawn') return 'already_entered';
+  if (eventStatus && !['open', 'entry_open'].includes(eventStatus)) {
+    // event_status が open でない場合 → deadline か event_not_open
+    if (isDeadlinePassed(entryDeadline)) return 'deadline_passed';
+    return 'deadline_passed'; // サーバー側で確認させるため closed 扱い
+  }
+  if (isDeadlinePassed(entryDeadline)) return 'deadline_passed';
+  return 'can_enter';
+}
+
+// ─── Entry確認モーダル ──────────────────────────────────────────────────────────
+
+interface EntryConfirmModalProps {
+  arenaName: string;
+  eventTime: string;
+  entryDeadline: string;
+  lang: string;
+  onConfirm: () => void;
+  onBack: () => void;
+  isSubmitting: boolean;
+}
+
+function EntryConfirmModal({
+  arenaName,
+  eventTime,
+  entryDeadline,
+  lang,
+  onConfirm,
+  onBack,
+  isSubmitting,
+}: EntryConfirmModalProps) {
+  const { t } = useLang();
 
   return (
-    <div style={modalStyles.overlay} onClick={onClose}>
-      <div style={modalStyles.card} onClick={(e) => e.stopPropagation()}>
-        <div style={modalStyles.header}>
-          <button type="button" style={modalStyles.closeBtn} onClick={onClose}>✕</button>
+    <div style={confirmModalStyles.overlay} onClick={onBack}>
+      <div style={confirmModalStyles.card} onClick={(e) => e.stopPropagation()}>
+        {/* Title */}
+        <div style={confirmModalStyles.title}>{t.arenaConfirmEntryTitle}</div>
+
+        {/* Body */}
+        <div style={confirmModalStyles.body}>
+          {/* Arena name */}
+          <p style={confirmModalStyles.arenaName}>{arenaName}</p>
+
+          {/* Cancel warning */}
+          <p style={confirmModalStyles.warningBold}>{t.arenaEntryCannotCancel}</p>
+
+          {/* Event details */}
+          <div style={confirmModalStyles.detailRow}>
+            <span style={confirmModalStyles.detailLabel}>{t.arenaEventTime}</span>
+            <span style={confirmModalStyles.detailValue}>{eventTime}</span>
+          </div>
+          <div style={confirmModalStyles.detailRow}>
+            <span style={confirmModalStyles.detailLabel}>{t.arenaEntryDeadline}</span>
+            <span style={confirmModalStyles.detailValue}>{entryDeadline}</span>
+          </div>
+
+          {/* No-show warning */}
+          <p style={confirmModalStyles.noShowText}>{t.arenaNoShowWarning}</p>
+          <p style={confirmModalStyles.noShowPenalty}>{t.arenaNoShowPenalty}</p>
+
+          {/* Pro only note */}
+          <p style={confirmModalStyles.proNote}>{t.arenaProOnlyEntry}</p>
         </div>
-        <div style={modalStyles.body}>
-          {loading && (
-            <p style={modalStyles.loadingText}>{t.loading}</p>
-          )}
-          {error && (
-            <p style={modalStyles.errorText}>{error}</p>
-          )}
-          {detail && !loading && (
-            <DetailContent detail={detail} lang={lang} t={t} />
-          )}
+
+        {/* Buttons */}
+        <div style={confirmModalStyles.btnRow}>
+          <button
+            type="button"
+            style={confirmModalStyles.backBtn}
+            onClick={onBack}
+            disabled={isSubmitting}
+          >
+            {lang === 'ja' ? t.arenaBackBtn : 'Back'}
+          </button>
+          <button
+            type="button"
+            style={{
+              ...confirmModalStyles.confirmBtn,
+              opacity: isSubmitting ? 0.6 : 1,
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            }}
+            onClick={onConfirm}
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? (lang === 'ja' ? '処理中…' : 'Processing…')
+              : (lang === 'ja' ? t.arenaConfirmEntryBtn : 'Confirm Entry')}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Arena Detail Modal ───────────────────────────────────────────────────────
+
+interface ArenaDetailModalProps {
+  arenaId: string;
+  isLoggedIn: boolean;
+  isProActive: boolean;
+  onClose: () => void;
+  onEntrySuccess: () => void;
+}
+
+function ArenaDetailModal({
+  arenaId,
+  isLoggedIn,
+  isProActive,
+  onClose,
+  onEntrySuccess,
+}: ArenaDetailModalProps) {
+  const { t, lang } = useLang();
+  const [detail, setDetail] = useState<ArenaDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Entry 確認モーダル表示フラグ
+  const [showEntryConfirm, setShowEntryConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [entryError, setEntryError] = useState<string | null>(null);
+  const [entrySuccessMsg, setEntrySuccessMsg] = useState<string | null>(null);
+
+  const loadDetail = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const result = await getArenaDetail(arenaId);
+    setLoading(false);
+    if ('error' in result) {
+      setError(result.error);
+    } else {
+      setDetail(result);
+    }
+  }, [arenaId]);
+
+  useEffect(() => {
+    loadDetail();
+  }, [loadDetail]);
+
+  /** Entry確認モーダルから「Confirm Entry」を押した後の処理 */
+  async function handleConfirmEntry() {
+    if (!detail?.next_event?.event_id) return;
+    setIsSubmitting(true);
+    setEntryError(null);
+
+    const result: EnterArenaEventResult = await enterArenaEvent(detail.next_event.event_id);
+
+    setIsSubmitting(false);
+    setShowEntryConfirm(false);
+
+    if (result.ok) {
+      setEntrySuccessMsg(t.arenaEntryConfirmed);
+      // overview と detail を再取得
+      await loadDetail();
+      onEntrySuccess();
+    } else {
+      // エラーメッセージをreason別に表示
+      setEntryError(mapEntryErrorReason(result.reason, t));
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={modalStyles.overlay} onClick={onClose}>
+        <div style={modalStyles.card} onClick={(e) => e.stopPropagation()}>
+          <div style={modalStyles.header}>
+            <button type="button" style={modalStyles.closeBtn} onClick={onClose}>✕</button>
+          </div>
+          <div style={modalStyles.body}>
+            <p style={modalStyles.loadingText}>{t.loading}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={modalStyles.overlay} onClick={onClose}>
+        <div style={modalStyles.card} onClick={(e) => e.stopPropagation()}>
+          <div style={modalStyles.header}>
+            <button type="button" style={modalStyles.closeBtn} onClick={onClose}>✕</button>
+          </div>
+          <div style={modalStyles.body}>
+            <p style={modalStyles.errorText}>{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Entry button state
+  const entryState = detail
+    ? getEntryButtonState({
+        isLoggedIn,
+        isProActive,
+        myEntryStatus: detail.my_entry_status,
+        entryDeadline: detail.next_event?.entry_deadline ?? null,
+        hasNextEvent: !!detail.next_event,
+        eventStatus: detail.next_event?.event_status ?? null,
+      })
+    : 'no_event';
+
+  return (
+    <>
+      <div style={modalStyles.overlay} onClick={onClose}>
+        <div style={modalStyles.card} onClick={(e) => e.stopPropagation()}>
+          <div style={modalStyles.header}>
+            <button type="button" style={modalStyles.closeBtn} onClick={onClose}>✕</button>
+          </div>
+          <div style={modalStyles.body}>
+            {detail && (
+              <DetailContent
+                detail={detail}
+                lang={lang}
+                t={t}
+                entryState={entryState}
+                entryError={entryError}
+                entrySuccessMsg={entrySuccessMsg}
+                onEntryClick={() => {
+                  setEntryError(null);
+                  setShowEntryConfirm(true);
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Entry確認モーダル（詳細モーダルの上に重ねる） */}
+      {showEntryConfirm && detail?.next_event && (
+        <EntryConfirmModal
+          arenaName={detail.display_name}
+          eventTime={formatDatetime(detail.next_event.event_datetime, lang)}
+          entryDeadline={formatDatetime(detail.next_event.entry_deadline, lang)}
+          lang={lang}
+          onConfirm={handleConfirmEntry}
+          onBack={() => setShowEntryConfirm(false)}
+          isSubmitting={isSubmitting}
+        />
+      )}
+    </>
+  );
+}
+
+/** Entry error reason → 表示メッセージ */
+function mapEntryErrorReason(
+  reason: string,
+  t: ReturnType<typeof useLang>['t']
+): string {
+  switch (reason) {
+    case 'not_authenticated': return t.arenaEntryErrNotAuthenticated;
+    case 'pro_required': return t.arenaEntryErrProRequired;
+    case 'already_entered': return t.arenaEntryErrAlreadyEntered;
+    case 'entry_deadline_passed': return t.arenaEntryErrDeadlinePassed;
+    case 'event_not_found': return t.arenaEntryErrEventNotFound;
+    case 'event_not_open': return t.arenaEntryErrEventNotOpen;
+    default: return t.arenaEntryErrUnknown;
+  }
+}
+
+// ─── Detail Content ───────────────────────────────────────────────────────────
+
 function DetailContent({
   detail,
   lang,
   t,
+  entryState,
+  entryError,
+  entrySuccessMsg,
+  onEntryClick,
 }: {
   detail: ArenaDetailData;
   lang: string;
   t: ReturnType<typeof useLang>['t'];
+  entryState: EntryButtonState;
+  entryError: string | null;
+  entrySuccessMsg: string | null;
+  onEntryClick: () => void;
 }) {
   const masterName = detail.current_master_display_name;
   const interimName = detail.current_interim_master_display_name;
@@ -218,33 +481,115 @@ function DetailContent({
         </div>
       )}
 
-      {/* Entry coming soon notice */}
-      <div style={modalStyles.entrySoon}>
-        <button type="button" style={modalStyles.entrySoonBtn} disabled>
-          {t.arenaEntrySoon}
-        </button>
+      {/* Entry section */}
+      <div style={modalStyles.entrySection}>
+        {entrySuccessMsg && (
+          <div style={modalStyles.entrySuccess}>{entrySuccessMsg}</div>
+        )}
+        {entryError && (
+          <div style={modalStyles.entryErr}>{entryError}</div>
+        )}
+        <EntryButtonForDetail
+          entryState={entryState}
+          t={t}
+          onEntryClick={onEntryClick}
+        />
       </div>
     </div>
   );
+}
+
+function EntryButtonForDetail({
+  entryState,
+  t,
+  onEntryClick,
+}: {
+  entryState: EntryButtonState;
+  t: ReturnType<typeof useLang>['t'];
+  onEntryClick: () => void;
+}) {
+  switch (entryState) {
+    case 'can_enter':
+      return (
+        <button type="button" style={entryBtnStyles.active} onClick={onEntryClick}>
+          {t.arenaEntryBtn}
+        </button>
+      );
+    case 'already_entered':
+      return (
+        <div style={entryBtnStyles.stateLabel}>
+          ✓ {t.arenaEntryConfirmed}
+        </div>
+      );
+    case 'deadline_passed':
+      return (
+        <div style={entryBtnStyles.stateLabel}>
+          {t.arenaEntryClosed}
+        </div>
+      );
+    case 'login_required':
+      return (
+        <div style={entryBtnStyles.stateLabel}>
+          {t.arenaLoginRequired}
+        </div>
+      );
+    case 'pro_required':
+      return (
+        <div style={entryBtnStyles.stateLabel}>
+          {t.arenaProRequired}
+        </div>
+      );
+    case 'no_event':
+      return (
+        <div style={entryBtnStyles.stateLabel}>
+          {t.arenaNoUpcomingEvent}
+        </div>
+      );
+  }
 }
 
 // ─── Arena Card ───────────────────────────────────────────────────────────────
 
 function ArenaCard({
   arena,
+  isLoggedIn,
+  isProActive,
   onViewDetail,
 }: {
   arena: ArenaOverviewItem;
+  isLoggedIn: boolean;
+  isProActive: boolean;
   onViewDetail: (id: string) => void;
 }) {
   const { t, lang } = useLang();
   const masterName = arena.current_master_display_name;
   const interimName = arena.current_interim_master_display_name;
-  const myStatus = arena.my_entry_status;
 
-  function renderMyEntryStatus() {
-    if (!myStatus) return t.arenaNotEntered;
-    return myStatus; // pending / matched / no_match etc.
+  // Entry button state for card
+  const entryState = getEntryButtonState({
+    isLoggedIn,
+    isProActive,
+    myEntryStatus: arena.my_entry_status,
+    entryDeadline: arena.entry_deadline,
+    hasNextEvent: !!arena.event_id,
+    eventStatus: arena.event_status,
+  });
+
+  function renderEntryStatusBadge() {
+    switch (entryState) {
+      case 'already_entered':
+        return <span style={cardStyles.entryBadgeConfirmed}>✓ {t.arenaEntryConfirmed}</span>;
+      case 'deadline_passed':
+        return <span style={cardStyles.entryBadgeClosed}>{t.arenaEntryClosed}</span>;
+      case 'login_required':
+        return <span style={cardStyles.entryBadgeInfo}>{t.arenaLoginRequired}</span>;
+      case 'pro_required':
+        return <span style={cardStyles.entryBadgeInfo}>{t.arenaProRequired}</span>;
+      case 'no_event':
+        return <span style={cardStyles.entryBadgeInfo}>{t.arenaNoUpcomingEvent}</span>;
+      case 'can_enter':
+        return null; // カード上にはボタンを置かずタップで詳細へ誘導
+    }
   }
 
   return (
@@ -298,14 +643,16 @@ function ArenaCard({
       {/* My entry status */}
       <div style={cardStyles.row}>
         <span style={cardStyles.label}>{t.arenaMyEntry}</span>
-        <span style={cardStyles.value}>{renderMyEntryStatus()}</span>
+        <span style={cardStyles.value}>
+          {arena.my_entry_status && arena.my_entry_status !== 'withdrawn'
+            ? arena.my_entry_status
+            : t.arenaNotEntered}
+        </span>
       </div>
 
-      {/* Entry coming soon button */}
+      {/* Footer: entry badge + detail hint */}
       <div style={cardStyles.footer}>
-        <button type="button" style={cardStyles.entrySoonBtn} disabled>
-          {t.arenaEntrySoon}
-        </button>
+        {renderEntryStatusBadge()}
         <span style={cardStyles.detailHint}>{t.arenaTapForDetail}</span>
       </div>
     </div>
@@ -314,7 +661,17 @@ function ArenaCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function OfficialArenaOverview() {
+interface OfficialArenaOverviewProps {
+  /** ログイン中ユーザーID。未ログインは undefined */
+  userId?: string;
+  /** Pro active かどうか */
+  isProActive?: boolean;
+}
+
+export function OfficialArenaOverview({
+  userId,
+  isProActive: proActive = false,
+}: OfficialArenaOverviewProps) {
   const { t } = useLang();
   const [arenas, setArenas] = useState<ArenaOverviewItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -356,6 +713,8 @@ export function OfficialArenaOverview() {
     return null;
   }
 
+  const isLoggedIn = !!userId;
+
   return (
     <div style={overviewStyles.root}>
       {/* Section heading */}
@@ -367,6 +726,8 @@ export function OfficialArenaOverview() {
           <ArenaCard
             key={arena.arena_id}
             arena={arena}
+            isLoggedIn={isLoggedIn}
+            isProActive={proActive}
             onViewDetail={setDetailArenaId}
           />
         ))}
@@ -376,7 +737,10 @@ export function OfficialArenaOverview() {
       {detailArenaId && (
         <ArenaDetailModal
           arenaId={detailArenaId}
+          isLoggedIn={isLoggedIn}
+          isProActive={proActive}
           onClose={() => setDetailArenaId(null)}
+          onEntrySuccess={loadArenas}
         />
       )}
     </div>
@@ -496,15 +860,32 @@ const cardStyles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap' as const,
     gap: '0.35rem',
   },
-  entrySoonBtn: {
-    padding: '0.4rem 0.85rem',
-    fontSize: '0.78rem',
-    background: '#e8e3de',
+  entryBadgeConfirmed: {
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    color: '#2a7a2a',
+    background: '#e8f5e9',
+    border: '1px solid #a5d6a7',
+    borderRadius: 4,
+    padding: '0.1rem 0.45rem',
+  },
+  entryBadgeClosed: {
+    fontSize: '0.72rem',
+    fontWeight: 600,
     color: '#888',
-    border: '1px solid #d0cbc5',
-    borderRadius: 5,
-    cursor: 'default',
-    letterSpacing: '0.01em',
+    background: '#f0f0f0',
+    border: '1px solid #d0d0d0',
+    borderRadius: 4,
+    padding: '0.1rem 0.45rem',
+  },
+  entryBadgeInfo: {
+    fontSize: '0.72rem',
+    fontWeight: 500,
+    color: '#666',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 4,
+    padding: '0.1rem 0',
   },
   detailHint: {
     fontSize: '0.68rem',
@@ -614,18 +995,23 @@ const modalStyles: Record<string, React.CSSProperties> = {
   historyWinner: {
     color: '#555',
   },
-  entrySoon: {
-    marginTop: '1rem',
-    textAlign: 'center',
+  entrySection: {
+    marginTop: '1.25rem',
+    borderTop: '1px solid #f0ede9',
+    paddingTop: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    alignItems: 'flex-start',
   },
-  entrySoonBtn: {
-    padding: '0.5rem 1.2rem',
+  entrySuccess: {
+    fontSize: '0.85rem',
+    color: '#2a7a2a',
+    fontWeight: 600,
+  },
+  entryErr: {
     fontSize: '0.82rem',
-    background: '#e8e3de',
-    color: '#888',
-    border: '1px solid #d0cbc5',
-    borderRadius: 5,
-    cursor: 'default',
+    color: '#c00',
   },
   loadingText: {
     fontSize: '0.85rem',
@@ -638,5 +1024,144 @@ const modalStyles: Record<string, React.CSSProperties> = {
     color: '#c00',
     textAlign: 'center',
     padding: '1rem 0',
+  },
+};
+
+const entryBtnStyles: Record<string, React.CSSProperties> = {
+  active: {
+    padding: '0.55rem 1.3rem',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    background: '#2c2c2c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+    letterSpacing: '0.02em',
+    // iPhone誤タップ防止: 十分な高さを確保
+    minHeight: 44,
+    minWidth: 120,
+  },
+  stateLabel: {
+    fontSize: '0.82rem',
+    color: '#888',
+    fontStyle: 'italic',
+  },
+};
+
+const confirmModalStyles: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 400, // detail modalの上に重ねる
+  },
+  card: {
+    background: '#fff',
+    borderRadius: 12,
+    width: '88%',
+    maxWidth: 360,
+    padding: '1.5rem 1.25rem 1.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.85rem',
+  },
+  title: {
+    fontSize: '1rem',
+    fontWeight: 700,
+    color: '#111',
+    margin: 0,
+    textAlign: 'center',
+  },
+  body: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.6rem',
+  },
+  arenaName: {
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    color: '#222',
+    textAlign: 'center',
+    margin: 0,
+  },
+  warningBold: {
+    fontSize: '0.8rem',
+    color: '#c00',
+    fontWeight: 600,
+    textAlign: 'center',
+    margin: 0,
+  },
+  detailRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: '0.5rem',
+    fontSize: '0.82rem',
+  },
+  detailLabel: {
+    color: '#888',
+    flexShrink: 0,
+    fontSize: '0.75rem',
+  },
+  detailValue: {
+    color: '#222',
+    fontWeight: 500,
+    textAlign: 'right',
+    wordBreak: 'break-word',
+  },
+  noShowText: {
+    fontSize: '0.77rem',
+    color: '#555',
+    margin: 0,
+    lineHeight: 1.5,
+  },
+  noShowPenalty: {
+    fontSize: '0.77rem',
+    color: '#c44',
+    fontWeight: 600,
+    margin: 0,
+  },
+  proNote: {
+    fontSize: '0.72rem',
+    color: '#7a5c00',
+    margin: 0,
+    background: '#fff8dc',
+    border: '1px solid #e8d080',
+    borderRadius: 4,
+    padding: '0.3rem 0.5rem',
+  },
+  btnRow: {
+    display: 'flex',
+    gap: '0.75rem',
+    justifyContent: 'center',
+    marginTop: '0.25rem',
+  },
+  backBtn: {
+    flex: 1,
+    padding: '0.65rem 0.5rem',
+    fontSize: '0.85rem',
+    background: 'none',
+    color: '#444',
+    border: '1px solid #ccc',
+    borderRadius: 6,
+    cursor: 'pointer',
+    // iPhone誤タップ防止
+    minHeight: 44,
+  },
+  confirmBtn: {
+    flex: 1,
+    padding: '0.65rem 0.5rem',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    background: '#2c2c2c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    // iPhone誤タップ防止
+    minHeight: 44,
   },
 };

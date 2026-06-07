@@ -1,8 +1,9 @@
 /**
- * arena.ts — Official Arena read-only client functions
+ * arena.ts — Official Arena client functions
  *
- * Phase E-1: read display only (no entry execution)
- * RPC wrappers for get_arena_overview / get_arena_detail
+ * Phase E-1: read display only
+ * Phase E-2: Entry confirmation modal + enter_arena_event execution
+ * RPC wrappers for get_arena_overview / get_arena_detail / enter_arena_event
  */
 
 import { supabase } from './supabase';
@@ -102,6 +103,12 @@ export interface ArenaDetailData {
   recent_master_history: ArenaMasterHistoryRow[];
 }
 
+// ─── Entry result type ──────────────────────────────────────────────────────────
+
+export type EnterArenaEventResult =
+  | { ok: true; entry_id?: string; arena_event_id?: string; entered_at?: string }
+  | { ok: false; reason: string; [key: string]: unknown };
+
 // ─── API wrappers ──────────────────────────────────────────────────────────────
 
 /**
@@ -143,4 +150,61 @@ export async function getArenaDetail(
     return { error: d['error'] as string };
   }
   return data as unknown as ArenaDetailData;
+}
+
+/**
+ * enter_arena_event(p_arena_event_id) — Arena Entry実行
+ * 認証済みユーザーのみ呼べる
+ * Entry後キャンセル不可
+ */
+export async function enterArenaEvent(
+  eventId: string
+): Promise<EnterArenaEventResult> {
+  const { data, error } = await supabase.rpc('enter_arena_event', {
+    p_arena_event_id: eventId,
+  });
+  if (error) {
+    // Supabase RPC error — try to extract reason from message
+    const msg = error.message ?? 'unknown_error';
+    // Map known error messages to reason strings
+    const reasonMap: Record<string, string> = {
+      'not authenticated': 'not_authenticated',
+      'not_authenticated': 'not_authenticated',
+      'event not found': 'event_not_found',
+      'event_not_found': 'event_not_found',
+      'event not open': 'event_not_open',
+      'event_not_open': 'event_not_open',
+      'entry deadline passed': 'entry_deadline_passed',
+      'entry_deadline_passed': 'entry_deadline_passed',
+      'no profile': 'no_profile',
+      'no_profile': 'no_profile',
+      'pro required': 'pro_required',
+      'pro_required': 'pro_required',
+      'already entered': 'already_entered',
+      'already_entered': 'already_entered',
+    };
+    const lc = msg.toLowerCase();
+    let reason = 'unknown_error';
+    for (const [key, val] of Object.entries(reasonMap)) {
+      if (lc.includes(key)) { reason = val; break; }
+    }
+    return { ok: false, reason, raw: msg };
+  }
+  if (!data || typeof data !== 'object') {
+    return { ok: false, reason: 'unexpected_response' };
+  }
+  const d = data as Record<string, unknown>;
+  if (d['ok'] === false || d['error'] || d['reason']) {
+    return {
+      ok: false,
+      reason: (d['reason'] as string) ?? (d['error'] as string) ?? 'unknown_error',
+      ...d,
+    };
+  }
+  return {
+    ok: true,
+    entry_id: d['entry_id'] as string | undefined,
+    arena_event_id: d['arena_event_id'] as string | undefined,
+    entered_at: d['entered_at'] as string | undefined,
+  };
 }

@@ -328,6 +328,29 @@ export const T = {
     arenaMyEntry: 'My entry',
     arenaNotEntered: 'Not entered',
     arenaMasterHistory: 'Master History',
+    // Official Arena (Phase E-2) — Entry confirmation + execution
+    arenaConfirmEntryTitle: 'Confirm Arena Entry',
+    arenaEntryCannotCancel: 'This entry cannot be cancelled after confirmation.',
+    arenaEventTime: 'Event time',
+    arenaNoShowWarning: 'If you do not enter your assigned match at the start time, you may lose by no-show.',
+    arenaNoShowPenalty: 'A no-show loss applies -3 Arena Points.',
+    arenaProOnlyEntry: 'Official Arena entry is available for Pro users only.',
+    arenaConfirmEntryBtn: 'Confirm Entry',
+    arenaBackBtn: 'Back',
+    arenaEntryConfirmed: 'Entry confirmed',
+    arenaEntryClosed: 'Entry closed',
+    arenaAlreadyEntered: 'Already entered',
+    arenaLoginRequired: 'Login required',
+    arenaNoUpcomingEvent: 'No upcoming event',
+    arenaEntryFailed: 'Entry failed',
+    arenaEntryBtn: 'Enter Arena',
+    arenaEntryErrNotAuthenticated: 'You must be logged in to enter.',
+    arenaEntryErrProRequired: 'Pro required to enter Official Arena.',
+    arenaEntryErrAlreadyEntered: 'You have already entered this Arena event.',
+    arenaEntryErrDeadlinePassed: 'Entry deadline has passed.',
+    arenaEntryErrEventNotFound: 'Event not found.',
+    arenaEntryErrEventNotOpen: 'Entry is not open for this event.',
+    arenaEntryErrUnknown: 'Entry failed. Please try again.',
   },
 
 
@@ -652,6 +675,29 @@ export const T = {
     arenaMyEntry: 'Entry状態',
     arenaNotEntered: '未Entry',
     arenaMasterHistory: 'Master履歴',
+    // Official Arena (Phase E-2) — Entry confirmation + execution
+    arenaConfirmEntryTitle: 'Arena Entryの確認',
+    arenaEntryCannotCancel: '確認後、このEntryはキャンセルできません。',
+    arenaEventTime: '開催日時',
+    arenaNoShowWarning: '開始時刻に割り当てられたMatchへ入室しない場合、no-show敗北になる可能性があります。',
+    arenaNoShowPenalty: 'no-show敗北では Arena Point が -3 されます。',
+    arenaProOnlyEntry: 'Official ArenaへのEntryはProユーザー限定です。',
+    arenaConfirmEntryBtn: 'Entryを確定',
+    arenaBackBtn: '戻る',
+    arenaEntryConfirmed: 'Entry済み',
+    arenaEntryClosed: 'Entry締切済み',
+    arenaAlreadyEntered: 'Entry済み',
+    arenaLoginRequired: 'ログインが必要',
+    arenaNoUpcomingEvent: '次回開催未定',
+    arenaEntryFailed: 'Entryに失敗しました',
+    arenaEntryBtn: 'ArenaにEntry',
+    arenaEntryErrNotAuthenticated: 'Entryにはログインが必要です。',
+    arenaEntryErrProRequired: 'Official ArenaへのEntryはProユーザーのみ可能です。',
+    arenaEntryErrAlreadyEntered: 'すでにこのArenaにEntry済みです。',
+    arenaEntryErrDeadlinePassed: 'Entry締切を過ぎています。',
+    arenaEntryErrEventNotFound: 'Eventが見つかりません。',
+    arenaEntryErrEventNotOpen: 'このEventはEntry受付中ではありません。',
+    arenaEntryErrUnknown: 'Entryに失敗しました。もう一度お試しください。',
   },
 
 } as const;
@@ -939,6 +985,29 @@ export type Translations = {
   arenaMyEntry: string;
   arenaNotEntered: string;
   arenaMasterHistory: string;
+  // Official Arena (Phase E-2)
+  arenaConfirmEntryTitle: string;
+  arenaEntryCannotCancel: string;
+  arenaEventTime: string;
+  arenaNoShowWarning: string;
+  arenaNoShowPenalty: string;
+  arenaProOnlyEntry: string;
+  arenaConfirmEntryBtn: string;
+  arenaBackBtn: string;
+  arenaEntryConfirmed: string;
+  arenaEntryClosed: string;
+  arenaAlreadyEntered: string;
+  arenaLoginRequired: string;
+  arenaNoUpcomingEvent: string;
+  arenaEntryFailed: string;
+  arenaEntryBtn: string;
+  arenaEntryErrNotAuthenticated: string;
+  arenaEntryErrProRequired: string;
+  arenaEntryErrAlreadyEntered: string;
+  arenaEntryErrDeadlinePassed: string;
+  arenaEntryErrEventNotFound: string;
+  arenaEntryErrEventNotOpen: string;
+  arenaEntryErrUnknown: string;
 };
 
 // ── Context ───────────────────────────────────────────────────────────────────

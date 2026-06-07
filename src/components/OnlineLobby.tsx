@@ -18,6 +18,8 @@ import { OfficialArenaOverview } from './OfficialArenaOverview';
 
 interface Props {
   userId: string;
+  /** Pro active かどうか（Arena Entry 表示制御用） */
+  proActive?: boolean;
   onGameReady: (gameId: string, color: 'black' | 'white', roomCode?: string) => void;
   onCancel: () => void;
   /** 公式戦入室後に OnlineBoard へ遷移させる callback。
@@ -29,7 +31,7 @@ interface Props {
 type Mode = 'select' | 'friend' | 'random' | 'ranked' | 'tournament';
 type FriendTab = 'create' | 'join';
 
-export function OnlineLobby({ userId, onGameReady, onCancel, onEnterOnlineGame }: Props) {
+export function OnlineLobby({ userId, proActive = false, onGameReady, onCancel, onEnterOnlineGame }: Props) {
   const { t } = useLang();
   const [mode, setMode] = useState<Mode>('select');
 
@@ -64,7 +66,7 @@ export function OnlineLobby({ userId, onGameReady, onCancel, onEnterOnlineGame }
           )}
           {mode === 'ranked' && (
             <>
-              <OfficialArenaOverview />
+              <OfficialArenaOverview userId={userId} isProActive={proActive} />
               <OfficialMatchCalendar
                 onEnterOnlineGame={onEnterOnlineGame}
                 enableEntry={true}

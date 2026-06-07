@@ -1136,6 +1136,7 @@ export default function App() {
       {onlineLobbyOpen && user && (
         <OnlineLobby
           userId={user.id}
+          proActive={proActive}
           onGameReady={handleOnlineGameReady}
           onCancel={() => setOnlineLobbyOpen(false)}
           onEnterOnlineGame={(gameId, isOfficial, startsAt) => {
