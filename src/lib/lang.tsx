@@ -375,6 +375,11 @@ export const T = {
     arenaMatchKindDefend: 'Defense Match',
     arenaMatchKindMasterSuccession: 'Master Succession',
     arenaMatchKindInterimSet: 'Interim Set',
+    // E-5: Arena result status
+    arenaResultPendingTitle: 'Match completed.',
+    arenaResultPendingBody: 'Arena result is pending.',
+    arenaResultPendingNote: 'Arena Points and Master status will be updated after verification.',
+    arenaResultProcessed: 'Arena result processed.',
   },
 
 
@@ -747,6 +752,11 @@ export const T = {
     arenaMatchKindDefend: '防衛戦',
     arenaMatchKindMasterSuccession: 'Master継承戦',
     arenaMatchKindInterimSet: 'Interim Set',
+    // E-5: Arena result status
+    arenaResultPendingTitle: '対局は終了しました。',
+    arenaResultPendingBody: 'Arena結果は確認中です。',
+    arenaResultPendingNote: 'Arena PointとMaster状態は確認後に反映されます。',
+    arenaResultProcessed: 'Arena結果は反映済みです。',
   },
 
 
@@ -1082,6 +1092,11 @@ export type Translations = {
   arenaMatchKindDefend: string;
   arenaMatchKindMasterSuccession: string;
   arenaMatchKindInterimSet: string;
+  // E-5: Arena result status
+  arenaResultPendingTitle: string;
+  arenaResultPendingBody: string;
+  arenaResultPendingNote: string;
+  arenaResultProcessed: string;
 };
 
 

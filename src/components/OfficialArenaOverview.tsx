@@ -5,6 +5,7 @@
  * Phase E-2: Entry確認モーダル + enter_arena_event() 実行
  * Phase E-3: My Arena Match 表示 + Enter Match導線（coming soon）
  * Phase E-4: Enter Match本実装 — 既存 enterOfficialMatch() 経路を接続
+ * Phase E-5: Arena result status表示（pending / processed）
  *
  * 表示情報:
  *   - ELEPHANT Arena / JAGUAR Arena カード
@@ -608,20 +609,25 @@ function MyArenaMatchSection({
 
   const kindLabel = matchKindLabel(myMatch.match_kind, myMatch.master_subtype);
 
-  // ─── Enter Match 状態判定 ─────────────────────────────────────────────────
-  // Match終了済み判定（arena_match_status / official_match_status）
-  const arenaMatchDone = (
-    myMatch.arena_match_status === 'completed' ||
-    myMatch.arena_match_status === 'processed' ||
-    myMatch.arena_match_status === 'cancelled'
-  );
-  const officialMatchDone = (
+  // ─── Enter Match 状態判定 (E-4 / E-5) ───────────────────────────────────
+
+  // E-5: Arena result処理済み（processed）判定
+  const arenaResultProcessed = myMatch.arena_match_status === 'processed';
+
+  // E-5: official match終了済み判定（linked official matchのstatus）
+  const officialMatchFinished = (
     myMatch.official_match_status === 'completed' ||
     myMatch.official_match_status === 'cancelled' ||
     myMatch.official_match_status === 'forfeited' ||
     myMatch.official_match_status === 'no_contest'
   );
-  const matchIsDone = arenaMatchDone || officialMatchDone;
+
+  // E-5: Arena result pending = official match終了済み かつ arena result未処理
+  //   arena_match_status が pending/active/completed でも official matchが終われば pending 扱い
+  const arenaResultPending = officialMatchFinished && !arenaResultProcessed;
+
+  // E-4: arena_match_status が cancelled はMatch自体が不成立 → 既存matchDone表示
+  const arenaMatchCancelled = myMatch.arena_match_status === 'cancelled';
 
   // official_match_idがある場合のみEnterボタン表示対象
   const hasOfficialMatchId = !!myMatch.official_match_id;
@@ -671,9 +677,19 @@ function MyArenaMatchSection({
               : '—'}
           </span>
         </div>
-        {/* Enter Match 導線 — E-4本実装: enterOfficialMatch() 経路を接続 */}
-        {matchIsDone ? (
-          // Match終了済み
+        {/* Enter Match 導線 — E-4/E-5: result status 分岐 */}
+        {arenaResultProcessed ? (
+          // E-5: Arena result処理済み
+          <div style={myMatchStyles.resultProcessed}>{t.arenaResultProcessed}</div>
+        ) : arenaResultPending ? (
+          // E-5: official match終了済み・Arena result未処理（最大10分程度の確認中）
+          <div style={myMatchStyles.resultPending}>
+            <div style={myMatchStyles.resultPendingTitle}>{t.arenaResultPendingTitle}</div>
+            <div style={myMatchStyles.resultPendingBody}>{t.arenaResultPendingBody}</div>
+            <div style={myMatchStyles.resultPendingNote}>{t.arenaResultPendingNote}</div>
+          </div>
+        ) : arenaMatchCancelled ? (
+          // Match自体がキャンセル（arena_match_statusがcancelled）
           <div style={myMatchStyles.matchDone}>{t.arenaMatchCompleted}</div>
         ) : hasOfficialMatchId && onEnterOnlineGame ? (
           // 入室可能
@@ -1503,5 +1519,38 @@ const myMatchStyles: Record<string, React.CSSProperties> = {
     fontSize: '0.75rem',
     color: '#c0392b',
     lineHeight: 1.4,
+  },
+  // E-5: Arena result status styles
+  resultPending: {
+    marginTop: '0.6rem',
+    padding: '0.55rem 0.65rem',
+    background: '#f5f3ef',
+    border: '1px solid #ddd9d3',
+    borderRadius: 6,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '0.2rem',
+  },
+  resultPendingTitle: {
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: '#333',
+    lineHeight: 1.4,
+  },
+  resultPendingBody: {
+    fontSize: '0.78rem',
+    color: '#555',
+    lineHeight: 1.4,
+  },
+  resultPendingNote: {
+    fontSize: '0.73rem',
+    color: '#888',
+    lineHeight: 1.45,
+  },
+  resultProcessed: {
+    marginTop: '0.5rem',
+    fontSize: '0.78rem',
+    color: '#2a7a2a',
+    fontWeight: 500,
   },
 };
