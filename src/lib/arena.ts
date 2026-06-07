@@ -208,3 +208,27 @@ export async function enterArenaEvent(
     entered_at: d['entered_at'] as string | undefined,
   };
 }
+
+// ─── Arena titles type ─────────────────────────────────────────────────────────
+
+export interface ArenaTitle {
+  arena_id: string;
+  arena_code: string;
+  title_name: string;
+  status: 'official';
+  started_at: string;
+}
+
+/**
+ * get_my_arena_titles() — 自分が現在保持しているArena称号一覧
+ * authenticated専用。未ログイン時は空配列を返す。
+ */
+export async function getMyArenaTitles(): Promise<ArenaTitle[]> {
+  const { data, error } = await supabase.rpc('get_my_arena_titles');
+  if (error) {
+    console.warn('[arena] get_my_arena_titles error:', error.message);
+    return [];
+  }
+  if (!Array.isArray(data)) return [];
+  return data as ArenaTitle[];
+}

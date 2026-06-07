@@ -380,6 +380,11 @@ export const T = {
     arenaResultPendingBody: 'Arena result is pending.',
     arenaResultPendingNote: 'Arena Points and Master status will be updated after verification.',
     arenaResultProcessed: 'Arena result processed.',
+    // E-6: Arena titles on Profile/UserPage
+    arenaArenaTitles: 'Arena Titles',
+    arenaNoArenaTitles: 'No Arena titles yet',
+    arenaTitleMaster: 'Master',
+    arenaTitleCurrentHolder: 'Current holder',
   },
 
 
@@ -757,6 +762,11 @@ export const T = {
     arenaResultPendingBody: 'Arena結果は確認中です。',
     arenaResultPendingNote: 'Arena PointとMaster状態は確認後に反映されます。',
     arenaResultProcessed: 'Arena結果は反映済みです。',
+    // E-6: Arena titles on Profile/UserPage
+    arenaArenaTitles: 'Arena 称号',
+    arenaNoArenaTitles: 'Arena称号なし',
+    arenaTitleMaster: 'マスター',
+    arenaTitleCurrentHolder: '現在の称号保持者',
   },
 
 
@@ -1097,6 +1107,11 @@ export type Translations = {
   arenaResultPendingBody: string;
   arenaResultPendingNote: string;
   arenaResultProcessed: string;
+  // E-6: Arena titles on Profile/UserPage
+  arenaArenaTitles: string;
+  arenaNoArenaTitles: string;
+  arenaTitleMaster: string;
+  arenaTitleCurrentHolder: string;
 };
 
 

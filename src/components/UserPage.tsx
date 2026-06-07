@@ -22,6 +22,7 @@ import type { Lang } from '../lib/lang';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
+import { getMyArenaTitles, type ArenaTitle } from '../lib/arena';
 
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
@@ -68,6 +69,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   // online_game_id → OfficialMatchListItem のマップ
   // RecentGamesTable で human_color=null の online 対局の勝敗判定に使用
   const [officialGameMap, setOfficialGameMap] = useState<Map<string, OfficialMatchListItem>>(new Map());
+  const [arenaTitles, setArenaTitles] = useState<ArenaTitle[]>([]);
 
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
@@ -106,6 +108,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         }
         setOfficialGameMap(omMap);
       });
+    }
+    // Load Arena titles (authenticated users only — own page)
+    if (!viewOnly) {
+      getMyArenaTitles().then((titles) => setArenaTitles(titles));
     }
     // Load profile: stats_public + display name
     getProfile(displayUserId).then((profile) => {
@@ -371,6 +377,53 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               filter="all"
               initialDay={new Date().getDate()}
             />
+          </section>
+        )}
+
+        {/* ── Section 6.5: Arena Titles (E-6) ── */}
+        {!viewOnly && (
+          <section style={s.section}>
+            <SectionTitle title={t.arenaArenaTitles} />
+            {arenaTitles.length === 0 ? (
+              <Muted text={t.arenaNoArenaTitles} />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {arenaTitles.map((title) => (
+                  <div
+                    key={title.arena_id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem 0.75rem',
+                      background: '#fdf8f0',
+                      borderRadius: 8,
+                      border: '1px solid #e8d9b0',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#7a5c1e' }}>
+                        {title.title_name}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#999', marginTop: 2 }}>
+                        {t.arenaTitleCurrentHolder}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: '#b0860a',
+                      fontWeight: 500,
+                    }}>
+                      {new Date(title.started_at).toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
