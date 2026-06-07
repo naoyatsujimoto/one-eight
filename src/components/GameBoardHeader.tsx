@@ -208,6 +208,11 @@ function ArcFace({ pct, timeStr, color, active, warn, name, piece }: ArcFaceProp
     return { i, a, r1, r2, isMajor };
   });
 
+  // BY M:SS 形式の場合は "BY" と時間部分に分割して縦積み表示
+  const byoyomiMatch = timeStr.match(/^BY\s+(.+)$/);
+  const isByoyomi = byoyomiMatch !== null;
+  const timeMain = isByoyomi ? byoyomiMatch![1] : timeStr;
+
   return (
     <div className={cls}>
       <div className="gbh-clock-head">
@@ -236,7 +241,10 @@ function ArcFace({ pct, timeStr, color, active, warn, name, piece }: ArcFaceProp
           ))}
         </svg>
         <div className="gbh-face-inner">
-          <span className="gbh-time-text">{timeStr}</span>
+          {isByoyomi && (
+            <span className="gbh-time-byoyomi-prefix">BY</span>
+          )}
+          <span className="gbh-time-text">{timeMain}</span>
         </div>
         {active && <span className="gbh-pulse-ring" />}
       </div>

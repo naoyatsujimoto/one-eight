@@ -479,21 +479,37 @@ html, body {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0px;
+  padding: 4px;
+  box-sizing: border-box;
 }
 .gbh-time-text {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--ink-2);
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+/* BY プレフィックス（秒読み中のみ表示）*/
+.gbh-time-byoyomi-prefix {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: inherit;
   line-height: 1;
+  text-align: center;
 }
 .gbh-clock-active .gbh-time-text {
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 600;
 }
 .gbh-clock-warn-warn.gbh-clock-active .gbh-time-text {
   color: #8a5a16;
@@ -550,7 +566,8 @@ html, body {
     height: 48px;
   }
   .gbh-time-text {
-    font-size: 13px;
+    font-size: 11px;
+    letter-spacing: -0.02em;
   }
   .gbh-clock-name {
     font-size: 8.5px;
@@ -599,8 +616,9 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--ink);
-  min-width: 3.5ch;
-  text-align: right;
+  min-width: 4.2ch;
+  text-align: center;
+  white-space: nowrap;
   transition: color 0.2s;
 }
 .online-timer-player-inactive .online-timer-value {
