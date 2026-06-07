@@ -324,9 +324,14 @@ export const T = {
     arenaInterimMaster: 'Interim Master',
     arenaPointRanking: 'Arena Point Ranking',
     arenaRecentMatchHistory: 'Recent Match History',
-    arenaTapForDetail: 'Tap for detail',
+    arenaTapForDetail: 'View details',
     arenaMyEntry: 'My entry',
     arenaNotEntered: 'Not entered',
+    arenaEntryStatusPending: 'Entry confirmed / Pairing pending',
+    arenaEntryStatusMatched: 'Match assigned',
+    arenaEntryStatusNoMatch: 'No match',
+    arenaDetailBtn: 'View details',
+    arenaOpenDetail: 'Open details',
     arenaMasterHistory: 'Master History',
     // Official Arena (Phase E-2) — Entry confirmation + execution
     arenaConfirmEntryTitle: 'Confirm Arena Entry',
@@ -706,9 +711,14 @@ export const T = {
     arenaInterimMaster: 'Interim Master',
     arenaPointRanking: 'Arena Point Ranking',
     arenaRecentMatchHistory: '最近のMatch履歴',
-    arenaTapForDetail: 'タップして詳細',
+    arenaTapForDetail: '詳細を開く',
     arenaMyEntry: 'Entry状態',
     arenaNotEntered: '未Entry',
+    arenaEntryStatusPending: 'Entry済み・Pairing待ち',
+    arenaEntryStatusMatched: 'Match決定済み',
+    arenaEntryStatusNoMatch: 'Match不成立',
+    arenaDetailBtn: '詳細を開く',
+    arenaOpenDetail: '詳細を開く',
     arenaMasterHistory: 'Master履歴',
     // Official Arena (Phase E-2) — Entry confirmation + execution
     arenaConfirmEntryTitle: 'Arena Entryの確認',
@@ -1054,6 +1064,11 @@ export type Translations = {
   arenaTapForDetail: string;
   arenaMyEntry: string;
   arenaNotEntered: string;
+  arenaEntryStatusPending: string;
+  arenaEntryStatusMatched: string;
+  arenaEntryStatusNoMatch: string;
+  arenaDetailBtn: string;
+  arenaOpenDetail: string;
   arenaMasterHistory: string;
   // Official Arena (Phase E-2)
   arenaConfirmEntryTitle: string;

@@ -95,6 +95,22 @@ interface MyArenaMatch {
   online_game_id: string | null;
 }
 
+/** my_entry_status の raw 値をユーザー向け表示文字列に変換
+ *  raw の "pending" 等をそのまま表示しない
+ */
+function formatMyEntryStatus(
+  status: string | null | undefined,
+  t: ReturnType<typeof useLang>['t']
+): string {
+  if (!status || status === 'withdrawn') return t.arenaNotEntered;
+  switch (status) {
+    case 'pending':   return t.arenaEntryStatusPending;  // Entry済み・Pairing待ち
+    case 'matched':   return t.arenaEntryStatusMatched;  // Match決定済み
+    case 'no_match':  return t.arenaEntryStatusNoMatch;  // Match不成立
+    default:          return t.arenaNotEntered;
+  }
+}
+
 /** Entry deadline の過ぎているかどうか
  *  deadline が null / undefined / Invalid Date の場合は false（締切済み扱いしない）
  */
@@ -898,16 +914,14 @@ function ArenaCard({
       <div style={cardStyles.row}>
         <span style={cardStyles.label}>{t.arenaMyEntry}</span>
         <span style={cardStyles.value}>
-          {arena.my_entry_status && arena.my_entry_status !== 'withdrawn'
-            ? arena.my_entry_status
-            : t.arenaNotEntered}
+          {formatMyEntryStatus(arena.my_entry_status, t)}
         </span>
       </div>
 
       {/* Footer: entry badge + detail hint */}
       <div style={cardStyles.footer}>
         {renderEntryStatusBadge()}
-        <span style={cardStyles.detailHint}>{t.arenaTapForDetail}</span>
+        <span style={cardStyles.detailHintBtn}>{t.arenaTapForDetail}</span>
       </div>
     </div>
   );
@@ -1148,6 +1162,18 @@ const cardStyles: Record<string, React.CSSProperties> = {
   detailHint: {
     fontSize: '0.68rem',
     color: '#aaa',
+  },
+  detailHintBtn: {
+    fontSize: '0.7rem',
+    color: '#555',
+    fontWeight: 600,
+    background: '#f0ede9',
+    border: '1px solid #d0cbc5',
+    borderRadius: 12,
+    padding: '0.2rem 0.65rem',
+    letterSpacing: '0.01em',
+    flexShrink: 0 as const,
+    display: 'inline-block',
   },
 };
 
