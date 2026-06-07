@@ -1,8 +1,9 @@
 /**
- * OfficialArenaOverview.tsx — Official Arena display + Entry (Phase E-2)
+ * OfficialArenaOverview.tsx — Official Arena display + Entry (Phase E-2, E-3)
  *
  * Phase E-1: 読み取り表示
  * Phase E-2: Entry確認モーダル + enter_arena_event() 実行
+ * Phase E-3: My Arena Match 表示 + Enter Match導線（coming soon）
  *
  * 表示情報:
  *   - ELEPHANT Arena / JAGUAR Arena カード
@@ -10,6 +11,7 @@
  *   - 現在のMaster / Interim Master
  *   - 自分のEntry状態（Entry済み / 締切済み / Pro required 等）
  *   - Entryボタン（条件付き表示）
+ *   - [E-3] My Arena Match セクション（Entry後・Match生成後）
  *
  * Entry確認モーダル:
  *   - キャンセル不可注記
@@ -66,6 +68,22 @@ function formatTime(isoStr: string | null, lang: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+// ─── My Arena Match 型 ──────────────────────────────────────────────────────
+
+interface MyArenaMatch {
+  match_no: number | null;
+  match_kind: string | null;
+  master_subtype: string | null;
+  black_user_id: string | null;
+  black_display_name: string | null;
+  white_user_id: string | null;
+  white_display_name: string | null;
+  my_side: 'black' | 'white' | null;
+  scheduled_start_at: string | null;
+  official_match_id: string | null; // = arena_matches.online_game_id (生成前はNULL)
+  arena_match_status: string | null;
 }
 
 /** Entry deadline の過ぎているかどうか */
@@ -199,6 +217,7 @@ interface ArenaDetailModalProps {
   isProActive: boolean;
   onClose: () => void;
   onEntrySuccess: () => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }
 
 function ArenaDetailModal({
@@ -207,6 +226,7 @@ function ArenaDetailModal({
   isProActive,
   onClose,
   onEntrySuccess,
+  onEnterOnlineGame,
 }: ArenaDetailModalProps) {
   const { t, lang } = useLang();
   const [detail, setDetail] = useState<ArenaDetailData | null>(null);
@@ -319,6 +339,7 @@ function ArenaDetailModal({
                   setEntryError(null);
                   setShowEntryConfirm(true);
                 }}
+                onEnterOnlineGame={onEnterOnlineGame}
               />
             )}
           </div>
@@ -367,6 +388,7 @@ function DetailContent({
   entryError,
   entrySuccessMsg,
   onEntryClick,
+  onEnterOnlineGame,
 }: {
   detail: ArenaDetailData;
   lang: string;
@@ -375,13 +397,28 @@ function DetailContent({
   entryError: string | null;
   entrySuccessMsg: string | null;
   onEntryClick: () => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }) {
   const masterName = detail.current_master_display_name;
   const interimName = detail.current_interim_master_display_name;
 
+  // my_match from RPC (typed cast)
+  const myMatch = detail.my_match as MyArenaMatch | null;
+
   return (
     <div>
       <h2 style={modalStyles.title}>{detail.display_name}</h2>
+
+      {/* Entry status (E-3) */}
+      {entryState === 'already_entered' && (
+        <MyArenaMatchSection
+          myEntryStatus={detail.my_entry_status}
+          myMatch={myMatch}
+          t={t}
+          lang={lang}
+          onEnterOnlineGame={onEnterOnlineGame}
+        />
+      )}
 
       {/* Next event */}
       <div style={modalStyles.section}>
@@ -494,6 +531,120 @@ function DetailContent({
           t={t}
           onEntryClick={onEntryClick}
         />
+      </div>
+    </div>
+  );
+}
+
+// ─── My Arena Match Section (E-3) ──────────────────────────────────────────────────────
+
+function MyArenaMatchSection({
+  myEntryStatus,
+  myMatch,
+  t,
+  lang,
+  onEnterOnlineGame,
+}: {
+  myEntryStatus: string | null;
+  myMatch: MyArenaMatch | null;
+  t: ReturnType<typeof useLang>['t'];
+  lang: string;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+}) {
+  // my_entry_status: 'no_match' → 不成立表示
+  if (myEntryStatus === 'no_match') {
+    return (
+      <div style={myMatchStyles.root}>
+        <div style={modalStyles.sectionLabel}>{t.arenaMyArenaMatch}</div>
+        <p style={myMatchStyles.noMatch}>{t.arenaNoMatchEstablished}</p>
+        <p style={myMatchStyles.noMatchSub}>{t.arenaNoArenaPointsChanged}</p>
+      </div>
+    );
+  }
+
+  // Match未生成（またはmyMatchがNULL）
+  if (!myMatch) {
+    return (
+      <div style={myMatchStyles.root}>
+        <div style={modalStyles.sectionLabel}>{t.arenaMyArenaMatch}</div>
+        <p style={myMatchStyles.info}>
+          {myEntryStatus === 'matched'
+            ? t.arenaMatchWillAppear
+            : t.arenaPairingAfterDeadline}
+        </p>
+      </div>
+    );
+  }
+
+  // Match生成済み
+  const opponentName =
+    myMatch.my_side === 'black'
+      ? (myMatch.white_display_name ?? '—')
+      : (myMatch.black_display_name ?? '—');
+  const sideLabel = myMatch.my_side === 'black' ? t.arenaYouAreBlack : t.arenaYouAreWhite;
+
+  function matchKindLabel(kind: string | null, subtype: string | null): string | null {
+    if (kind === 'master') {
+      if (subtype === 'inaugural') return t.arenaMatchKindInaugural;
+      if (subtype === 'defend') return t.arenaMatchKindDefend;
+      if (subtype === 'master_succession') return t.arenaMatchKindMasterSuccession;
+      if (subtype === 'interim_set') return t.arenaMatchKindInterimSet;
+      return t.arenaMasterMatch;
+    }
+    if (kind === 'point') return t.arenaPointMatch;
+    return null;
+  }
+
+  const kindLabel = matchKindLabel(myMatch.match_kind, myMatch.master_subtype);
+
+  return (
+    <div style={myMatchStyles.root}>
+      <div style={modalStyles.sectionLabel}>{t.arenaMyArenaMatch}</div>
+      <div style={myMatchStyles.matchCard}>
+        {/* Match number + kind */}
+        <div style={myMatchStyles.matchTitle}>
+          {t.arenaMatchLabel} {myMatch.match_no ?? '?'}
+          {kindLabel && (
+            <span style={myMatchStyles.kindBadge}>{kindLabel}</span>
+          )}
+        </div>
+        {/* Side */}
+        <div style={myMatchStyles.row}>
+          <span style={myMatchStyles.label}>{sideLabel}</span>
+        </div>
+        {/* Opponent */}
+        <div style={myMatchStyles.row}>
+          <span style={myMatchStyles.label}>{t.arenaOpponent}</span>
+          <span style={myMatchStyles.value}>{opponentName}</span>
+        </div>
+        {/* Start time */}
+        <div style={myMatchStyles.row}>
+          <span style={myMatchStyles.label}>{t.arenaStartTime}</span>
+          <span style={myMatchStyles.value}>
+            {myMatch.scheduled_start_at
+              ? formatDatetime(myMatch.scheduled_start_at, lang)
+              : '—'}
+          </span>
+        </div>
+        {/* Enter Match 導線 */}
+        {/* E-3: RPCがofficial_match_id（official_matches.id）を返さないため coming soon */}
+        {myMatch.official_match_id && onEnterOnlineGame ? (
+          <button
+            type="button"
+            style={myMatchStyles.enterBtn}
+            onClick={() => {
+              onEnterOnlineGame(
+                myMatch.official_match_id!,
+                true,
+                myMatch.scheduled_start_at,
+              );
+            }}
+          >
+            {t.arenaEnterMatch}
+          </button>
+        ) : (
+          <div style={myMatchStyles.comingSoon}>{t.arenaEnterMatchComingSoon}</div>
+        )}
       </div>
     </div>
   );
@@ -666,11 +817,14 @@ interface OfficialArenaOverviewProps {
   userId?: string;
   /** Pro active かどうか */
   isProActive?: boolean;
+  /** Arena Match入室後に呼び出す callback */
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
 }
 
 export function OfficialArenaOverview({
   userId,
   isProActive: proActive = false,
+  onEnterOnlineGame,
 }: OfficialArenaOverviewProps) {
   const { t } = useLang();
   const [arenas, setArenas] = useState<ArenaOverviewItem[]>([]);
@@ -741,6 +895,7 @@ export function OfficialArenaOverview({
           isProActive={proActive}
           onClose={() => setDetailArenaId(null)}
           onEntrySuccess={loadArenas}
+          onEnterOnlineGame={onEnterOnlineGame}
         />
       )}
     </div>
@@ -1163,5 +1318,96 @@ const confirmModalStyles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     // iPhone誤タップ防止
     minHeight: 44,
+  },
+};
+
+// ─── My Arena Match Styles ────────────────────────────────────────────────────
+
+const myMatchStyles: Record<string, React.CSSProperties> = {
+  root: {
+    marginBottom: '1rem',
+    padding: '0.75rem 0.85rem',
+    background: '#f5f3ef',
+    border: '1px solid #e0dbd5',
+    borderRadius: 8,
+  },
+  matchCard: {
+    marginTop: '0.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.35rem',
+  },
+  matchTitle: {
+    fontSize: '0.88rem',
+    fontWeight: 700,
+    color: '#111',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    flexWrap: 'wrap' as const,
+  },
+  kindBadge: {
+    fontSize: '0.68rem',
+    fontWeight: 600,
+    color: '#7a5c00',
+    background: '#fff8dc',
+    border: '1px solid #e8d080',
+    borderRadius: 4,
+    padding: '0.1rem 0.4rem',
+  },
+  row: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: '0.3rem 0.5rem',
+    flexWrap: 'wrap' as const,
+  },
+  label: {
+    fontSize: '0.75rem',
+    color: '#888',
+    flexShrink: 0,
+  },
+  value: {
+    fontSize: '0.82rem',
+    color: '#222',
+    fontWeight: 500,
+    textAlign: 'right' as const,
+    wordBreak: 'break-word' as const,
+  },
+  info: {
+    fontSize: '0.82rem',
+    color: '#555',
+    margin: '0.4rem 0 0',
+    lineHeight: 1.5,
+  },
+  noMatch: {
+    fontSize: '0.82rem',
+    color: '#555',
+    margin: '0.4rem 0 0',
+    lineHeight: 1.5,
+  },
+  noMatchSub: {
+    fontSize: '0.78rem',
+    color: '#888',
+    margin: '0.25rem 0 0',
+  },
+  enterBtn: {
+    marginTop: '0.5rem',
+    padding: '0.5rem 1.1rem',
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    background: '#2c2c2c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+    minHeight: 40,
+    alignSelf: 'flex-start',
+  },
+  comingSoon: {
+    marginTop: '0.5rem',
+    fontSize: '0.78rem',
+    color: '#aaa',
+    fontStyle: 'italic',
   },
 };

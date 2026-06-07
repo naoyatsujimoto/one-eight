@@ -351,7 +351,27 @@ export const T = {
     arenaEntryErrEventNotFound: 'Event not found.',
     arenaEntryErrEventNotOpen: 'Entry is not open for this event.',
     arenaEntryErrUnknown: 'Entry failed. Please try again.',
+    // Official Arena (Phase E-3) — My Arena Match
+    arenaMyArenaMatch: 'Your Arena Match',
+    arenaPairingAfterDeadline: 'Pairing will be decided after the entry deadline.',
+    arenaMatchWillAppear: 'Your match will appear here after pairing is generated.',
+    arenaNoMatchEstablished: 'No match was established for this Arena event.',
+    arenaNoArenaPointsChanged: 'No Arena Points were changed.',
+    arenaMatchLabel: 'Match',
+    arenaMasterMatch: 'Master Match',
+    arenaPointMatch: 'Point Match',
+    arenaYouAreBlack: 'You are Black',
+    arenaYouAreWhite: 'You are White',
+    arenaOpponent: 'Opponent',
+    arenaStartTime: 'Start time',
+    arenaEnterMatch: 'Enter Match',
+    arenaEnterMatchComingSoon: 'Enter Match coming soon',
+    arenaMatchKindInaugural: 'Inaugural Match',
+    arenaMatchKindDefend: 'Defense Match',
+    arenaMatchKindMasterSuccession: 'Master Succession',
+    arenaMatchKindInterimSet: 'Interim Set',
   },
+
 
 
 
@@ -698,7 +718,27 @@ export const T = {
     arenaEntryErrEventNotFound: 'Eventが見つかりません。',
     arenaEntryErrEventNotOpen: 'このEventはEntry受付中ではありません。',
     arenaEntryErrUnknown: 'Entryに失敗しました。もう一度お試しください。',
+    // Official Arena (Phase E-3) — My Arena Match
+    arenaMyArenaMatch: 'あなたのArena Match',
+    arenaPairingAfterDeadline: 'PairingはEntry締切後に決定されます。',
+    arenaMatchWillAppear: 'Pairing生成後、ここにあなたのMatch情報が表示されます。',
+    arenaNoMatchEstablished: 'このArena EventではMatchが成立しませんでした。',
+    arenaNoArenaPointsChanged: 'Arena Pointの変動はありません。',
+    arenaMatchLabel: 'Match',
+    arenaMasterMatch: 'Master Match',
+    arenaPointMatch: 'Point Match',
+    arenaYouAreBlack: 'あなたはBlack',
+    arenaYouAreWhite: 'あなたはWhite',
+    arenaOpponent: '対戦相手',
+    arenaStartTime: '開始時刻',
+    arenaEnterMatch: '対局へ入室',
+    arenaEnterMatchComingSoon: '入室機能は準備中',
+    arenaMatchKindInaugural: '初代戦',
+    arenaMatchKindDefend: '防衛戦',
+    arenaMatchKindMasterSuccession: 'Master継承戦',
+    arenaMatchKindInterimSet: 'Interim Set',
   },
+
 
 } as const;
 
@@ -1008,7 +1048,27 @@ export type Translations = {
   arenaEntryErrEventNotFound: string;
   arenaEntryErrEventNotOpen: string;
   arenaEntryErrUnknown: string;
+  // Official Arena (Phase E-3) — My Arena Match
+  arenaMyArenaMatch: string;
+  arenaPairingAfterDeadline: string;
+  arenaMatchWillAppear: string;
+  arenaNoMatchEstablished: string;
+  arenaNoArenaPointsChanged: string;
+  arenaMatchLabel: string;
+  arenaMasterMatch: string;
+  arenaPointMatch: string;
+  arenaYouAreBlack: string;
+  arenaYouAreWhite: string;
+  arenaOpponent: string;
+  arenaStartTime: string;
+  arenaEnterMatch: string;
+  arenaEnterMatchComingSoon: string;
+  arenaMatchKindInaugural: string;
+  arenaMatchKindDefend: string;
+  arenaMatchKindMasterSuccession: string;
+  arenaMatchKindInterimSet: string;
 };
+
 
 // ── Context ───────────────────────────────────────────────────────────────────
 

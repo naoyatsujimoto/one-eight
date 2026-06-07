@@ -66,7 +66,7 @@ export function OnlineLobby({ userId, proActive = false, onGameReady, onCancel, 
           )}
           {mode === 'ranked' && (
             <>
-              <OfficialArenaOverview userId={userId} isProActive={proActive} />
+              <OfficialArenaOverview userId={userId} isProActive={proActive} onEnterOnlineGame={onEnterOnlineGame} />
               <OfficialMatchCalendar
                 onEnterOnlineGame={onEnterOnlineGame}
                 enableEntry={true}
