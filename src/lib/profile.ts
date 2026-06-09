@@ -17,6 +17,8 @@ export interface Profile {
   plan: SubscriptionPlan;
   subscription_status: SubscriptionStatus;
   current_period_end: string | null;
+  /** UI表示補助のみ。権限判定は必ず SECURITY DEFINER RPC 内で再検証すること */
+  is_admin: boolean;
 }
 
 export function isProActive(profile: {
@@ -52,7 +54,7 @@ export function isProActive(profile: {
 export async function getProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, lang, stats_public, created_at, plan, subscription_status, current_period_end')
+    .select('id, display_name, lang, stats_public, created_at, plan, subscription_status, current_period_end, is_admin')
     .eq('id', userId)
     .single();
   if (error || !data) return null;
@@ -63,6 +65,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     plan: (row.plan as SubscriptionPlan) ?? 'free',
     subscription_status: (row.subscription_status as SubscriptionStatus) ?? 'inactive',
     current_period_end: (row.current_period_end as string | null) ?? null,
+    is_admin: (row.is_admin as boolean) ?? false,
   } as Profile;
 }
 
