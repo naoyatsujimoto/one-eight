@@ -23,6 +23,9 @@ import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
 import { getMyArenaTitles, type ArenaTitle } from '../lib/arena';
+import { getUserAwards, getUserAwardSubmissions, type UserPrizeAwardRow } from '../lib/prizeUser';
+import { PrizeClaimForm } from './PrizeClaimForm';
+import type { SubmitTaxResult } from '../lib/prizeUser';
 
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
@@ -70,6 +73,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   // RecentGamesTable で human_color=null の online 対局の勝敗判定に使用
   const [officialGameMap, setOfficialGameMap] = useState<Map<string, OfficialMatchListItem>>(new Map());
   const [arenaTitles, setArenaTitles] = useState<ArenaTitle[]>([]);
+  // RP-4: Reward / Prize
+  const [prizeAwards, setPrizeAwards] = useState<UserPrizeAwardRow[]>([]);
+  const [prizeSubmissions, setPrizeSubmissions] = useState<Record<string, { submission_id: string; status: string; delete_after: string | null; data_cleared_at: string | null }>>({});
+  const [prizeClaimTarget, setPrizeClaimTarget] = useState<string | null>(null);
+  const [prizeSubmitResults, setPrizeSubmitResults] = useState<Record<string, SubmitTaxResult>>({});
 
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
@@ -112,6 +120,18 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     // Load Arena titles (authenticated users only — own page)
     if (!viewOnly) {
       getMyArenaTitles().then((titles) => setArenaTitles(titles));
+    }
+    // Load Prize awards (authenticated users only — own page)
+    if (!viewOnly) {
+      getUserAwards().then(({ data }) => {
+        if (data) {
+          setPrizeAwards(data);
+          const ids = data.map((a) => a.award_id);
+          getUserAwardSubmissions(ids).then(({ data: subMap }) => {
+            if (subMap) setPrizeSubmissions(subMap);
+          });
+        }
+      });
     }
     // Load profile: stats_public + display name
     getProfile(displayUserId).then((profile) => {
@@ -427,6 +447,19 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           </section>
         )}
 
+        {/* ── Section 6.8: Reward / Prize (RP-4) ── */}
+        {!viewOnly && (
+          <section style={s.section}>
+            <SectionTitle title="Reward / Prize" />
+            <PrizeSection
+              awards={prizeAwards}
+              submissions={prizeSubmissions}
+              submitResults={prizeSubmitResults}
+              onClaim={(awardId) => setPrizeClaimTarget(awardId)}
+            />
+          </section>
+        )}
+
         {/* ── Section 7: 大会実績（Coming Soon）── */}
         <section style={s.section}>
           <SectionTitle title={t.userTournamentHistory} soon />
@@ -444,6 +477,27 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
 
       </div>
 
+      {/* PrizeClaimForm モーダル */}
+      {prizeClaimTarget && (
+        <PrizeClaimForm
+          awardId={prizeClaimTarget}
+          onClose={() => setPrizeClaimTarget(null)}
+          onSuccess={(result) => {
+            setPrizeSubmitResults(prev => ({ ...prev, [result.award_id]: result }));
+            setPrizeSubmissions(prev => ({
+              ...prev,
+              [result.award_id]: {
+                submission_id:   result.submission_id,
+                status:          result.status,
+                delete_after:    result.delete_after,
+                data_cleared_at: null,
+              },
+            }));
+            setPrizeClaimTarget(null);
+          }}
+        />
+      )}
+
       {showModal && pendingModalGameId && pendingStatus?.status === 'done' && (
         <PostmortemModal
           history={pendingStatus.history}
@@ -457,6 +511,226 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     </div>
   );
 }
+
+// ── Reward / Prize Section (RP-4) ─────────────────────────────────────────────
+
+function fmtPrizeAmount(cents: number, currency: string): string {
+  return `${currency} ${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+}
+
+function PrizeSection({
+  awards,
+  submissions,
+  submitResults,
+  onClaim,
+}: {
+  awards: UserPrizeAwardRow[];
+  submissions: Record<string, { submission_id: string; status: string; delete_after: string | null; data_cleared_at: string | null }>;
+  submitResults: Record<string, SubmitTaxResult>;
+  onClaim: (awardId: string) => void;
+}) {
+  if (awards.length === 0) {
+    return <Muted text="No prize awards." />;
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {awards.map((award) => {
+        const submission = submissions[award.award_id];
+        const submitResult = submitResults[award.award_id];
+        const canClaim = (award.status === 'eligible' || award.status === 'pending') && !submission;
+        const isSubmitted = submission && ['submitted', 'reviewed', 'archived'].includes(submission.status);
+        const isDataCleared = submission?.status === 'data_cleared';
+        const shortId = award.award_id.slice(0, 8).toUpperCase();
+
+        return (
+          <div key={award.award_id} style={sp.card}>
+            <div style={sp.cardHeader}>
+              <span style={{ ...sp.statusBadge, color: prizeStatusColor(award.status) }}>
+                {award.status.toUpperCase()}
+              </span>
+              <span style={sp.cardId}>{shortId}…</span>
+              <span style={sp.cardKind}>{award.prize_kind ?? 'cash'}</span>
+            </div>
+
+            <div style={sp.cardBody}>
+              <div style={sp.amount}>{fmtPrizeAmount(award.amount_cents, award.currency)}</div>
+              <div style={sp.meta}>
+                {award.source_kind && <span>Source: {award.source_kind}</span>}
+                {award.created_at && <span>Created: {new Date(award.created_at).toLocaleDateString()}</span>}
+                {award.payout_status && <span>Payout: {award.payout_status}</span>}
+                {award.paid_at && <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ Paid: {new Date(award.paid_at).toLocaleDateString()}</span>}
+              </div>
+            </div>
+
+            {/* フォーム導線 */}
+            {canClaim && (
+              <button type="button" style={sp.claimBtn} onClick={() => onClaim(award.award_id)}>
+                Submit payout / tax information
+              </button>
+            )}
+
+            {/* 提出済み: submit直後のレスポンス */}
+            {submitResult && (
+              <div style={sp.submitSuccess}>
+                <div style={sp.submitSuccessTitle}>✓ Your information has been submitted. Admin will process your Winner File.</div>
+                <div style={sp.submitSuccessMeta}>
+                  Submission ID: {submitResult.submission_id.slice(0, 8)}…
+                </div>
+                {submitResult.delete_after && (
+                  <div style={sp.submitSuccessMeta}>
+                    Data will be deleted by: {new Date(submitResult.delete_after).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* DBから読み込んだ済み状態 */}
+            {!submitResult && isSubmitted && (
+              <div style={sp.submittedBadge}>
+                Submitted — awaiting processing
+                {submission.delete_after && (
+                  <span style={{ color: '#888', fontSize: 11, marginLeft: 8 }}>
+                    (data expires: {new Date(submission.delete_after).toLocaleString()})
+                  </span>
+                )}
+              </div>
+            )}
+
+            {!submitResult && isDataCleared && (
+              <div style={sp.processedBadge}>
+                Processed
+              </div>
+            )}
+
+            {/* on_hold / canceled / expired */}
+            {['on_hold', 'canceled', 'expired'].includes(award.status) && !submission && (
+              <div style={sp.ineligibleNote}>
+                {award.status === 'on_hold' && 'This award is currently on hold. Contact admin for details.'}
+                {award.status === 'canceled' && 'This award has been canceled.'}
+                {award.status === 'expired' && 'This award has expired.'}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function prizeStatusColor(status: string): string {
+  switch (status) {
+    case 'eligible': return '#2e7d32';
+    case 'pending':  return '#1565c0';
+    case 'on_hold':  return '#e65100';
+    case 'canceled': return '#b71c1c';
+    case 'expired':  return '#757575';
+    default:         return '#333';
+  }
+}
+
+const sp: Record<string, React.CSSProperties> = {
+  card: {
+    border: '1px solid #e0e0e0',
+    borderRadius: 8,
+    padding: '12px 14px',
+    background: '#fafafa',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusBadge: {
+    fontWeight: 700,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  } as React.CSSProperties,
+  cardId: {
+    fontSize: 11,
+    color: '#aaa',
+    fontFamily: 'monospace',
+  },
+  cardKind: {
+    fontSize: 11,
+    color: '#888',
+    marginLeft: 'auto',
+  },
+  cardBody: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  amount: {
+    fontWeight: 700,
+    fontSize: '1.05rem',
+    color: '#111',
+  },
+  meta: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '4px 12px',
+    fontSize: 12,
+    color: '#777',
+  } as React.CSSProperties,
+  claimBtn: {
+    background: '#1a237e',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 5,
+    padding: '9px 18px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    alignSelf: 'flex-start',
+    minHeight: 40,
+  },
+  submittedBadge: {
+    background: '#e3f2fd',
+    border: '1px solid #90caf9',
+    borderRadius: 5,
+    padding: '8px 12px',
+    fontSize: 13,
+    color: '#1565c0',
+    fontWeight: 600,
+  },
+  processedBadge: {
+    background: '#e8f5e9',
+    border: '1px solid #a5d6a7',
+    borderRadius: 5,
+    padding: '8px 12px',
+    fontSize: 13,
+    color: '#2e7d32',
+    fontWeight: 600,
+  },
+  ineligibleNote: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  submitSuccess: {
+    background: '#e8f5e9',
+    border: '1px solid #a5d6a7',
+    borderRadius: 5,
+    padding: '10px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  submitSuccessTitle: {
+    fontSize: 13,
+    color: '#2e7d32',
+    fontWeight: 700,
+  },
+  submitSuccessMeta: {
+    fontSize: 12,
+    color: '#555',
+  },
+};
 
 // ── 成績サマリー ──────────────────────────────────────────────────────────────
 

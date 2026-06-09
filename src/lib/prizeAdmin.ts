@@ -34,6 +34,12 @@ export interface AdminPrizeAwardRow {
   canceled_at:            string | null;
   created_by_user_id:     string | null;
   created_at:             string;
+  // RP-4 追加: latest submission 情報（PIIなし）
+  latest_submission_id:              string | null;
+  latest_submission_status:          string | null;
+  latest_submission_submitted_at:    string | null;
+  latest_submission_delete_after:    string | null;
+  latest_submission_data_cleared_at: string | null;
 }
 
 export interface CreateAwardParams {

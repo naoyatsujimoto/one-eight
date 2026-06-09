@@ -318,6 +318,22 @@ export function AdminPage({ onBack }: Props) {
             {award.hold_reason  && <Row label="Hold Reason"   value={award.hold_reason} />}
             {award.cancel_reason && <Row label="Cancel Reason" value={award.cancel_reason} />}
             {award.canceled_at  && <Row label="Canceled At"   value={fmtDate(award.canceled_at)} />}
+            {/* RP-4: submission 情報（PIIなし） */}
+            {award.latest_submission_id && (
+              <Row label="Submission ID" value={`${award.latest_submission_id.slice(0, 8)}…`} />
+            )}
+            {award.latest_submission_status && (
+              <Row label="Submission Status" value={award.latest_submission_status} />
+            )}
+            {award.latest_submission_submitted_at && (
+              <Row label="Submitted At" value={fmtDate(award.latest_submission_submitted_at)} />
+            )}
+            {award.latest_submission_delete_after && (
+              <Row label="Data Expires" value={fmtDate(award.latest_submission_delete_after)} />
+            )}
+            {award.latest_submission_data_cleared_at && (
+              <Row label="Data Cleared" value={fmtDate(award.latest_submission_data_cleared_at)} />
+            )}
           </div>
 
           {/* 操作 — canceled/expired は操作不可 */}
