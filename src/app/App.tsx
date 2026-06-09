@@ -24,12 +24,13 @@ import { OnlineBoard } from '../components/OnlineBoard';
 import { GameBoardHeader } from '../components/GameBoardHeader';
 import { UserPage } from '../components/UserPage';
 import { AdminInbox } from '../components/AdminInbox';
+import { AdminPage } from '../components/AdminPage';
 import { CpuProfile } from '../components/CpuProfile';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useUnreadCount } from '../hooks/useUnreadCount';
 // import { useSound } from '../hooks/useSound'; // SOUND OFF
 
-type Screen = 'title' | 'tutorial' | 'main' | 'profile' | 'training';
+type Screen = 'title' | 'tutorial' | 'main' | 'profile' | 'training' | 'admin';
 import {
   applyMassiveBuild,
   applyQuadBuildForGates,
@@ -95,7 +96,7 @@ export default function App() {
     // Restore screen from sessionStorage to survive reloads
     try {
       const saved = sessionStorage.getItem('one_eight_screen');
-      if (saved === 'main' || saved === 'tutorial' || saved === 'profile' || saved === 'training') return saved as Screen;
+      if (saved === 'main' || saved === 'tutorial' || saved === 'profile' || saved === 'training' || saved === 'admin') return saved as Screen;
     } catch { /* sessionStorage unavailable */ }
     return 'title';
   });
@@ -796,14 +797,18 @@ export default function App() {
   }, [screen, user?.id]);
   // ── Ghost Mode ────────────────────────────────────────────────────────────────
   const [proActive, setProActive] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [ghostModeActive, setGhostModeActive] = useState(false);
   const [ghostMoves, setGhostMoves] = useState<GhostMove[]>([]);
 
-  // pro状態をログイン後に取得
+  // pro状態 + is_admin をログイン後に取得
   useEffect(() => {
-    if (!user) { setProActive(false); return; }
+    if (!user) { setProActive(false); setIsAdmin(false); return; }
     getProfile(user.id).then((profile) => {
-      if (profile) setProActive(isProActive(profile));
+      if (profile) {
+        setProActive(isProActive(profile));
+        setIsAdmin(profile.is_admin ?? false);
+      }
     });
   }, [user?.id]);
 
@@ -1012,6 +1017,16 @@ export default function App() {
     return <TrainingView onExit={() => goTo('main')} userId={user?.id ?? null} />;
   }
 
+  // Admin 画面: is_admin === true のユーザーのみ
+  if (screen === 'admin') {
+    if (!user || !isAdmin) {
+      // 非 admin が admin screen に到達した場合はタイトルに戻す
+      goTo('title');
+      return <div style={{ padding: 32, textAlign: 'center', color: '#b71c1c' }}>Access denied.</div>;
+    }
+    return <AdminPage onBack={() => goTo('main')} />;
+  }
+
   return (
     <div
       className={`app-shell${screenTransition ? ' screen-out' : ''}`}
@@ -1057,6 +1072,9 @@ export default function App() {
             >
               MAIL
             </button>
+          )}
+          {user && isAdmin && (
+            <button type="button" className="top-btn" style={{ color: '#b71c1c', fontWeight: 700 }} onClick={() => goTo('admin')}>ADMIN</button>
           )}
           <button type="button" className="top-btn" onClick={handleNewGameRequest}>{t.newGame}</button>
         </div>
