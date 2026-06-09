@@ -3,6 +3,8 @@
  *
  * 表示条件: profile.is_admin === true
  * 権限: 実際の操作は SECURITY DEFINER RPC 内で is_admin を再確認する
+ *
+ * RP-3 追加: Winner File 印刷 / Archive 完了導線
  */
 import { useEffect, useState } from 'react';
 import {
@@ -13,6 +15,9 @@ import {
   type SourceKind,
   type PrizeKind,
 } from '../lib/prizeAdmin';
+import { PrizeWinnerFilePrint } from './PrizeWinnerFilePrint';
+
+type AdminSubScreen = 'awards' | 'winner_file';
 
 interface Props {
   onBack: () => void;
@@ -42,6 +47,7 @@ function statusColor(status: string): string {
 // ── コンポーネント ──────────────────────────────────────────────────────────
 
 export function AdminPage({ onBack }: Props) {
+  const [subScreen, setSubScreen] = useState<AdminSubScreen>('awards');
   const [awards, setAwards] = useState<AdminPrizeAwardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -144,6 +150,11 @@ export function AdminPage({ onBack }: Props) {
 
   // ── レンダリング ───────────────────────────────────────────────────────────
 
+  // Winner File 画面
+  if (subScreen === 'winner_file') {
+    return <PrizeWinnerFilePrint onBack={() => setSubScreen('awards')} />;
+  }
+
   return (
     <div style={s.page}>
       {/* ヘッダー */}
@@ -168,7 +179,7 @@ export function AdminPage({ onBack }: Props) {
         </div>
       )}
 
-      {/* Award 作成ボタン */}
+      {/* ツールバー */}
       <div style={s.toolbar}>
         <button
           type="button"
@@ -179,6 +190,13 @@ export function AdminPage({ onBack }: Props) {
         </button>
         <button type="button" style={s.reloadBtn} onClick={loadAwards} disabled={loading}>
           {loading ? 'Loading…' : 'Reload'}
+        </button>
+        <button
+          type="button"
+          style={s.winnerFileBtn}
+          onClick={() => setSubScreen('winner_file')}
+        >
+          🖶 Winner File / Archive
         </button>
       </div>
 
@@ -423,6 +441,16 @@ const s: Record<string, React.CSSProperties> = {
     padding: '8px 12px',
     cursor: 'pointer',
     fontSize: 14,
+  },
+  winnerFileBtn: {
+    background: '#4a148c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 600,
   },
   form: {
     background: '#f9f9f9',

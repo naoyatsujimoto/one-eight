@@ -3042,3 +3042,25 @@ ol { padding-left: 20px; }
     padding: 0.3rem 0.75rem;
   }
 }
+
+/* ── RP-3: Winner File 印刷 CSS ─────────────────────────────────────────────── */
+
+/* 通常時: .print-only を非表示 */
+.print-only {
+  display: none;
+}
+
+/* 印刷時: .no-print を非表示、.print-only を表示 */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+}
