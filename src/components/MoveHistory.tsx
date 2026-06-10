@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { generateRecordText } from '../game/notation';
 import type { MoveRecord } from '../game/types';
+import { useLang } from '../lib/lang';
 
 function buildLabel(record: MoveRecord): string {
   switch (record.build.type) {
@@ -16,6 +17,7 @@ function buildLabel(record: MoveRecord): string {
 }
 
 export function MoveHistory({ history }: { history: MoveRecord[] }) {
+  const { t } = useLang();
   const listRef = useRef<HTMLOListElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -36,10 +38,10 @@ export function MoveHistory({ history }: { history: MoveRecord[] }) {
   return (
     <div className="history-section">
       <div className="history-section-header">
-        <div className="section-eyebrow" style={{margin:0}}>Move History</div>
+        <div className="section-eyebrow" style={{margin:0}}>{t.moveHistory}</div>
         <button type="button" className="top-btn" style={{padding:'2px 0', fontSize:'9px'}}
           onClick={handleCopy} disabled={history.length === 0}>
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t.copiedBtn : t.copyBtn}
         </button>
       </div>
       <ol className="history-list-new" ref={listRef}>

@@ -390,6 +390,70 @@ export const T = {
     arenaNoArenaTitles: 'No Arena titles yet',
     arenaTitleMaster: 'Master',
     arenaTitleCurrentHolder: 'Current holder',
+
+    // Timer
+    timerClock: 'Time Clock',
+    timerByoyomi: 'Byoyomi',
+    timerModeNone: 'None',
+    timerModeTotal: 'Total Time',
+    timerModePerMove: 'Per Move',
+    timerNone: 'None',
+    timerMin5: '5 min',
+    timerMin10: '10 min',
+    timerSec10: '10 sec',
+    timerSec30: '30 sec',
+    timerSec60: '60 sec',
+
+    // Result modal
+    resultGameFinished: 'Game Finished',
+    resultDraw: 'Draw',
+    resultBlackWins: 'Black Wins',
+    resultWhiteWins: 'White Wins',
+    resultTimeOut: 'Time Out',
+
+    // Modal eyebrow
+    newGameEyebrow: 'New Game',
+    vsCpuEyebrow: 'vs CPU',
+
+    // Stats / Move History
+    myStats: 'My Stats',
+    copyBtn: 'Copy',
+    copiedBtn: 'Copied',
+
+    // Postmortem
+    postmortemRetry: 'Retry',
+
+    // ConfirmModal
+    execute: 'Execute',
+
+    // Tutorial
+    tutNext: 'Next →',
+
+    // Prize / UserPage
+    prizeSectionTitle: 'Reward / Prize',
+    prizeNoAwards: 'No prize awards.',
+    prizeSubmitInfo: 'Submit payout / tax information',
+    prizeSubmittedMsg: 'Your information has been submitted. Admin will process your Winner File.',
+    prizeStatusSubmitted: 'Submitted — awaiting processing',
+    prizeStatusProcessed: 'Processed',
+    prizeStatusOnHold: 'This award is on hold.',
+
+    // AuthGate
+    authMagicLink: 'Magic Link',
+    authPasswordLogin: 'Password Login',
+    authEmailSent: 'Email sent. Click the link in your inbox to log in.',
+    authSendMagicLink: 'Send Magic Link',
+    authSending: 'Sending…',
+    authPassword: 'Password',
+    authLogIn: 'Log In',
+    authLoggingIn: 'Logging in…',
+    authTagline: 'ONE EIGHT is a competitive abstract strategy game. Monthly membership available.',
+
+    // Arena (additional)
+    arenaProcessing: 'Processing…',
+    arenaName: 'Name',
+    arenaWin: 'W: ',
+    arenaCurrent: '(current)',
   },
 
 
@@ -481,11 +545,11 @@ export const T = {
     trainingBackToIntro: 'トレーニング一覧に戻る',
     trainingIntroSubtitle: 'Recorde Training',
     trainingIntroDesc: 'ONE EIGHT をステップごとに学ぼう。',
-    trainingTaskStatusAvailable: 'Available',
-    trainingTaskStatusComplete: 'Complete',
-    trainingTaskStatusLocked: 'Locked',
-    trainingStart: 'Start',
-    trainingReplay: 'Replay',
+    trainingTaskStatusAvailable: 'プレイ可',
+    trainingTaskStatusComplete: '完了',
+    trainingTaskStatusLocked: '未開放',
+    trainingStart: 'スタート',
+    trainingReplay: 'やり直す',
     trainingLockedMessage: '前のタスクを完了するとアンロックされます。',
     trainingT1Desc: 'Massive、Selective、Quad の Build を学ぶ。',
     trainingT2Desc: 'Capture して Build する方法を学ぶ。',
@@ -584,7 +648,7 @@ export const T = {
     onlineRankedDesc: 'Pro限定の公式競技。ELEPHANT / JAGUAR Arena に参加できます。',
     onlineTournament: '大会',
     onlineTournamentDesc: '運営発行のキーで参加する大会。',
-    onlineComingSoon: 'Coming Soon',
+    onlineComingSoon: '近日公開',
     officialMatchEnterFromOnlinePlay: 'Online Play の Official Arena / 大会 から入室してください。',
     onlineNoRankedMatches: '公式戦の予定はありません。',
     onlineNoCompetitions: '大会の予定はありません。',
@@ -777,6 +841,71 @@ export const T = {
     arenaNoArenaTitles: 'Arena称号なし',
     arenaTitleMaster: 'マスター',
     arenaTitleCurrentHolder: '現在の称号保持者',
+
+    // Timer
+    timerClock: 'タイムクロック',
+    timerByoyomi: '秒読み',
+    timerModeNone: 'なし',
+    timerModeTotal: '持ち時間制',
+    timerModePerMove: '1手制限',
+    timerNone: 'なし',
+    timerMin5: '5分',
+    timerMin10: '10分',
+    timerSec10: '10秒',
+    timerSec30: '30秒',
+    timerSec60: '60秒',
+
+    // Result modal
+    resultGameFinished: '対局終了',
+    resultDraw: '引き分け',
+    resultBlackWins: '黒の勝利',
+    resultWhiteWins: '白の勝利',
+    resultTimeOut: '時間切れ',
+
+    // Modal eyebrow
+    newGameEyebrow: 'ニューゲーム',
+    vsCpuEyebrow: 'vs CPU',
+
+    // Stats / Move History
+    myStats: '自分の戦績',
+    copyBtn: 'コピー',
+    copiedBtn: 'コピー済み',
+
+    // Postmortem
+    postmortemRetry: '再試行',
+
+    // ConfirmModal
+    execute: '実行',
+
+    // Tutorial
+    tutNext: '次へ →',
+
+    // Prize / UserPage
+    prizeSectionTitle: '受賞・報酬',
+    prizeNoAwards: '受賞・報酬はありません。',
+    prizeSubmitInfo: '受取・税務情報を提出',
+    prizeSubmittedMsg: '提出済みです。運営が Winner File を処理します。',
+    prizeStatusSubmitted: '提出済み・処理待ち',
+    prizeStatusProcessed: '処理済み',
+    prizeStatusOnHold: 'この受賞は保留中です。',
+
+    // AuthGate
+    authMagicLink: 'マジックリンク',
+    authPasswordLogin: 'パスワードログイン',
+    authEmailSent: 'メールを送信しました。受信箱のリンクをクリックしてログインしてください。',
+    authSendMagicLink: 'マジックリンクを送信',
+    authSending: '送信中…',
+    authPassword: 'パスワード',
+    authLogIn: 'ログイン',
+    authLoggingIn: 'ログイン中…',
+    authTagline: 'ONE EIGHT は競技性のあるアブストラクト戦略ゲームです。月額メンバーシップあり。',
+
+    // Arena (additional)
+    arenaProcessing: '処理中…',
+    arenaName: '名前',
+    arenaWin: '勝: ',
+    arenaCurrent: '(現在)',
+
   },
 
 
@@ -1127,6 +1256,70 @@ export type Translations = {
   arenaNoArenaTitles: string;
   arenaTitleMaster: string;
   arenaTitleCurrentHolder: string;
+
+  // Timer
+  timerClock: string;
+  timerByoyomi: string;
+  timerModeNone: string;
+  timerModeTotal: string;
+  timerModePerMove: string;
+  timerNone: string;
+  timerMin5: string;
+  timerMin10: string;
+  timerSec10: string;
+  timerSec30: string;
+  timerSec60: string;
+
+  // Result modal
+  resultGameFinished: string;
+  resultDraw: string;
+  resultBlackWins: string;
+  resultWhiteWins: string;
+  resultTimeOut: string;
+
+  // Modal eyebrow
+  newGameEyebrow: string;
+  vsCpuEyebrow: string;
+
+  // Stats / Move History
+  myStats: string;
+  copyBtn: string;
+  copiedBtn: string;
+
+  // Postmortem
+  postmortemRetry: string;
+
+  // ConfirmModal
+  execute: string;
+
+  // Tutorial
+  tutNext: string;
+
+  // Prize / UserPage
+  prizeSectionTitle: string;
+  prizeNoAwards: string;
+  prizeSubmitInfo: string;
+  prizeSubmittedMsg: string;
+  prizeStatusSubmitted: string;
+  prizeStatusProcessed: string;
+  prizeStatusOnHold: string;
+
+  // AuthGate
+  authMagicLink: string;
+  authPasswordLogin: string;
+  authEmailSent: string;
+  authSendMagicLink: string;
+  authSending: string;
+  authPassword: string;
+  authLogIn: string;
+  authLoggingIn: string;
+  authTagline: string;
+
+  // Arena (additional)
+  arenaProcessing: string;
+  arenaName: string;
+  arenaWin: string;
+  arenaCurrent: string;
 };
 
 

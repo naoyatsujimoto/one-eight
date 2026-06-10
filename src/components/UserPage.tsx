@@ -450,7 +450,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         {/* ── Section 6.8: Reward / Prize (RP-4) ── */}
         {!viewOnly && (
           <section style={s.section}>
-            <SectionTitle title="Reward / Prize" />
+            <SectionTitle title={t.prizeSectionTitle} />
             <PrizeSection
               awards={prizeAwards}
               submissions={prizeSubmissions}
@@ -529,8 +529,9 @@ function PrizeSection({
   submitResults: Record<string, SubmitTaxResult>;
   onClaim: (awardId: string) => void;
 }) {
+  const { t } = useLang();
   if (awards.length === 0) {
-    return <Muted text="No prize awards." />;
+    return <Muted text={t.prizeNoAwards} />;
   }
 
   return (
@@ -566,14 +567,14 @@ function PrizeSection({
             {/* フォーム導線 */}
             {canClaim && (
               <button type="button" style={sp.claimBtn} onClick={() => onClaim(award.award_id)}>
-                Submit payout / tax information
+                {t.prizeSubmitInfo}
               </button>
             )}
 
             {/* 提出済み: submit直後のレスポンス */}
             {submitResult && (
               <div style={sp.submitSuccess}>
-                <div style={sp.submitSuccessTitle}>✓ Your information has been submitted. Admin will process your Winner File.</div>
+                <div style={sp.submitSuccessTitle}>✓ {t.prizeSubmittedMsg}</div>
                 <div style={sp.submitSuccessMeta}>
                   Submission ID: {submitResult.submission_id.slice(0, 8)}…
                 </div>
@@ -588,7 +589,7 @@ function PrizeSection({
             {/* DBから読み込んだ済み状態 */}
             {!submitResult && isSubmitted && (
               <div style={sp.submittedBadge}>
-                Submitted — awaiting processing
+                {t.prizeStatusSubmitted}
                 {submission.delete_after && (
                   <span style={{ color: '#888', fontSize: 11, marginLeft: 8 }}>
                     (data expires: {new Date(submission.delete_after).toLocaleString()})
@@ -599,14 +600,14 @@ function PrizeSection({
 
             {!submitResult && isDataCleared && (
               <div style={sp.processedBadge}>
-                Processed
+                {t.prizeStatusProcessed}
               </div>
             )}
 
             {/* on_hold / canceled / expired */}
             {['on_hold', 'canceled', 'expired'].includes(award.status) && !submission && (
               <div style={sp.ineligibleNote}>
-                {award.status === 'on_hold' && 'This award is currently on hold. Contact admin for details.'}
+                {award.status === 'on_hold' && t.prizeStatusOnHold}
                 {award.status === 'canceled' && 'This award has been canceled.'}
                 {award.status === 'expired' && 'This award has expired.'}
               </div>

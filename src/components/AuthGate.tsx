@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getProfile, isProActive } from '../lib/profile';
+import { useLang } from '../lib/lang';
 
 interface Props {
   children: ReactNode;
@@ -11,6 +12,7 @@ type LoginMode = 'magic' | 'password';
 
 export function AuthGate({ children }: Props) {
   const { user, loading, signInWithMagicLink, signInWithPassword, signOut } = useAuth();
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [sent, setSent] = useState(false);
@@ -29,7 +31,7 @@ export function AuthGate({ children }: Props) {
   if (loading) {
     return (
       <div style={styles.center}>
-        <p style={styles.muted}>Loading…</p>
+        <p style={styles.muted}>{t.loading}</p>
       </div>
     );
   }
@@ -68,8 +70,7 @@ export function AuthGate({ children }: Props) {
         <div style={styles.card}>
           <h1 style={styles.title}>ONE EIGHT</h1>
           <p style={styles.tagline}>
-            ONE EIGHT is a competitive abstract strategy game.<br />
-            Monthly membership available.
+            {t.authTagline}
           </p>
 
           {/* Tab switcher */}
@@ -79,14 +80,14 @@ export function AuthGate({ children }: Props) {
               style={{ ...styles.tab, ...(mode === 'magic' ? styles.tabActive : {}) }}
               onClick={() => switchMode('magic')}
             >
-              Magic Link
+              {t.authMagicLink}
             </button>
             <button
               type="button"
               style={{ ...styles.tab, ...(mode === 'password' ? styles.tabActive : {}) }}
               onClick={() => switchMode('password')}
             >
-              Password Login
+              {t.authPasswordLogin}
             </button>
           </div>
 
@@ -94,8 +95,7 @@ export function AuthGate({ children }: Props) {
           {mode === 'magic' && (
             sent ? (
               <p style={styles.info}>
-                Email sent.<br />
-                Click the link in your inbox to log in.
+                {t.authEmailSent}
               </p>
             ) : (
               <form onSubmit={handleMagicLink} style={styles.form}>
@@ -110,7 +110,7 @@ export function AuthGate({ children }: Props) {
                 />
                 {error && <p style={styles.error}>{error}</p>}
                 <button type="submit" disabled={submitting} style={styles.button}>
-                  {submitting ? 'Sending…' : 'Send Magic Link'}
+                  {submitting ? t.authSending : t.authSendMagicLink}
                 </button>
               </form>
             )
@@ -132,13 +132,13 @@ export function AuthGate({ children }: Props) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder={t.authPassword}
                 required
                 style={styles.input}
               />
               {error && <p style={styles.error}>{error}</p>}
               <button type="submit" disabled={submitting} style={styles.button}>
-                {submitting ? 'Logging in…' : 'Log In'}
+                {submitting ? t.authLoggingIn : t.authLogIn}
               </button>
             </form>
           )}

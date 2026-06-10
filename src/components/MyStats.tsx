@@ -84,7 +84,7 @@ export function MyStats({ userId, onClose }: Props) {
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
-          <span style={styles.title}>My Stats</span>
+          <span style={styles.title}>{t.myStats}</span>
           <button type="button" onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
 

@@ -1188,7 +1188,7 @@ export default function App() {
           <div className="backdrop open" onClick={() => setModeModalOpen(false)} />
           <div className="mode-modal">
             <div className="mode-modal-card">
-              <div className="result-eyebrow">New Game</div>
+              <div className="result-eyebrow">{t.newGameEyebrow}</div>
               <div className="mode-modal-title">{t.selectMode}</div>
               <TimerSettings
                 config={pendingTimerConfig}
@@ -1224,7 +1224,7 @@ export default function App() {
           <div className="backdrop open" onClick={() => setCpuSettingsOpen(false)} />
           <div className="mode-modal">
             <div className="mode-modal-card">
-              <div className="result-eyebrow">vs CPU</div>
+              <div className="result-eyebrow">{t.vsCpuEyebrow}</div>
               <div className="mode-modal-title">{t.cpuSettings}</div>
 
               <div className="cpu-settings-group">

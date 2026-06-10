@@ -270,7 +270,7 @@ export function TutorialScreen({ onComplete, onSkip }: TutorialScreenProps) {
             style={{ marginTop: 12, background: '#555', fontSize: 13 }}
             onClick={e => { e.stopPropagation(); advance('next'); }}
           >
-            {lang === 'ja' ? '次へ →' : 'Next →'}
+            {t.tutNext}
           </button>
         )}
         {step === steps.length - 1 && (

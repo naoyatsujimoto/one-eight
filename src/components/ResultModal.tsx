@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { generateRecordText } from '../game/notation';
 import type { GameState } from '../game/types';
+import { useLang } from '../lib/lang';
 
 export function ResultModal({
   state,
@@ -9,6 +10,7 @@ export function ResultModal({
   state: GameState;
   onReset: () => void;
 }) {
+  const { t } = useLang();
   const [copied, setCopied] = useState(false);
 
   if (!state.gameEnded) return null;
@@ -16,11 +18,13 @@ export function ResultModal({
   const isTimeout = state.endReason === 'timeout';
   const winnerLabel =
     state.winner === 'draw'
-      ? 'Draw'
-      : `${state.winner ? state.winner.charAt(0).toUpperCase() + state.winner.slice(1) : ''} Wins${isTimeout ? ' (Time Out)' : ''}`;
+      ? t.resultDraw
+      : state.winner === 'black'
+        ? `${t.resultBlackWins}${isTimeout ? ` (${t.resultTimeOut})` : ''}`
+        : `${t.resultWhiteWins}${isTimeout ? ` (${t.resultTimeOut})` : ''}`;
 
   const subLabel = isTimeout
-    ? `時間切れ — ${state.history.length} moves`
+    ? `${t.resultTimeOut} — ${state.history.length} moves`
     : `Game ended after ${state.history.length} moves`;
 
   function handleCopy() {
@@ -34,12 +38,12 @@ export function ResultModal({
   return (
     <div className="result-modal">
       <div className="result-card">
-        <div className="result-eyebrow">Game Finished</div>
+        <div className="result-eyebrow">{t.resultGameFinished}</div>
         <div className="result-title">{winnerLabel}</div>
         <div className="result-sub">{subLabel}</div>
         <div className="result-actions">
           <button type="button" className="result-btn result-btn-primary" onClick={onReset}>
-            New Game
+            {t.newGame}
           </button>
           <button
             type="button"
@@ -47,7 +51,7 @@ export function ResultModal({
             onClick={handleCopy}
             disabled={state.history.length === 0}
           >
-            {copied ? 'Copied' : 'Copy record'}
+            {copied ? t.copiedBtn : 'Copy record'}
           </button>
         </div>
       </div>

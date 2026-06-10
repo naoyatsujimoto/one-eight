@@ -135,7 +135,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
               onClick={handleAnalyze}
               style={styles.analyzeStartBtn}
             >
-              再試行
+              {t.postmortemRetry}
             </button>
           </div>
         )}

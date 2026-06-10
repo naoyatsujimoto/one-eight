@@ -1,3 +1,5 @@
+import { useLang } from '../lib/lang';
+
 interface ConfirmModalProps {
   open: boolean;
   label: string;
@@ -6,6 +8,7 @@ interface ConfirmModalProps {
 }
 
 export function ConfirmModal({ open, label, onConfirm, onCancel }: ConfirmModalProps) {
+  const { t } = useLang();
   if (!open) return null;
   return (
     <>
@@ -30,7 +33,7 @@ export function ConfirmModal({ open, label, onConfirm, onCancel }: ConfirmModalP
           textAlign: 'center',
         }}>
           <div style={{ fontSize: '10px', letterSpacing: '0.12em', color: '#999', marginBottom: '10px', textTransform: 'uppercase' }}>
-            Confirm
+            {t.confirm}
           </div>
           <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '20px', wordBreak: 'break-all' }}>
             {label}
@@ -49,9 +52,10 @@ export function ConfirmModal({ open, label, onConfirm, onCancel }: ConfirmModalP
                 fontWeight: 700,
                 letterSpacing: '0.08em',
                 cursor: 'pointer',
+                textTransform: 'uppercase',
               }}
             >
-              EXECUTE
+              {t.execute}
             </button>
             <button
               type="button"
@@ -66,9 +70,10 @@ export function ConfirmModal({ open, label, onConfirm, onCancel }: ConfirmModalP
                 fontWeight: 700,
                 letterSpacing: '0.08em',
                 cursor: 'pointer',
+                textTransform: 'uppercase',
               }}
             >
-              CANCEL
+              {t.cancel}
             </button>
           </div>
         </div>

@@ -1,28 +1,31 @@
 import type { TimerConfig, TimeMode } from '../game/timerTypes';
 import { DEFAULT_TIMER_CONFIG } from '../game/timerTypes';
+import { useLang } from '../lib/lang';
 
 interface TimerSettingsProps {
   config: TimerConfig;
   onChange: (config: TimerConfig) => void;
 }
 
-const TOTAL_TIME_OPTIONS = [
-  { label: '5分', seconds: 300 },
-  { label: '10分', seconds: 600 },
-];
-
-const BYOYOMI_OPTIONS = [
-  { label: 'なし', seconds: 0 },
-  { label: '10秒', seconds: 10 },
-  { label: '30秒', seconds: 30 },
-];
-
-const PER_MOVE_OPTIONS = [
-  { label: '30秒', seconds: 30 },
-  { label: '60秒', seconds: 60 },
-];
-
 export function TimerSettings({ config, onChange }: TimerSettingsProps) {
+  const { t } = useLang();
+
+  const TOTAL_TIME_OPTIONS = [
+    { label: t.timerMin5, seconds: 300 },
+    { label: t.timerMin10, seconds: 600 },
+  ];
+
+  const BYOYOMI_OPTIONS = [
+    { label: t.timerNone, seconds: 0 },
+    { label: t.timerSec10, seconds: 10 },
+    { label: t.timerSec30, seconds: 30 },
+  ];
+
+  const PER_MOVE_OPTIONS = [
+    { label: t.timerSec30, seconds: 30 },
+    { label: t.timerSec60, seconds: 60 },
+  ];
+
   function handleModeChange(mode: TimeMode) {
     onChange({ ...DEFAULT_TIMER_CONFIG, mode });
   }
@@ -40,14 +43,14 @@ export function TimerSettings({ config, onChange }: TimerSettingsProps) {
   }
 
   const modeOptions: { mode: TimeMode; label: string }[] = [
-    { mode: 'none', label: 'なし' },
-    { mode: 'total_time', label: '持ち時間制' },
-    { mode: 'per_move', label: '1手制限' },
+    { mode: 'none', label: t.timerModeNone },
+    { mode: 'total_time', label: t.timerModeTotal },
+    { mode: 'per_move', label: t.timerModePerMove },
   ];
 
   return (
     <div className="cpu-settings-group">
-      <div className="cpu-settings-label">タイムクロック</div>
+      <div className="cpu-settings-label">{t.timerClock}</div>
       <div className="cpu-settings-row">
         {modeOptions.map(({ mode, label }) => (
           <button
@@ -75,7 +78,7 @@ export function TimerSettings({ config, onChange }: TimerSettingsProps) {
               </button>
             ))}
           </div>
-          <div className="cpu-settings-label" style={{ marginTop: '8px' }}>秒読み</div>
+          <div className="cpu-settings-label" style={{ marginTop: '8px' }}>{t.timerByoyomi}</div>
           <div className="cpu-settings-row">
             {BYOYOMI_OPTIONS.map(({ label, seconds }) => (
               <button

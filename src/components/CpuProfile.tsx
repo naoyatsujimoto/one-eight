@@ -124,7 +124,7 @@ export function CpuProfile({ difficulty, onClose }: Props) {
           <button type="button" style={s.closeBtn} onClick={onClose}>✕</button>
         </div>
 
-        {loading && <p style={s.muted}>Loading…</p>}
+        {loading && <p style={s.muted}>{t.loading}</p>}
 
         {!loading && rows.length === 0 && (
           <p style={s.muted}>{t.cpuNoGames}</p>

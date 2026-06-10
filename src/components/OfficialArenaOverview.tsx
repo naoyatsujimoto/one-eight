@@ -230,7 +230,7 @@ function EntryConfirmModal({
             onClick={onBack}
             disabled={isSubmitting}
           >
-            {lang === 'ja' ? t.arenaBackBtn : 'Back'}
+            {t.arenaBackBtn}
           </button>
           <button
             type="button"
@@ -243,8 +243,8 @@ function EntryConfirmModal({
             disabled={isSubmitting}
           >
             {isSubmitting
-              ? (lang === 'ja' ? '処理中…' : 'Processing…')
-              : (lang === 'ja' ? t.arenaConfirmEntryBtn : 'Confirm Entry')}
+              ? t.arenaProcessing
+              : t.arenaConfirmEntryBtn}
           </button>
         </div>
       </div>
@@ -504,7 +504,7 @@ function DetailContent({
             <thead>
               <tr>
                 <th style={modalStyles.th}>#</th>
-                <th style={modalStyles.th}>{lang === 'ja' ? '名前' : 'Name'}</th>
+                <th style={modalStyles.th}>{t.arenaName}</th>
                 <th style={modalStyles.th}>Pt</th>
               </tr>
             </thead>
@@ -535,7 +535,7 @@ function DetailContent({
               </span>
               {mh.winner_display_name && (
                 <span style={modalStyles.historyWinner}>
-                  {lang === 'ja' ? '勝: ' : 'W: '}{mh.winner_display_name}
+                  {t.arenaWin}{mh.winner_display_name}
                 </span>
               )}
             </div>
@@ -554,7 +554,7 @@ function DetailContent({
               </span>
               <span style={modalStyles.historyDate}>
                 {formatDate(mh.started_at, lang)}
-                {mh.ended_at ? ` — ${formatDate(mh.ended_at, lang)}` : (lang === 'ja' ? ' (現在)' : ' (current)')}
+                {mh.ended_at ? ` — ${formatDate(mh.ended_at, lang)}` : ` ${t.arenaCurrent}`}
               </span>
             </div>
           ))}
