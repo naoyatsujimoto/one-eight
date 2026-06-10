@@ -4,13 +4,16 @@
  * RP-5a: 支払対象 Award の一覧表示 + 詳細確認（read-only）
  * RP-5b: Prepare Payout ボタン + 確認モーダル + 成功後 prepared 状態表示
  * RP-5c: Mark as Paid ボタン + モーダル / Mark as Failed ボタン + モーダル
+ * RP-5d: Cancel Payout ボタン + モーダル / Retry Payout ボタン + モーダル / Retry chain 表示
  *
  * 禁止:
- *   - Cancel / Retry ボタン（RP-5d以降）
  *   - PayPal API / CSV 生成 / PayPal 送金実行
  *   - PII を一覧に表示しない
  *   - PII を console.log / localStorage / sessionStorage / URL に出さない
  *   - PIIがURLに混入しない（state管理のみ）
+ *   - paid payout の cancel / retry
+ *   - canceled → prepared / failed → prepared の直接 UPDATE
+ *   - source payout の変更
  */
 import { useEffect, useState } from 'react';
 import {
@@ -19,12 +22,17 @@ import {
   adminPreparePayout,
   adminMarkPayoutPaid,
   adminMarkPayoutFailed,
+  adminCancelPayout,
+  adminRetryPayout,
   type PayableAwardRow,
   type PayoutDetailResult,
   type PreparePayoutResult,
   type MarkPayoutPaidResult,
   type MarkPayoutFailedResult,
+  type CancelPayoutResult,
+  type RetryPayoutResult,
 } from '../lib/prizeAdmin';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   onBack: () => void;
@@ -64,6 +72,48 @@ function canShowMarkAsFailedButton(detail: PayoutDetailResult): boolean {
   return detail.latest_payout_status === 'prepared';
 }
 
+// ── Cancel ボタン表示条件 ─────────────────────────────────────────────
+// prepared 状態のみ表示
+function canShowCancelButton(detail: PayoutDetailResult): boolean {
+  return detail.latest_payout_status === 'prepared';
+}
+
+// ── Retry ボタン表示条件 ──────────────────────────────────────────────
+// failed / canceled 状態 + award.status=eligible + snapshotあり + paypal_manual
+function canShowRetryButton(
+  detail: PayoutDetailResult,
+  retryAllowed: RetryAllowedInfo | null,
+): boolean {
+  if (!['failed', 'canceled'].includes(detail.latest_payout_status ?? '')) return false;
+  if (detail.award_status !== 'eligible') return false;
+  if (retryAllowed?.snapshot_redacted) return false;
+  if (!retryAllowed?.can_retry) return false;
+  return true;
+}
+
+// ── Retry 可否情報型 ──────────────────────────────────────────────────
+interface RetryAllowedInfo {
+  can_retry: boolean;
+  snapshot_redacted: boolean;
+  has_active_payout: boolean;
+  chain_depth: number;
+  block_reason: string | null;
+}
+
+// ── Payout chain row 型 ───────────────────────────────────────────────
+interface PayoutChainRow {
+  id: string;
+  status: string;
+  retry_source_payout_id: string | null;
+  created_at: string;
+  paid_at: string | null;
+  failed_at: string | null;
+  canceled_at: string | null;
+  amount_cents_snapshot: number;
+  currency_snapshot: string;
+  payment_method: string;
+}
+
 // ── Prepare Payout ボタン表示条件 ────────────────────────────────────────
 // 以下をすべて満たす場合のみ表示:
 // 1. award.status = eligible
@@ -81,6 +131,388 @@ function canShowPrepareButton(detail: PayoutDetailResult): boolean {
   if (!detail.legal_name || !detail.paypal_email) return false;
   if (detail.pii_data_source === 'unavailable') return false;
   return true;
+}
+
+// ── コンポーネント: Cancel Payout 確認モーダル ─────────────────────────────
+
+interface CancelPayoutModalProps {
+  detail: PayoutDetailResult;
+  payoutId: string;
+  preparedAt: string | null;
+  onConfirm: (cancelReason: string, adminNote: string | null) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  submitError: string | null;
+}
+
+function CancelPayoutModal({
+  detail,
+  payoutId,
+  preparedAt,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+  submitError,
+}: CancelPayoutModalProps) {
+  const [cancelReason, setCancelReason] = useState('');
+  const [adminNote, setAdminNote] = useState('');
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
+
+  const cleanReason = cancelReason.trim();
+  const reasonValid = cleanReason.length >= 3 && cleanReason.length <= 500;
+  const allChecked = check1 && check2 && check3;
+  const canConfirm = allChecked && reasonValid && !isSubmitting;
+
+  return (
+    <div style={pm.overlay}>
+      <div style={{ ...pm.modal, maxWidth: 500 }}>
+        <div style={{ ...pm.header, background: '#37474f' }}>
+          <span style={pm.title}>Cancel Payout — Confirmation</span>
+        </div>
+
+        <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
+          {/* payout 情報サマリー */}
+          <div style={pm.infoBox}>
+            <InfoRow label="Payout ID"    value={payoutId.slice(0, 8) + '…'} />
+            <InfoRow label="Award ID"     value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Amount"       value={fmtCents(detail.amount_cents, detail.currency)} />
+            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '—'} sensitive />
+            <InfoRow label="Legal Name"   value={detail.legal_name  ?? '—'} sensitive />
+            {preparedAt && <InfoRow label="Prepared At" value={fmtDate(preparedAt)} />}
+          </div>
+
+          {/* 警告 */}
+          <div style={pm.warningBox}>
+            <div style={pm.warningTitle}>⚠️ Important</div>
+            <ul style={pm.warningList}>
+              <li>This operation does <strong>NOT</strong> reverse a PayPal transfer.</li>
+              <li>After cancel, this payout row is <strong>permanently terminal</strong>. It cannot be reused.</li>
+              <li>To retry payment, use <strong>Retry Payout</strong> to create a new prepared payout.</li>
+            </ul>
+          </div>
+
+          {/* 入力フォーム */}
+          <div style={mp.formSection}>
+            <label style={mp.label}>
+              Cancel Reason <span style={mp.required}>*</span>
+              <span style={mp.hint}> (3–500 chars. No PII.)</span>
+              <textarea
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={500}
+                rows={3}
+                style={{
+                  ...mp.textarea,
+                  ...(cancelReason.trim() !== '' && !reasonValid ? mp.textareaError : {}),
+                }}
+                placeholder="e.g. PayPal payment was not executed. Creating a new payout. No PII."
+              />
+              <span style={{ fontSize: 11, color: '#888' }}>
+                {cleanReason.length} / 500 chars
+                {cleanReason.length > 0 && cleanReason.length < 3 && (
+                  <span style={{ color: '#b71c1c' }}> (min 3)</span>
+                )}
+              </span>
+            </label>
+
+            <label style={mp.label}>
+              Admin Note <span style={mp.hint}>(max 1000 chars. No PII.)</span>
+              <textarea
+                value={adminNote}
+                onChange={e => setAdminNote(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={1000}
+                rows={2}
+                style={mp.textarea}
+                placeholder="Internal note. Do not include PII."
+              />
+            </label>
+          </div>
+
+          {/* 必須チェックボックス（3つ全て） */}
+          <div style={pm.checksBox}>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check1} onChange={e => setCheck1(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              PayPalでまだ支払を実行していないことを確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check2} onChange={e => setCheck2(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              このpayout rowはcanceledとなり再利用できないことを理解した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check3} onChange={e => setCheck3(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              必要ならRetryで新しいprepared payoutを作ることを理解した
+            </label>
+          </div>
+
+          {submitError && (
+            <div style={{ ...ds.errorBanner, marginBottom: 8 }}>
+              ❌ {submitError}
+            </div>
+          )}
+
+          <div style={pm.actions}>
+            <button type="button" style={pm.cancelBtn} onClick={onCancel} disabled={isSubmitting}>
+              Back
+            </button>
+            <button
+              type="button"
+              style={{
+                ...cr.confirmCancelBtn,
+                ...(!canConfirm ? pm.disabledBtn : {}),
+              }}
+              onClick={() => {
+                if (canConfirm) {
+                  onConfirm(
+                    cleanReason,
+                    adminNote.trim() !== '' ? adminNote.trim() : null,
+                  );
+                }
+              }}
+              disabled={!canConfirm}
+            >
+              {isSubmitting ? 'Canceling…' : 'Confirm Cancel'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── コンポーネント: Retry Payout 確認モーダル ────────────────────────────────
+
+interface RetryPayoutModalProps {
+  detail: PayoutDetailResult;
+  sourcePayoutId: string;
+  sourceStatus: string;
+  retryAllowed: RetryAllowedInfo;
+  onConfirm: (retryReason: string, adminNote: string | null) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  submitError: string | null;
+}
+
+function RetryPayoutModal({
+  detail,
+  sourcePayoutId,
+  sourceStatus,
+  retryAllowed,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+  submitError,
+}: RetryPayoutModalProps) {
+  const [retryReason, setRetryReason] = useState('');
+  const [adminNote, setAdminNote] = useState('');
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
+
+  const cleanReason = retryReason.trim();
+  const reasonValid = cleanReason.length >= 3 && cleanReason.length <= 500;
+  const allChecked = check1 && check2 && check3;
+  const canConfirm = allChecked && reasonValid && !isSubmitting;
+
+  return (
+    <div style={pm.overlay}>
+      <div style={{ ...pm.modal, maxWidth: 520 }}>
+        <div style={{ ...pm.header, background: '#4a148c' }}>
+          <span style={pm.title}>Retry Payout — Confirmation</span>
+        </div>
+
+        <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
+          {/* source payout 情報 */}
+          <div style={pm.infoBox}>
+            <InfoRow label="Source Payout ID" value={sourcePayoutId.slice(0, 8) + '…'} />
+            <InfoRow label="Source Status"    value={sourceStatus} />
+            <InfoRow label="Award ID"         value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Amount"           value={fmtCents(detail.amount_cents, detail.currency)} />
+            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email"     value={detail.paypal_email ?? '—'} sensitive />
+            <InfoRow label="Legal Name"       value={detail.legal_name  ?? '—'} sensitive />
+            <InfoRow label="Payment Method"   value="paypal_manual" />
+            {detail.latest_submission_id && (
+              <InfoRow label="Source Sub. ID" value={detail.latest_submission_id.slice(0, 8) + '…'} />
+            )}
+            <InfoRow label="Chain Depth"      value={String(retryAllowed.chain_depth)} />
+          </div>
+
+          {/* 重要事項 */}
+          <div style={pm.warningBox}>
+            <div style={pm.warningTitle}>⚠️ Important</div>
+            <ul style={pm.warningList}>
+              <li>Snapshot (email, name, amount) is <strong>copied from the source payout</strong>. No re-fetch from submission.</li>
+              <li>The source payout row is <strong>NOT modified</strong>.</li>
+              <li>A <strong>new prepared payout</strong> will be created with the same snapshot.</li>
+              <li>This does <strong>NOT</strong> execute a PayPal transfer.</li>
+            </ul>
+          </div>
+
+          {/* 入力フォーム */}
+          <div style={mp.formSection}>
+            <label style={mp.label}>
+              Retry Reason <span style={mp.required}>*</span>
+              <span style={mp.hint}> (3–500 chars. No PII.)</span>
+              <textarea
+                value={retryReason}
+                onChange={e => setRetryReason(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={500}
+                rows={3}
+                style={{
+                  ...mp.textarea,
+                  ...(retryReason.trim() !== '' && !reasonValid ? mp.textareaError : {}),
+                }}
+                placeholder="e.g. Retrying after network error. No PII."
+              />
+              <span style={{ fontSize: 11, color: '#888' }}>
+                {cleanReason.length} / 500 chars
+                {cleanReason.length > 0 && cleanReason.length < 3 && (
+                  <span style={{ color: '#b71c1c' }}> (min 3)</span>
+                )}
+              </span>
+            </label>
+
+            <label style={mp.label}>
+              Admin Note <span style={mp.hint}>(max 1000 chars. No PII.)</span>
+              <textarea
+                value={adminNote}
+                onChange={e => setAdminNote(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={1000}
+                rows={2}
+                style={mp.textarea}
+                placeholder="Internal note. Do not include PII."
+              />
+            </label>
+          </div>
+
+          {/* 必須チェックボックス（3つ全て） */}
+          <div style={pm.checksBox}>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check1} onChange={e => setCheck1(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              同じsnapshotで再試行することを確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check2} onChange={e => setCheck2(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              PayPal Email / 法定氏名 / 金額を二重確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check3} onChange={e => setCheck3(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              元のpayoutは変更せず、新しいprepared payoutを作ることを理解した
+            </label>
+          </div>
+
+          {submitError && (
+            <div style={{ ...ds.errorBanner, marginBottom: 8 }}>
+              ❌ {submitError}
+            </div>
+          )}
+
+          <div style={pm.actions}>
+            <button type="button" style={pm.cancelBtn} onClick={onCancel} disabled={isSubmitting}>
+              Back
+            </button>
+            <button
+              type="button"
+              style={{
+                ...cr.confirmRetryBtn,
+                ...(!canConfirm ? pm.disabledBtn : {}),
+              }}
+              onClick={() => {
+                if (canConfirm) {
+                  onConfirm(
+                    cleanReason,
+                    adminNote.trim() !== '' ? adminNote.trim() : null,
+                  );
+                }
+              }}
+              disabled={!canConfirm}
+            >
+              {isSubmitting ? 'Retrying…' : 'Confirm Retry'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── コンポーネント: Retry chain 表示 ─────────────────────────────────────
+
+function RetryChainView({ awardId }: { awardId: string }) {
+  const [rows, setRows] = useState<PayoutChainRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      // prize_payouts を award_id でクエリ（PII非返却列のみ）
+      const { data, error: err } = await supabase
+        .from('prize_payouts')
+        .select('id, status, retry_source_payout_id, created_at, paid_at, failed_at, canceled_at, amount_cents_snapshot, currency_snapshot, payment_method')
+        .eq('award_id', awardId)
+        .order('created_at', { ascending: true });
+      if (cancelled) return;
+      if (err) {
+        setError(err.message);
+      } else {
+        setRows((data ?? []) as PayoutChainRow[]);
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [awardId]);
+
+  if (loading) return <div style={{ fontSize: 12, color: '#888', padding: '4px 0' }}>Loading payout chain…</div>;
+  if (error) return <div style={{ fontSize: 12, color: '#b71c1c' }}>⚠ {error}</div>;
+  if (rows.length === 0) return <div style={{ fontSize: 12, color: '#aaa' }}>No payout history.</div>;
+
+  function statusColor(st: string): string {
+    if (st === 'paid') return '#2e7d32';
+    if (st === 'failed') return '#b71c1c';
+    if (st === 'canceled') return '#757575';
+    if (st === 'prepared') return '#1565c0';
+    return '#333';
+  }
+
+  return (
+    <div style={cr.chainContainer}>
+      {rows.map((row, idx) => (
+        <div key={row.id} style={cr.chainRow}>
+          <div style={cr.chainIndex}>#{idx + 1}</div>
+          <div style={cr.chainBody}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' as const }}>
+              <span style={{ ...cr.chainStatus, color: statusColor(row.status) }}>
+                {row.status.toUpperCase()}
+              </span>
+              <span style={cr.chainMono}>{row.id.slice(0, 8)}…</span>
+              <span style={cr.chainAmt}>{fmtCents(row.amount_cents_snapshot, row.currency_snapshot)}</span>
+              <span style={cr.chainMethod}>{row.payment_method}</span>
+            </div>
+            <div style={cr.chainDates}>
+              <span>Created: {fmtDate(row.created_at)}</span>
+              {row.paid_at && <span> · Paid: {fmtDate(row.paid_at)}</span>}
+              {row.failed_at && <span> · Failed: {fmtDate(row.failed_at)}</span>}
+              {row.canceled_at && <span> · Canceled: {fmtDate(row.canceled_at)}</span>}
+            </div>
+            {row.retry_source_payout_id && (
+              <div style={cr.chainRetryRef}>
+                ↩ Retry of: {row.retry_source_payout_id.slice(0, 8)}…
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ── コンポーネント: Prepare Payout 確認モーダル ────────────────────────────
@@ -728,6 +1160,20 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
   const [markFailedError, setMarkFailedError] = useState<string | null>(null);
   const [markFailedResult, setMarkFailedResult] = useState<MarkPayoutFailedResult | null>(null);
 
+  // Cancel Payout UI state (RP-5d)
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelResult, setCancelResult] = useState<CancelPayoutResult | null>(null);
+
+  // Retry Payout UI state (RP-5d)
+  const [showRetryModal, setShowRetryModal] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [retryResult, setRetryResult] = useState<RetryPayoutResult | null>(null);
+  const [retryAllowed, setRetryAllowed] = useState<RetryAllowedInfo | null>(null);
+  const [retryAllowedLoading, setRetryAllowedLoading] = useState(false);
+
   async function loadDetail(id: string) {
     setLoading(true);
     setError(null);
@@ -829,8 +1275,132 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
     }
   }
 
-  const anyModalOpen = showPrepareModal || showMarkPaidModal || showMarkFailedModal;
-  const anySubmitting = isPreparing || isMarkingPaid || isMarkingFailed;
+  // RP-5d: Cancel
+  async function handleCancelPayout(cancelReason: string, adminNote: string | null) {
+    if (!detail?.latest_payout_id) return;
+    setIsCanceling(true);
+    setCancelError(null);
+    const { data, error: err } = await adminCancelPayout({
+      payout_id:     detail.latest_payout_id,
+      cancel_reason: cancelReason,
+      admin_note:    adminNote,
+    });
+    setIsCanceling(false);
+    if (err) {
+      setCancelError(err);
+    } else if (data) {
+      setCancelResult(data);
+      setShowCancelModal(false);
+      await loadDetail(awardId);
+    }
+  }
+
+  // RP-5d: Retry
+  async function handleRetryPayout(retryReason: string, adminNote: string | null) {
+    if (!detail?.latest_payout_id) return;
+    setIsRetrying(true);
+    setRetryError(null);
+    const { data, error: err } = await adminRetryPayout({
+      source_payout_id: detail.latest_payout_id,
+      retry_reason:     retryReason,
+      admin_note:       adminNote,
+    });
+    setIsRetrying(false);
+    if (err) {
+      setRetryError(err);
+    } else if (data) {
+      setRetryResult(data);
+      setShowRetryModal(false);
+      await loadDetail(awardId);
+    }
+  }
+
+  // retry 可否チェック（failed / canceled 状態になったタイミングで取得）
+  useEffect(() => {
+    if (!detail) return;
+    const st = detail.latest_payout_status;
+    if (st !== 'failed' && st !== 'canceled') {
+      setRetryAllowed(null);
+      return;
+    }
+    let cancelled = false;
+    setRetryAllowedLoading(true);
+    (async () => {
+      // prize_payouts から source payout の snapshot 状態を確認
+      if (!detail.latest_payout_id) {
+        if (!cancelled) { setRetryAllowed(null); setRetryAllowedLoading(false); }
+        return;
+      }
+      const { data: payoutRows } = await supabase
+        .from('prize_payouts')
+        .select('id, recipient_email_snapshot, recipient_name_snapshot, payment_method, retry_source_payout_id, status')
+        .eq('id', detail.latest_payout_id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (!payoutRows) {
+        setRetryAllowed(null);
+        setRetryAllowedLoading(false);
+        return;
+      }
+
+      const snapshot_redacted =
+        payoutRows.recipient_email_snapshot === null ||
+        payoutRows.recipient_name_snapshot === null;
+
+      // active payout 確認
+      const { count: activeCount } = await supabase
+        .from('prize_payouts')
+        .select('id', { count: 'exact', head: true })
+        .eq('award_id', detail.award_id)
+        .in('status', ['prepared', 'paid']);
+
+      if (cancelled) return;
+
+      const has_active_payout = (activeCount ?? 0) > 0;
+
+      // chain depth 計算（簡易版: 先祖を辿る）
+      let depth = 0;
+      let cursor: string | null = payoutRows.id;
+      while (cursor && depth < 12) {
+        const { data: cur } = await supabase
+          .from('prize_payouts')
+          .select('retry_source_payout_id')
+          .eq('id', cursor)
+          .maybeSingle();
+        if (!cur) break;
+        cursor = cur.retry_source_payout_id ?? null;
+        if (cursor) depth++;
+      }
+
+      if (cancelled) return;
+
+      let block_reason: string | null = null;
+      let can_retry = true;
+
+      if (snapshot_redacted) {
+        can_retry = false;
+        block_reason = 'source_redacted';
+      } else if (has_active_payout) {
+        can_retry = false;
+        block_reason = 'active_payout_exists';
+      } else if (depth >= 10) {
+        can_retry = false;
+        block_reason = 'chain_too_deep';
+      } else if (payoutRows.payment_method !== 'paypal_manual') {
+        can_retry = false;
+        block_reason = 'unsupported_payment_method';
+      }
+
+      setRetryAllowed({ can_retry, snapshot_redacted, has_active_payout, chain_depth: depth, block_reason });
+      setRetryAllowedLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [detail?.latest_payout_id, detail?.latest_payout_status, detail?.award_id]);
+
+  const anyModalOpen = showPrepareModal || showMarkPaidModal || showMarkFailedModal || showCancelModal || showRetryModal;
+  const anySubmitting = isPreparing || isMarkingPaid || isMarkingFailed || isCanceling || isRetrying;
 
   return (
     <div style={ds.overlay} onClick={e => { if (e.target === e.currentTarget && !anyModalOpen && !anySubmitting) onClose(); }}>
@@ -863,6 +1433,17 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
         {markFailedResult && (
           <div style={{ background: '#ffebee', border: '1px solid #ef9a9a', borderRadius: 4, padding: '8px 16px', margin: '8px 16px', fontSize: 13, color: '#b71c1c', fontWeight: 700 }}>
             ❌ Marked as Failed at {fmtDate(markFailedResult.failed_at)}
+          </div>
+        )}
+        {/* RP-5d バナー */}
+        {cancelResult && (
+          <div style={{ background: '#f5f5f5', border: '1px solid #bdbdbd', borderRadius: 4, padding: '8px 16px', margin: '8px 16px', fontSize: 13, color: '#37474f', fontWeight: 700 }}>
+            🚫 Payout canceled at {fmtDate(cancelResult.canceled_at)}
+          </div>
+        )}
+        {retryResult && (
+          <div style={{ background: '#ede7f6', border: '1px solid #ce93d8', borderRadius: 4, padding: '8px 16px', margin: '8px 16px', fontSize: 13, color: '#4a148c', fontWeight: 700 }}>
+            🔁 Retry created: new payout {retryResult.new_payout_id.slice(0, 8)}…
           </div>
         )}
 
@@ -957,7 +1538,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                 )}
 
                 {/* RP-5c: Mark as Paid / Failed ボタン（prepared のときのみ表示） */}
-                {canShowMarkAsPaidButton(detail) && !markPaidResult && !markFailedResult && (
+                {canShowMarkAsPaidButton(detail) && !markPaidResult && !markFailedResult && !cancelResult && (
                   <div style={ds.actionArea}>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
                       <button
@@ -990,17 +1571,93 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   </div>
                 )}
 
-                {/* paid / failed 後はボタンを消す */}
+                {/* RP-5d: Cancel ボタン（prepared のみ） */}
+                {canShowCancelButton(detail) && !cancelResult && !markPaidResult && !markFailedResult && (
+                  <div style={{ ...ds.actionArea, background: '#f5f5f5', borderColor: '#bdbdbd', marginTop: 8 }}>
+                    <button
+                      type="button"
+                      style={cr.cancelPayoutBtn}
+                      onClick={() => {
+                        setCancelError(null);
+                        setShowCancelModal(true);
+                      }}
+                      disabled={anySubmitting}
+                    >
+                      Cancel Payout
+                    </button>
+                    <div style={ds.prepareNote}>
+                      Cancel without payment. Use Retry to create a new prepared payout.
+                    </div>
+                  </div>
+                )}
+
+                {/* paid 後の表示 */}
                 {(detail.latest_payout_status === 'paid') && (
                   <div style={{ ...ds.futureNote, color: '#2e7d32', background: '#e8f5e9', borderColor: '#a5d6a7' }}>
-                    ✅ Payout is <strong>paid</strong>. Cancel / Retry will be in RP-5d.
+                    ✅ Payout is <strong>paid</strong>. This is terminal.
                   </div>
                 )}
-                {(detail.latest_payout_status === 'failed') && (
-                  <div style={{ ...ds.futureNote, color: '#b71c1c', background: '#ffebee', borderColor: '#ef9a9a' }}>
-                    ❌ Payout is <strong>failed</strong>. Retry will be in RP-5d.
+
+                {/* failed / canceled 後 — Retry ボタン */}
+                {(['failed', 'canceled'].includes(detail.latest_payout_status ?? '')) && (
+                  <div style={{ ...ds.actionArea, background: '#ede7f6', borderColor: '#ce93d8', marginTop: 8 }}>
+                    {retryAllowedLoading && (
+                      <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>Checking retry eligibility…</div>
+                    )}
+                    {!retryAllowedLoading && retryAllowed && (
+                      <>
+                        {retryAllowed.can_retry ? (
+                          <button
+                            type="button"
+                            style={cr.retryPayoutBtn}
+                            onClick={() => {
+                              setRetryError(null);
+                              setShowRetryModal(true);
+                            }}
+                            disabled={anySubmitting}
+                          >
+                            Retry Payout
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            style={{ ...cr.retryPayoutBtn, ...pm.disabledBtn }}
+                            disabled
+                            title={
+                              retryAllowed.snapshot_redacted
+                                ? 'Source payoutのrecipient情報がredactionされているためretryできません。再提出フローが必要です。'
+                                : retryAllowed.has_active_payout
+                                  ? 'Active payout exists.'
+                                  : retryAllowed.chain_depth >= 10
+                                    ? 'Retry chain depth limit reached (max 9).'
+                                    : retryAllowed.block_reason ?? 'Cannot retry.'
+                            }
+                          >
+                            Retry Payout
+                          </button>
+                        )}
+                        {retryAllowed.snapshot_redacted && (
+                          <div style={{ fontSize: 11, color: '#b71c1c', marginTop: 4 }}>
+                            ⚠ Source payoutのrecipient情報がredactionされているためretryできません。再提出フローが必要です。
+                          </div>
+                        )}
+                        {!retryAllowed.snapshot_redacted && !retryAllowed.can_retry && (
+                          <div style={{ fontSize: 11, color: '#b71c1c', marginTop: 4 }}>
+                            ⚠ Cannot retry: {retryAllowed.block_reason}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div style={{ ...ds.prepareNote, marginTop: 6 }}>
+                      Retry creates a new prepared payout from the same snapshot. Source payout is unchanged.
+                    </div>
                   </div>
                 )}
+
+                {/* Retry chain 表示（Payout History） */}
+                <Section title="Payout History (Retry Chain)">
+                  <RetryChainView awardId={awardId} />
+                </Section>
               </>
             )}
           </div>
@@ -1045,6 +1702,39 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
           }}
           isSubmitting={isMarkingFailed}
           submitError={markFailedError}
+        />
+      )}
+
+      {/* Cancel Payout 確認モーダル (RP-5d) */}
+      {showCancelModal && detail && detail.latest_payout_id && (
+        <CancelPayoutModal
+          detail={detail}
+          payoutId={detail.latest_payout_id}
+          preparedAt={null}
+          onConfirm={handleCancelPayout}
+          onCancel={() => {
+            setShowCancelModal(false);
+            setCancelError(null);
+          }}
+          isSubmitting={isCanceling}
+          submitError={cancelError}
+        />
+      )}
+
+      {/* Retry Payout 確認モーダル (RP-5d) */}
+      {showRetryModal && detail && detail.latest_payout_id && retryAllowed && (
+        <RetryPayoutModal
+          detail={detail}
+          sourcePayoutId={detail.latest_payout_id}
+          sourceStatus={detail.latest_payout_status ?? 'unknown'}
+          retryAllowed={retryAllowed}
+          onConfirm={handleRetryPayout}
+          onCancel={() => {
+            setShowRetryModal(false);
+            setRetryError(null);
+          }}
+          isSubmitting={isRetrying}
+          submitError={retryError}
         />
       )}
     </div>
@@ -1350,6 +2040,114 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
     minHeight: 32,
+  },
+};
+
+// Cancel / Retry Styles (RP-5d)
+const cr: Record<string, React.CSSProperties> = {
+  cancelPayoutBtn: {
+    background: '#37474f',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 700,
+    minHeight: 38,
+    width: '100%',
+    marginBottom: 6,
+  },
+  retryPayoutBtn: {
+    background: '#4a148c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 700,
+    minHeight: 38,
+    width: '100%',
+    marginBottom: 6,
+  },
+  confirmCancelBtn: {
+    flex: 2,
+    background: '#37474f',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '10px',
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 700,
+    minHeight: 44,
+  },
+  confirmRetryBtn: {
+    flex: 2,
+    background: '#4a148c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '10px',
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 700,
+    minHeight: 44,
+  },
+  chainContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+    marginTop: 4,
+  },
+  chainRow: {
+    display: 'flex',
+    gap: 8,
+    padding: '6px 8px',
+    background: '#fafafa',
+    border: '1px solid #eee',
+    borderRadius: 4,
+    fontSize: 12,
+  },
+  chainIndex: {
+    color: '#aaa',
+    flexShrink: 0,
+    minWidth: 20,
+    fontWeight: 700,
+  },
+  chainBody: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
+  chainStatus: {
+    fontWeight: 700,
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+  chainMono: {
+    fontFamily: 'monospace',
+    fontSize: 11,
+    color: '#888',
+  },
+  chainAmt: {
+    color: '#333',
+    fontWeight: 600,
+  },
+  chainMethod: {
+    color: '#999',
+    fontSize: 11,
+  },
+  chainDates: {
+    color: '#aaa',
+    fontSize: 11,
+  },
+  chainRetryRef: {
+    color: '#9c27b0',
+    fontSize: 11,
+    fontStyle: 'italic' as const,
   },
 };
 

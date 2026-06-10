@@ -423,3 +423,93 @@ export async function adminMarkPayoutFailed(
   if (error) return { data: null, error: error.message };
   return { data: data as MarkPayoutFailedResult, error: null };
 }
+
+// ── RP-5d: Cancel / Retry ─────────────────────────────────────────────────────
+
+/**
+ * admin_cancel_payout の引数型
+ */
+export interface CancelPayoutParams {
+  /** 対象 payout の id */
+  payout_id:      string;
+  /** キャンセル理由（3〜500文字）。PII 禁止。archive log には本文を保存しない。 */
+  cancel_reason:  string;
+  /** 管理者メモ（1000文字以内）。PII 禁止。 */
+  admin_note?:    string | null;
+}
+
+/**
+ * admin_cancel_payout の戻り値型（PIIなし）
+ */
+export interface CancelPayoutResult {
+  ok:          boolean;
+  payout_id:   string;
+  status:      'canceled';
+  canceled_at: string;
+}
+
+/**
+ * admin_retry_payout の引数型
+ */
+export interface RetryPayoutParams {
+  /** retry 元の payout の id（failed または canceled） */
+  source_payout_id: string;
+  /** retry 理由（3〜500文字）。PII 禁止。archive log には本文を保存しない。 */
+  retry_reason:     string;
+  /** 管理者メモ（1000文字以内）。PII 禁止。 */
+  admin_note?:      string | null;
+}
+
+/**
+ * admin_retry_payout の戻り値型（PIIなし）
+ */
+export interface RetryPayoutResult {
+  ok:               boolean;
+  new_payout_id:    string;
+  source_payout_id: string;
+  status:           'prepared';
+  payment_method:   string;
+}
+
+/**
+ * adminCancelPayout
+ * prepared payout を status='canceled' に変更する。
+ * cancel_reason / canceled_at / canceled_by_user_id を記録する。
+ * 戻り値に PII を含まない。
+ *
+ * ⚠️ canceled 後は同 payout row を再利用できない。
+ * retry は adminRetryPayout で新規 payout row を作成する。
+ */
+export async function adminCancelPayout(
+  params: CancelPayoutParams,
+): Promise<{ data: CancelPayoutResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_cancel_payout', {
+    p_payout_id:     params.payout_id,
+    p_cancel_reason: params.cancel_reason,
+    p_admin_note:    params.admin_note ?? null,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as CancelPayoutResult, error: null };
+}
+
+/**
+ * adminRetryPayout
+ * failed または canceled の payout から新規 prepared payout を作成する。
+ * snapshot は source payout からコピーのみ（submission_data 再取得なし）。
+ * source payout は変更しない。
+ * 戻り値に PII を含まない。
+ *
+ * ⚠️ この関数は PayPal 送金を実行しない。
+ * 新規 prepared payout を作成するのみ。
+ */
+export async function adminRetryPayout(
+  params: RetryPayoutParams,
+): Promise<{ data: RetryPayoutResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_retry_payout', {
+    p_source_payout_id: params.source_payout_id,
+    p_retry_reason:     params.retry_reason,
+    p_admin_note:       params.admin_note ?? null,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as RetryPayoutResult, error: null };
+}
