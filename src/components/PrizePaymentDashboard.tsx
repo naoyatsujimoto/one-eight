@@ -1,7 +1,7 @@
 /**
- * PrizePaymentDashboard.tsx — Payment Dashboard
+ * PrizePaymentDashboard.tsx - Payment Dashboard
  *
- * RP-5a: 支払対象 Award の一覧表示 + 詳細確認（read-only）
+ * RP-5a: 支払対象 Award の一覧表示 + 詳細確認(read-only)
  * RP-5b: Prepare Payout ボタン + 確認モーダル + 成功後 prepared 状態表示
  * RP-5c: Mark as Paid ボタン + モーダル / Mark as Failed ボタン + モーダル
  * RP-5d: Cancel Payout ボタン + モーダル / Retry Payout ボタン + モーダル / Retry chain 表示
@@ -10,7 +10,7 @@
  *   - PayPal API / CSV 生成 / PayPal 送金実行
  *   - PII を一覧に表示しない
  *   - PII を console.log / localStorage / sessionStorage / URL に出さない
- *   - PIIがURLに混入しない（state管理のみ）
+ *   - PIIがURLに混入しない(state管理のみ)
  *   - paid payout の cancel / retry
  *   - canceled → prepared / failed → prepared の直接 UPDATE
  *   - source payout の変更
@@ -45,7 +45,7 @@ function fmtCents(cents: number, currency: string): string {
 }
 
 function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleString();
 }
 
@@ -169,18 +169,18 @@ function CancelPayoutModal({
     <div style={pm.overlay}>
       <div style={{ ...pm.modal, maxWidth: 500 }}>
         <div style={{ ...pm.header, background: '#37474f' }}>
-          <span style={pm.title}>Cancel Payout — Confirmation</span>
+          <span style={pm.title}>Cancel Payout - Confirmation</span>
         </div>
 
         <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
           {/* payout 情報サマリー */}
           <div style={pm.infoBox}>
-            <InfoRow label="Payout ID"    value={payoutId.slice(0, 8) + '…'} />
-            <InfoRow label="Award ID"     value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Payout ID"    value={payoutId.slice(0, 8) + '...'} />
+            <InfoRow label="Award ID"     value={detail.award_id.slice(0, 8) + '...'} />
             <InfoRow label="Amount"       value={fmtCents(detail.amount_cents, detail.currency)} />
-            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
-            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '—'} sensitive />
-            <InfoRow label="Legal Name"   value={detail.legal_name  ?? '—'} sensitive />
+            {/* ⚠️ PII - 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '-'} sensitive />
+            <InfoRow label="Legal Name"   value={detail.legal_name  ?? '-'} sensitive />
             {preparedAt && <InfoRow label="Prepared At" value={fmtDate(preparedAt)} />}
           </div>
 
@@ -198,7 +198,7 @@ function CancelPayoutModal({
           <div style={mp.formSection}>
             <label style={mp.label}>
               Cancel Reason <span style={mp.required}>*</span>
-              <span style={mp.hint}> (3–500 chars. No PII.)</span>
+              <span style={mp.hint}> (3-500 chars. No PII.)</span>
               <textarea
                 value={cancelReason}
                 onChange={e => setCancelReason(e.target.value)}
@@ -233,7 +233,7 @@ function CancelPayoutModal({
             </label>
           </div>
 
-          {/* 必須チェックボックス（3つ全て） */}
+          {/* 必須チェックボックス(3つ全て) */}
           <div style={pm.checksBox}>
             <label style={pm.checkLabel}>
               <input type="checkbox" checked={check1} onChange={e => setCheck1(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
@@ -275,7 +275,7 @@ function CancelPayoutModal({
               }}
               disabled={!canConfirm}
             >
-              {isSubmitting ? 'Canceling…' : 'Confirm Cancel'}
+              {isSubmitting ? 'Canceling...' : 'Confirm Cancel'}
             </button>
           </div>
         </div>
@@ -322,22 +322,22 @@ function RetryPayoutModal({
     <div style={pm.overlay}>
       <div style={{ ...pm.modal, maxWidth: 520 }}>
         <div style={{ ...pm.header, background: '#4a148c' }}>
-          <span style={pm.title}>Retry Payout — Confirmation</span>
+          <span style={pm.title}>Retry Payout - Confirmation</span>
         </div>
 
         <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
           {/* source payout 情報 */}
           <div style={pm.infoBox}>
-            <InfoRow label="Source Payout ID" value={sourcePayoutId.slice(0, 8) + '…'} />
+            <InfoRow label="Source Payout ID" value={sourcePayoutId.slice(0, 8) + '...'} />
             <InfoRow label="Source Status"    value={sourceStatus} />
-            <InfoRow label="Award ID"         value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Award ID"         value={detail.award_id.slice(0, 8) + '...'} />
             <InfoRow label="Amount"           value={fmtCents(detail.amount_cents, detail.currency)} />
-            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
-            <InfoRow label="PayPal Email"     value={detail.paypal_email ?? '—'} sensitive />
-            <InfoRow label="Legal Name"       value={detail.legal_name  ?? '—'} sensitive />
+            {/* ⚠️ PII - 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email"     value={detail.paypal_email ?? '-'} sensitive />
+            <InfoRow label="Legal Name"       value={detail.legal_name  ?? '-'} sensitive />
             <InfoRow label="Payment Method"   value="paypal_manual" />
             {detail.latest_submission_id && (
-              <InfoRow label="Source Sub. ID" value={detail.latest_submission_id.slice(0, 8) + '…'} />
+              <InfoRow label="Source Sub. ID" value={detail.latest_submission_id.slice(0, 8) + '...'} />
             )}
             <InfoRow label="Chain Depth"      value={String(retryAllowed.chain_depth)} />
           </div>
@@ -357,7 +357,7 @@ function RetryPayoutModal({
           <div style={mp.formSection}>
             <label style={mp.label}>
               Retry Reason <span style={mp.required}>*</span>
-              <span style={mp.hint}> (3–500 chars. No PII.)</span>
+              <span style={mp.hint}> (3-500 chars. No PII.)</span>
               <textarea
                 value={retryReason}
                 onChange={e => setRetryReason(e.target.value)}
@@ -392,7 +392,7 @@ function RetryPayoutModal({
             </label>
           </div>
 
-          {/* 必須チェックボックス（3つ全て） */}
+          {/* 必須チェックボックス(3つ全て) */}
           <div style={pm.checksBox}>
             <label style={pm.checkLabel}>
               <input type="checkbox" checked={check1} onChange={e => setCheck1(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
@@ -434,7 +434,7 @@ function RetryPayoutModal({
               }}
               disabled={!canConfirm}
             >
-              {isSubmitting ? 'Retrying…' : 'Confirm Retry'}
+              {isSubmitting ? 'Retrying...' : 'Confirm Retry'}
             </button>
           </div>
         </div>
@@ -454,7 +454,7 @@ function RetryChainView({ awardId }: { awardId: string }) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      // prize_payouts を award_id でクエリ（PII非返却列のみ）
+      // prize_payouts を award_id でクエリ(PII非返却列のみ)
       const { data, error: err } = await supabase
         .from('prize_payouts')
         .select('id, status, retry_source_payout_id, created_at, paid_at, failed_at, canceled_at, amount_cents_snapshot, currency_snapshot, payment_method')
@@ -471,7 +471,7 @@ function RetryChainView({ awardId }: { awardId: string }) {
     return () => { cancelled = true; };
   }, [awardId]);
 
-  if (loading) return <div style={{ fontSize: 12, color: '#888', padding: '4px 0' }}>Loading payout chain…</div>;
+  if (loading) return <div style={{ fontSize: 12, color: '#888', padding: '4px 0' }}>Loading payout chain...</div>;
   if (error) return <div style={{ fontSize: 12, color: '#b71c1c' }}>⚠ {error}</div>;
   if (rows.length === 0) return <div style={{ fontSize: 12, color: '#aaa' }}>No payout history.</div>;
 
@@ -493,7 +493,7 @@ function RetryChainView({ awardId }: { awardId: string }) {
               <span style={{ ...cr.chainStatus, color: statusColor(row.status) }}>
                 {row.status.toUpperCase()}
               </span>
-              <span style={cr.chainMono}>{row.id.slice(0, 8)}…</span>
+              <span style={cr.chainMono}>{row.id.slice(0, 8)}...</span>
               <span style={cr.chainAmt}>{fmtCents(row.amount_cents_snapshot, row.currency_snapshot)}</span>
               <span style={cr.chainMethod}>{row.payment_method}</span>
             </div>
@@ -505,7 +505,7 @@ function RetryChainView({ awardId }: { awardId: string }) {
             </div>
             {row.retry_source_payout_id && (
               <div style={cr.chainRetryRef}>
-                ↩ Retry of: {row.retry_source_payout_id.slice(0, 8)}…
+                ↩ Retry of: {row.retry_source_payout_id.slice(0, 8)}...
               </div>
             )}
           </div>
@@ -534,7 +534,7 @@ function PrepareConfirmModal({ detail, onConfirm, onCancel, isPreparing }: Prepa
     <div style={pm.overlay} onClick={e => { if (e.target === e.currentTarget && !isPreparing) onCancel(); }}>
       <div style={pm.modal}>
         <div style={pm.header}>
-          <span style={pm.title}>Prepare Payout — Confirmation</span>
+          <span style={pm.title}>Prepare Payout - Confirmation</span>
         </div>
 
         <div style={pm.body}>
@@ -542,9 +542,9 @@ function PrepareConfirmModal({ detail, onConfirm, onCancel, isPreparing }: Prepa
           <div style={pm.infoBox}>
             <InfoRow label="Amount"      value={fmtCents(detail.amount_cents, detail.currency)} />
             <InfoRow label="Currency"    value={detail.currency} />
-            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
-            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '—'} sensitive />
-            <InfoRow label="Legal Name"   value={detail.legal_name ?? '—'} sensitive />
+            {/* ⚠️ PII - 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '-'} sensitive />
+            <InfoRow label="Legal Name"   value={detail.legal_name ?? '-'} sensitive />
           </div>
 
           {/* 重要事項 */}
@@ -558,7 +558,7 @@ function PrepareConfirmModal({ detail, onConfirm, onCancel, isPreparing }: Prepa
             </ul>
           </div>
 
-          {/* 必須チェックボックス（3つすべてチェックされるまでボタン disabled） */}
+          {/* 必須チェックボックス(3つすべてチェックされるまでボタン disabled) */}
           <div style={pm.checksBox}>
             <label style={pm.checkLabel}>
               <input
@@ -608,7 +608,7 @@ function PrepareConfirmModal({ detail, onConfirm, onCancel, isPreparing }: Prepa
               onClick={onConfirm}
               disabled={!allChecked || isPreparing}
             >
-              {isPreparing ? 'Preparing…' : 'Prepare Payout'}
+              {isPreparing ? 'Preparing...' : 'Prepare Payout'}
             </button>
           </div>
         </div>
@@ -726,7 +726,7 @@ function MarkAsPaidModal({
     <div style={pm.overlay}>
       <div style={{ ...pm.modal, maxWidth: 560 }}>
         <div style={{ ...pm.header, background: '#1b5e20' }}>
-          <span style={pm.title}>Mark as Paid — Confirmation</span>
+          <span style={pm.title}>Mark as Paid - Confirmation</span>
         </div>
 
         <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
@@ -739,13 +739,13 @@ function MarkAsPaidModal({
 
           {/* payout 情報サマリー */}
           <div style={pm.infoBox}>
-            <InfoRow label="Payout ID"    value={payoutId.slice(0, 8) + '…'} />
-            <InfoRow label="Award ID"     value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Payout ID"    value={payoutId.slice(0, 8) + '...'} />
+            <InfoRow label="Award ID"     value={detail.award_id.slice(0, 8) + '...'} />
             <InfoRow label="Amount"       value={fmtCents(detail.amount_cents, detail.currency)} />
             <InfoRow label="Currency"     value={detail.currency} />
-            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
-            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '—'} sensitive />
-            <InfoRow label="Legal Name"   value={detail.legal_name  ?? '—'} sensitive />
+            {/* ⚠️ PII - 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '-'} sensitive />
+            <InfoRow label="Legal Name"   value={detail.legal_name  ?? '-'} sensitive />
             <InfoRow label="Method"       value={'paypal_manual'} />
             {preparedAt && <InfoRow label="Prepared At" value={fmtDate(preparedAt)} />}
           </div>
@@ -942,7 +942,7 @@ function MarkAsPaidModal({
               onClick={handleConfirm}
               disabled={!canConfirm}
             >
-              {isSubmitting ? 'Processing…' : 'Confirm Paid'}
+              {isSubmitting ? 'Processing...' : 'Confirm Paid'}
             </button>
           </div>
         </div>
@@ -985,20 +985,20 @@ function MarkAsFailedModal({
     <div style={pm.overlay}>
       <div style={{ ...pm.modal, maxWidth: 500 }}>
         <div style={{ ...pm.header, background: '#b71c1c' }}>
-          <span style={pm.title}>Mark as Failed — Confirmation</span>
+          <span style={pm.title}>Mark as Failed - Confirmation</span>
         </div>
 
         <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
           <div style={pm.infoBox}>
-            <InfoRow label="Payout ID" value={payoutId.slice(0, 8) + '…'} />
-            <InfoRow label="Award ID"  value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Payout ID" value={payoutId.slice(0, 8) + '...'} />
+            <InfoRow label="Award ID"  value={detail.award_id.slice(0, 8) + '...'} />
             <InfoRow label="Amount"    value={fmtCents(detail.amount_cents, detail.currency)} />
           </div>
 
           <div style={mp.formSection}>
             <label style={mp.label}>
               Failure Reason <span style={mp.required}>*</span>
-              <span style={mp.hint}> (3–500 chars. No PII.)</span>
+              <span style={mp.hint}> (3-500 chars. No PII.)</span>
               <textarea
                 value={failureReason}
                 onChange={e => setFailureReason(e.target.value)}
@@ -1074,7 +1074,7 @@ function MarkAsFailedModal({
               }}
               disabled={!canConfirm}
             >
-              {isSubmitting ? 'Processing…' : 'Confirm Failed'}
+              {isSubmitting ? 'Processing...' : 'Confirm Failed'}
             </button>
           </div>
         </div>
@@ -1103,17 +1103,17 @@ function PreparedSuccessView({ result, detail }: PreparedSuccessViewProps) {
         <DRow label="Prepared At"     value={fmtDate(result.prepared_at)} />
         <DRow label="Source Sub. ID"
               value={detail.latest_submission_id
-                ? detail.latest_submission_id.slice(0, 8) + '…'
-                : '—'} />
+                ? detail.latest_submission_id.slice(0, 8) + '...'
+                : '-'} />
       </div>
 
       <div style={sv.section}>
         <div style={sv.sectionTitle}>Snapshot (Locked)</div>
         <DRow label="Amount"        value={fmtCents(detail.amount_cents, detail.currency)} />
         <DRow label="Currency"      value={detail.currency} />
-        {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
-        <DRow label="PayPal Email"  value={detail.paypal_email ?? '—'} sensitive />
-        <DRow label="Legal Name"    value={detail.legal_name ?? '—'} sensitive />
+        {/* ⚠️ PII - 表示専用。console.log 禁止。 */}
+        <DRow label="PayPal Email"  value={detail.paypal_email ?? '-'} sensitive />
+        <DRow label="Legal Name"    value={detail.legal_name ?? '-'} sensitive />
       </div>
 
       <div style={sv.nextSteps}>
@@ -1315,7 +1315,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
     }
   }
 
-  // retry 可否チェック（failed / canceled 状態になったタイミングで取得）
+  // retry 可否チェック(failed / canceled 状態になったタイミングで取得)
   useEffect(() => {
     if (!detail) return;
     const st = detail.latest_payout_status;
@@ -1360,7 +1360,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
 
       const has_active_payout = (activeCount ?? 0) > 0;
 
-      // chain depth 計算（簡易版: 先祖を辿る）
+      // chain depth 計算(簡易版: 先祖を辿る)
       let depth = 0;
       let cursor: string | null = payoutRows.id;
       while (cursor && depth < 12) {
@@ -1417,7 +1417,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
           </button>
         </div>
 
-        {loading && <div style={ds.loading}>Loading detail…</div>}
+        {loading && <div style={ds.loading}>Loading detail...</div>}
         {error && <div style={ds.errorBanner}>{error}</div>}
         {prepareError && (
           <div style={{ ...ds.errorBanner, margin: '8px 16px' }}>
@@ -1443,7 +1443,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
         )}
         {retryResult && (
           <div style={{ background: '#ede7f6', border: '1px solid #ce93d8', borderRadius: 4, padding: '8px 16px', margin: '8px 16px', fontSize: 13, color: '#4a148c', fontWeight: 700 }}>
-            🔁 Retry created: new payout {retryResult.new_payout_id.slice(0, 8)}…
+            🔁 Retry created: new payout {retryResult.new_payout_id.slice(0, 8)}...
           </div>
         )}
 
@@ -1458,25 +1458,25 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
             {!prepareResult && (
               <>
                 <Section title="Award">
-                  <DRow label="Award ID"    value={detail.award_id.slice(0, 8) + '…'} />
+                  <DRow label="Award ID"    value={detail.award_id.slice(0, 8) + '...'} />
                   <DRow label="Status"      value={detail.award_status} />
                   <DRow label="Amount"      value={fmtCents(detail.amount_cents, detail.currency)} />
-                  <DRow label="Prize Kind"  value={detail.prize_kind ?? '—'} />
-                  <DRow label="Source"      value={detail.source_kind ?? '—'} />
+                  <DRow label="Prize Kind"  value={detail.prize_kind ?? '-'} />
+                  <DRow label="Source"      value={detail.source_kind ?? '-'} />
                   {detail.source_arena_event_id && (
-                    <DRow label="Arena Event" value={detail.source_arena_event_id.slice(0, 8) + '…'} />
+                    <DRow label="Arena Event" value={detail.source_arena_event_id.slice(0, 8) + '...'} />
                   )}
                   {detail.source_arena_match_id && (
-                    <DRow label="Arena Match" value={detail.source_arena_match_id.slice(0, 8) + '…'} />
+                    <DRow label="Arena Match" value={detail.source_arena_match_id.slice(0, 8) + '...'} />
                   )}
                 </Section>
 
-                {/* Submission 情報（PIIなし） */}
+                {/* Submission 情報(PIIなし) */}
                 <Section title="Submission">
                   {detail.latest_submission_id ? (
                     <>
-                      <DRow label="Sub ID"     value={detail.latest_submission_id.slice(0, 8) + '…'} />
-                      <DRow label="Status"     value={detail.latest_submission_status ?? '—'} />
+                      <DRow label="Sub ID"     value={detail.latest_submission_id.slice(0, 8) + '...'} />
+                      <DRow label="Status"     value={detail.latest_submission_status ?? '-'} />
                       <DRow label="Submitted"  value={fmtDate(detail.latest_submission_submitted_at)} />
                       <DRow label="Data Exp."  value={fmtDate(detail.latest_submission_delete_after)} />
                     </>
@@ -1485,12 +1485,12 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   )}
                 </Section>
 
-                {/* Payout 情報（PIIなし） */}
+                {/* Payout 情報(PIIなし) */}
                 <Section title="Payout">
                   {detail.latest_payout_id ? (
                     <>
-                      <DRow label="Payout ID" value={detail.latest_payout_id.slice(0, 8) + '…'} />
-                      <DRow label="Status"    value={detail.latest_payout_status ?? '—'} />
+                      <DRow label="Payout ID" value={detail.latest_payout_id.slice(0, 8) + '...'} />
+                      <DRow label="Status"    value={detail.latest_payout_status ?? '-'} />
                       {detail.latest_payout_paid_at && (
                         <DRow label="Paid At" value={fmtDate(detail.latest_payout_paid_at)} />
                       )}
@@ -1500,7 +1500,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   )}
                 </Section>
 
-                {/* PII セクション — 表示のみ、console.log 禁止 */}
+                {/* PII セクション - 表示のみ、console.log 禁止 */}
                 <Section title="Payment Info (Confidential)">
                   {detail.pii_data_source === 'unavailable' ? (
                     <div style={ds.errorBanner}>
@@ -1508,10 +1508,10 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                     </div>
                   ) : (
                     <>
-                      <DRow label="Legal Name"    value={detail.legal_name ?? '—'} sensitive />
-                      <DRow label="PayPal Email"  value={detail.paypal_email ?? '—'} sensitive />
+                      <DRow label="Legal Name"    value={detail.legal_name ?? '-'} sensitive />
+                      <DRow label="PayPal Email"  value={detail.paypal_email ?? '-'} sensitive />
                       <div style={ds.piiNote}>
-                        ℹ️ This information is sourced from: <strong>{detail.pii_data_source}</strong>
+                        i️ This information is sourced from: <strong>{detail.pii_data_source}</strong>
                       </div>
                     </>
                   )}
@@ -1537,7 +1537,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   </div>
                 )}
 
-                {/* RP-5c: Mark as Paid / Failed ボタン（prepared のときのみ表示） */}
+                {/* RP-5c: Mark as Paid / Failed ボタン(prepared のときのみ表示) */}
                 {canShowMarkAsPaidButton(detail) && !markPaidResult && !markFailedResult && !cancelResult && (
                   <div style={ds.actionArea}>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
@@ -1571,7 +1571,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   </div>
                 )}
 
-                {/* RP-5d: Cancel ボタン（prepared のみ） */}
+                {/* RP-5d: Cancel ボタン(prepared のみ) */}
                 {canShowCancelButton(detail) && !cancelResult && !markPaidResult && !markFailedResult && (
                   <div style={{ ...ds.actionArea, background: '#f5f5f5', borderColor: '#bdbdbd', marginTop: 8 }}>
                     <button
@@ -1598,11 +1598,11 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   </div>
                 )}
 
-                {/* failed / canceled 後 — Retry ボタン */}
+                {/* failed / canceled 後 - Retry ボタン */}
                 {(['failed', 'canceled'].includes(detail.latest_payout_status ?? '')) && (
                   <div style={{ ...ds.actionArea, background: '#ede7f6', borderColor: '#ce93d8', marginTop: 8 }}>
                     {retryAllowedLoading && (
-                      <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>Checking retry eligibility…</div>
+                      <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>Checking retry eligibility...</div>
                     )}
                     {!retryAllowedLoading && retryAllowed && (
                       <>
@@ -1654,7 +1654,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   </div>
                 )}
 
-                {/* Retry chain 表示（Payout History） */}
+                {/* Retry chain 表示(Payout History) */}
                 <Section title="Payout History (Retry Chain)">
                   <RetryChainView awardId={awardId} />
                 </Section>
@@ -1664,7 +1664,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
         )}
       </div>
 
-      {/* Prepare Payout 確認モーダル（overlay の上に重ねる） */}
+      {/* Prepare Payout 確認モーダル(overlay の上に重ねる) */}
       {showPrepareModal && detail && (
         <PrepareConfirmModal
           detail={detail}
@@ -1768,22 +1768,24 @@ export function PrizePaymentDashboard({ onBack }: Props) {
       {/* ヘッダー */}
       <div style={s.header}>
         <button type="button" style={s.backBtn} onClick={onBack}>← Back</button>
-        <h2 style={s.title}>Payment Dashboard</h2>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '0.24em', textTransform: 'uppercase' as const, color: 'var(--ink-3)', marginBottom: 4 }}>Administration</div>
+          <h2 style={s.title}>Payment Dashboard</h2>
+        </div>
         <button type="button" style={s.reloadBtn} onClick={loadAwards} disabled={loading}>
-          {loading ? 'Loading…' : 'Reload'}
+          {loading ? '…' : '↻ Reload'}
         </button>
       </div>
 
       <div style={s.subtitle}>
         PayPal payment is executed manually via PayPal dashboard.
-        Use “Prepare Payout” to snapshot payment info before transferring.
-        After manual PayPal payment, use “Mark as Paid”. If payment failed, use “Mark as Failed”.
-        Cancel / Retry will be in RP-5d.
+        Use "Prepare Payout" to snapshot payment info before transferring.
+        After manual PayPal payment, use "Mark as Paid". If payment failed, use "Mark as Failed".
       </div>
 
       {listError && (
         <div style={s.errorBanner}>
-          {listError}
+          <span>⚠ {listError}</span>
           <button type="button" style={s.dismissBtn} onClick={() => setListError(null)}>✕</button>
         </div>
       )}
@@ -1799,15 +1801,15 @@ export function PrizePaymentDashboard({ onBack }: Props) {
             <span style={{ ...s.labelBadge, ...displayLabelStyle(award.display_label) }}>
               {award.display_label}
             </span>
-            <span style={s.cardId}>{award.award_id.slice(0, 8)}…</span>
+            <span style={s.cardId}>{award.award_id.slice(0, 8)}...</span>
             <span style={s.cardDate}>{fmtDate(award.created_at)}</span>
           </div>
 
           <div style={s.cardGrid}>
             <CRow label="Recipient"  value={award.recipient_display_name ?? award.recipient_user_id.slice(0, 8)} />
             <CRow label="Amount"     value={fmtCents(award.amount_cents, award.currency)} />
-            <CRow label="Prize Kind" value={award.prize_kind ?? '—'} />
-            <CRow label="Source"     value={award.source_kind ?? '—'} />
+            <CRow label="Prize Kind" value={award.prize_kind ?? '-'} />
+            <CRow label="Source"     value={award.source_kind ?? '-'} />
             {award.latest_submission_status && (
               <CRow label="Submission" value={award.latest_submission_status} />
             )}
@@ -1837,7 +1839,7 @@ export function PrizePaymentDashboard({ onBack }: Props) {
           awardId={detailAwardId}
           onClose={() => {
             setDetailAwardId(null);
-            // モーダルを閉じた後に一覧を再取得（Prepare 完了後の表示更新）
+            // モーダルを閉じた後に一覧を再取得(Prepare 完了後の表示更新)
             loadAwards();
           }}
         />
@@ -1905,64 +1907,85 @@ function CRow({ label, value }: { label: string; value: string }) {
 // ── Styles ────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
+  // ── ページ ──
   page: {
-    maxWidth: 800,
+    maxWidth: 840,
     margin: '0 auto',
-    padding: '16px',
+    padding: '0 0 40px',
     fontFamily: 'inherit',
-    background: '#fff',
+    background: 'transparent',
     minHeight: '100vh',
   },
+
+  // ── ページヘッダー ──
   header: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
-    borderBottom: '1px solid #e0e0e0',
-    paddingBottom: 12,
+    alignItems: 'flex-start',
+    gap: 16,
+    padding: '28px 24px 20px',
+    borderBottom: '1px solid var(--rule)',
+    marginBottom: 0,
   },
   title: {
-    fontSize: 18,
+    fontFamily: 'var(--display)',
+    fontSize: 22,
     fontWeight: 700,
+    letterSpacing: '0.02em',
+    color: 'var(--ink)',
     margin: 0,
     flex: 1,
   },
   backBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-3)',
     background: 'none',
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '6px 12px',
+    border: 'none',
     cursor: 'pointer',
-    fontSize: 14,
+    padding: '6px 0',
+    flexShrink: 0,
+    marginTop: 4,
   },
   reloadBtn: {
-    background: '#f5f5f5',
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '6px 12px',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-2)',
+    background: 'none',
+    border: 'none',
     cursor: 'pointer',
-    fontSize: 14,
+    padding: '6px 0',
+    marginTop: 4,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 12,
-    padding: '8px 12px',
-    background: '#f9f9f9',
-    border: '1px solid #e0e0e0',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.08em',
+    color: 'var(--ink-3)',
+    lineHeight: 1.7,
+    margin: '0 24px 12px',
+    padding: '10px 14px',
+    background: '#faf9f7',
+    border: '1px solid var(--rule)',
     borderRadius: 4,
+    marginTop: 12,
   },
+
+  // ── エラーバナー ──
   errorBanner: {
-    background: '#ffebee',
-    border: '1px solid #ef9a9a',
+    background: '#fff8f8',
+    border: '1px solid #ffcdd2',
     borderRadius: 4,
-    padding: '8px 12px',
+    padding: '10px 16px',
     fontSize: 13,
     color: '#b71c1c',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    margin: '12px 24px',
   },
   dismissBtn: {
     background: 'none',
@@ -1970,128 +1993,172 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: 14,
     color: 'inherit',
+    padding: '0 2px',
+    flexShrink: 0,
   },
+
+  // ── 空状態 ──
   empty: {
-    color: '#888',
-    fontSize: 14,
-    padding: 16,
-    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '48px 24px',
+    gap: 8,
+    color: 'var(--ink-3)',
+    fontFamily: 'var(--mono)',
+    fontSize: 11,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
   },
+
+  // ── Award カード ──
   card: {
-    border: '1px solid #e0e0e0',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 10,
-    background: '#fafafa',
+    border: '1px solid var(--rule)',
+    borderRadius: 8,
+    padding: '16px 20px',
+    margin: '0 24px',
+    marginTop: 12,
+    background: '#faf9f7',
   },
   cardHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   labelBadge: {
-    fontSize: 12,
-    letterSpacing: 0.5,
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: '0.16em',
   },
   cardId: {
+    fontFamily: 'var(--mono)',
     fontSize: 11,
-    color: '#aaa',
-    fontFamily: 'monospace',
+    color: 'var(--ink-4)',
   },
   cardDate: {
-    fontSize: 11,
-    color: '#bbb',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-4)',
     marginLeft: 'auto',
   },
+
+  // ── 情報グリッド ──
   cardGrid: {
     display: 'flex',
     flexWrap: 'wrap' as const,
-    gap: '4px 16px',
-    marginBottom: 8,
+    gap: '6px 20px',
+    marginBottom: 12,
   },
   rowItem: {
     display: 'flex',
-    gap: 4,
+    gap: 6,
     fontSize: 12,
     minWidth: 180,
   },
   rowLabel: {
-    color: '#888',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
     flexShrink: 0,
+    letterSpacing: '0.05em',
   },
   rowValue: {
-    color: '#222',
+    color: 'var(--ink)',
     fontWeight: 500,
+    fontSize: 12,
   },
+
+  // ── カード操作 ──
   cardActions: {
-    borderTop: '1px solid #eee',
-    paddingTop: 8,
+    borderTop: '1px solid var(--rule)',
+    paddingTop: 10,
     display: 'flex',
     gap: 6,
   },
   detailBtn: {
-    background: '#1565c0',
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    background: 'var(--ink)',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '6px 16px',
+    padding: '7px 16px',
     cursor: 'pointer',
-    fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 700,
     minHeight: 32,
+    transition: 'opacity .15s',
   },
 };
 
 // Cancel / Retry Styles (RP-5d)
 const cr: Record<string, React.CSSProperties> = {
   cancelPayoutBtn: {
-    background: '#37474f',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    background: 'var(--ink)',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '8px 16px',
+    padding: '9px 16px',
     cursor: 'pointer',
-    fontSize: 13,
     fontWeight: 700,
-    minHeight: 38,
+    minHeight: 40,
     width: '100%',
     marginBottom: 6,
+    opacity: 0.85,
+    transition: 'opacity .15s',
   },
   retryPayoutBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
     background: '#4a148c',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '8px 16px',
+    padding: '9px 16px',
     cursor: 'pointer',
-    fontSize: 13,
     fontWeight: 700,
-    minHeight: 38,
+    minHeight: 40,
     width: '100%',
     marginBottom: 6,
+    transition: 'opacity .15s',
   },
   confirmCancelBtn: {
     flex: 2,
-    background: '#37474f',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    background: 'var(--ink)',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '10px',
+    padding: '12px 10px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 700,
     minHeight: 44,
   },
   confirmRetryBtn: {
     flex: 2,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
     background: '#4a148c',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '10px',
+    padding: '12px 10px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 700,
     minHeight: 44,
   },
@@ -2104,50 +2171,57 @@ const cr: Record<string, React.CSSProperties> = {
   chainRow: {
     display: 'flex',
     gap: 8,
-    padding: '6px 8px',
-    background: '#fafafa',
-    border: '1px solid #eee',
-    borderRadius: 4,
+    padding: '8px 10px',
+    background: '#faf9f7',
+    border: '1px solid var(--rule)',
+    borderRadius: 6,
     fontSize: 12,
   },
   chainIndex: {
-    color: '#aaa',
+    fontFamily: 'var(--mono)',
+    color: 'var(--ink-4)',
     flexShrink: 0,
     minWidth: 20,
     fontWeight: 700,
+    fontSize: 11,
   },
   chainBody: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 2,
+    gap: 3,
   },
   chainStatus: {
+    fontFamily: 'var(--mono)',
     fontWeight: 700,
-    fontSize: 11,
-    letterSpacing: 0.5,
+    fontSize: 10,
+    letterSpacing: '0.12em',
   },
   chainMono: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    color: '#888',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
   },
   chainAmt: {
-    color: '#333',
+    color: 'var(--ink)',
     fontWeight: 600,
+    fontSize: 12,
   },
   chainMethod: {
-    color: '#999',
-    fontSize: 11,
+    fontFamily: 'var(--mono)',
+    color: 'var(--ink-4)',
+    fontSize: 10,
   },
   chainDates: {
-    color: '#aaa',
+    color: 'var(--ink-4)',
     fontSize: 11,
+    fontFamily: 'var(--mono)',
   },
   chainRetryRef: {
-    color: '#9c27b0',
+    color: 'var(--accent)',
     fontSize: 11,
     fontStyle: 'italic' as const,
+    fontFamily: 'var(--mono)',
   },
 };
 
@@ -2156,7 +2230,7 @@ const ds: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(0,0,0,0.5)',
+    background: 'rgba(20,20,26,0.45)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2164,136 +2238,159 @@ const ds: Record<string, React.CSSProperties> = {
     padding: 16,
   },
   modal: {
-    background: '#fff',
-    borderRadius: 8,
+    background: '#ffffff',
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 2,
     width: '100%',
     maxWidth: 520,
     maxHeight: '90vh',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+    boxShadow: '0 16px 48px rgba(20,20,26,0.18)',
   },
   modalHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 16px',
-    borderBottom: '1px solid #e0e0e0',
+    padding: '16px 20px',
+    borderBottom: '1px solid var(--rule)',
     flexShrink: 0,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: 700,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink)',
   },
   closeBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 14,
+    color: 'var(--ink-3)',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    fontSize: 18,
-    color: '#888',
-    padding: '0 4px',
+    padding: '2px 6px',
   },
   detailBody: {
     overflowY: 'auto',
-    padding: '12px 16px',
+    padding: '16px 20px',
     WebkitOverflowScrolling: 'touch',
   },
   loading: {
-    padding: 24,
+    padding: 28,
     textAlign: 'center',
-    color: '#888',
-    fontSize: 14,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-3)',
   },
   errorBanner: {
-    background: '#ffebee',
-    border: '1px solid #ef9a9a',
+    background: '#fff8f8',
+    border: '1px solid #ffcdd2',
     borderRadius: 4,
     padding: '8px 12px',
     fontSize: 13,
     color: '#b71c1c',
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
     fontWeight: 700,
-    color: '#555',
+    color: 'var(--ink-3)',
     textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-    marginBottom: 6,
-    paddingBottom: 4,
-    borderBottom: '1px solid #f0f0f0',
+    letterSpacing: '0.22em',
+    marginBottom: 8,
+    paddingBottom: 5,
+    borderBottom: '1px solid var(--rule)',
   },
   dRow: {
     display: 'flex',
-    gap: 8,
+    gap: 10,
     fontSize: 13,
-    marginBottom: 4,
+    marginBottom: 5,
   },
   dLabel: {
-    color: '#888',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
     flexShrink: 0,
     minWidth: 120,
+    letterSpacing: '0.05em',
   },
   dValue: {
-    color: '#222',
+    color: 'var(--ink)',
     fontWeight: 500,
     wordBreak: 'break-all' as const,
+    fontSize: 13,
   },
   sensitiveValue: {
     color: '#1a237e',
-    fontFamily: 'monospace',
-    fontSize: 13,
+    fontFamily: 'var(--mono)',
+    fontSize: 12,
   },
   monoValue: {
-    fontFamily: 'monospace',
+    fontFamily: 'var(--mono)',
     fontSize: 11,
-    color: '#555',
+    color: 'var(--ink-3)',
   },
   noData: {
-    fontSize: 13,
-    color: '#aaa',
+    fontFamily: 'var(--mono)',
+    fontSize: 11,
+    color: 'var(--ink-4)',
+    letterSpacing: '0.05em',
   },
   piiNote: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 4,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
+    marginTop: 6,
     fontStyle: 'italic',
+    letterSpacing: '0.04em',
   },
   actionArea: {
     marginTop: 16,
-    padding: '12px',
-    background: '#f0f7ff',
-    border: '1px solid #bbdefb',
+    padding: '14px 16px',
+    background: '#f5f7ff',
+    border: '1px solid #c5cae9',
     borderRadius: 6,
   },
   prepareBtn: {
-    background: '#1565c0',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    background: 'var(--ink)',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '8px 20px',
+    padding: '10px 20px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 700,
-    minHeight: 40,
+    minHeight: 42,
     width: '100%',
     marginBottom: 6,
+    transition: 'opacity .15s',
   },
   prepareNote: {
-    fontSize: 11,
-    color: '#666',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
     textAlign: 'center' as const,
+    letterSpacing: '0.04em',
   },
   futureNote: {
-    background: '#f5f5f5',
-    border: '1px solid #e0e0e0',
+    background: '#faf9f7',
+    border: '1px solid var(--rule)',
     borderRadius: 4,
     padding: '8px 12px',
     fontSize: 12,
-    color: '#888',
+    color: 'var(--ink-3)',
     marginTop: 8,
   },
 };
@@ -2303,7 +2400,7 @@ const pm: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(0,0,0,0.65)',
+    background: 'rgba(20,20,26,0.6)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2311,91 +2408,104 @@ const pm: Record<string, React.CSSProperties> = {
     padding: 16,
   },
   modal: {
-    background: '#fff',
-    borderRadius: 8,
+    background: '#ffffff',
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 2,
     width: '100%',
     maxWidth: 480,
     maxHeight: '90vh',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 12px 48px rgba(0,0,0,0.3)',
+    boxShadow: '0 16px 56px rgba(20,20,26,0.22)',
   },
   header: {
-    padding: '12px 16px',
-    borderBottom: '1px solid #e0e0e0',
-    background: '#1565c0',
-    borderRadius: '8px 8px 0 0',
+    padding: '14px 20px',
+    borderBottom: '1px solid var(--rule)',
+    background: 'var(--ink)',
   },
   title: {
-    fontSize: 15,
-    fontWeight: 700,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase' as const,
     color: '#fff',
   },
   body: {
     overflowY: 'auto',
-    padding: '16px',
+    padding: '18px 20px',
     WebkitOverflowScrolling: 'touch',
   },
   infoBox: {
-    background: '#f5f5f5',
-    border: '1px solid #e0e0e0',
+    background: '#faf9f7',
+    border: '1px solid var(--rule)',
     borderRadius: 6,
-    padding: '10px 12px',
-    marginBottom: 12,
+    padding: '12px 14px',
+    marginBottom: 14,
   },
   infoRow: {
     display: 'flex',
-    gap: 8,
+    gap: 10,
     fontSize: 13,
-    marginBottom: 4,
+    marginBottom: 5,
   },
   infoLabel: {
-    color: '#888',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
     flexShrink: 0,
     minWidth: 110,
+    letterSpacing: '0.05em',
   },
   infoValue: {
-    color: '#222',
+    color: 'var(--ink)',
     fontWeight: 600,
     wordBreak: 'break-all' as const,
+    fontSize: 13,
   },
   sensitiveValue: {
     color: '#1a237e',
-    fontFamily: 'monospace',
+    fontFamily: 'var(--mono)',
+    fontSize: 12,
   },
   warningBox: {
-    background: '#fff8e1',
+    background: '#fffbf0',
     border: '1px solid #ffe082',
     borderRadius: 6,
-    padding: '10px 12px',
-    marginBottom: 12,
+    padding: '10px 14px',
+    marginBottom: 14,
   },
   warningTitle: {
-    fontSize: 13,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
     fontWeight: 700,
     color: '#e65100',
-    marginBottom: 6,
+    letterSpacing: '0.12em',
+    marginBottom: 8,
   },
   warningList: {
     margin: 0,
-    paddingLeft: 20,
+    paddingLeft: 18,
     fontSize: 12,
-    color: '#555',
-    lineHeight: 1.6,
+    color: 'var(--ink-2)',
+    lineHeight: 1.7,
   },
   checksBox: {
     marginBottom: 16,
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
+    padding: '12px 14px',
+    background: '#faf9f7',
+    border: '1px solid var(--rule)',
+    borderRadius: 6,
   },
   checkLabel: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 10,
     fontSize: 13,
-    color: '#333',
+    color: 'var(--ink)',
     cursor: 'pointer',
     lineHeight: 1.5,
   },
@@ -2412,87 +2522,98 @@ const pm: Record<string, React.CSSProperties> = {
   },
   cancelBtn: {
     flex: 1,
-    background: '#f5f5f5',
-    border: '1px solid #ccc',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    background: 'transparent',
+    border: '1px solid var(--rule-strong)',
     borderRadius: 4,
-    padding: '10px',
+    padding: '12px 10px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 600,
     minHeight: 44,
+    color: 'var(--ink-2)',
   },
   prepareBtn: {
     flex: 2,
-    background: '#1565c0',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    background: 'var(--ink)',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '10px',
+    padding: '12px 10px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 700,
     minHeight: 44,
+    transition: 'opacity .15s',
   },
   disabledBtn: {
-    background: '#bdbdbd',
+    background: 'var(--ink-4)',
     cursor: 'not-allowed',
-    opacity: 0.7,
+    opacity: 0.5,
   },
 };
 
 // Mark as Paid / Failed Modal Styles
 const mp: Record<string, React.CSSProperties> = {
   formSection: {
-    marginBottom: 12,
+    marginBottom: 14,
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
+    gap: 10,
   },
   label: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
-    fontSize: 13,
-    color: '#333',
-    fontWeight: 600,
+    gap: 5,
   },
   required: {
     color: '#b71c1c',
   },
   hint: {
     fontWeight: 400,
-    color: '#888',
-    fontSize: 11,
+    color: 'var(--ink-3)',
+    fontSize: 10,
+    fontFamily: 'var(--mono)',
+    letterSpacing: '0.04em',
   },
   input: {
-    border: '1px solid #ccc',
+    border: '1px solid var(--rule-strong)',
     borderRadius: 4,
-    padding: '6px 8px',
+    padding: '7px 10px',
     fontSize: 13,
     width: '100%',
     boxSizing: 'border-box' as const,
     fontFamily: 'inherit',
+    color: 'var(--ink)',
+    background: '#fff',
   },
   inputError: {
     borderColor: '#b71c1c',
     background: '#fff8f8',
   },
   textarea: {
-    border: '1px solid #ccc',
+    border: '1px solid var(--rule-strong)',
     borderRadius: 4,
-    padding: '6px 8px',
+    padding: '7px 10px',
     fontSize: 13,
     width: '100%',
     boxSizing: 'border-box' as const,
     fontFamily: 'inherit',
     resize: 'vertical' as const,
+    color: 'var(--ink)',
+    background: '#fff',
   },
   textareaError: {
     borderColor: '#b71c1c',
     background: '#fff8f8',
   },
   warningStale: {
-    background: '#fff8e1',
+    background: '#fffbf0',
     border: '1px solid #ffe082',
     borderRadius: 4,
     padding: '8px 12px',
@@ -2502,51 +2623,63 @@ const mp: Record<string, React.CSSProperties> = {
   },
   confirmPaidBtn: {
     flex: 2,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
     background: '#1b5e20',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '10px',
+    padding: '12px 10px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 700,
     minHeight: 44,
   },
   confirmFailedBtn: {
     flex: 2,
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
     background: '#b71c1c',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
-    padding: '10px',
+    padding: '12px 10px',
     cursor: 'pointer',
-    fontSize: 14,
     fontWeight: 700,
     minHeight: 44,
   },
   markPaidBtn: {
     flex: 1,
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
     background: '#1b5e20',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
     padding: '8px 14px',
     cursor: 'pointer',
-    fontSize: 13,
     fontWeight: 700,
-    minHeight: 38,
+    minHeight: 40,
   },
   markFailedBtn: {
     flex: 1,
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
     background: '#b71c1c',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
     padding: '8px 14px',
     cursor: 'pointer',
-    fontSize: 13,
     fontWeight: 700,
-    minHeight: 38,
+    minHeight: 40,
   },
 };
 
@@ -2556,47 +2689,54 @@ const sv: Record<string, React.CSSProperties> = {
     padding: '4px 0',
   },
   successBadge: {
-    background: '#e8f5e9',
+    background: '#f0faf2',
     border: '1px solid #a5d6a7',
     borderRadius: 6,
-    padding: '10px 14px',
-    fontSize: 15,
+    padding: '12px 16px',
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
     fontWeight: 700,
     color: '#2e7d32',
-    marginBottom: 16,
+    marginBottom: 18,
     textAlign: 'center' as const,
+    textTransform: 'uppercase' as const,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
     fontWeight: 700,
-    color: '#555',
+    color: 'var(--ink-3)',
     textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-    marginBottom: 6,
-    paddingBottom: 4,
-    borderBottom: '1px solid #f0f0f0',
+    letterSpacing: '0.22em',
+    marginBottom: 8,
+    paddingBottom: 5,
+    borderBottom: '1px solid var(--rule)',
   },
   nextSteps: {
-    background: '#e3f2fd',
-    border: '1px solid #90caf9',
+    background: '#f5f7ff',
+    border: '1px solid #c5cae9',
     borderRadius: 6,
-    padding: '10px 12px',
-    marginTop: 8,
+    padding: '12px 14px',
+    marginTop: 10,
   },
   nextTitle: {
-    fontSize: 13,
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
     fontWeight: 700,
-    color: '#1565c0',
-    marginBottom: 8,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink)',
+    marginBottom: 10,
   },
   nextList: {
     margin: 0,
-    paddingLeft: 20,
+    paddingLeft: 18,
     fontSize: 12,
-    color: '#555',
-    lineHeight: 1.7,
+    color: 'var(--ink-2)',
+    lineHeight: 1.8,
   },
 };

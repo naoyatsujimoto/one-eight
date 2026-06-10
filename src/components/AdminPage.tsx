@@ -5,6 +5,7 @@
  * 権限: 実際の操作は SECURITY DEFINER RPC 内で is_admin を再確認する
  *
  * RP-3 追加: Winner File 印刷 / Archive 完了導線
+ * UI refresh: デザインを本体UIトーンに統一
  */
 import { useEffect, useState } from 'react';
 import {
@@ -70,7 +71,7 @@ export function AdminPage({ onBack }: Props) {
   const [fNotes, setFNotes]             = useState('');
 
   // ステータス変更
-  const [actionLoading, setActionLoading] = useState<string | null>(null); // award_id
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError]     = useState<string | null>(null);
   const [reasonInput, setReasonInput]     = useState<Record<string, string>>({});
 
@@ -98,7 +99,6 @@ export function AdminPage({ onBack }: Props) {
     setCreateError(null);
     setCreateSuccess(null);
 
-    // amount を cents に変換（小数点2桁まで）
     const amountNum = parseFloat(fAmountStr);
     if (isNaN(amountNum) || amountNum < 0) {
       setCreateError('Amount must be a non-negative number.');
@@ -151,12 +151,10 @@ export function AdminPage({ onBack }: Props) {
 
   // ── レンダリング ───────────────────────────────────────────────────────────
 
-  // Winner File 画面
   if (subScreen === 'winner_file') {
     return <PrizeWinnerFilePrint onBack={() => setSubScreen('awards')} />;
   }
 
-  // Payment Dashboard 画面
   if (subScreen === 'payment_dashboard') {
     return <PrizePaymentDashboard onBack={() => setSubScreen('awards')} />;
   }
@@ -164,207 +162,226 @@ export function AdminPage({ onBack }: Props) {
   return (
     <div style={s.page}>
       {/* ヘッダー */}
-      <div style={s.header}>
+      <div style={s.pageHeader}>
         <button type="button" style={s.backBtn} onClick={onBack}>← Back</button>
-        <h2 style={s.title}>Admin — Prize/Reward Awards</h2>
+        <div style={s.headerCenter}>
+          <div style={s.headerEyebrow}>Administration</div>
+          <h1 style={s.headerTitle}>Prize / Reward Awards</h1>
+        </div>
       </div>
 
-      {/* 作成成功通知 */}
+      {/* 通知バナー */}
       {createSuccess && (
         <div style={s.successBanner}>
-          {createSuccess}
+          <span>✓ {createSuccess}</span>
           <button type="button" style={s.dismissBtn} onClick={() => setCreateSuccess(null)}>✕</button>
         </div>
       )}
-
-      {/* アクションエラー */}
       {actionError && (
         <div style={s.errorBanner}>
-          {actionError}
+          <span>⚠ {actionError}</span>
           <button type="button" style={s.dismissBtn} onClick={() => setActionError(null)}>✕</button>
         </div>
       )}
 
-      {/* ツールバー */}
-      <div style={s.toolbar}>
+      {/* ナビゲーション */}
+      <div style={s.navRow}>
         <button
           type="button"
-          style={s.createBtn}
+          style={{ ...s.navBtn, ...(showCreate ? s.navBtnActive : {}) }}
           onClick={() => { setShowCreate(v => !v); setCreateError(null); }}
         >
-          {showCreate ? 'Cancel' : '+ Create Award'}
+          {showCreate ? '× Cancel' : '+ New Award'}
         </button>
-        <button type="button" style={s.reloadBtn} onClick={loadAwards} disabled={loading}>
-          {loading ? 'Loading…' : 'Reload'}
+        <button type="button" style={s.navBtn} onClick={loadAwards} disabled={loading}>
+          {loading ? '…' : '↻ Reload'}
         </button>
+        <div style={s.navDivider} />
         <button
           type="button"
-          style={s.winnerFileBtn}
+          style={s.navBtn}
           onClick={() => setSubScreen('winner_file')}
         >
-          🖶 Winner File / Archive
+          Winner File
         </button>
         <button
           type="button"
-          style={s.paymentDashBtn}
+          style={s.navBtn}
           onClick={() => setSubScreen('payment_dashboard')}
         >
-          💳 Payment Dashboard
+          Payment Dashboard
         </button>
       </div>
 
       {/* Award 作成フォーム */}
       {showCreate && (
-        <form style={s.form} onSubmit={handleCreate}>
-          <div style={s.formTitle}>New Prize Award</div>
-
-          {createError && <div style={s.errorBanner}>{createError}</div>}
-
-          <label style={s.label}>
-            Recipient User ID *
-            <input
-              style={s.input}
-              type="text"
-              value={fRecipient}
-              onChange={e => setFRecipient(e.target.value)}
-              placeholder="uuid"
-              required
-            />
-          </label>
-
-          <label style={s.label}>
-            Source Kind *
-            <select style={s.select} value={fSourceKind} onChange={e => setFSourceKind(e.target.value as SourceKind)}>
-              <option value="arena_master">arena_master</option>
-              <option value="tournament">tournament</option>
-              <option value="manual_admin">manual_admin</option>
-              <option value="other">other</option>
-            </select>
-          </label>
-
-          <label style={s.label}>
-            Source Arena Event ID
-            <input style={s.input} type="text" value={fEventId} onChange={e => setFEventId(e.target.value)} placeholder="uuid (optional)" />
-          </label>
-
-          <label style={s.label}>
-            Source Arena Match ID
-            <input style={s.input} type="text" value={fMatchId} onChange={e => setFMatchId(e.target.value)} placeholder="uuid (optional)" />
-          </label>
-
-          <div style={s.row}>
-            <label style={{ ...s.label, flex: 2 }}>
-              Amount *
-              <input
-                style={s.input}
-                type="number"
-                min="0"
-                step="0.01"
-                value={fAmountStr}
-                onChange={e => setFAmountStr(e.target.value)}
-                placeholder="e.g. 5000"
-                required
-              />
-            </label>
-            <label style={{ ...s.label, flex: 1 }}>
-              Currency *
+        <div style={s.formCard}>
+          <div style={s.formEyebrow}>New Prize Award</div>
+          {createError && <div style={s.errorBanner}><span>⚠ {createError}</span></div>}
+          <form style={s.form} onSubmit={handleCreate}>
+            <label style={s.label}>
+              <span style={s.labelText}>Recipient User ID <span style={s.required}>*</span></span>
               <input
                 style={s.input}
                 type="text"
-                maxLength={3}
-                value={fCurrency}
-                onChange={e => setFCurrency(e.target.value.toUpperCase())}
-                placeholder="JPY"
+                value={fRecipient}
+                onChange={e => setFRecipient(e.target.value)}
+                placeholder="uuid"
                 required
               />
             </label>
-          </div>
 
-          <label style={s.label}>
-            Prize Kind *
-            <select style={s.select} value={fPrizeKind} onChange={e => setFPrizeKind(e.target.value as PrizeKind)}>
-              <option value="cash">cash</option>
-              <option value="merchandise">merchandise</option>
-              <option value="title_only">title_only</option>
-            </select>
-          </label>
+            <label style={s.label}>
+              <span style={s.labelText}>Source Kind <span style={s.required}>*</span></span>
+              <select style={s.select} value={fSourceKind} onChange={e => setFSourceKind(e.target.value as SourceKind)}>
+                <option value="arena_master">arena_master</option>
+                <option value="tournament">tournament</option>
+                <option value="manual_admin">manual_admin</option>
+                <option value="other">other</option>
+              </select>
+            </label>
 
-          <label style={s.label}>
-            Notes
-            <textarea style={s.textarea} value={fNotes} onChange={e => setFNotes(e.target.value)} rows={2} />
-          </label>
+            <label style={s.label}>
+              <span style={s.labelText}>Source Arena Event ID</span>
+              <input style={s.input} type="text" value={fEventId} onChange={e => setFEventId(e.target.value)} placeholder="uuid (optional)" />
+            </label>
 
-          <button type="submit" style={s.submitBtn} disabled={creating}>
-            {creating ? 'Creating…' : 'Create Award'}
-          </button>
-        </form>
+            <label style={s.label}>
+              <span style={s.labelText}>Source Arena Match ID</span>
+              <input style={s.input} type="text" value={fMatchId} onChange={e => setFMatchId(e.target.value)} placeholder="uuid (optional)" />
+            </label>
+
+            <div style={s.formRow}>
+              <label style={{ ...s.label, flex: 2 }}>
+                <span style={s.labelText}>Amount <span style={s.required}>*</span></span>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={fAmountStr}
+                  onChange={e => setFAmountStr(e.target.value)}
+                  placeholder="e.g. 5000"
+                  required
+                />
+              </label>
+              <label style={{ ...s.label, flex: 1 }}>
+                <span style={s.labelText}>Currency <span style={s.required}>*</span></span>
+                <input
+                  style={s.input}
+                  type="text"
+                  maxLength={3}
+                  value={fCurrency}
+                  onChange={e => setFCurrency(e.target.value.toUpperCase())}
+                  placeholder="JPY"
+                  required
+                />
+              </label>
+            </div>
+
+            <label style={s.label}>
+              <span style={s.labelText}>Prize Kind <span style={s.required}>*</span></span>
+              <select style={s.select} value={fPrizeKind} onChange={e => setFPrizeKind(e.target.value as PrizeKind)}>
+                <option value="cash">cash</option>
+                <option value="merchandise">merchandise</option>
+                <option value="title_only">title_only</option>
+              </select>
+            </label>
+
+            <label style={s.label}>
+              <span style={s.labelText}>Notes</span>
+              <textarea style={s.textarea} value={fNotes} onChange={e => setFNotes(e.target.value)} rows={2} />
+            </label>
+
+            <button type="submit" style={s.submitBtn} disabled={creating}>
+              {creating ? 'Creating…' : 'Create Award'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* エラー / ローディング */}
+      {listError && (
+        <div style={s.errorBanner}>
+          <span>⚠ {listError}</span>
+        </div>
+      )}
+
+      {loading && (
+        <div style={s.emptyState}>
+          <span style={s.emptyStateText}>Loading awards…</span>
+        </div>
+      )}
+
+      {!loading && awards.length === 0 && (
+        <div style={s.emptyState}>
+          <span style={s.emptyStateEyebrow}>No Records</span>
+          <span style={s.emptyStateText}>No prize awards found.</span>
+        </div>
       )}
 
       {/* Award 一覧 */}
-      {listError && <div style={s.errorBanner}>{listError}</div>}
-
-      {!loading && awards.length === 0 && (
-        <div style={s.empty}>No prize awards found.</div>
-      )}
-
       {awards.map(award => (
-        <div key={award.award_id} style={s.card}>
-          {/* ヘッダー行 */}
-          <div style={s.cardHeader}>
-            <span style={{ ...s.statusBadge, color: statusColor(award.award_status) }}>
+        <div key={award.award_id} style={s.awardCard}>
+          {/* カードヘッダー */}
+          <div style={s.awardCardHeader}>
+            <span style={{
+              ...s.statusPill,
+              background: statusColor(award.award_status) + '18',
+              color: statusColor(award.award_status),
+              borderColor: statusColor(award.award_status) + '44',
+            }}>
               {award.award_status.toUpperCase()}
             </span>
-            <span style={s.cardId}>{award.award_id.slice(0, 8)}…</span>
-            <span style={s.cardDate}>{fmtDate(award.created_at)}</span>
+            <span style={s.awardIdMono}>{award.award_id.slice(0, 8)}…</span>
+            <span style={s.awardDate}>{fmtDate(award.created_at)}</span>
           </div>
 
-          {/* 主要情報 */}
-          <div style={s.cardGrid}>
-            <Row label="Recipient"     value={award.recipient_display_name ?? award.recipient_user_id.slice(0, 8)} />
-            <Row label="Source"        value={award.source_kind ?? '—'} />
-            <Row label="Amount"        value={fmtCents(award.amount_cents, award.currency)} />
-            <Row label="Prize Kind"    value={award.prize_kind ?? '—'} />
-            <Row label="Payout Status" value={award.latest_payout_status ?? 'none'} />
-            {award.source_arena_event_id && <Row label="Arena Event" value={award.source_arena_event_id.slice(0, 8)} />}
-            {award.source_arena_match_id && <Row label="Arena Match" value={award.source_arena_match_id.slice(0, 8)} />}
-            {award.notes        && <Row label="Notes"         value={award.notes} />}
-            {award.hold_reason  && <Row label="Hold Reason"   value={award.hold_reason} />}
-            {award.cancel_reason && <Row label="Cancel Reason" value={award.cancel_reason} />}
-            {award.canceled_at  && <Row label="Canceled At"   value={fmtDate(award.canceled_at)} />}
-            {/* RP-4: submission 情報（PIIなし） */}
+          {/* 主要情報グリッド */}
+          <div style={s.infoGrid}>
+            <InfoPair label="Recipient"     value={award.recipient_display_name ?? award.recipient_user_id.slice(0, 8)} />
+            <InfoPair label="Source"        value={award.source_kind ?? '—'} />
+            <InfoPair label="Amount"        value={fmtCents(award.amount_cents, award.currency)} />
+            <InfoPair label="Prize Kind"    value={award.prize_kind ?? '—'} />
+            <InfoPair label="Payout Status" value={award.latest_payout_status ?? 'none'} />
+            {award.source_arena_event_id && <InfoPair label="Arena Event" value={award.source_arena_event_id.slice(0, 8)} />}
+            {award.source_arena_match_id && <InfoPair label="Arena Match" value={award.source_arena_match_id.slice(0, 8)} />}
+            {award.notes        && <InfoPair label="Notes"         value={award.notes} />}
+            {award.hold_reason  && <InfoPair label="Hold Reason"   value={award.hold_reason} />}
+            {award.cancel_reason && <InfoPair label="Cancel Reason" value={award.cancel_reason} />}
+            {award.canceled_at  && <InfoPair label="Canceled At"   value={fmtDate(award.canceled_at)} />}
             {award.latest_submission_id && (
-              <Row label="Submission ID" value={`${award.latest_submission_id.slice(0, 8)}…`} />
+              <InfoPair label="Submission ID" value={`${award.latest_submission_id.slice(0, 8)}…`} />
             )}
             {award.latest_submission_status && (
-              <Row label="Submission Status" value={award.latest_submission_status} />
+              <InfoPair label="Submission Status" value={award.latest_submission_status} />
             )}
             {award.latest_submission_submitted_at && (
-              <Row label="Submitted At" value={fmtDate(award.latest_submission_submitted_at)} />
+              <InfoPair label="Submitted At" value={fmtDate(award.latest_submission_submitted_at)} />
             )}
             {award.latest_submission_delete_after && (
-              <Row label="Data Expires" value={fmtDate(award.latest_submission_delete_after)} />
+              <InfoPair label="Data Expires" value={fmtDate(award.latest_submission_delete_after)} />
             )}
             {award.latest_submission_data_cleared_at && (
-              <Row label="Data Cleared" value={fmtDate(award.latest_submission_data_cleared_at)} />
+              <InfoPair label="Data Cleared" value={fmtDate(award.latest_submission_data_cleared_at)} />
             )}
           </div>
 
-          {/* 操作 — canceled/expired は操作不可 */}
+          {/* 操作エリア */}
           {award.award_status !== 'canceled' && award.award_status !== 'expired' && (
-            <div style={s.actions}>
-              {/* Reason 入力 */}
+            <div style={s.actionsArea}>
               <input
-                style={{ ...s.input, fontSize: 12, padding: '4px 8px' }}
+                style={s.reasonInput}
                 type="text"
                 placeholder="Reason (optional)"
                 value={reasonInput[award.award_id] ?? ''}
                 onChange={e => setReasonInput(prev => ({ ...prev, [award.award_id]: e.target.value }))}
               />
-              <div style={s.actionButtons}>
+              <div style={s.actionBtns}>
                 {award.award_status !== 'on_hold' && (
                   <button
                     type="button"
-                    style={{ ...s.actionBtn, background: '#e65100', color: '#fff' }}
+                    style={{ ...s.actionBtn, ...s.actionBtnHold }}
                     disabled={actionLoading === award.award_id}
                     onClick={() => handleStatusChange(award.award_id, 'on_hold')}
                   >
@@ -374,7 +391,7 @@ export function AdminPage({ onBack }: Props) {
                 {award.award_status === 'on_hold' && (
                   <button
                     type="button"
-                    style={{ ...s.actionBtn, background: '#2e7d32', color: '#fff' }}
+                    style={{ ...s.actionBtn, ...s.actionBtnRestore }}
                     disabled={actionLoading === award.award_id}
                     onClick={() => handleStatusChange(award.award_id, 'eligible')}
                   >
@@ -383,7 +400,7 @@ export function AdminPage({ onBack }: Props) {
                 )}
                 <button
                   type="button"
-                  style={{ ...s.actionBtn, background: '#b71c1c', color: '#fff' }}
+                  style={{ ...s.actionBtn, ...s.actionBtnCancel }}
                   disabled={actionLoading === award.award_id}
                   onClick={() => {
                     if (window.confirm('Cancel this award? This cannot be undone.')) {
@@ -395,7 +412,7 @@ export function AdminPage({ onBack }: Props) {
                 </button>
               </div>
               {actionLoading === award.award_id && (
-                <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Processing…</div>
+                <div style={s.processingText}>Processing…</div>
               )}
             </div>
           )}
@@ -407,11 +424,11 @@ export function AdminPage({ onBack }: Props) {
 
 // ── Sub-component ────────────────────────────────────────────────────────────
 
-function Row({ label, value }: { label: string; value: string }) {
+function InfoPair({ label, value }: { label: string; value: string }) {
   return (
-    <div style={s.rowItem}>
-      <span style={s.rowLabel}>{label}</span>
-      <span style={s.rowValue}>{value}</span>
+    <div style={s.infoPair}>
+      <span style={s.infoPairLabel}>{label}</span>
+      <span style={s.infoPairValue}>{value}</span>
     </div>
   );
 }
@@ -419,166 +436,117 @@ function Row({ label, value }: { label: string; value: string }) {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
+  // ── ページ ──
   page: {
-    maxWidth: 800,
+    maxWidth: 840,
     margin: '0 auto',
-    padding: '16px',
+    padding: '0 0 40px',
     fontFamily: 'inherit',
-    background: '#fff',
+    background: 'transparent',
     minHeight: '100vh',
   },
-  header: {
+
+  // ── ページヘッダー ──
+  pageHeader: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-    borderBottom: '1px solid #e0e0e0',
-    paddingBottom: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 700,
-    margin: 0,
+    alignItems: 'flex-start',
+    gap: 16,
+    padding: '28px 24px 20px',
+    borderBottom: '1px solid var(--rule)',
+    marginBottom: 0,
   },
   backBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-3)',
     background: 'none',
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '6px 12px',
-    cursor: 'pointer',
-    fontSize: 14,
-  },
-  toolbar: {
-    display: 'flex',
-    gap: 8,
-    marginBottom: 12,
-  },
-  createBtn: {
-    background: '#1a237e',
-    color: '#fff',
     border: 'none',
-    borderRadius: 4,
-    padding: '8px 16px',
     cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
+    padding: '6px 0',
+    flexShrink: 0,
+    marginTop: 4,
   },
-  reloadBtn: {
-    background: '#f5f5f5',
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '8px 12px',
-    cursor: 'pointer',
-    fontSize: 14,
+  headerCenter: {
+    flex: 1,
   },
-  winnerFileBtn: {
-    background: '#4a148c',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 4,
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  paymentDashBtn: {
-    background: '#004d40',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 4,
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
-  },
-  form: {
-    background: '#f9f9f9',
-    border: '1px solid #e0e0e0',
-    borderRadius: 6,
-    padding: 16,
-    marginBottom: 16,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-  },
-  formTitle: {
-    fontSize: 15,
-    fontWeight: 700,
+  headerEyebrow: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.24em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-3)',
     marginBottom: 4,
   },
-  label: {
+  headerTitle: {
+    fontFamily: 'var(--display)',
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    color: 'var(--ink)',
+    margin: 0,
+  },
+
+  // ── ナビゲーション ──
+  navRow: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    fontSize: 13,
-    fontWeight: 600,
-    color: '#333',
+    alignItems: 'center',
+    gap: 0,
+    padding: '12px 24px',
+    borderBottom: '1px solid var(--rule)',
+    flexWrap: 'wrap' as const,
+    rowGap: 6,
   },
-  input: {
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '6px 10px',
-    fontSize: 14,
-    background: '#fff',
-    width: '100%',
-    boxSizing: 'border-box' as const,
-  },
-  select: {
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '6px 10px',
-    fontSize: 14,
-    background: '#fff',
-    width: '100%',
-  },
-  textarea: {
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: '6px 10px',
-    fontSize: 14,
-    background: '#fff',
-    width: '100%',
-    resize: 'vertical' as const,
-    boxSizing: 'border-box' as const,
-  },
-  row: {
-    display: 'flex',
-    gap: 8,
-  },
-  submitBtn: {
-    background: '#1565c0',
-    color: '#fff',
+  navBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-2)',
+    background: 'none',
     border: 'none',
-    borderRadius: 4,
-    padding: '10px 20px',
     cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 600,
-    alignSelf: 'flex-start',
+    padding: '8px 14px',
+    transition: 'color .15s',
+    whiteSpace: 'nowrap' as const,
   },
+  navBtnActive: {
+    color: 'var(--ink)',
+    textDecoration: 'underline',
+    textUnderlineOffset: 3,
+  },
+  navDivider: {
+    width: 1,
+    height: 14,
+    background: 'var(--rule-strong)',
+    margin: '0 6px',
+  },
+
+  // ── 通知バナー ──
   successBanner: {
-    background: '#e8f5e9',
+    background: '#f0faf2',
     border: '1px solid #a5d6a7',
     borderRadius: 4,
-    padding: '8px 12px',
+    padding: '10px 16px',
     fontSize: 13,
     color: '#2e7d32',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    margin: '12px 24px',
   },
   errorBanner: {
-    background: '#ffebee',
-    border: '1px solid #ef9a9a',
+    background: '#fff8f8',
+    border: '1px solid #ffcdd2',
     borderRadius: 4,
-    padding: '8px 12px',
+    padding: '10px 16px',
     fontSize: 13,
     color: '#b71c1c',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    margin: '12px 24px',
   },
   dismissBtn: {
     background: 'none',
@@ -586,80 +554,236 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: 14,
     color: 'inherit',
+    padding: '0 2px',
+    flexShrink: 0,
   },
-  empty: {
-    color: '#888',
+
+  // ── フォームカード ──
+  formCard: {
+    margin: '16px 24px',
+    border: '1px solid var(--rule)',
+    borderRadius: 8,
+    padding: '20px 24px',
+    background: '#faf9f7',
+  },
+  formEyebrow: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.24em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-3)',
+    marginBottom: 16,
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  formRow: {
+    display: 'flex',
+    gap: 12,
+  },
+  label: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 5,
+  },
+  labelText: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-3)',
+  },
+  required: {
+    color: '#b71c1c',
+  },
+  input: {
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 4,
+    padding: '7px 10px',
+    fontSize: 13,
+    fontFamily: 'inherit',
+    background: '#fff',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    color: 'var(--ink)',
+  },
+  select: {
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 4,
+    padding: '7px 10px',
+    fontSize: 13,
+    fontFamily: 'inherit',
+    background: '#fff',
+    width: '100%',
+    color: 'var(--ink)',
+  },
+  textarea: {
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 4,
+    padding: '7px 10px',
+    fontSize: 13,
+    fontFamily: 'inherit',
+    background: '#fff',
+    width: '100%',
+    resize: 'vertical' as const,
+    boxSizing: 'border-box' as const,
+    color: 'var(--ink)',
+  },
+  submitBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    background: 'var(--ink)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '10px 20px',
+    cursor: 'pointer',
+    alignSelf: 'flex-start',
+    transition: 'opacity .15s',
+  },
+
+  // ── 空状態 ──
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '48px 24px',
+    gap: 8,
+  },
+  emptyStateEyebrow: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.24em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--ink-4)',
+  },
+  emptyStateText: {
     fontSize: 14,
-    padding: 16,
-    textAlign: 'center',
+    color: 'var(--ink-3)',
   },
-  card: {
-    border: '1px solid #e0e0e0',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 10,
-    background: '#fafafa',
+
+  // ── Award カード ──
+  awardCard: {
+    margin: '0 24px',
+    marginTop: 12,
+    border: '1px solid var(--rule)',
+    borderRadius: 8,
+    padding: '16px 20px',
+    background: '#faf9f7',
   },
-  cardHeader: {
+  awardCardHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  statusBadge: {
+  statusPill: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
     fontWeight: 700,
-    fontSize: 11,
-    letterSpacing: 1,
+    letterSpacing: '0.16em',
+    border: '1px solid',
+    borderRadius: 999,
+    padding: '3px 10px',
+    flexShrink: 0,
   },
-  cardId: {
+  awardIdMono: {
+    fontFamily: 'var(--mono)',
     fontSize: 11,
-    color: '#888',
-    fontFamily: 'monospace',
+    color: 'var(--ink-4)',
   },
-  cardDate: {
-    fontSize: 11,
-    color: '#aaa',
+  awardDate: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-4)',
     marginLeft: 'auto',
   },
-  cardGrid: {
+
+  // ── 情報グリッド ──
+  infoGrid: {
     display: 'flex',
     flexWrap: 'wrap' as const,
-    gap: '4px 16px',
-    marginBottom: 8,
+    gap: '6px 20px',
+    marginBottom: 12,
   },
-  rowItem: {
+  infoPair: {
     display: 'flex',
-    gap: 4,
+    gap: 6,
     fontSize: 12,
     minWidth: 200,
   },
-  rowLabel: {
-    color: '#888',
+  infoPairLabel: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
     flexShrink: 0,
+    letterSpacing: '0.05em',
   },
-  rowValue: {
-    color: '#222',
+  infoPairValue: {
+    color: 'var(--ink)',
     fontWeight: 500,
     wordBreak: 'break-all' as const,
+    fontSize: 12,
   },
-  actions: {
-    borderTop: '1px solid #eee',
-    paddingTop: 8,
+
+  // ── 操作エリア ──
+  actionsArea: {
+    borderTop: '1px solid var(--rule)',
+    paddingTop: 12,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 6,
+    gap: 8,
   },
-  actionButtons: {
+  reasonInput: {
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 4,
+    padding: '6px 10px',
+    fontSize: 12,
+    fontFamily: 'inherit',
+    background: '#fff',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    color: 'var(--ink)',
+  },
+  actionBtns: {
     display: 'flex',
     gap: 6,
+    flexWrap: 'wrap' as const,
   },
   actionBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
     border: 'none',
     borderRadius: 4,
-    padding: '6px 14px',
+    padding: '7px 16px',
     cursor: 'pointer',
-    fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 700,
     minHeight: 32,
+    transition: 'opacity .15s',
+  },
+  actionBtnHold: {
+    background: '#e65100',
+    color: '#fff',
+  },
+  actionBtnRestore: {
+    background: '#2e7d32',
+    color: '#fff',
+  },
+  actionBtnCancel: {
+    background: '#b71c1c',
+    color: '#fff',
+  },
+  processingText: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
+    letterSpacing: '0.12em',
   },
 };
