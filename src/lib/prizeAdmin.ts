@@ -12,7 +12,11 @@
  *   adminListPayableAwards — Payment Dashboard 一覧（PIIなし）
  *   adminGetPayoutDetail — 支払詳細確認（legal_name / paypal_email を含む）
  *
- * ⚠️ RP-5a は read-only。Prepare / Paid / Failed / Cancel / Retry は RP-5b 以降。
+ * RP-5b 追加:
+ *   adminPreparePayout — eligible award に対して prize_payouts row を prepared で作成
+ *                        戻り値に PII を含まない。
+ *
+ * ⚠️ Paid / Failed / Cancel / Retry は RP-5c 以降。
  */
 import { supabase } from './supabase';
 
@@ -273,4 +277,37 @@ export async function adminGetPayoutDetail(
   });
   if (error) return { data: null, error: error.message };
   return { data: data as PayoutDetailResult, error: null };
+}
+
+// ── RP-5b: Prepare Payout ─────────────────────────────────────────────────────
+
+/**
+ * admin_prepare_payout の戻り値型（PIIなし）
+ */
+export interface PreparePayoutResult {
+  ok:             boolean;
+  payout_id:      string;
+  award_id:       string;
+  status:         string;
+  prepared_at:    string;
+  payment_method: string;
+}
+
+/**
+ * adminPreparePayout
+ * eligible award に対して prize_payouts row を status='prepared' で作成する。
+ * submission_data から PayPal email / legal name を snapshot として固定する。
+ * 戻り値に PII を含まない。
+ *
+ * 実際の PayPal 送金はこの関数では行わない。
+ * Naoya が PayPal 管理画面で手動実行する。
+ */
+export async function adminPreparePayout(
+  awardId: string,
+): Promise<{ data: PreparePayoutResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_prepare_payout', {
+    p_award_id: awardId,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as PreparePayoutResult, error: null };
 }
