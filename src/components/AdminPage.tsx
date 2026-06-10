@@ -16,8 +16,9 @@ import {
   type PrizeKind,
 } from '../lib/prizeAdmin';
 import { PrizeWinnerFilePrint } from './PrizeWinnerFilePrint';
+import { PrizePaymentDashboard } from './PrizePaymentDashboard';
 
-type AdminSubScreen = 'awards' | 'winner_file';
+type AdminSubScreen = 'awards' | 'winner_file' | 'payment_dashboard';
 
 interface Props {
   onBack: () => void;
@@ -155,6 +156,11 @@ export function AdminPage({ onBack }: Props) {
     return <PrizeWinnerFilePrint onBack={() => setSubScreen('awards')} />;
   }
 
+  // Payment Dashboard 画面
+  if (subScreen === 'payment_dashboard') {
+    return <PrizePaymentDashboard onBack={() => setSubScreen('awards')} />;
+  }
+
   return (
     <div style={s.page}>
       {/* ヘッダー */}
@@ -197,6 +203,13 @@ export function AdminPage({ onBack }: Props) {
           onClick={() => setSubScreen('winner_file')}
         >
           🖶 Winner File / Archive
+        </button>
+        <button
+          type="button"
+          style={s.paymentDashBtn}
+          onClick={() => setSubScreen('payment_dashboard')}
+        >
+          💳 Payment Dashboard
         </button>
       </div>
 
@@ -460,6 +473,16 @@ const s: Record<string, React.CSSProperties> = {
   },
   winnerFileBtn: {
     background: '#4a148c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '8px 16px',
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 600,
+  },
+  paymentDashBtn: {
+    background: '#004d40',
     color: '#fff',
     border: 'none',
     borderRadius: 4,

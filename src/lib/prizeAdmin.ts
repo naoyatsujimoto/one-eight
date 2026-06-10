@@ -7,6 +7,12 @@
  * RP-3 追加:
  *   adminGetPrizeSubmissionForPrint — Winner File 印刷用データ取得
  *   adminMarkPrizeSubmissionArchived — archive 完了・機微情報削除
+ *
+ * RP-5a 追加:
+ *   adminListPayableAwards — Payment Dashboard 一覧（PIIなし）
+ *   adminGetPayoutDetail — 支払詳細確認（legal_name / paypal_email を含む）
+ *
+ * ⚠️ RP-5a は read-only。Prepare / Paid / Failed / Cancel / Retry は RP-5b 以降。
  */
 import { supabase } from './supabase';
 
@@ -141,6 +147,65 @@ export interface ArchiveResult {
   archived_at:     string;
 }
 
+// ── RP-5a: Payment Dashboard ─────────────────────────────────────────────────
+
+/**
+ * admin_list_payable_awards の戻り値型（PII を含まない）
+ */
+export interface PayableAwardRow {
+  award_id:                          string;
+  recipient_user_id:                 string;
+  recipient_display_name:            string | null;
+  source_kind:                       string | null;
+  source_arena_id:                   string | null;
+  source_arena_event_id:             string | null;
+  source_arena_match_id:             string | null;
+  amount_cents:                      number;
+  currency:                          string;
+  prize_kind:                        string | null;
+  award_status:                      string;
+  latest_submission_id:              string | null;
+  latest_submission_status:          string | null;
+  latest_submission_submitted_at:    string | null;
+  latest_submission_delete_after:    string | null;
+  latest_submission_data_cleared_at: string | null;
+  latest_payout_id:                  string | null;
+  latest_payout_status:              string | null;
+  latest_payout_paid_at:             string | null;
+  created_at:                        string;
+  display_label:                     string;
+}
+
+/**
+ * admin_get_payout_detail の戻り値型
+ * ⚠️ legal_name / paypal_email を含む。Console log 禁止。localStorage 禁止。URL 禁止。
+ */
+export interface PayoutDetailResult {
+  // award
+  award_id:                       string;
+  recipient_user_id:              string;
+  amount_cents:                   number;
+  currency:                       string;
+  prize_kind:                     string | null;
+  source_kind:                    string | null;
+  source_arena_event_id:          string | null;
+  source_arena_match_id:          string | null;
+  award_status:                   string;
+  // submission
+  latest_submission_id:           string | null;
+  latest_submission_status:       string | null;
+  latest_submission_submitted_at: string | null;
+  latest_submission_delete_after: string | null;
+  // payout
+  latest_payout_id:               string | null;
+  latest_payout_status:           string | null;
+  latest_payout_paid_at:          string | null;
+  // PII — 表示専用。Console log 禁止。
+  legal_name:                     string | null;
+  paypal_email:                   string | null;
+  pii_data_source:                'payout_snapshot' | 'submission_data' | 'unavailable';
+}
+
 /**
  * admin_get_prize_submission_for_print
  * Winner File 印刷用に submission_data を含む情報を返す。
@@ -163,6 +228,7 @@ export async function adminGetPrizeSubmissionForPrint(
  * Winner File の PDF 保存・印刷・オフライン保管完了後に呼ぶ。
  * オンライン DB 上の機微情報 (submission_data) を削除する。
  * この操作は取り消せない。
+ * RP-5a 以降: prepared/paid payout が存在しない場合は拒否される。
  */
 export async function adminMarkPrizeSubmissionArchived(
   submissionId: string,
@@ -174,4 +240,37 @@ export async function adminMarkPrizeSubmissionArchived(
   });
   if (error) return { data: null, error: error.message };
   return { data: data as ArchiveResult, error: null };
+}
+
+// ── RP-5a: Payment Dashboard RPCs ────────────────────────────────────────────
+
+/**
+ * admin_list_payable_awards
+ * Payment Dashboard 一覧を返す（PIIなし）。
+ * 最大 200 件、作成日時降順。
+ */
+export async function adminListPayableAwards(): Promise<{
+  data: PayableAwardRow[] | null;
+  error: string | null;
+}> {
+  const { data, error } = await supabase.rpc('admin_list_payable_awards');
+  if (error) return { data: null, error: error.message };
+  return { data: data as PayableAwardRow[], error: null };
+}
+
+/**
+ * admin_get_payout_detail
+ * 支払詳細確認画面用。legal_name / paypal_email を含む。
+ * 呼び出し毎に prize_archive_logs に detail_viewed が記録される。
+ *
+ * ⚠️ 返却値を console.log / localStorage / sessionStorage / URL に出さないこと。
+ */
+export async function adminGetPayoutDetail(
+  awardId: string,
+): Promise<{ data: PayoutDetailResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_get_payout_detail', {
+    p_award_id: awardId,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as PayoutDetailResult, error: null };
 }
