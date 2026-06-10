@@ -8,6 +8,10 @@
  *   4. 大会            — Coming Soon（運営発行キーで入室）
  */
 import { useEffect, useRef, useState } from 'react';
+
+// Feature flag: Random Match を公開UIに表示するか。
+// ユーザー数が増えたら true に戻すことで再表示できる。
+const SHOW_RANDOM_MATCH = false;
 import { createOnlineGame, joinOnlineGame, joinOrCreateRandomGame } from '../lib/onlineGame';
 import { createInitialState } from '../game/initialState';
 import { useLang } from '../lib/lang';
@@ -61,7 +65,7 @@ export function OnlineLobby({ userId, proActive = false, onGameReady, onCancel, 
           {mode === 'friend' && (
             <FriendMatch userId={userId} onGameReady={onGameReady} />
           )}
-          {mode === 'random' && (
+          {SHOW_RANDOM_MATCH && mode === 'random' && (
             <RandomMatch userId={userId} onGameReady={onGameReady} onCancel={handleBack} />
           )}
           {mode === 'ranked' && (
@@ -98,7 +102,8 @@ function ModeSelect({ onSelect }: { onSelect: (m: Mode) => void }) {
 
   const modes: { key: Mode; label: string; desc: string; soon?: boolean }[] = [
     { key: 'friend',     label: t.onlineFriendMatch,  desc: t.onlineFriendMatchDesc },
-    { key: 'random',     label: t.onlineRandomMatch,  desc: t.onlineRandomMatchDesc },
+    // Random Match は SHOW_RANDOM_MATCH=false の間は表示しない
+    ...(SHOW_RANDOM_MATCH ? [{ key: 'random' as Mode, label: t.onlineRandomMatch, desc: t.onlineRandomMatchDesc }] : []),
     { key: 'ranked',     label: t.onlineRanked,       desc: t.onlineRankedDesc },
     { key: 'tournament', label: t.onlineTournament,   desc: t.onlineTournamentDesc },
   ];
