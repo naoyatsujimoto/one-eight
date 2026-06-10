@@ -3,9 +3,10 @@
  *
  * RP-5a: 支払対象 Award の一覧表示 + 詳細確認（read-only）
  * RP-5b: Prepare Payout ボタン + 確認モーダル + 成功後 prepared 状態表示
+ * RP-5c: Mark as Paid ボタン + モーダル / Mark as Failed ボタン + モーダル
  *
  * 禁止:
- *   - Paid / Failed / Cancel / Retry ボタン（RP-5c以降）
+ *   - Cancel / Retry ボタン（RP-5d以降）
  *   - PayPal API / CSV 生成 / PayPal 送金実行
  *   - PII を一覧に表示しない
  *   - PII を console.log / localStorage / sessionStorage / URL に出さない
@@ -16,9 +17,13 @@ import {
   adminListPayableAwards,
   adminGetPayoutDetail,
   adminPreparePayout,
+  adminMarkPayoutPaid,
+  adminMarkPayoutFailed,
   type PayableAwardRow,
   type PayoutDetailResult,
   type PreparePayoutResult,
+  type MarkPayoutPaidResult,
+  type MarkPayoutFailedResult,
 } from '../lib/prizeAdmin';
 
 interface Props {
@@ -46,6 +51,17 @@ function displayLabelStyle(label: string): React.CSSProperties {
   if (label === 'Awaiting Archive') return { color: '#e65100' };
   if (label === 'Ready for Prepare') return { color: '#1565c0' };
   return { color: '#555' };
+}
+
+// ── Mark as Paid ボタン表示条件 ───────────────────────────────────────
+// prepared 履歴の payout がある場合にのみ表示
+function canShowMarkAsPaidButton(detail: PayoutDetailResult): boolean {
+  return detail.latest_payout_status === 'prepared';
+}
+
+// ── Mark as Failed ボタン表示条件 ──────────────────────────────────────
+function canShowMarkAsFailedButton(detail: PayoutDetailResult): boolean {
+  return detail.latest_payout_status === 'prepared';
 }
 
 // ── Prepare Payout ボタン表示条件 ────────────────────────────────────────
@@ -169,6 +185,472 @@ function PrepareConfirmModal({ detail, onConfirm, onCancel, isPreparing }: Prepa
   );
 }
 
+// ── コンポーネント: Mark as Paid 確認モーダル ───────────────────────────────
+
+interface MarkAsPaidModalProps {
+  detail: PayoutDetailResult;
+  /** 詳細画面から取得した payout_id */
+  payoutId: string;
+  /** 詳細画面から取得した prepared_at */
+  preparedAt: string | null;
+  onConfirm: (params: {
+    paypalPayoutId: string;
+    paidAt: string;
+    grossAmountCents: number | null;
+    feeAmountCents: number | null;
+    netAmountCents: number | null;
+    exchangeRate: number | null;
+    exchangeCurrency: string | null;
+    adminNote: string | null;
+  }) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  submitError: string | null;
+}
+
+function MarkAsPaidModal({
+  detail,
+  payoutId,
+  preparedAt,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+  submitError,
+}: MarkAsPaidModalProps) {
+  // 入力値
+  const [paypalPayoutId, setPaypalPayoutId] = useState('');
+  const [paidAt, setPaidAt] = useState(() => {
+    // 初期値: 現在時刻 (datetime-local形式)
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now.toISOString().slice(0, 16);
+  });
+  const [grossInput, setGrossInput] = useState('');
+  const [feeInput, setFeeInput] = useState('');
+  const [netInput, setNetInput] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
+  const [exchangeCurrency, setExchangeCurrency] = useState('');
+  const [adminNote, setAdminNote] = useState('');
+
+  // 必須チェックボックス
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
+  const [check4, setCheck4] = useState(false);
+
+  // 入力解析
+  const grossCents = grossInput !== '' ? Math.round(parseFloat(grossInput) * 100) : null;
+  const feeCents   = feeInput   !== '' ? Math.round(parseFloat(feeInput)   * 100) : null;
+  const netCents   = netInput   !== '' ? Math.round(parseFloat(netInput)   * 100) : null;
+  const exRate     = exchangeRate !== '' ? parseFloat(exchangeRate) : null;
+  const exCurrency = exchangeCurrency.trim() !== '' ? exchangeCurrency.trim().toUpperCase() : null;
+
+  // balance check (gross / fee / net が揁っている場合)
+  const hasAllAmounts = grossCents !== null && feeCents !== null && netCents !== null;
+  const balanceOk = hasAllAmounts ? Math.abs(grossCents - (feeCents + netCents)) <= 1 : true;
+
+  // gross vs snapshot 一致確認
+  const snapshotCents = detail.amount_cents;
+  const grossMatchesSnapshot = grossCents !== null
+    ? Math.abs(grossCents - snapshotCents) <= 1
+    : true;
+
+  // prepared_at かぉ24h超過警告
+  const preparedDate = preparedAt ? new Date(preparedAt) : null;
+  const hoursElapsed = preparedDate
+    ? (Date.now() - preparedDate.getTime()) / 3600000
+    : 0;
+  const showStalePreparedWarning = hoursElapsed > 24;
+
+  // exchange rate/currency ペアチェック
+  const exchangePairValid = (exRate === null) === (exCurrency === null);
+
+  // Confirm ボタン enabled 条件
+  const allChecked = check1 && check2 && check3 && check4;
+  const canConfirm =
+    allChecked &&
+    paypalPayoutId.trim() !== '' &&
+    paidAt !== '' &&
+    balanceOk &&
+    grossMatchesSnapshot &&
+    exchangePairValid &&
+    !isSubmitting;
+
+  function handleConfirm() {
+    if (!canConfirm) return;
+    onConfirm({
+      paypalPayoutId: paypalPayoutId.trim(),
+      paidAt: new Date(paidAt).toISOString(),
+      grossAmountCents: grossCents,
+      feeAmountCents: feeCents,
+      netAmountCents: netCents,
+      exchangeRate: exRate,
+      exchangeCurrency: exCurrency,
+      adminNote: adminNote.trim() !== '' ? adminNote.trim() : null,
+    });
+  }
+
+  return (
+    <div style={pm.overlay}>
+      <div style={{ ...pm.modal, maxWidth: 560 }}>
+        <div style={{ ...pm.header, background: '#1b5e20' }}>
+          <span style={pm.title}>Mark as Paid — Confirmation</span>
+        </div>
+
+        <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
+          {/* 警告: prepared_atかぉ24h超過 */}
+          {showStalePreparedWarning && (
+            <div style={mp.warningStale}>
+              ⚠️ This payout was prepared more than 24 hours ago. Please verify the payment details carefully.
+            </div>
+          )}
+
+          {/* payout 情報サマリー */}
+          <div style={pm.infoBox}>
+            <InfoRow label="Payout ID"    value={payoutId.slice(0, 8) + '…'} />
+            <InfoRow label="Award ID"     value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Amount"       value={fmtCents(detail.amount_cents, detail.currency)} />
+            <InfoRow label="Currency"     value={detail.currency} />
+            {/* ⚠️ PII — 表示専用。console.log 禁止。 */}
+            <InfoRow label="PayPal Email" value={detail.paypal_email ?? '—'} sensitive />
+            <InfoRow label="Legal Name"   value={detail.legal_name  ?? '—'} sensitive />
+            <InfoRow label="Method"       value={'paypal_manual'} />
+            {preparedAt && <InfoRow label="Prepared At" value={fmtDate(preparedAt)} />}
+          </div>
+
+          {/* 入力フォーム */}
+          <div style={mp.formSection}>
+            {/* PayPal Transaction ID */}
+            <label style={mp.label}>
+              PayPal Transaction ID <span style={mp.required}>*</span>
+              <input
+                type="text"
+                value={paypalPayoutId}
+                onChange={e => setPaypalPayoutId(e.target.value)}
+                disabled={isSubmitting}
+                placeholder="e.g. 1AB23456CD789012E"
+                style={mp.input}
+              />
+            </label>
+
+            {/* paid_at */}
+            <label style={mp.label}>
+              Paid At <span style={mp.required}>*</span>
+              <input
+                type="datetime-local"
+                value={paidAt}
+                onChange={e => setPaidAt(e.target.value)}
+                disabled={isSubmitting}
+                style={mp.input}
+              />
+            </label>
+
+            {/* gross */}
+            <label style={mp.label}>
+              Gross Amount ({detail.currency})
+              <span style={mp.hint}> (推奨入力)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={grossInput}
+                onChange={e => setGrossInput(e.target.value)}
+                disabled={isSubmitting}
+                placeholder={`${(snapshotCents / 100).toFixed(2)}`}
+                style={{
+                  ...mp.input,
+                  ...(grossCents !== null && !grossMatchesSnapshot ? mp.inputError : {}),
+                }}
+              />
+              {grossCents !== null && (
+                <span style={{
+                  fontSize: 11,
+                  color: grossMatchesSnapshot ? '#2e7d32' : '#b71c1c',
+                  marginTop: 2,
+                }}>
+                  {grossMatchesSnapshot
+                    ? `✓ Matches snapshot (${(snapshotCents / 100).toFixed(2)})`
+                    : `⚠ Snapshot is ${(snapshotCents / 100).toFixed(2)}, diff = ${((grossCents - snapshotCents) / 100).toFixed(2)}`
+                  }
+                </span>
+              )}
+            </label>
+
+            {/* fee */}
+            <label style={mp.label}>
+              Fee Amount ({detail.currency})
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={feeInput}
+                onChange={e => setFeeInput(e.target.value)}
+                disabled={isSubmitting}
+                style={mp.input}
+              />
+            </label>
+
+            {/* net */}
+            <label style={mp.label}>
+              Net Amount ({detail.currency})
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={netInput}
+                onChange={e => setNetInput(e.target.value)}
+                disabled={isSubmitting}
+                style={mp.input}
+              />
+            </label>
+
+            {/* balance check */}
+            {hasAllAmounts && (
+              <div style={{
+                fontSize: 12,
+                padding: '6px 10px',
+                borderRadius: 4,
+                background: balanceOk ? '#e8f5e9' : '#ffebee',
+                color: balanceOk ? '#2e7d32' : '#b71c1c',
+                marginBottom: 8,
+              }}>
+                {balanceOk
+                  ? `✓ Balance OK: ${(grossCents! / 100).toFixed(2)} = ${(feeCents! / 100).toFixed(2)} + ${(netCents! / 100).toFixed(2)}`
+                  : `⚠ Balance mismatch: gross(${(grossCents! / 100).toFixed(2)}) ≠ fee(${(feeCents! / 100).toFixed(2)}) + net(${(netCents! / 100).toFixed(2)})`
+                }
+              </div>
+            )}
+
+            {/* exchange rate / currency */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <label style={{ ...mp.label, flex: 2 }}>
+                Exchange Rate
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={exchangeRate}
+                  onChange={e => setExchangeRate(e.target.value)}
+                  disabled={isSubmitting}
+                  style={mp.input}
+                />
+              </label>
+              <label style={{ ...mp.label, flex: 1 }}>
+                Currency (3 chars)
+                <input
+                  type="text"
+                  maxLength={3}
+                  value={exchangeCurrency}
+                  onChange={e => setExchangeCurrency(e.target.value.toUpperCase())}
+                  disabled={isSubmitting}
+                  placeholder="USD"
+                  style={mp.input}
+                />
+              </label>
+            </div>
+            {!exchangePairValid && (
+              <div style={{ fontSize: 11, color: '#b71c1c', marginBottom: 6 }}>
+                ⚠ exchange_rate and exchange_currency must both be set or both empty.
+              </div>
+            )}
+
+            {/* admin_note */}
+            <label style={mp.label}>
+              Admin Note <span style={mp.hint}>(max 1000 chars. No PII.)</span>
+              <textarea
+                value={adminNote}
+                onChange={e => setAdminNote(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={1000}
+                rows={3}
+                style={mp.textarea}
+                placeholder="Internal note. Do not include PII."
+              />
+            </label>
+          </div>
+
+          {/* 必須チェックボックス */}
+          <div style={pm.checksBox}>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check1} onChange={e => setCheck1(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              PayPal管理画面で支払が完了したことを確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check2} onChange={e => setCheck2(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              PayPal Transaction IDを二重確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check3} onChange={e => setCheck3(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              金額・通貨がsnapshotと一致することを確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check4} onChange={e => setCheck4(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              PayPal Emailがsnapshotと一致することを確認した
+            </label>
+          </div>
+
+          {/* エラー表示 */}
+          {submitError && (
+            <div style={{ ...ds.errorBanner, marginBottom: 8 }}>
+              ❌ {submitError}
+            </div>
+          )}
+
+          {/* アクションボタン */}
+          <div style={pm.actions}>
+            <button type="button" style={pm.cancelBtn} onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              style={{
+                ...mp.confirmPaidBtn,
+                ...(!canConfirm ? pm.disabledBtn : {}),
+              }}
+              onClick={handleConfirm}
+              disabled={!canConfirm}
+            >
+              {isSubmitting ? 'Processing…' : 'Confirm Paid'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── コンポーネント: Mark as Failed 確認モーダル ──────────────────────────
+
+interface MarkAsFailedModalProps {
+  payoutId: string;
+  detail: PayoutDetailResult;
+  onConfirm: (failureReason: string, adminNote: string | null) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  submitError: string | null;
+}
+
+function MarkAsFailedModal({
+  payoutId,
+  detail,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+  submitError,
+}: MarkAsFailedModalProps) {
+  const [failureReason, setFailureReason] = useState('');
+  const [adminNote, setAdminNote] = useState('');
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
+
+  const cleanReason = failureReason.trim();
+  const reasonValid = cleanReason.length >= 3 && cleanReason.length <= 500;
+  const allChecked = check1 && check2 && check3;
+  const canConfirm = allChecked && reasonValid && !isSubmitting;
+
+  return (
+    <div style={pm.overlay}>
+      <div style={{ ...pm.modal, maxWidth: 500 }}>
+        <div style={{ ...pm.header, background: '#b71c1c' }}>
+          <span style={pm.title}>Mark as Failed — Confirmation</span>
+        </div>
+
+        <div style={{ ...pm.body, maxHeight: '80vh', overflowY: 'auto' }}>
+          <div style={pm.infoBox}>
+            <InfoRow label="Payout ID" value={payoutId.slice(0, 8) + '…'} />
+            <InfoRow label="Award ID"  value={detail.award_id.slice(0, 8) + '…'} />
+            <InfoRow label="Amount"    value={fmtCents(detail.amount_cents, detail.currency)} />
+          </div>
+
+          <div style={mp.formSection}>
+            <label style={mp.label}>
+              Failure Reason <span style={mp.required}>*</span>
+              <span style={mp.hint}> (3–500 chars. No PII.)</span>
+              <textarea
+                value={failureReason}
+                onChange={e => setFailureReason(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={500}
+                rows={4}
+                style={{
+                  ...mp.textarea,
+                  ...(failureReason.trim() !== '' && !reasonValid ? mp.textareaError : {}),
+                }}
+                placeholder="e.g. PayPal payment was rejected by recipient. No PII."
+              />
+              <span style={{ fontSize: 11, color: '#888' }}>
+                {cleanReason.length} / 500 chars
+                {cleanReason.length > 0 && cleanReason.length < 3 && (
+                  <span style={{ color: '#b71c1c' }}> (min 3)</span>
+                )}
+              </span>
+            </label>
+
+            <label style={mp.label}>
+              Admin Note <span style={mp.hint}>(max 1000 chars. No PII.)</span>
+              <textarea
+                value={adminNote}
+                onChange={e => setAdminNote(e.target.value)}
+                disabled={isSubmitting}
+                maxLength={1000}
+                rows={2}
+                style={mp.textarea}
+                placeholder="Internal note. Do not include PII."
+              />
+            </label>
+          </div>
+
+          <div style={pm.checksBox}>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check1} onChange={e => setCheck1(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              PayPal側で支払が失敗または未完了であることを確認した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check2} onChange={e => setCheck2(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              failed後はこのpayout rowを再利用できないことを理解した
+            </label>
+            <label style={pm.checkLabel}>
+              <input type="checkbox" checked={check3} onChange={e => setCheck3(e.target.checked)} disabled={isSubmitting} style={pm.checkbox} />
+              retryは後RP-5dで新規payout rowを作ることを理解した
+            </label>
+          </div>
+
+          {submitError && (
+            <div style={{ ...ds.errorBanner, marginBottom: 8 }}>
+              ❌ {submitError}
+            </div>
+          )}
+
+          <div style={pm.actions}>
+            <button type="button" style={pm.cancelBtn} onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              style={{
+                ...mp.confirmFailedBtn,
+                ...(!canConfirm ? pm.disabledBtn : {}),
+              }}
+              onClick={() => {
+                if (canConfirm) {
+                  onConfirm(
+                    cleanReason,
+                    adminNote.trim() !== '' ? adminNote.trim() : null,
+                  );
+                }
+              }}
+              disabled={!canConfirm}
+            >
+              {isSubmitting ? 'Processing…' : 'Confirm Failed'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── コンポーネント: Prepared 成功表示 ────────────────────────────────────
 
 interface PreparedSuccessViewProps {
@@ -234,6 +716,18 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
   const [prepareError, setPrepareError] = useState<string | null>(null);
   const [prepareResult, setPrepareResult] = useState<PreparePayoutResult | null>(null);
 
+  // Mark as Paid UI state
+  const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+  const [markPaidError, setMarkPaidError] = useState<string | null>(null);
+  const [markPaidResult, setMarkPaidResult] = useState<MarkPayoutPaidResult | null>(null);
+
+  // Mark as Failed UI state
+  const [showMarkFailedModal, setShowMarkFailedModal] = useState(false);
+  const [isMarkingFailed, setIsMarkingFailed] = useState(false);
+  const [markFailedError, setMarkFailedError] = useState<string | null>(null);
+  const [markFailedResult, setMarkFailedResult] = useState<MarkPayoutFailedResult | null>(null);
+
   async function loadDetail(id: string) {
     setLoading(true);
     setError(null);
@@ -281,8 +775,65 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
     }
   }
 
+  async function handleMarkAsPaid(params: {
+    paypalPayoutId: string;
+    paidAt: string;
+    grossAmountCents: number | null;
+    feeAmountCents: number | null;
+    netAmountCents: number | null;
+    exchangeRate: number | null;
+    exchangeCurrency: string | null;
+    adminNote: string | null;
+  }) {
+    if (!detail?.latest_payout_id) return;
+    setIsMarkingPaid(true);
+    setMarkPaidError(null);
+    const { data, error: err } = await adminMarkPayoutPaid({
+      payout_id:           detail.latest_payout_id,
+      paypal_payout_id:    params.paypalPayoutId,
+      paid_at:             params.paidAt,
+      gross_amount_cents:  params.grossAmountCents,
+      fee_amount_cents:    params.feeAmountCents,
+      net_amount_cents:    params.netAmountCents,
+      exchange_rate:       params.exchangeRate,
+      exchange_currency:   params.exchangeCurrency,
+      admin_note:          params.adminNote,
+    });
+    setIsMarkingPaid(false);
+    if (err) {
+      setMarkPaidError(err);
+      // モーダルを維持してエラー表示
+    } else if (data) {
+      setMarkPaidResult(data);
+      setShowMarkPaidModal(false);
+      await loadDetail(awardId);
+    }
+  }
+
+  async function handleMarkAsFailed(failureReason: string, adminNote: string | null) {
+    if (!detail?.latest_payout_id) return;
+    setIsMarkingFailed(true);
+    setMarkFailedError(null);
+    const { data, error: err } = await adminMarkPayoutFailed({
+      payout_id:      detail.latest_payout_id,
+      failure_reason: failureReason,
+      admin_note:     adminNote,
+    });
+    setIsMarkingFailed(false);
+    if (err) {
+      setMarkFailedError(err);
+    } else if (data) {
+      setMarkFailedResult(data);
+      setShowMarkFailedModal(false);
+      await loadDetail(awardId);
+    }
+  }
+
+  const anyModalOpen = showPrepareModal || showMarkPaidModal || showMarkFailedModal;
+  const anySubmitting = isPreparing || isMarkingPaid || isMarkingFailed;
+
   return (
-    <div style={ds.overlay} onClick={e => { if (e.target === e.currentTarget && !showPrepareModal && !isPreparing) onClose(); }}>
+    <div style={ds.overlay} onClick={e => { if (e.target === e.currentTarget && !anyModalOpen && !anySubmitting) onClose(); }}>
       <div style={ds.modal}>
         <div style={ds.modalHeader}>
           <span style={ds.modalTitle}>Payout Detail</span>
@@ -290,7 +841,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
             type="button"
             style={ds.closeBtn}
             onClick={onClose}
-            disabled={showPrepareModal || isPreparing}
+            disabled={anyModalOpen || anySubmitting}
           >
             ✕
           </button>
@@ -301,6 +852,17 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
         {prepareError && (
           <div style={{ ...ds.errorBanner, margin: '8px 16px' }}>
             ❌ Prepare failed: {prepareError}
+          </div>
+        )}
+        {/* Mark as Paid / Failed 成功バナー */}
+        {markPaidResult && (
+          <div style={{ background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 4, padding: '8px 16px', margin: '8px 16px', fontSize: 13, color: '#2e7d32', fontWeight: 700 }}>
+            ✅ Marked as Paid at {fmtDate(markPaidResult.paid_at)}
+          </div>
+        )}
+        {markFailedResult && (
+          <div style={{ background: '#ffebee', border: '1px solid #ef9a9a', borderRadius: 4, padding: '8px 16px', margin: '8px 16px', fontSize: 13, color: '#b71c1c', fontWeight: 700 }}>
+            ❌ Marked as Failed at {fmtDate(markFailedResult.failed_at)}
           </div>
         )}
 
@@ -384,7 +946,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                         setPrepareError(null);
                         setShowPrepareModal(true);
                       }}
-                      disabled={isPreparing}
+                      disabled={anySubmitting}
                     >
                       Prepare Payout
                     </button>
@@ -394,11 +956,49 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                   </div>
                 )}
 
-                {/* prepared / paid の場合は操作ボタン非表示（Paid / Failed / Cancel は RP-5c 以降） */}
-                {(detail.latest_payout_status === 'prepared' || detail.latest_payout_status === 'paid') && (
-                  <div style={ds.futureNote}>
-                    Payout is {detail.latest_payout_status}.
-                    Mark as Paid / Failed / Cancel will be available in RP-5c+.
+                {/* RP-5c: Mark as Paid / Failed ボタン（prepared のときのみ表示） */}
+                {canShowMarkAsPaidButton(detail) && !markPaidResult && !markFailedResult && (
+                  <div style={ds.actionArea}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                      <button
+                        type="button"
+                        style={mp.markPaidBtn}
+                        onClick={() => {
+                          setMarkPaidError(null);
+                          setShowMarkPaidModal(true);
+                        }}
+                        disabled={anySubmitting}
+                      >
+                        Mark as Paid
+                      </button>
+                      <button
+                        type="button"
+                        style={mp.markFailedBtn}
+                        onClick={() => {
+                          setMarkFailedError(null);
+                          setShowMarkFailedModal(true);
+                        }}
+                        disabled={anySubmitting}
+                      >
+                        Mark as Failed
+                      </button>
+                    </div>
+                    <div style={ds.prepareNote}>
+                      Mark as Paid: after executing PayPal payment manually.<br />
+                      Mark as Failed: if PayPal payment failed or was rejected.
+                    </div>
+                  </div>
+                )}
+
+                {/* paid / failed 後はボタンを消す */}
+                {(detail.latest_payout_status === 'paid') && (
+                  <div style={{ ...ds.futureNote, color: '#2e7d32', background: '#e8f5e9', borderColor: '#a5d6a7' }}>
+                    ✅ Payout is <strong>paid</strong>. Cancel / Retry will be in RP-5d.
+                  </div>
+                )}
+                {(detail.latest_payout_status === 'failed') && (
+                  <div style={{ ...ds.futureNote, color: '#b71c1c', background: '#ffebee', borderColor: '#ef9a9a' }}>
+                    ❌ Payout is <strong>failed</strong>. Retry will be in RP-5d.
                   </div>
                 )}
               </>
@@ -414,6 +1014,37 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
           onConfirm={handlePreparePayout}
           onCancel={() => setShowPrepareModal(false)}
           isPreparing={isPreparing}
+        />
+      )}
+
+      {/* Mark as Paid 確認モーダル */}
+      {showMarkPaidModal && detail && detail.latest_payout_id && (
+        <MarkAsPaidModal
+          detail={detail}
+          payoutId={detail.latest_payout_id}
+          preparedAt={null}
+          onConfirm={handleMarkAsPaid}
+          onCancel={() => {
+            setShowMarkPaidModal(false);
+            setMarkPaidError(null);
+          }}
+          isSubmitting={isMarkingPaid}
+          submitError={markPaidError}
+        />
+      )}
+
+      {/* Mark as Failed 確認モーダル */}
+      {showMarkFailedModal && detail && detail.latest_payout_id && (
+        <MarkAsFailedModal
+          payoutId={detail.latest_payout_id}
+          detail={detail}
+          onConfirm={handleMarkAsFailed}
+          onCancel={() => {
+            setShowMarkFailedModal(false);
+            setMarkFailedError(null);
+          }}
+          isSubmitting={isMarkingFailed}
+          submitError={markFailedError}
         />
       )}
     </div>
@@ -455,8 +1086,9 @@ export function PrizePaymentDashboard({ onBack }: Props) {
 
       <div style={s.subtitle}>
         PayPal payment is executed manually via PayPal dashboard.
-        Use "Prepare Payout" to snapshot payment info before transferring.
-        Mark as Paid / Failed / Cancel will be in RP-5c+.
+        Use “Prepare Payout” to snapshot payment info before transferring.
+        After manual PayPal payment, use “Mark as Paid”. If payment failed, use “Mark as Failed”.
+        Cancel / Retry will be in RP-5d.
       </div>
 
       {listError && (
@@ -1007,6 +1639,116 @@ const pm: Record<string, React.CSSProperties> = {
     background: '#bdbdbd',
     cursor: 'not-allowed',
     opacity: 0.7,
+  },
+};
+
+// Mark as Paid / Failed Modal Styles
+const mp: Record<string, React.CSSProperties> = {
+  formSection: {
+    marginBottom: 12,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  label: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    fontSize: 13,
+    color: '#333',
+    fontWeight: 600,
+  },
+  required: {
+    color: '#b71c1c',
+  },
+  hint: {
+    fontWeight: 400,
+    color: '#888',
+    fontSize: 11,
+  },
+  input: {
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    padding: '6px 8px',
+    fontSize: 13,
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    fontFamily: 'inherit',
+  },
+  inputError: {
+    borderColor: '#b71c1c',
+    background: '#fff8f8',
+  },
+  textarea: {
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    padding: '6px 8px',
+    fontSize: 13,
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    fontFamily: 'inherit',
+    resize: 'vertical' as const,
+  },
+  textareaError: {
+    borderColor: '#b71c1c',
+    background: '#fff8f8',
+  },
+  warningStale: {
+    background: '#fff8e1',
+    border: '1px solid #ffe082',
+    borderRadius: 4,
+    padding: '8px 12px',
+    fontSize: 12,
+    color: '#e65100',
+    marginBottom: 12,
+  },
+  confirmPaidBtn: {
+    flex: 2,
+    background: '#1b5e20',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '10px',
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 700,
+    minHeight: 44,
+  },
+  confirmFailedBtn: {
+    flex: 2,
+    background: '#b71c1c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '10px',
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 700,
+    minHeight: 44,
+  },
+  markPaidBtn: {
+    flex: 1,
+    background: '#1b5e20',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 700,
+    minHeight: 38,
+  },
+  markFailedBtn: {
+    flex: 1,
+    background: '#b71c1c',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 700,
+    minHeight: 38,
   },
 };
 

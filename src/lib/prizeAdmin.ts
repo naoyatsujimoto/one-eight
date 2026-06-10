@@ -16,7 +16,11 @@
  *   adminPreparePayout — eligible award に対して prize_payouts row を prepared で作成
  *                        戻り値に PII を含まない。
  *
- * ⚠️ Paid / Failed / Cancel / Retry は RP-5c 以降。
+ * RP-5c 追加:
+ *   adminMarkPayoutPaid — prepared payout を paid に変更。PayPal Transaction ID 等を記録。
+ *   adminMarkPayoutFailed — prepared payout を failed に変更。failure_reason を記録。
+ *
+ * ⚠️ Cancel / Retry は RP-5d 以降。
  */
 import { supabase } from './supabase';
 
@@ -310,4 +314,112 @@ export async function adminPreparePayout(
   });
   if (error) return { data: null, error: error.message };
   return { data: data as PreparePayoutResult, error: null };
+}
+
+// ── RP-5c: Mark as Paid / Failed ─────────────────────────────────────────────
+
+/**
+ * admin_mark_payout_paid の引数型
+ */
+export interface MarkPayoutPaidParams {
+  /** 対象 payout の id */
+  payout_id:           string;
+  /** PayPal Transaction ID（必須）。⚠️ console.log / localStorage 禁止。 */
+  paypal_payout_id:    string;
+  /** 支払時刻。省略時は RPC 内で clock_timestamp() を使用。 */
+  paid_at?:            string | null;
+  /** 送金総額（cents）。PayPal 管理画面の gross amount。 */
+  gross_amount_cents?: number | null;
+  /** PayPal 手数料（cents）。 */
+  fee_amount_cents?:   number | null;
+  /** 受取額（cents）。gross - fee。 */
+  net_amount_cents?:   number | null;
+  /** 為替レート。異通貨の場合のみ。 */
+  exchange_rate?:      number | null;
+  /** 送金通貨コード（3文字）。exchange_rate とペアで指定。 */
+  exchange_currency?:  string | null;
+  /** 管理者メモ（1000文字以内）。PII 禁止。 */
+  admin_note?:         string | null;
+}
+
+/**
+ * admin_mark_payout_paid の戻り値型（PIIなし）
+ */
+export interface MarkPayoutPaidResult {
+  ok:             boolean;
+  payout_id:      string;
+  status:         'paid';
+  paid_at:        string;
+  payment_method: string;
+}
+
+/**
+ * admin_mark_payout_failed の引数型
+ */
+export interface MarkPayoutFailedParams {
+  /** 対象 payout の id */
+  payout_id:       string;
+  /** 失敗理由（3〜500文字）。PII 禁止。archive log には本文を保存しない。 */
+  failure_reason:  string;
+  /** 管理者メモ（1000文字以内）。PII 禁止。 */
+  admin_note?:     string | null;
+}
+
+/**
+ * admin_mark_payout_failed の戻り値型（PIIなし）
+ */
+export interface MarkPayoutFailedResult {
+  ok:             boolean;
+  payout_id:      string;
+  status:         'failed';
+  failed_at:      string;
+  payment_method: string;
+}
+
+/**
+ * adminMarkPayoutPaid
+ * prepared payout を status='paid' に変更する。
+ * PayPal Transaction ID / paid_at / 金額明細を記録する。
+ * 戻り値に PII を含まない。
+ *
+ * ⚠️ この関数は PayPal 送金を実行しない。
+ * 送金後に手動で呼ぶこと。
+ */
+export async function adminMarkPayoutPaid(
+  params: MarkPayoutPaidParams,
+): Promise<{ data: MarkPayoutPaidResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_mark_payout_paid', {
+    p_payout_id:          params.payout_id,
+    p_paypal_payout_id:   params.paypal_payout_id,
+    p_paid_at:            params.paid_at ?? null,
+    p_gross_amount_cents: params.gross_amount_cents ?? null,
+    p_fee_amount_cents:   params.fee_amount_cents ?? null,
+    p_net_amount_cents:   params.net_amount_cents ?? null,
+    p_exchange_rate:      params.exchange_rate ?? null,
+    p_exchange_currency:  params.exchange_currency ?? null,
+    p_admin_note:         params.admin_note ?? null,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as MarkPayoutPaidResult, error: null };
+}
+
+/**
+ * adminMarkPayoutFailed
+ * prepared payout を status='failed' に変更する。
+ * failure_reason / failed_at を記録する。
+ * 戻り値に PII を含まない。
+ *
+ * ⚠️ failed 後は同 payout row を再利用できない。
+ * retry は RP-5d で新規 payout row を作成する。
+ */
+export async function adminMarkPayoutFailed(
+  params: MarkPayoutFailedParams,
+): Promise<{ data: MarkPayoutFailedResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_mark_payout_failed', {
+    p_payout_id:      params.payout_id,
+    p_failure_reason: params.failure_reason,
+    p_admin_note:     params.admin_note ?? null,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as MarkPayoutFailedResult, error: null };
 }
