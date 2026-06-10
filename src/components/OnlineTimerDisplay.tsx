@@ -3,6 +3,14 @@
  *
  * per_move と total_time の表示計算を完全に分離した設計:
  *
+ * ## 表示安全マージン (DISPLAY_SAFETY_MARGIN_MS)
+ *   - 実判定 (apply_online_move / claim_timeout RPC) より表示をわずかに厳しくする。
+ *   - 理由: クライアント↔サーバークロックずれ + ネットワーク遅延 (UIクリック→RPC到達) により、
+ *     表示上は残り時間があるのに実判定では時間切れ、という体験が起こりうる。
+ *   - 「表示が少し厳しい → ユーザーが早めに操作」は許容する。
+ *   - 「表示はまだ間に合うのに実判定で時間切れ」は UX 上避けるべき。
+ *   - 実判定 (RPC) 側は一切変更しない。
+ *
  * ## per_move
  *   - Date.now() ベースで turnStartedAt からの経過時間を計算（serverUpdatedAt+drift は使わない）
  *   - 理由: serverUpdatedAt ≈ turnStartedAt（同一トランザクション）のため、
@@ -40,6 +48,15 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { TimerConfig } from '../game/timerTypes';
+
+/**
+ * 表示用安全マージン (ms)
+ * 実判定より表示をこの分だけ厳しくする。
+ * クライアント↔サーバークロックずれ + network latency (UIクリック→RPC到達) による
+ * 「表示は残り時間あり → 実判定で時間切れ」な UX を防ぐ。
+ * 実判定 (apply_online_move / claim_timeout RPC) 側は変更しない。
+ */
+const DISPLAY_SAFETY_MARGIN_MS = 300;
 
 interface OnlineTimerDisplayProps {
   timerConfig: TimerConfig | null;
@@ -241,7 +258,12 @@ export function OnlineTimerDisplay({
   // ─── per_move ──────────────────────────────────────────────────────────────
   if (mode === 'per_move') {
     const perMoveMs = timerConfig.perMoveSeconds * 1000;
-    const remaining = calcPerMoveRemainingMs(turnStartedAt, perMoveMs, frozenUntil);
+    const actualRemaining = calcPerMoveRemainingMs(turnStartedAt, perMoveMs, frozenUntil);
+    // 凍結中は安全マージンを適用しない（凍結中は実際に時間が進んでいないため）
+    // 凍結解除後は表示を実判定より DISPLAY_SAFETY_MARGIN_MS 分厳しくする。
+    const remaining = isFrozen
+      ? actualRemaining
+      : Math.max(0, actualRemaining - DISPLAY_SAFETY_MARGIN_MS);
     // 凍結中は警告色を出さない（0:30 のまま凍結されているため）
     const colorClass = isFrozen ? '' : getTimerClassName(remaining);
     return (
@@ -272,13 +294,17 @@ export function OnlineTimerDisplay({
           let displayStr: string;
           let colorClass: string;
           if (isActive) {
-            const { phase, remainingMs } = calcTotalTimeWithByoyomi(
+            const { phase, remainingMs: actualRemainingMs } = calcTotalTimeWithByoyomi(
               rawRemaining,
               turnStartedAt,
               frozenUntil,
               initialTotalMs,
               byoyomiMs,
             );
+            // 実判定より表示を DISPLAY_SAFETY_MARGIN_MS 分厳しくする。
+            // 「表示はまだ間に合う → 実判定で時間切れ」な UX を防ぐため。
+            // 実判定 (apply_online_move / claim_timeout) は変更しない。
+            const remainingMs = Math.max(0, actualRemainingMs - DISPLAY_SAFETY_MARGIN_MS);
             if (phase === 'byoyomi') {
               displayStr = `BY ${formatMs(remainingMs)}`;
               // 秒読み中は常に danger 色（残り時間は byoyomiSeconds 以下）

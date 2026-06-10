@@ -26,6 +26,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TimerConfig } from '../game/timerTypes';
 
+/**
+ * 表示用安全マージン (ms) — OnlineTimerDisplay.tsx と同値で統一する。
+ * 実判定より表示をこの分だけ厳しくする。
+ * 実判定 (apply_online_move / claim_timeout RPC) 側は変更しない。
+ */
+const DISPLAY_SAFETY_MARGIN_MS = 300;
+
 // ─── 型定義 ──────────────────────────────────────────────────────────────────
 
 interface BaseProps {
@@ -346,10 +353,14 @@ function PerMoveHeader({
 }) {
   const perMoveMs = timerConfig.perMoveSeconds * 1000;
 
-  // 残り時間計算
+  // 残り時間計算 (Online: 実値 → 表示安全マージン適用)
   let remaining: number;
   if (props.mode === 'online') {
-    remaining = calcPerMoveRemainingMs(props.turnStartedAt ?? null, perMoveMs, props.frozenUntil ?? null);
+    const actualRemaining = calcPerMoveRemainingMs(props.turnStartedAt ?? null, perMoveMs, props.frozenUntil ?? null);
+    // 凍結中は安全マージンを適用しない。凍結解除後は DISPLAY_SAFETY_MARGIN_MS 分厳しく表示。
+    remaining = isFrozen
+      ? actualRemaining
+      : Math.max(0, actualRemaining - DISPLAY_SAFETY_MARGIN_MS);
   } else {
     remaining = props.currentMoveRemainingMs ?? perMoveMs;
   }
@@ -449,24 +460,28 @@ function TotalTimeHeader({
     const whiteActive = !isFrozen && currentPlayer === 'white';
 
     if (blackActive) {
-      const { phase, remainingMs } = calcTotalTimeWithByoyomi(
+      const { phase, remainingMs: actualBlackMs } = calcTotalTimeWithByoyomi(
         props.blackRemainingMs ?? null, turnStartedAt, frozenUntil, initialTotalMs, byoyomiMs
       );
-      blackMs = remainingMs;
+      // 実判定より表示を DISPLAY_SAFETY_MARGIN_MS 分厳しくする。実判定 (RPC) は変更しない。
+      const displayBlackMs = Math.max(0, actualBlackMs - DISPLAY_SAFETY_MARGIN_MS);
+      blackMs = displayBlackMs;
       blackByoyomi = phase === 'byoyomi';
-      blackTimeStr = blackByoyomi ? `BY ${formatMs(remainingMs)}` : formatMs(remainingMs);
+      blackTimeStr = blackByoyomi ? `BY ${formatMs(displayBlackMs)}` : formatMs(displayBlackMs);
     } else {
       blackMs = Math.min(props.blackRemainingMs ?? initialTotalMs, initialTotalMs);
       blackTimeStr = formatMs(blackMs);
     }
 
     if (whiteActive) {
-      const { phase, remainingMs } = calcTotalTimeWithByoyomi(
+      const { phase, remainingMs: actualWhiteMs } = calcTotalTimeWithByoyomi(
         props.whiteRemainingMs ?? null, turnStartedAt, frozenUntil, initialTotalMs, byoyomiMs
       );
-      whiteMs = remainingMs;
+      // 実判定より表示を DISPLAY_SAFETY_MARGIN_MS 分厳しくする。実判定 (RPC) は変更しない。
+      const displayWhiteMs = Math.max(0, actualWhiteMs - DISPLAY_SAFETY_MARGIN_MS);
+      whiteMs = displayWhiteMs;
       whiteByoyomi = phase === 'byoyomi';
-      whiteTimeStr = whiteByoyomi ? `BY ${formatMs(remainingMs)}` : formatMs(remainingMs);
+      whiteTimeStr = whiteByoyomi ? `BY ${formatMs(displayWhiteMs)}` : formatMs(displayWhiteMs);
     } else {
       whiteMs = Math.min(props.whiteRemainingMs ?? initialTotalMs, initialTotalMs);
       whiteTimeStr = formatMs(whiteMs);
