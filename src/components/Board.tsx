@@ -581,6 +581,7 @@ export function Board({
   showLabelToggle = true,
   defaultLabels = true,
   labelPerspective = 'black',
+  labelGuide = 'none' as 'black' | 'white' | 'none',
   ghostMoves,
   ghostModeActive = false,
   showGhostToggle = false,
@@ -603,6 +604,8 @@ export function Board({
   ghostModeActive?: boolean;
   showGhostToggle?: boolean;
   onGhostModeToggle?: () => void;
+  /** 通常対局でLABELトグルの代わりに表示するSVGガイドの向き。'none'は非表示 */
+  labelGuide?: 'black' | 'white' | 'none';
 }) {
   const selectedId = state.selectedPosition;
 
@@ -959,6 +962,28 @@ export function Board({
             <span className="board-label-toggle-dot" />
             {showLabels ? 'LABELS ON' : 'LABELS OFF'}
           </button>
+        </div>
+      )}
+      {/* SVG Label Guide (通常対局: LABELトグル撤去後の代替表示) */}
+      {!showLabelToggle && labelGuide !== 'none' && (
+        <div className="board-label-guide-wrap">
+          {showGhostToggle && (
+            <button
+              type="button"
+              className={['board-label-toggle', 'board-ghost-toggle', ghostModeActive ? 'ghost-on' : 'ghost-off'].filter(Boolean).join(' ')}
+              onClick={onGhostModeToggle}
+              aria-pressed={ghostModeActive}
+              title="Ghost Mode: show your past moves at this position"
+            >
+              <span className="board-label-toggle-dot" />
+              {ghostModeActive ? 'GHOST ON' : 'GHOST OFF'}
+            </button>
+          )}
+          <img
+            src={labelGuide === 'white' ? '/label_guide_white.svg' : '/label_guide_black.svg'}
+            alt={labelGuide === 'white' ? 'Label guide (White)' : 'Label guide (Black)'}
+            className="board-label-guide-img"
+          />
         </div>
       )}
     </section>

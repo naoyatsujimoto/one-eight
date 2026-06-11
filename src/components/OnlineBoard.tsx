@@ -437,6 +437,9 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
               ghostModeActive={ghostModeActive}
               showGhostToggle={showGhostToggle}
               onGhostModeToggle={() => setGhostModeActive(v => !v)}
+              showLabelToggle={false}
+              defaultLabels={false}
+              labelGuide={myColor === 'white' ? 'white' : 'black'}
             />
           </div>
         </div>
