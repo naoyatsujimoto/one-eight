@@ -1106,9 +1106,6 @@ export default function App() {
             ghostModeActive={ghostModeActive}
             showGhostToggle={showGhostToggle}
             onGhostModeToggle={() => setGhostModeActive(v => !v)}
-            showLabelToggle={false}
-            defaultLabels={false}
-            labelGuide={humanColor ?? 'black'}
           />
         </div>
         </div>{/* end board-col */}

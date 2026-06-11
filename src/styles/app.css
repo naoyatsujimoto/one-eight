@@ -2083,21 +2083,6 @@ ol { padding-left: 20px; }
   margin-top: 6px;
 }
 
-/* ── SVG Label Guide (LABELトグル撤去後の代替表示) ── */
-.board-label-guide-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.board-label-guide-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
 /* ── Ghost Mode toggle ボタン ── */
 .board-ghost-toggle.ghost-on {
   color: #3a6bc8;
