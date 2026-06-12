@@ -2185,9 +2185,8 @@ ol { padding-left: 20px; }
   border-color: rgba(100, 149, 237, 0.35);
 }
 
-/* Position with no legal build options — disabled, visually dimmed */
+/* Position with no legal build options — disabled, cursor only (opacity removed to avoid dimming pieces) */
 .position-btn-no-legal-move {
-  opacity: 0.35;
   cursor: not-allowed;
 }
 .position-btn-no-legal-move:hover {
