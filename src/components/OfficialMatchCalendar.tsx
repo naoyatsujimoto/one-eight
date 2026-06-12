@@ -49,6 +49,11 @@ interface Props {
    *  STATS / UserPage 側は Today を渡して今日フィルタを初期適用する。
    */
   initialDay?: number | null;
+  /** Arena由来（source_kind='arena'）のofficial_matchを含めるか。
+   *  デフォルト: false（通常公式戦カレンダーではArena由来を除外）。
+   *  Arenaモードの ranked カレンダーでは true を渡す。
+   */
+  includeArena?: boolean;
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -397,6 +402,7 @@ export function OfficialMatchCalendar({
   emptyMessage,
   showRecentResults = true,
   initialDay = null,
+  includeArena = false,
 }: Props) {
   const { t } = useLang();
   const [matches, setMatches] = useState<OfficialMatchListItem[]>([]);
@@ -426,6 +432,7 @@ export function OfficialMatchCalendar({
       const result = await listMyOfficialMatches({
         from: from.toISOString(),
         to: to.toISOString(),
+        includeArena,
       });
 
       if ('error' in result) {
@@ -444,7 +451,7 @@ export function OfficialMatchCalendar({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [includeArena]);
 
   useEffect(() => {
     loadMatches();

@@ -77,6 +77,7 @@ export function OnlineLobby({ userId, proActive = false, onGameReady, onCancel, 
                 filter="ranked"
                 emptyMessage={t.onlineNoRankedMatches}
                 showRecentResults={false}
+                includeArena={true}
               />
             </>
           )}

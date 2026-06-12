@@ -74,16 +74,21 @@ export async function createOfficialMatch(params: {
 
 /**
  * 自分が参加する公式戦一覧を取得する。
+ * @param includeArena true の場合、Arena由来（source_kind='arena'）のofficial_matchも含める。
+ *   通常カレンダー（デフォルト）は false で Arena由来を除外する。
+ *   Arena画面・Arenaカレンダーは true を渡す。
  */
 export async function listMyOfficialMatches(params?: {
   from?: string;
   to?: string;
   status?: OfficialMatchStatus[];
+  includeArena?: boolean;
 }): Promise<OfficialMatchListItem[] | { error: string }> {
   const { data, error } = await supabase.rpc('list_my_official_matches', {
     p_from: params?.from ?? null,
     p_to: params?.to ?? null,
     p_status: params?.status ?? null,
+    p_include_arena: params?.includeArena ?? false,
   });
 
   if (error) return { error: error.message };
