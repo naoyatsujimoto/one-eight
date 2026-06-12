@@ -1,13 +1,53 @@
-import { POSITION_TO_GATES } from './constants';
+import { POSITION_IDS, POSITION_TO_GATES } from './constants';
 import { canCapturePosition } from './capture';
 import { canMassiveBuild, canQuadBuild, canSelectiveBuild, isGateFull } from './build';
 import type { BuildType, GameState, GateId, Player, PositionId } from './types';
 
+/**
+ * Returns all selectable positions for the given player.
+ * A position is selectable if it is empty, owned by the player, or capturable.
+ * Note: this includes own positions even if no build is possible from them.
+ * For legal-move purposes, use hasAnyLegalMove() instead.
+ */
 export function getSelectablePositions(state: GameState, player: Player): PositionId[] {
   return (Object.keys(state.positions) as PositionId[]).filter((id) => {
     const owner = state.positions[id].owner;
     return owner === null || owner === player || canCapturePosition(state, player, id);
   });
+}
+
+/**
+ * Returns true if the given player has at least one legal move.
+ *
+ * A legal move is defined as:
+ *   - Taking an empty position (any build is possible after), OR
+ *   - Capturing an opponent's position (any build is possible after), OR
+ *   - Selecting an own position AND at least one build option exists for it.
+ *
+ * Own positions where no build is possible are NOT counted as legal moves.
+ * Pass/Skip is never counted as a legal move.
+ */
+export function hasAnyLegalMove(state: GameState, player: Player): boolean {
+  for (const posId of POSITION_IDS) {
+    const owner = state.positions[posId].owner;
+    if (owner === player) {
+      // Own position: only legal if at least one build is possible
+      const opts = getAvailableBuildOptions(state, posId);
+      if (opts.hasAny) return true;
+    } else if (owner === null) {
+      // Empty position: can always take it (no build required for positioning)
+      // but we still need a build to be available — check build options
+      const opts = getAvailableBuildOptions(state, posId);
+      if (opts.hasAny) return true;
+    } else {
+      // Opponent's position: legal only if capturable
+      if (canCapturePosition(state, player, posId)) {
+        const opts = getAvailableBuildOptions(state, posId);
+        if (opts.hasAny) return true;
+      }
+    }
+  }
+  return false;
 }
 
 export function getAvailableBuildOptions(state: GameState, positionId: PositionId): {

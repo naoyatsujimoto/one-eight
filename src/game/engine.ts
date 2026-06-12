@@ -2,7 +2,7 @@ import { POSITION_TO_GATES } from './constants';
 import { applyMassiveToGate, applyQuadToGate, applySelectiveToGate } from './build';
 import { canCapturePosition } from './capture';
 import { createInitialState } from './initialState';
-import { getAvailableBuildOptions, getWinner, isGameEnded } from './selectors';
+import { getAvailableBuildOptions, getWinner, hasAnyLegalMove, isGameEnded } from './selectors';
 import { computeCanonicalHashString } from './zobrist';
 import { computeSymmetryGroupId } from './symmetry';
 import { computeMediumPatternId } from './mediumPattern';
@@ -208,6 +208,12 @@ export function confirmPositionOnly(state: GameState): GameState {
   });
 }
 
+/**
+ * Manual skip (legacy / CPU-only internal use).
+ * Returns state unchanged if a position is selected and builds are available.
+ * NOTE: The Pass button has been removed from the UI. This function is kept
+ * for internal use (CPU pass simulation, postmortem replay, importRecord).
+ */
 export function skipTurn(state: GameState): GameState {
   if (state.selectedPosition) {
     const options = getAvailableBuildOptions(state, state.selectedPosition);
@@ -218,6 +224,31 @@ export function skipTurn(state: GameState): GameState {
     player: state.currentPlayer,
     positioning: 'P',
     build: { type: 'skip' }
+  });
+}
+
+/**
+ * Automatic pass: applied when the current player has NO legal moves.
+ *
+ * Legal moves are defined as:
+ *   - Taking/capturing a position AND having at least one build option for it.
+ *   - Selecting an own position AND having at least one build option for it.
+ * Own positions with no build options are NOT legal moves.
+ *
+ * Returns the same state (no-op) if the current player still has legal moves,
+ * or if the game is already ended.
+ *
+ * This does NOT check for infinite-pass loops; callers must guard against
+ * back-to-back auto passes causing infinite recursion.
+ */
+export function applyAutoPass(state: GameState): GameState {
+  if (state.gameEnded) return state;
+  if (hasAnyLegalMove(state, state.currentPlayer)) return state;
+  return finalizeTurn(state, {
+    moveNumber: state.moveNumber,
+    player: state.currentPlayer,
+    positioning: 'P',
+    build: { type: 'skip' },
   });
 }
 

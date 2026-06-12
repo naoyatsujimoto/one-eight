@@ -26,13 +26,12 @@ function timerClass(ms: number): string {
 }
 
 export function TurnInfo({
-  state, modeLabel, buildState, onSkip, onClear,
+  state, modeLabel, buildState, onClear,
   timerConfig, playerTimers, currentMoveRemainingMs, perspective,
 }: {
   state: GameState;
   modeLabel?: string;
   buildState?: BoardBuildState;
-  onSkip?: () => void;
   onClear?: () => void;
   timerConfig?: TimerConfig | null;
   playerTimers?: { black: number; white: number } | null;
@@ -49,9 +48,7 @@ export function TurnInfo({
   };
 
   const options = buildState ? getBuildOptionsForSelected(state) : null;
-  const canSkip = !options?.hasAny;
-  // "Confirm Position" is shown when a position is selected and no build options exist
-  const canConfirmPosition = !!state.selectedPosition && canSkip;
+  // canConfirmPosition: a position is selected but no build options remain (position-only confirm)
   const mode = buildState?.mode ?? 'none';
   const selectiveFirst = buildState?.selectiveFirst ?? null;
   const selectiveCanConfirm = buildState?.selectiveCanConfirm ?? false;
@@ -150,16 +147,13 @@ export function TurnInfo({
       <div className="panel-section">
         <div className="section-eyebrow">{t.actions}</div>
         <div className="actions-row">
-          <button type="button" className="action-btn" onClick={onSkip} disabled={!canSkip || !!state.selectedPosition}>
-            {t.pass}
-          </button>
           {state.selectedPosition && (
             <button type="button" className="action-btn action-btn-ghost" onClick={onClear}>
               {t.clear}
             </button>
           )}
         </div>
-        {!canSkip && state.selectedPosition && (
+        {options?.hasAny === false && state.selectedPosition && (
           <span style={{fontSize:'11px', color:'#e06c26', marginTop:'6px', display:'block'}}>
             {t.buildAvailable}
           </span>

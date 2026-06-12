@@ -22,12 +22,12 @@ import { UserPage } from './UserPage';
 import {
   applyMassiveBuild,
   applyQuadBuildForGates,
+  applyAutoPass,
   applySelectiveBuild,
   applySelectiveBuildSingle,
   confirmPositionOnly,
   getBuildOptionsForSelected,
   selectPosition,
-  skipTurn,
 } from '../game/engine';
 import { POSITION_TO_GATES } from '../game/constants';
 import type { GameState, GateId, Player, PositionId } from '../game/types';
@@ -165,6 +165,21 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
     }
   }, [gameRow]);
 
+  // Online: auto-pass when it is my turn and I have no legal moves
+  // This syncs the auto-P to Supabase via finalize()
+  useEffect(() => {
+    if (!localState) return;
+    if (!isMyTurn) return;
+    if (localState.gameEnded) return;
+    if (pendingSubmit) return;
+    const afterAutoPass = applyAutoPass(localState);
+    if (afterAutoPass !== localState) {
+      // No legal moves: auto-pass and sync to Supabase
+      finalize(afterAutoPass);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMyTurn, localState?.currentPlayer, localState?.gameEnded]);
+
   // 対戦相手のプロフィールを取得
   // white_player_id は waiting→playing で確定するため、両プレイヤーIDを依存配列に含める
   const opponentId = gameRow
@@ -290,11 +305,6 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
       }
       return { mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: currentMax };
     });
-  }
-
-  function handleSkip() {
-    if (blocked) return;
-    finalize(skipTurn(state));
   }
 
   function handleClearSelection() {
@@ -445,7 +455,6 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
             state={state}
             modeLabel={modeLabel}
             buildState={buildState}
-            onSkip={handleSkip}
             onClear={handleClearSelection}
             perspective={myColor === 'white' ? 'white' : 'black'}
           />

@@ -32,6 +32,7 @@ import { useUnreadCount } from '../hooks/useUnreadCount';
 
 type Screen = 'title' | 'tutorial' | 'main' | 'profile' | 'training' | 'admin';
 import {
+  applyAutoPass,
   applyMassiveBuild,
   applyQuadBuildForGates,
   applySelectiveBuild,
@@ -242,6 +243,20 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.selectedPosition]);
 
+  // Auto-pass: when the current player (human) has no legal moves, apply P automatically
+  useEffect(() => {
+    if (state.gameEnded) return;
+    // Only trigger for human turns in PvC, or all turns in HvH
+    if (state.cpuPlayer !== null && state.currentPlayer === state.cpuPlayer) return;
+
+    const afterAutoPass = applyAutoPass(state);
+    // If applyAutoPass changed the state, we have a no-legal-moves situation
+    if (afterAutoPass !== state) {
+      setState(afterAutoPass);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentPlayer, state.gameEnded]);
+
   // CPU auto-move
   useEffect(() => {
     if (state.gameEnded) return;
@@ -261,16 +276,8 @@ export default function App() {
         const move = selectCpuMove(prev, prev.cpuPlayer!, cpuDifficulty);
 
         if (move.type === 'pass') {
-          const POSITION_IDS = ['A','B','C','D','E','F','G','H','I','J','K','L','M'] as PositionId[];
-          let interim = prev;
-          for (const posId of POSITION_IDS) {
-            const candidate = selectPosition(prev, posId);
-            if (candidate.selectedPosition === posId) {
-              interim = candidate;
-              break;
-            }
-          }
-          return skipTurn(interim);
+          // CPU has no legal moves: apply automatic pass
+          return applyAutoPass(prev);
         }
 
         const afterSelect = selectPosition(prev, move.positionId);
@@ -728,13 +735,6 @@ export default function App() {
     });
   }
 
-  function handleSkip() {
-    if (isCpuTurn) return;
-    // Push snapshot before finalizing turn
-    setUndoStack((s) => [...s, state]);
-    setState((prev) => skipTurn(prev));
-    setBuildState(EMPTY_BUILD_STATE);
-  }
 
   function handleConfirmPosition() {
     if (isCpuTurn) return;
@@ -1127,7 +1127,6 @@ export default function App() {
             state={state}
             modeLabel={modeLabel}
             buildState={buildState}
-            onSkip={handleSkip}
             onClear={handleClearSelection}
             timerConfig={state.timerConfig}
             playerTimers={playerTimers}

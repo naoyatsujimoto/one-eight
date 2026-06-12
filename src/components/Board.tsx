@@ -8,6 +8,8 @@ function useSafeSvgId(): string {
 }
 import { POSITION_TO_GATES } from '../game/constants';
 import { canMassiveBuild, canSelectiveBuild, canQuadBuild } from '../game/build';
+import { canCapturePosition } from '../game/capture';
+import { getAvailableBuildOptions } from '../game/selectors';
 import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import type { GhostMove } from '../lib/matchLog';
@@ -896,6 +898,23 @@ export function Board({
               ? (ghostOpacityMap.get(id) ?? 0)
               : 0;
 
+            // Legal move check: own positions with no build options are NOT legal moves.
+            // Empty positions and capturable opponent positions: always legal (if game not ended).
+            const owner = pos.owner;
+            const player = state.currentPlayer;
+            let isLegalTarget = true;
+            if (!state.gameEnded) {
+              if (owner === player) {
+                // Own position: only legal if at least one build option exists
+                const opts = getAvailableBuildOptions(state, id);
+                isLegalTarget = opts.hasAny;
+              } else if (owner !== null) {
+                // Opponent's position: only legal if capturable
+                isLegalTarget = canCapturePosition(state, player, id);
+              }
+              // owner === null: empty position is always a legal target
+            }
+
             return (
               <button
                 key={id}
@@ -905,8 +924,10 @@ export function Board({
                   isSelected ? 'selected' : '',
                   tutorialHighlightAllPositions ? 'position-btn-tutorial-hl' : '',
                   posGhostOpacity > 0 ? 'position-btn-ghost' : '',
+                  (!state.gameEnded && !isLegalTarget && !isSelected) ? 'position-btn-no-legal-move' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => onSelectPosition(id)}
+                disabled={!state.gameEnded && !isLegalTarget && !isSelected}
                 type="button"
                 aria-pressed={isSelected}
                 style={{
