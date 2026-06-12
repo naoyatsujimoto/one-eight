@@ -1,51 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 280">
+<svg xmlns="http://www.w3.org/2000/svg" width="906" height="497" viewBox="0 0 906 497">
   <defs>
-    <marker id="arrowB" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
-      <path d="M0,0 L7,3.5 L0,7 L1.5,3.5 Z" fill="#19191f"/>
-    </marker>
+    
   </defs>
-
-  <!-- GATE図（左半分） -->
-  <text x="170" y="25" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" letter-spacing="0.18em" fill="#19191f" text-anchor="middle">GATE</text>
-
-  <!-- 正方形枠 -->
-  <rect x="55" y="50" width="220" height="180" fill="none" stroke="#19191f" stroke-width="1.8"/>
-
-  <!-- 角の黒点 -->
-  <circle cx="55" cy="50" r="4" fill="#19191f"/>
-  <circle cx="275" cy="50" r="4" fill="#19191f"/>
-  <circle cx="275" cy="230" r="4" fill="#19191f"/>
-  <circle cx="55" cy="230" r="4" fill="#19191f"/>
-
-  <!-- ラベル -->
-  <text x="42" y="47" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" letter-spacing="0.02em" fill="#19191f" text-anchor="end">1</text>
-  <text x="32" y="147" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" letter-spacing="0.02em" fill="#19191f" text-anchor="end">12</text>
-  <text x="290" y="233" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" letter-spacing="0.02em" fill="#19191f">7</text>
-
-  <!-- 左辺（上向き矢印） -->
-  <line x1="55" y1="222" x2="55" y2="62" stroke="#19191f" stroke-width="1.8" marker-end="url(#arrowB)"/>
-  <!-- 右辺（下向き矢印） -->
-  <line x1="275" y1="62" x2="275" y2="218" stroke="#19191f" stroke-width="1.8" marker-end="url(#arrowB)"/>
-  <!-- 上辺（矢印なし） -->
-  <line x1="55" y1="50" x2="275" y2="50" stroke="#19191f" stroke-width="1.8"/>
-  <!-- 下辺（矢印なし） -->
-  <line x1="55" y1="230" x2="275" y2="230" stroke="#19191f" stroke-width="1.8"/>
-
-  <!-- POSITION図（右半分） -->
-  <text x="555" y="25" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" letter-spacing="0.18em" fill="#19191f" text-anchor="middle">POSITION</text>
-
-  <!-- ラベル -->
-  <text x="375" y="90" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" letter-spacing="0.02em" fill="#19191f">A</text>
-  <text x="480" y="165" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" letter-spacing="0.02em" fill="#19191f">G</text>
-  <text x="710" y="225" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" letter-spacing="0.02em" fill="#19191f">M</text>
-
-  <!-- 上側の水平線（矢印なし） -->
-  <line x1="395" y1="82" x2="620" y2="82" stroke="#19191f" stroke-width="1.8"/>
-  <!-- 上側の斜め線（右下への分岐） -->
-  <line x1="620" y1="82" x2="680" y2="130" stroke="#19191f" stroke-width="1.8"/>
-
-  <!-- 下側の斜め線（左下から右上） -->
-  <line x1="435" y1="205" x2="495" y2="157" stroke="#19191f" stroke-width="1.8"/>
-  <!-- 下側の水平線（右向き矢印） -->
-  <line x1="495" y1="205" x2="700" y2="205" stroke="#19191f" stroke-width="1.8" marker-end="url(#arrowB)"/>
+  <rect width="906" height="497" fill="#FFFFFF"></rect>
+  <g>
+    <text x="242" y="86" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="32" letter-spacing="0.22em" fill="#1A1A1A" style="text-indent:0.22em">GATE</text>
+    <g transform="translate(62, 98)">
+      <g fill="none" stroke="#141414" stroke-width="4.5" stroke-linejoin="miter">
+        <path d="M 92 60 H 300 V 262"></path>
+        <path d="M 278 240 L 300 262 L 322 240"></path>
+        <path d="M 268 300 H 60 V 160"></path>
+        <path d="M 38 182 L 60 160 L 82 182"></path>
+      </g>
+      <g fill="#141414" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="44" text-anchor="middle">
+        <text x="60" y="75">1</text>
+        <text x="60" y="140">12</text>
+        <text x="300" y="314">7</text>
+      </g>
+    </g>
+  </g>
+  <g>
+    <text x="664" y="86" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="32" letter-spacing="0.22em" fill="#1A1A1A" style="text-indent:0.22em">POSITION</text>
+    <g transform="translate(484, 98)">
+      <g fill="none" stroke="#141414" stroke-width="4.5" stroke-linejoin="miter">
+        <path d="M 92 60 H 300 L 240 120"></path>
+        <path d="M 120 240 L 60 300 H 266"></path>
+        <path d="M 244 278 L 266 300 L 244 322"></path>
+      </g>
+      <g fill="#141414" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="44" text-anchor="middle">
+        <text x="60" y="75">A</text>
+        <text x="180" y="196">G</text>
+        <text x="300" y="314">M</text>
+      </g>
+    </g>
+  </g>
 </svg>
