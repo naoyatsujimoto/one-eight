@@ -1102,6 +1102,11 @@ export default function App() {
             onLargePocketClick={handleLargePocketClick}
             onMiddlePocketClick={handleMiddlePocketClick}
             onSmallPocketClick={handleSmallPocketClick}
+            labelPerspective={
+              state.cpuPlayer !== null
+                ? (humanColor ?? 'black')
+                : 'black'
+            }
             ghostMoves={ghostMoves}
             ghostModeActive={ghostModeActive}
             showGhostToggle={showGhostToggle}
