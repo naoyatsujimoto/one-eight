@@ -2114,6 +2114,71 @@ ol { padding-left: 20px; }
   background: #ccc;
 }
 
+/* ── Ghost Pro locked toggle ── */
+.board-ghost-toggle.ghost-pro-locked {
+  color: #888;
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.10);
+  cursor: pointer;
+}
+.board-ghost-toggle.ghost-pro-locked:hover {
+  background: rgba(0,0,0,0.09);
+  color: #555;
+}
+.ghost-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: #3a6bc8;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+/* ── Ghost Pro upgrade notice ── */
+.ghost-pro-notice {
+  margin: 8px auto 0;
+  max-width: 320px;
+  padding: 12px 16px;
+  background: rgba(58, 107, 200, 0.07);
+  border: 1px solid rgba(58, 107, 200, 0.25);
+  border-radius: 6px;
+  text-align: center;
+}
+.ghost-pro-notice-title {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #3a6bc8;
+  margin-bottom: 6px;
+  letter-spacing: 0.06em;
+}
+.ghost-pro-notice-text {
+  font-size: 0.72rem;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.ghost-pro-notice-cta {
+  display: inline-block;
+  padding: 5px 14px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  background: #3a6bc8;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.ghost-pro-notice-cta:hover {
+  background: #2d55a8;
+}
+
 /* ── Ghost Mode ポジションハイライト ── */
 /* ハッチはJSX側(GhostHatchCircle)で描画。CSSはborder補助のみ */
 .position-btn-ghost {

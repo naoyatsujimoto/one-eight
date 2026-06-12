@@ -294,6 +294,10 @@ export const T = {
     proAlreadyActive: 'You are already Pro',
     proRenewsOn: (date: string) => `Renews ${date}`,
     proUpgradeGames: 'View all past games (Pro only)',
+    ghostProBadge: 'Pro',
+    ghostProOnlyTitle: 'Ghost (Pro Only)',
+    ghostProOnlyText: 'Ghost is a Pro feature. Upgrade to Pro to view suggested moves based on past match data.',
+    ghostProUpgradeCta: 'View Pro features',
     omEnterMatch: 'Enter Match',
     omEntering: 'Entering…',
     omUpcomingMatches: 'Upcoming Matches',
@@ -749,6 +753,10 @@ export const T = {
     proAlreadyActive: 'Proプラン加入済み',
     proRenewsOn: (date: string) => `次回更新日: ${date}`,
     proUpgradeGames: '過去の全対局を見る（Pro限定）',
+    ghostProBadge: 'Pro',
+    ghostProOnlyTitle: 'Ghost（Pro限定）',
+    ghostProOnlyText: 'GhostはPro限定機能です。過去の対局データから候補手を確認するには、Proへのアップグレードが必要です。',
+    ghostProUpgradeCta: 'Pro機能を見る',
     omEnterMatch: '入室',
     omEntering: '入室中…',
     omUpcomingMatches: '今後の公式戦',
@@ -1168,6 +1176,10 @@ export type Translations = {
   proAlreadyActive: string;
   proRenewsOn: (date: string) => string;
   proUpgradeGames: string;
+  ghostProBadge: string;
+  ghostProOnlyTitle: string;
+  ghostProOnlyText: string;
+  ghostProUpgradeCta: string;
   omEnterMatch: string;
   omEntering: string;
   omUpcomingMatches: string;

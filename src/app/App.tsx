@@ -832,11 +832,14 @@ export default function App() {
 
   const gameMode: string = state.cpuPlayer !== null ? 'human_vs_cpu' : 'human_vs_human';
 
-  // showGhostToggle: proユーザー、かつ PvP 以外のモードでのみ表示
-  const showGhostToggle = proActive && gameMode !== 'human_vs_human';
+  // showGhostToggle: PvP 以外のモードで表示（Pro・非Pro問わず）
+  // proGhostEnabled: ProユーザーのみGhostの実際の機能を有効化
+  const showGhostToggle = gameMode !== 'human_vs_human';
+  const proGhostEnabled = proActive && gameMode !== 'human_vs_human';
 
   useEffect(() => {
-    if (!ghostModeActive || !showGhostToggle) {
+    // 非Proの場合は Ghost 機能を実行しない（データ取得もしない）
+    if (!ghostModeActive || !proGhostEnabled) {
       setGhostMoves([]);
       return;
     }
@@ -859,7 +862,7 @@ export default function App() {
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ghostModeActive, showGhostToggle, isHumanTurn, state.history.length, state.currentPlayer]);
+  }, [ghostModeActive, proGhostEnabled, isHumanTurn, state.history.length, state.currentPlayer]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modeModalOpen, setModeModalOpen] = useState(false);
@@ -1110,7 +1113,12 @@ export default function App() {
             ghostMoves={ghostMoves}
             ghostModeActive={ghostModeActive}
             showGhostToggle={showGhostToggle}
+            proGhostEnabled={proGhostEnabled}
             onGhostModeToggle={() => setGhostModeActive(v => !v)}
+            ghostProBadge={t.ghostProBadge}
+            ghostProOnlyTitle={t.ghostProOnlyTitle}
+            ghostProOnlyText={t.ghostProOnlyText}
+            ghostProUpgradeCta={t.ghostProUpgradeCta}
           />
         </div>
         </div>{/* end board-col */}

@@ -575,7 +575,12 @@ export function Board({
   ghostMoves,
   ghostModeActive = false,
   showGhostToggle = false,
+  proGhostEnabled = false,
   onGhostModeToggle,
+  ghostProBadge = 'Pro',
+  ghostProOnlyTitle,
+  ghostProOnlyText,
+  ghostProUpgradeCta,
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -593,7 +598,12 @@ export function Board({
   ghostMoves?: GhostMove[];
   ghostModeActive?: boolean;
   showGhostToggle?: boolean;
+  proGhostEnabled?: boolean;
   onGhostModeToggle?: () => void;
+  ghostProBadge?: string;
+  ghostProOnlyTitle?: string;
+  ghostProOnlyText?: string;
+  ghostProUpgradeCta?: string;
 }) {
   const selectedId = state.selectedPosition;
 
@@ -643,6 +653,7 @@ export function Board({
   const lastScaleRef = useRef<number>(-1);
   const [lines, setLines] = useState<LineCoord[]>([]);
   const [showLabels, setShowLabels] = useState(defaultLabels);
+  const [showGhostProNotice, setShowGhostProNotice] = useState(false);
 
   // ── Responsive board scaling ──────────────────────────────────────────────
   const BOARD_W = 680;
@@ -915,6 +926,7 @@ export function Board({
 
       {/* Label toggle + Ghost Mode toggle */}
       {(showLabelToggle || showGhostToggle) && !state.gameEnded && (
+        <>
         <div className="board-label-toggle-wrap">
           {showLabelToggle && (
             <button
@@ -928,18 +940,46 @@ export function Board({
             </button>
           )}
           {showGhostToggle && (
-            <button
-              type="button"
-              className={['board-label-toggle', 'board-ghost-toggle', ghostModeActive ? 'ghost-on' : 'ghost-off'].filter(Boolean).join(' ')}
-              onClick={onGhostModeToggle}
-              aria-pressed={ghostModeActive}
-              title="Ghost Mode: show your past moves at this position"
-            >
-              <span className="board-label-toggle-dot" />
-              {ghostModeActive ? 'GHOST ON' : 'GHOST OFF'}
-            </button>
+            proGhostEnabled ? (
+              <button
+                type="button"
+                className={['board-label-toggle', 'board-ghost-toggle', ghostModeActive ? 'ghost-on' : 'ghost-off'].filter(Boolean).join(' ')}
+                onClick={onGhostModeToggle}
+                aria-pressed={ghostModeActive}
+                title="Ghost Mode: show your past moves at this position"
+              >
+                <span className="board-label-toggle-dot" />
+                {ghostModeActive ? 'GHOST ON' : 'GHOST OFF'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="board-label-toggle board-ghost-toggle ghost-off ghost-pro-locked"
+                onClick={() => setShowGhostProNotice(v => !v)}
+                aria-pressed={false}
+                title="Ghost Mode (Pro only)"
+              >
+                <span className="board-label-toggle-dot" />
+                GHOST
+                <span className="ghost-pro-badge">{ghostProBadge}</span>
+              </button>
+            )
           )}
         </div>
+        {/* Ghost Pro upgrade notice (non-Pro only) */}
+        {showGhostToggle && !proGhostEnabled && showGhostProNotice && (
+          <div className="ghost-pro-notice">
+            <div className="ghost-pro-notice-title">{ghostProOnlyTitle ?? 'Ghost (Pro Only)'}</div>
+            <div className="ghost-pro-notice-text">{ghostProOnlyText ?? 'Ghost is a Pro feature. Upgrade to Pro to view suggested moves based on past match data.'}</div>
+            <a
+              href="/pricing.html"
+              className="ghost-pro-notice-cta"
+            >
+              {ghostProUpgradeCta ?? 'View Pro features'}
+            </a>
+          </div>
+        )}
+        </>
       )}
       {/* Label toggle when game ended (no Ghost toggle) */}
       {showLabelToggle && state.gameEnded && (
