@@ -919,8 +919,8 @@ export const T = {
     arenaCurrent: '(現在)',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
-    labelGuideBlackText: 'ラベルは全員共通の座標名です。先手視点では、GATE 1、4が遠側、7【10が近側に見えます。棋譜もこの共通座標で記録されます。',
-    labelGuideWhiteText: 'ラベルは全員共通の座標名です。後手視点では、GATE 7【10が遠側、1、4が近側に見えます。棋譜もこの共通座標で記録されます。'
+    labelGuideBlackText: 'GATE番号は左上から時計周りに1→12。POSITION番号は左から右、上から下の順でA→M。（棋譜には打ち手が番号で記載されます）',
+    labelGuideWhiteText: 'GATE番号は右下から時計周りに1→12。POSITION番号は右から左、下から上の順でA→M。（棋譜には打ち手が番号で記載されます）'
 
   },
 
