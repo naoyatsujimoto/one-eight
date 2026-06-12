@@ -184,41 +184,41 @@
   </header>
 
   <main>
-    <div class="eyebrow">Pro Membership</div>
-    <h1>Play deeper.</h1>
-    <p class="lead">ONE EIGHT Pro unlocks analytical tools and competitive features built for players who want to improve.</p>
+    <div class="eyebrow" data-i18n="eyebrow">Pro Membership</div>
+    <h1 data-i18n="heroTitle">Play deeper.</h1>
+    <p class="lead" data-i18n="heroLead">ONE EIGHT Pro unlocks analytical tools and competitive features built for players who want to improve.</p>
 
     <ul class="feature-list">
 
       <li class="feature-item">
         <span class="feature-icon">Ghost</span>
         <div class="feature-body">
-          <p class="feature-name">Ghost Analysis</p>
-          <p class="feature-desc">See the strongest moves the engine considered at each point in the game. Available during CPU matches and online play.</p>
+          <p class="feature-name" data-i18n="ghostName">Ghost Analysis</p>
+          <p class="feature-desc" data-i18n="ghostDesc">See the strongest moves the engine considered at each point in the game. Available during CPU matches and online play.</p>
         </div>
       </li>
 
       <li class="feature-item">
         <span class="feature-icon">Postmortem</span>
         <div class="feature-body">
-          <p class="feature-name">Postmortem Candidate Moves</p>
-          <p class="feature-desc">After any game, review the engine's top candidate moves at every turn. Understand where your choices diverged from optimal play.</p>
+          <p class="feature-name" data-i18n="postmortemName">Postmortem Candidate Moves</p>
+          <p class="feature-desc" data-i18n="postmortemDesc">After any game, review the engine's top candidate moves at every turn. Understand where your choices diverged from optimal play.</p>
         </div>
       </li>
 
       <li class="feature-item">
         <span class="feature-icon">History</span>
         <div class="feature-body">
-          <p class="feature-name">Full Game History</p>
-          <p class="feature-desc">Access your complete game archive. Free accounts see the most recent games only.</p>
+          <p class="feature-name" data-i18n="historyName">Full Game History</p>
+          <p class="feature-desc" data-i18n="historyDesc">Access your complete game archive. Free accounts see the most recent games only.</p>
         </div>
       </li>
 
       <li class="feature-item">
         <span class="feature-icon">More</span>
         <div class="feature-body">
-          <p class="feature-name">Priority Access</p>
-          <p class="feature-desc">Pro members get early access to new competitive features as the game evolves.</p>
+          <p class="feature-name" data-i18n="arenaName">Official Arena</p>
+          <p class="feature-desc" data-i18n="arenaDesc">Join the official arena, exclusive to Pro members. Compete and earn your ranking.</p>
         </div>
       </li>
 
@@ -226,8 +226,8 @@
 
     <div class="cta-block">
       <div class="cta-price">$14.99 <span style="font-size:16px;color:var(--ink-3)">/mo</span></div>
-      <p class="cta-note">Billed monthly · Cancel anytime</p>
-      <a class="cta-btn" href="/pricing.html">See Pricing &amp; Subscribe →</a>
+      <p class="cta-note" data-i18n="ctaNote">Billed monthly · Cancel anytime</p>
+      <a class="cta-btn" href="/pricing.html" data-i18n="ctaBtn">See Pricing &amp; Subscribe →</a>
     </div>
   </main>
 
@@ -239,5 +239,76 @@
     <a href="/refund.html">Refund Policy</a>
     <a href="mailto:contact@oneeightgame.com">Contact</a>
   </footer>
+
+  <script src="/legal-i18n.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Pro page i18n dictionary ──────────────────────────────────────
+      var proPageI18n = {
+        en: {
+          eyebrow:       'Pro Membership',
+          heroTitle:     'Play deeper.',
+          heroLead:      'ONE EIGHT Pro unlocks analytical tools and competitive features built for players who want to improve.',
+          ghostName:     'Ghost Analysis',
+          ghostDesc:     'See the strongest moves the engine considered at each point in the game. Available during CPU matches and online play.',
+          postmortemName:'Postmortem Candidate Moves',
+          postmortemDesc:'After any game, review the engine\'s top candidate moves at every turn. Understand where your choices diverged from optimal play.',
+          historyName:   'Full Game History',
+          historyDesc:   'Access your complete game archive. Free accounts see the most recent games only.',
+          arenaName:     'Official Arena',
+          arenaDesc:     'Join the official arena, exclusive to Pro members. Compete and earn your ranking.',
+          ctaNote:       'Billed monthly · Cancel anytime',
+          ctaBtn:        'See Pricing \u0026 Subscribe \u2192'
+        },
+        ja: {
+          eyebrow:       'Pro メンバーシップ',
+          heroTitle:     'ONE EIGHT Pro',
+          heroLead:      'Proでは、Ghost、Postmortem、公式アリーナなど、対局をより深く楽しむための機能を利用できます。',
+          ghostName:     'Ghost Analysis',
+          ghostDesc:     '過去の対局データにもとづいて、候補手を確認できます。CPU対局・オンライン対局で利用可能です。',
+          postmortemName:'Postmortem Candidate Moves',
+          postmortemDesc:'対局後に局面を振り返り、次の一手を検討できます。各手番でのエンジン最善候補を確認できます。',
+          historyName:   '全対局履歴',
+          historyDesc:   '過去の全対局を閲覧できます。無料アカウントでは直近の対局のみ表示されます。',
+          arenaName:     '公式アリーナ',
+          arenaDesc:     'Proユーザー限定の公式アリーナに参加できます。ランキングに挑戦しましょう。',
+          ctaNote:       '月額払い・いつでもキャンセル可',
+          ctaBtn:        'Proを開始する \u2192'
+        }
+      };
+
+      var SUPPORTED = ['en', 'ja'];
+
+      function getCurrentLang() {
+        var stored;
+        try { stored = localStorage.getItem('one8_lang'); } catch (e) {}
+        if (stored && SUPPORTED.indexOf(stored) !== -1) return stored;
+        var nav = (navigator.language || '').toLowerCase();
+        return nav.startsWith('ja') ? 'ja' : 'en';
+      }
+
+      function applyI18n() {
+        var lang = getCurrentLang();
+        var dict = proPageI18n[SUPPORTED.indexOf(lang) !== -1 ? lang : 'en'];
+        var elems = document.querySelectorAll('[data-i18n]');
+        for (var i = 0; i < elems.length; i++) {
+          var key = elems[i].getAttribute('data-i18n');
+          if (dict[key] !== undefined) {
+            elems[i].textContent = dict[key];
+          }
+        }
+        // Update html[lang] attribute
+        document.documentElement.lang = lang;
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyI18n);
+      } else {
+        applyI18n();
+      }
+    })();
+  </script>
 </body>
 </html>
