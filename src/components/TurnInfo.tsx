@@ -110,6 +110,11 @@ export function TurnInfo({
             />
           </div>
         )}
+        {phase !== 'finished' && (
+          <p className="turn-guide-label-caption">
+            {perspective === 'white' ? t.labelGuideWhiteText : t.labelGuideBlackText}
+          </p>
+        )}
 
         {timerConfig && timerConfig.mode !== 'none' && (
           <div className="timer-panel">

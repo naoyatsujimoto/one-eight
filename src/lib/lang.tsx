@@ -454,6 +454,10 @@ export const T = {
     arenaName: 'Name',
     arenaWin: 'W: ',
     arenaCurrent: '(current)',
+
+    // Label guide captions
+    labelGuideBlackText: 'Gate numbers run clockwise from the upper left, 1→12. Position labels run left to right, top to bottom, A→M. Move records use these labels.',
+    labelGuideWhiteText: 'Gate numbers run clockwise from the lower right, 1→12. Position labels run right to left, bottom to top, A→M. Move records use these labels.',
   },
 
 
@@ -906,6 +910,10 @@ export const T = {
     arenaWin: '勝: ',
     arenaCurrent: '(現在)',
 
+    // Label guide captions
+    labelGuideBlackText: 'GATE番号は左上から時計周りに1→12。POSITION番号は左から右、上から下の順でA→M。（棋譜には打ち手が番号で記載されます）',
+    labelGuideWhiteText: 'GATE番号は右下から時計周りに1→12。POSITION番号は右から左、下から上の順でA→M。（棋譜には打ち手が番号で記載されます）',
+
   },
 
 
@@ -1320,6 +1328,10 @@ export type Translations = {
   arenaName: string;
   arenaWin: string;
   arenaCurrent: string;
+
+  // Label guide captions
+  labelGuideBlackText: string;
+  labelGuideWhiteText: string;
 };
 
 

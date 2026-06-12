@@ -3078,3 +3078,12 @@ ol { padding-left: 20px; }
   height: auto;
   display: block;
 }
+
+.turn-guide-label-caption {
+  margin: 6px 0 0;
+  max-width: 420px;
+  color: rgba(25, 25, 31, 0.62);
+  font-size: 11px;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+}
