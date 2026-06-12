@@ -27,7 +27,7 @@ function timerClass(ms: number): string {
 
 export function TurnInfo({
   state, modeLabel, buildState, onSkip, onClear,
-  timerConfig, playerTimers, currentMoveRemainingMs,
+  timerConfig, playerTimers, currentMoveRemainingMs, perspective,
 }: {
   state: GameState;
   modeLabel?: string;
@@ -37,6 +37,7 @@ export function TurnInfo({
   timerConfig?: TimerConfig | null;
   playerTimers?: { black: number; white: number } | null;
   currentMoveRemainingMs?: number | null;
+  perspective?: 'black' | 'white';
 }) {
   const { t } = useLang();
   const phase = derivePhase(state);
@@ -100,6 +101,15 @@ export function TurnInfo({
           )}
         </div>
         <div className="phase-hint-text">{hint}</div>
+
+        {phase !== 'finished' && (
+          <div className="turn-guide-label-diagram">
+            <img
+              src={`/label_guide_${perspective === 'white' ? 'white' : 'black'}.svg`}
+              alt="label guide"
+            />
+          </div>
+        )}
 
         {timerConfig && timerConfig.mode !== 'none' && (
           <div className="timer-panel">

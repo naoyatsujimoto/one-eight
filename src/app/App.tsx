@@ -1119,6 +1119,11 @@ export default function App() {
             timerConfig={state.timerConfig}
             playerTimers={playerTimers}
             currentMoveRemainingMs={currentMoveRemainingMs}
+            perspective={
+              state.cpuPlayer !== null
+                ? (humanColor ?? state.currentPlayer)
+                : state.currentPlayer
+            }
           />
           <HowToPlay />
           <ImportRecord onImport={handleImport} />

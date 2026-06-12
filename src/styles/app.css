@@ -3064,3 +3064,17 @@ ol { padding-left: 20px; }
     padding: 0;
   }
 }
+
+/* Label guide diagram in TurnInfo */
+.turn-guide-label-diagram {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.turn-guide-label-diagram img {
+  width: min(58vw, 260px);
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

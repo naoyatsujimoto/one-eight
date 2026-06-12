@@ -447,6 +447,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
             buildState={buildState}
             onSkip={handleSkip}
             onClear={handleClearSelection}
+            perspective={myColor === 'white' ? 'white' : 'black'}
           />
         </aside>
       </main>
