@@ -491,26 +491,17 @@ const DEBUG_GATES =
 
 const BOARD_POSITIONS: PositionId[] = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
 
-// ── White-perspective label remapping ────────────────────────────────────────
-// When myColor === 'white', displayed labels are remapped so that:
-//   Position labels (L→R, T→B): M,L,K,J,I,H,G,F,E,D,C,B,A
-//   Gate labels (TL clockwise): 7,8,9,10,11,12,1,2,3,4,5,6
+// ── Option C: Labels are always canonical. Board rotates 180° for white. ────
+// Position labels and Gate labels are NEVER remapped.
+// White-perspective is achieved by rotating the entire board-inner 180°.
+// Label text elements are counter-rotated so they remain readable.
 
-const WHITE_POSITION_LABEL: Record<PositionId, PositionId> = {
-  A: 'M', B: 'L', C: 'K',
-  D: 'J', E: 'I', F: 'H',
-  G: 'G',
-  H: 'F', I: 'E', J: 'D',
-  K: 'C', L: 'B', M: 'A',
-};
-
-function getDisplayPositionLabel(id: PositionId, perspective: 'black' | 'white'): PositionId {
-  return perspective === 'white' ? WHITE_POSITION_LABEL[id] : id;
+function getDisplayPositionLabel(id: PositionId): PositionId {
+  return id;
 }
 
-function getDisplayGateLabel(gateId: GateId, perspective: 'black' | 'white'): number {
-  if (perspective !== 'white') return gateId;
-  return ((gateId - 1 + 6) % 12) + 1;
+function getDisplayGateLabel(gateId: GateId): number {
+  return gateId;
 }
 
 const POSITION_COORDS: Record<PositionId, { left: number; top: number }> = {
@@ -787,7 +778,10 @@ export function Board({
     <section className="board-section">
 
       <div className="board-inner-scaler" ref={scalerRef}>
-      <div className={['board-inner', showLabels ? '' : 'labels-hidden'].filter(Boolean).join(' ')} ref={containerRef}>
+      <div
+        className={['board-inner', showLabels ? '' : 'labels-hidden', labelPerspective === 'white' ? 'board-inner-rotated' : ''].filter(Boolean).join(' ')}
+        ref={containerRef}
+      >
         {/* Octagonal board outline */}
         <svg className="board-octagon-svg" aria-hidden="true">
           <defs>
@@ -870,7 +864,7 @@ export function Board({
                 className="gate-card-id"
                 style={{ position: 'absolute', left: labelOffset.left, top: labelOffset.top }}
               >
-                {getDisplayGateLabel(gateId, labelPerspective)}
+                {getDisplayGateLabel(gateId)}
               </div>
             </div>
           );
@@ -910,7 +904,7 @@ export function Board({
                   top: coord.top,
                 }}
               >
-                <span className="pos-id">{getDisplayPositionLabel(id, labelPerspective)}</span>
+                <span className="pos-id">{getDisplayPositionLabel(id)}</span>
                 <OwnerDot owner={displayOwner} isLastOpponentMove={isLastOpponent} ghostOpacity={posGhostOpacity} />
               </button>
             );

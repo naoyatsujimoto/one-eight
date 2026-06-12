@@ -784,6 +784,19 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Option C: White-perspective board rotation */
+/* The entire board is physically rotated 180°. Labels counter-rotate to remain readable. */
+.board-inner-rotated {
+  transform: rotate(180deg);
+  transform-origin: center center;
+}
+.board-inner-rotated .pos-id,
+.board-inner-rotated .gate-card-id {
+  display: inline-block;
+  transform: rotate(180deg);
+  transform-origin: center center;
+}
+
 /* Octagonal board outline SVG */
 .board-octagon-svg {
   position: absolute;
