@@ -89,9 +89,17 @@ class PostmortemWorkerManager {
     const current = this.getStatus(gameId)
     if (current.status === 'queued' || current.status === 'running') return
 
+    console.log('[PM/manager] analyze start', {
+      gameId,
+      historyLength: history.length,
+      queued: this.queue.length,
+      running: this._runningId !== null ? 1 : 0,
+    })
+
     // キャッシュヒット → 即 done
     const cached = loadPostmortemCache(gameId)
     if (cached) {
+      console.log('[PM/manager] cache hit', { gameId })
       this.setJob(gameId, { status: 'done', result: cached, history })
       return
     }
@@ -120,6 +128,14 @@ class PostmortemWorkerManager {
     )
     this.worker = worker
 
+    const workerStartTime = performance.now()
+    console.log('[PM/manager] worker start', {
+      gameId: job.gameId,
+      historyLength: job.history.length,
+      queued: this.queue.length,
+      running: 1,
+    })
+
     const finish = () => {
       this.worker = null
       this._runningId = null
@@ -127,7 +143,9 @@ class PostmortemWorkerManager {
     }
 
     worker.addEventListener('message', (e: MessageEvent<PostmortemWorkerResponse>) => {
+      const elapsedMs = Math.round(performance.now() - workerStartTime)
       if (e.data.type === 'done') {
+        console.log('[PM/manager] worker done', { gameId: job.gameId, elapsedMs })
         savePostmortemCache(job.gameId, e.data.result)
         this.setJob(job.gameId, {
           status: 'done',
@@ -135,6 +153,7 @@ class PostmortemWorkerManager {
           history: job.history,
         })
       } else {
+        console.log('[PM/manager] worker error', { gameId: job.gameId, error: e.data.message })
         this.setJob(job.gameId, {
           status: 'error',
           message: e.data.message,
@@ -146,6 +165,8 @@ class PostmortemWorkerManager {
     })
 
     worker.addEventListener('error', (err) => {
+      const elapsedMs = Math.round(performance.now() - workerStartTime)
+      console.log('[PM/manager] worker error', { gameId: job.gameId, error: err.message ?? 'Worker error', elapsedMs })
       this.setJob(job.gameId, {
         status: 'error',
         message: err.message ?? 'Worker error',

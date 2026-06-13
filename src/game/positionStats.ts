@@ -70,6 +70,7 @@ export async function fetchPositionWinRates(
   // 重複除去
   const uniqueHashes = [...new Set(hashes)];
 
+  const _t0_position = performance.now();
   const { data, error } = await supabase
     .rpc('get_position_win_rates', {
       hashes: uniqueHashes,
@@ -77,6 +78,7 @@ export async function fetchPositionWinRates(
     });
 
   if (error) {
+    console.error('[PM/supabase] fetchPositionWinRates error', { elapsedMs: Math.round(performance.now() - _t0_position), error: error.message });
     console.warn('[positionStats] RPC error:', error.message);
     return new Map();
   }
@@ -112,6 +114,7 @@ export async function fetchPositionWinRates(
     });
   }
 
+  console.log('[PM/supabase] fetchPositionWinRates done', { elapsedMs: Math.round(performance.now() - _t0_position), count: result.size });
   return result;
 }
 
@@ -156,6 +159,7 @@ export async function fetchSymmetryGroupWinRates(
 
   const uniqueIds = [...new Set(groupIds)];
 
+  const _t0_symmetry = performance.now();
   const { data, error } = await supabase
     .rpc('get_symmetry_group_win_rates', {
       group_ids: uniqueIds,
@@ -163,6 +167,7 @@ export async function fetchSymmetryGroupWinRates(
     });
 
   if (error) {
+    console.error('[PM/supabase] fetchSymmetryGroupWinRates error', { elapsedMs: Math.round(performance.now() - _t0_symmetry), error: error.message });
     console.warn('[positionStats] symmetry group RPC error:', error.message);
     return new Map();
   }
@@ -189,6 +194,7 @@ export async function fetchSymmetryGroupWinRates(
     });
   }
 
+  console.log('[PM/supabase] fetchSymmetryGroupWinRates done', { elapsedMs: Math.round(performance.now() - _t0_symmetry), count: result.size });
   return result;
 }
 
@@ -275,6 +281,7 @@ export async function fetchMediumPatternWinRates(
     });
 
     if (error) {
+      console.error('[PM/supabase] fetchMediumPatternWinRates error', { error: error.message });
       console.warn('[positionStats] medium_pattern batch RPC error:', error.message);
       return new Map();
     }
@@ -283,8 +290,10 @@ export async function fetchMediumPatternWinRates(
     for (const row of (data ?? []) as MediumPatternWinRateRow[]) {
       result.set(row.medium_pattern_id, row);
     }
+    console.log('[PM/supabase] fetchMediumPatternWinRates done', { count: result.size });
     return result;
-  } catch {
+  } catch (err) {
+    console.error('[PM/supabase] fetchMediumPatternWinRates exception', { error: err });
     return new Map();
   }
 }
@@ -328,6 +337,7 @@ export async function fetchSimMediumPatternWinRates(
       .gte('total', minTotal);
 
     if (error) {
+      console.error('[PM/supabase] fetchSimMediumPatternWinRates error', { simPolicy, error: error.message });
       console.warn('[positionStats] sim_medium_pattern fetch error:', error.message);
       return new Map();
     }
@@ -347,8 +357,10 @@ export async function fetchSimMediumPatternWinRates(
         win_rate_black: total > 0 ? Math.round((wins_black / total) * 10000) / 100 : null,
       });
     }
+    console.log('[PM/supabase] fetchSimMediumPatternWinRates done', { simPolicy, count: result.size });
     return result;
-  } catch {
+  } catch (err) {
+    console.error('[PM/supabase] fetchSimMediumPatternWinRates exception', { simPolicy, error: err });
     return new Map();
   }
 }
@@ -387,6 +399,7 @@ export async function fetchSimPositionOnlyWinRates(
     .eq('sim_policy', simPolicy)
     .gte('total', minTotal);
   if (error) {
+    console.error('[PM/supabase] fetchSimPositionOnlyWinRates error', { simPolicy, error: error.message });
     console.warn('[positionStats] sim_position_only fetch error:', error.message);
     return new Map();
   }
@@ -399,6 +412,7 @@ export async function fetchSimPositionOnlyWinRates(
       win_rate_white: total > 0 ? row.wins_white / total : 0.5,
     });
   }
+  console.log('[PM/supabase] fetchSimPositionOnlyWinRates done', { simPolicy, count: result.size });
   return result;
 }
 

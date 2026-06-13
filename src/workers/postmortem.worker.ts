@@ -17,10 +17,20 @@ export type PostmortemWorkerResponse =
 
 self.addEventListener('message', (e: MessageEvent<PostmortemWorkerRequest>) => {
   if (e.data.type === 'run') {
+    const t0 = performance.now()
     try {
       const result = runPostmortem(e.data.history, e.data.humanColor)
+      const elapsedMs = Math.round(performance.now() - t0)
+      console.log('[PM/worker] runPostmortem done', {
+        elapsedMs,
+        historyLength: e.data.history.length,
+        humanColor: e.data.humanColor,
+        rows: result.rows.length,
+      })
       self.postMessage({ type: 'done', result } satisfies PostmortemWorkerResponse)
     } catch (err) {
+      const elapsedMs = Math.round(performance.now() - t0)
+      console.error('[PM/worker] runPostmortem error', { elapsedMs, error: err })
       self.postMessage({
         type: 'error',
         message: err instanceof Error ? err.message : String(err),

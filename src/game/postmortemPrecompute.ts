@@ -46,20 +46,39 @@ export function schedulePostmortemPrecompute(gameId: string, history: MoveRecord
 
   const doCompute = async () => {
     // race guard: 別タブや別呼び出しで既に計算済みの場合はスキップ
-    if (loadPostmortemCache(gameId)) return;
+    if (loadPostmortemCache(gameId)) {
+      console.log('[PM/precompute] cache hit', { gameId });
+      return;
+    }
+    console.log('[PM/precompute] start', { gameId, historyLength: history.length });
     try {
       // キャンセルチェック付きの非同期版を使用（UI スレッドをブロックしない）
+      const t0Basic = performance.now();
       const base = await runPostmortemAsync(history, () => cancelledGames.has(gameId));
-      if (cancelledGames.has(gameId)) return;
+      if (cancelledGames.has(gameId)) {
+        console.log('[PM/precompute] cancelled', { gameId });
+        return;
+      }
+      console.log('[PM/precompute] basic done', { elapsedMs: Math.round(performance.now() - t0Basic) });
       savePostmortemCache(gameId, base);
       // 統計（enrichPostmortemWithStats）は非同期で追加し、完了後に上書き保存
+      const t0Enrich = performance.now();
       enrichPostmortemWithStats(base, history)
         .then(enriched => {
-          if (!cancelledGames.has(gameId)) savePostmortemCache(gameId, enriched);
+          if (!cancelledGames.has(gameId)) {
+            console.log('[PM/precompute] enrich done', { elapsedMs: Math.round(performance.now() - t0Enrich) });
+            savePostmortemCache(gameId, enriched);
+            console.log('[PM/precompute] cache save', { gameId });
+          } else {
+            console.log('[PM/precompute] cancelled', { gameId });
+          }
         })
-        .catch(() => {/* silent: 統計失敗時は minimax 結果のみで表示 */});
-    } catch {
+        .catch((err) => {
+          console.error('[PM/precompute] enrich error', { gameId, error: err });
+        });
+    } catch (err) {
       // 事前計算失敗 → cache なしのまま PostmortemModal がフォールバック実行する
+      console.error('[PM/precompute] basic error', { gameId, error: err });
     }
   };
 

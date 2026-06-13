@@ -702,6 +702,9 @@ export async function enrichPostmortemWithStats(
   result: PostmortemResult,
   history: MoveRecord[],
 ): Promise<PostmortemResult> {
+  const t0Enrich = performance.now();
+  console.log('[PM/enrich] start', { historyLength: history.length, rows: result.rows.length });
+
   // 各「局面ID」を收集
   const hashes = history
     .map(r => r.canonical_hash)
@@ -736,9 +739,17 @@ export async function enrichPostmortemWithStats(
     positionOnlyIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
   )];
 
+  console.log('[PM/enrich] hash collect done', {
+    hashes: hashes.length,
+    groupIds: groupIds.length,
+    mediumPatternIds: validMediumPatternIds.length,
+    positionOnlyIds: validPositionOnlyIds.length,
+  });
+
   if (hashes.length === 0 && groupIds.length === 0 && validMediumPatternIds.length === 0) return result;
 
   // 一括フェッチ（並列実行）
+  const tFetch0 = performance.now();
   const [
     canonicalMap,
     symmetryMap,
@@ -784,6 +795,15 @@ export async function enrichPostmortemWithStats(
         ? fetchSimPositionOnlyWinRates(validPositionOnlyIds, 100, 'easy_vs_easy').catch(() => new Map())
         : Promise.resolve(new Map<string, SimPositionOnlyWinRateRow>()),
     ]);
+
+  console.log('[PM/enrich] fetchAll done', { elapsedMs: Math.round(performance.now() - tFetch0) });
+  console.log('[PM/enrich] fetchPositionWinRates done', { elapsedMs: '(parallel)', count: canonicalMap.size });
+  console.log('[PM/enrich] fetchSymmetryGroupWinRates done', { elapsedMs: '(parallel)', count: symmetryMap.size });
+  console.log('[PM/enrich] fetchMediumPatternWinRates done', { elapsedMs: '(parallel)', count: mediumPatternMap.size });
+  console.log('[PM/enrich] fetchSimMediumPatternWinRates fh done', { elapsedMs: '(parallel)', count: fhSimMediumPatternMap.size });
+  console.log('[PM/enrich] fetchSimPositionOnlyWinRates fh done', { elapsedMs: '(parallel)', count: fhSimPositionOnlyMap.size });
+  console.log('[PM/enrich] fetchSimMediumPatternWinRates easy done', { elapsedMs: '(parallel)', count: simMediumPatternMap.size });
+  console.log('[PM/enrich] fetchSimPositionOnlyWinRates easy done', { elapsedMs: '(parallel)', count: simPositionOnlyMap.size });
 
   // fallback chain で各行を enrich
   const enrichedRows = result.rows.map((row, i) => {
@@ -952,6 +972,8 @@ export async function enrichPostmortemWithStats(
   // resolved WP 系列から DECISIVE MOVE を再計算
   const resolvedSeries = buildResolvedWPSeries(safeRows, result.wpInitial);
   const newDecisiveCrossing = computeDecisiveMoveFromSwing(safeRows, resolvedSeries);
+
+  console.log('[PM/enrich] done', { elapsedMs: Math.round(performance.now() - t0Enrich), rows: safeRows.length });
 
   return {
     ...result,
