@@ -259,9 +259,13 @@ export type PostmortemMetric =
       label: 'slow row'
       index: number
       moveNumber: number
-      totalMs: number
+      applyMs: number
+      evaluateMs: number
+      enumerateMs: number
       simulateTotalMs: number
+      simulateCount: number
       strategyMs: number
+      totalMs: number
     }
   | {
       warn?: false
@@ -605,9 +609,13 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
         label: 'slow row',
         index: idx,
         moveNumber,
-        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
         simulateTotalMs,
+        simulateCount,
         strategyMs,
+        totalMs,
       };
       console.warn('[PM/run] slow row', slowMetric);
       metricSink?.(slowMetric);
@@ -836,12 +844,13 @@ export async function runPostmortemAsync(
       console.warn('[PM/run] slow row', {
         index: idx,
         moveNumber,
-        totalMs,
         applyMs,
         evaluateMs,
         enumerateMs,
         simulateTotalMs,
+        simulateCount,
         strategyMs,
+        totalMs,
       });
     }
     if (totalMs > 1000) {

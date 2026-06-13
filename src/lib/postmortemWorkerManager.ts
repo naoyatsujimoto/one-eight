@@ -6,7 +6,7 @@
 // ・コンポーネントのマウント/アンマウントに一切依存しない
 // ・STATS画面を離れても Worker は継続動作する
 
-import type { PostmortemResult } from '../game/postmortem'
+import type { PostmortemResult, PostmortemMetric } from '../game/postmortem'
 import type { MoveRecord } from '../game/types'
 import { savePostmortemCache, loadPostmortemCache } from '../game/storage'
 import type { PostmortemWorkerRequest, PostmortemWorkerResponse } from '../workers/postmortem.worker'
@@ -149,7 +149,16 @@ class PostmortemWorkerManager {
         return
       }
       if (e.data.type === 'metric-warn') {
-        console.warn('[PM/run]', e.data.payload)
+        const p: PostmortemMetric = e.data.payload
+        if (p.label === 'slow row') {
+          const s = p as Extract<PostmortemMetric, { label: 'slow row' }>
+          console.warn(
+            `[PM/run] slow row index=${s.index} move=${s.moveNumber} total=${s.totalMs}ms ` +
+            `apply=${s.applyMs}ms evaluate=${s.evaluateMs}ms enumerate=${s.enumerateMs}ms ` +
+            `simulate=${s.simulateTotalMs}ms count=${s.simulateCount} strategy=${s.strategyMs}ms`
+          )
+        }
+        console.warn('[PM/run]', p)
         return
       }
 
