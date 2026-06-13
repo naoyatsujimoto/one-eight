@@ -52,13 +52,11 @@ export const T = {
     hintSelectiveSecond: (gate: number) => `Selective: Gate ${gate} selected — pick second`,
     hintQuadPick: 'Quad — pick small pockets',
     hintQuadConfirm: (n: number, max: number) => `Quad: ${n}/${max} — Confirm to commit`,
-    actions: 'Actions',
     confirm: 'Confirm',
     pass: 'Pass',
     clear: 'Clear',
     buildAvailable: 'Build available — pass not allowed',
     rulesTitle: 'Rules',
-    buildTypesTitle: 'Build Types',
     rulesBody: [
       { heading: '1. Winning', body: 'The player who holds more of the 13 Positions at the end of the game wins. If both players hold the same number, the game is a draw.' },
       { heading: '2. Position', body: 'The board has 13 Positions labeled A–M. A player holds a Position by placing their Symbol on it.' },
@@ -74,12 +72,6 @@ export const T = {
       { heading: '12. Game End', body: 'The game ends when no further Build up is possible. The winner is determined by rule 1.' },
       { heading: '13. Game Record', body: 'Notation uses Position and Build up content.\nG,m(7): select Position G, Massive on Gate 7\nM,s(6,8): select Position M, Selective on Gates 6 and 8\nA,q: select Position A, Quad\nP: Auto Pass\nPosition names and Gate numbers use shared coordinates for both players.' },
     ],
-    massive: 'Massive',
-    massiveDesc: 'Large Asset Slot — click once',
-    selective: 'Selective',
-    selectiveDesc: 'Middle × 2 gates',
-    quad: 'Quad',
-    quadDesc: 'Small × up to 4 gates',
     undo: 'Undo',
     history: 'History',
     stats: 'Stats',
@@ -528,13 +520,11 @@ export const T = {
     hintSelectiveSecond: (gate: number) => `Selective: Gate ${gate} 選択済み — 2つ目を選んでください`,
     hintQuadPick: 'Quad — Small のポケットを選んでください',
     hintQuadConfirm: (n: number, max: number) => `Quad: ${n}/${max} — 確定して配置`,
-    actions: 'アクション',
     confirm: '確定',
     pass: 'パス',
     clear: 'クリア',
     buildAvailable: 'Build 可能 — パスできません',
     rulesTitle: '競技規則',
-    buildTypesTitle: 'Build タイプ',
     rulesBody: [
       { heading: '1. 勝敗', body: '本ゲームは、13個のPositionの保持数を競う。ゲーム終了時、保持しているPosition数が多いプレイヤーを勝者とする。保持数が同数の場合は引き分けとする。' },
       { heading: '2. Position', body: '盤上にはA〜Mの13個のPositionがある。Positionに自分のSymbolを置いているプレイヤーは、そのPositionを保持する。' },
@@ -550,12 +540,6 @@ export const T = {
       { heading: '12. ゲーム終了', body: 'これ以上Build upできない状態になった時点で、ゲームは終了する。勝敗は第1条に従って判定する。' },
       { heading: '13. 棋譜', body: '棋譜は、PositionとBuild upの内容で記録する。\nG,m(7)：Position Gを指定し、Gate 7にMassiveを行った手\nM,s(6,8)：Position Mを指定し、Gate 6と8にSelectiveを行った手\nA,q：Position Aを指定し、Quadを行った手\nP：合法手なしによる自動ターン終了\nPosition名およびGate番号は、先手・後手に共通の座標で記録する。' },
     ],
-    massive: 'Massive',
-    massiveDesc: 'Large Asset Slot — 1回クリック',
-    selective: 'Selective',
-    selectiveDesc: 'Middle × 2 Gate',
-    quad: 'Quad',
-    quadDesc: 'Small × 最大4 Gate',
     undo: '元に戻す',
     history: '手順',
     stats: '戦績',
@@ -979,20 +963,12 @@ export type Translations = {
   hintSelectiveSecond: (gate: number) => string;
   hintQuadPick: string;
   hintQuadConfirm: (n: number, max: number) => string;
-  actions: string;
   confirm: string;
   pass: string;
   clear: string;
   buildAvailable: string;
   rulesTitle: string;
-  buildTypesTitle: string;
   rulesBody: { heading: string; body: string }[];
-  massive: string;
-  massiveDesc: string;
-  selective: string;
-  selectiveDesc: string;
-  quad: string;
-  quadDesc: string;
   undo: string;
   history: string;
   stats: string;

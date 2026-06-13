@@ -145,7 +145,6 @@ export function TurnInfo({
       </div>
 
       <div className="panel-section">
-        <div className="section-eyebrow">{t.actions}</div>
         <div className="actions-row">
           {state.selectedPosition && (
             <button type="button" className="action-btn action-btn-ghost" onClick={onClear}>

@@ -37,15 +37,7 @@ export function HowToPlay() {
         )}
       </div>
 
-      {/* BUILD TYPE section — always visible */}
-      <div className="panel-section">
-        <div className="section-eyebrow">{t.buildTypesTitle}</div>
-        <dl className="rules-list-new">
-          <dt>{t.massive}</dt><dd>{t.massiveDesc}</dd>
-          <dt>{t.selective}</dt><dd>{t.selectiveDesc}</dd>
-          <dt>{t.quad}</dt><dd>{t.quadDesc}</dd>
-        </dl>
-      </div>
+
     </>
   );
 }
