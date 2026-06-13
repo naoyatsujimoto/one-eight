@@ -419,8 +419,16 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
   const wpInitial = winProb(evaluateState(state, 'black', true));
   const rows: PostmortemMoveRow[] = [];
 
-  for (const record of history) {
+  const tRunStart = performance.now();
+  console.log('[PM/run] start', { historyLength: history.length });
+
+  for (let idx = 0; idx < history.length; idx++) {
+    const record = history[idx]!;
     const currentPlayer = record.player;
+    const moveNumber = record.moveNumber;
+
+    const tRowStart = performance.now();
+    console.log('[PM/run] row start', { index: idx, moveNumber });
 
     // humanColor と一致する手番のみ候補手を計算する
     // humanColor が未指定・null の場合は安全側として計算しない
@@ -441,8 +449,8 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
           ? 1 - winProb(evalBest)
           : winProb(evalBest);
         // 実際の手のWP（仮計算: 後で正式に計算）を使って差分を計算するため、後でセット
-        candidateMoves = top3.map((c, idx) => ({
-          rank: idx + 1,
+        candidateMoves = top3.map((c, idx2) => ({
+          rank: idx2 + 1,
           move: shortMove(c.move),
           // candidateMoves.wp は常に Black 視点 WP で統一
           wp: humanColor === 'white'
@@ -453,9 +461,45 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
       }
     }
 
-    // 実際の手を適用
+    // 実際の手を適用（各ステップを個別計測）
+    const tApplyStart = performance.now();
     const next = applyMoveRecord(state, record);
+    const applyMs = Math.round(performance.now() - tApplyStart);
+
+    const tEvalStart = performance.now();
     const evalPlayed = evaluateState(next, 'black', true);
+    const evaluateMs = Math.round(performance.now() - tEvalStart);
+
+    const tEnumStart = performance.now();
+    const legalMovesForLog = enumerateLegalMoves(next, next.currentPlayer);
+    const enumerateMs = Math.round(performance.now() - tEnumStart);
+    const legalMovesCount = legalMovesForLog.length;
+
+    // simulateMove計測（legalMoves全手に対して実行）
+    const tSimStart = performance.now();
+    let simulateCount = 0;
+    for (const mv of legalMovesForLog) {
+      simulateMove(next, next.currentPlayer, mv);
+      simulateCount++;
+    }
+    const simulateTotalMs = Math.round(performance.now() - tSimStart);
+    const simulateAvgMs = simulateCount > 0 ? +(simulateTotalMs / simulateCount).toFixed(2) : 0;
+
+    console.log('[PM/run] simulate summary', {
+      index: idx,
+      moveNumber,
+      legalMovesCount,
+      simulateCount,
+      simulateTotalMs,
+      simulateAvgMs,
+    });
+
+    const tStrategyStart = performance.now();
+    const strategicFlags = detectStrategyFlags(next, currentPlayer);
+    const strategyMs = Math.round(performance.now() - tStrategyStart);
+
+    console.log('[PM/run] strategy done', { index: idx, moveNumber, elapsedMs: strategyMs });
+
     let wpAfter = winProb(evalPlayed);
 
     // 案A: 全合法手が即終局かつ同一結果なら確定WP補正
@@ -493,8 +537,58 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
     const loss = evalBest !== null ? Math.max(0, evalBest - evalPlayed) : null;
     const wpSwing = wpAfterIfBest !== null ? wpAfterIfBest - wpAfter : null;
 
-    // Phase N-4: post-move 局面での戦略パターン検出
-    const strategicFlags = detectStrategyFlags(next, currentPlayer);
+    const totalMs = Math.round(performance.now() - tRowStart);
+
+    console.log('[PM/run] row detail', {
+      index: idx,
+      moveNumber,
+      applyMs,
+      evaluateMs,
+      enumerateMs,
+      simulateTotalMs,
+      simulateCount,
+      strategyMs,
+      totalMs,
+    });
+
+    console.log('[PM/run] row done', { index: idx, moveNumber, elapsedMs: totalMs });
+
+    if (totalMs > 500) {
+      console.warn('[PM/run] slow row', {
+        index: idx,
+        moveNumber,
+        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
+        simulateTotalMs,
+        strategyMs,
+      });
+    }
+    if (totalMs > 1000) {
+      console.warn('[PM/run] slow row >1000ms', {
+        index: idx,
+        moveNumber,
+        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
+        simulateTotalMs,
+        strategyMs,
+      });
+    }
+    if (totalMs > 3000) {
+      console.warn('[PM/run] slow row >3000ms', {
+        index: idx,
+        moveNumber,
+        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
+        simulateTotalMs,
+        strategyMs,
+      });
+    }
 
     rows.push({
       moveNum: record.moveNumber,
@@ -513,6 +607,8 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
 
     state = next;
   }
+
+  console.log('[PM/run] all rows done', { totalMs: Math.round(performance.now() - tRunStart), rowCount: rows.length });
 
   // 50%跨ぎを検出
   const crossings: PostmortemCrossing[] = [];
@@ -572,6 +668,9 @@ export async function runPostmortemAsync(
   const wpInitial = winProb(evaluateState(state, 'black', true));
   const rows: PostmortemMoveRow[] = [];
 
+  const tRunStart = performance.now();
+  console.log('[PM/run] async start', { historyLength: history.length });
+
   for (let idx = 0; idx < history.length; idx++) {
     if (isCancelled?.()) {
       // キャンセルされた場合は中間結果を返す
@@ -580,6 +679,10 @@ export async function runPostmortemAsync(
 
     const record = history[idx]!;
     const currentPlayer = record.player;
+    const moveNumber = record.moveNumber;
+
+    const tRowStart = performance.now();
+    console.log('[PM/run] row start', { index: idx, moveNumber });
 
     // humanColor と一致する手番のみ候補手を計算する
     const isHumanTurn = humanColor != null && currentPlayer === humanColor;
@@ -597,8 +700,8 @@ export async function runPostmortemAsync(
         wpAfterIfBest = humanColor === 'white'
           ? 1 - winProb(evalBest)
           : winProb(evalBest);
-        candidateMoves = top3.map((c, idx) => ({
-          rank: idx + 1,
+        candidateMoves = top3.map((c, idx2) => ({
+          rank: idx2 + 1,
           move: shortMove(c.move),
           wp: humanColor === 'white'
             ? +(1 - winProb(c.evalAfter)).toFixed(4)
@@ -608,8 +711,45 @@ export async function runPostmortemAsync(
       }
     }
 
+    // 各ステップを個別計測
+    const tApplyStart = performance.now();
     const next = applyMoveRecord(state, record);
+    const applyMs = Math.round(performance.now() - tApplyStart);
+
+    const tEvalStart = performance.now();
     const evalPlayed = evaluateState(next, 'black', true);
+    const evaluateMs = Math.round(performance.now() - tEvalStart);
+
+    const tEnumStart = performance.now();
+    const legalMovesForLog = enumerateLegalMoves(next, next.currentPlayer);
+    const enumerateMs = Math.round(performance.now() - tEnumStart);
+    const legalMovesCount = legalMovesForLog.length;
+
+    // simulateMove計測（legalMoves全手に対して実行）
+    const tSimStart = performance.now();
+    let simulateCount = 0;
+    for (const mv of legalMovesForLog) {
+      simulateMove(next, next.currentPlayer, mv);
+      simulateCount++;
+    }
+    const simulateTotalMs = Math.round(performance.now() - tSimStart);
+    const simulateAvgMs = simulateCount > 0 ? +(simulateTotalMs / simulateCount).toFixed(2) : 0;
+
+    console.log('[PM/run] simulate summary', {
+      index: idx,
+      moveNumber,
+      legalMovesCount,
+      simulateCount,
+      simulateTotalMs,
+      simulateAvgMs,
+    });
+
+    const tStrategyStart = performance.now();
+    const strategicFlags = detectStrategyFlags(next, currentPlayer);
+    const strategyMs = Math.round(performance.now() - tStrategyStart);
+
+    console.log('[PM/run] strategy done', { index: idx, moveNumber, elapsedMs: strategyMs });
+
     const wpAfter = winProb(evalPlayed);
 
     if (candidateMoves) {
@@ -621,7 +761,59 @@ export async function runPostmortemAsync(
 
     const loss = evalBest !== null ? Math.max(0, evalBest - evalPlayed) : null;
     const wpSwing = wpAfterIfBest !== null ? wpAfterIfBest - wpAfter : null;
-    const strategicFlags = detectStrategyFlags(next, currentPlayer);
+
+    const totalMs = Math.round(performance.now() - tRowStart);
+
+    console.log('[PM/run] row detail', {
+      index: idx,
+      moveNumber,
+      applyMs,
+      evaluateMs,
+      enumerateMs,
+      simulateTotalMs,
+      simulateCount,
+      strategyMs,
+      totalMs,
+    });
+
+    console.log('[PM/run] row done', { index: idx, moveNumber, elapsedMs: totalMs });
+
+    if (totalMs > 500) {
+      console.warn('[PM/run] slow row', {
+        index: idx,
+        moveNumber,
+        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
+        simulateTotalMs,
+        strategyMs,
+      });
+    }
+    if (totalMs > 1000) {
+      console.warn('[PM/run] slow row >1000ms', {
+        index: idx,
+        moveNumber,
+        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
+        simulateTotalMs,
+        strategyMs,
+      });
+    }
+    if (totalMs > 3000) {
+      console.warn('[PM/run] slow row >3000ms', {
+        index: idx,
+        moveNumber,
+        totalMs,
+        applyMs,
+        evaluateMs,
+        enumerateMs,
+        simulateTotalMs,
+        strategyMs,
+      });
+    }
 
     rows.push({
       moveNum: record.moveNumber,
@@ -643,6 +835,8 @@ export async function runPostmortemAsync(
     // UIスレッドに制御を返す（60fps 維持のため）
     await new Promise<void>(resolve => setTimeout(resolve, 0));
   }
+
+  console.log('[PM/run] async all rows done', { totalMs: Math.round(performance.now() - tRunStart), rowCount: rows.length });
 
   const crossings: PostmortemCrossing[] = [];
   let prevWP = wpInitial;
