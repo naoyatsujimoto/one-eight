@@ -144,20 +144,20 @@ export function TurnInfo({
         )}
       </div>
 
-      <div className="panel-section">
-        <div className="actions-row">
-          {state.selectedPosition && (
+      {state.selectedPosition && (
+        <div className="panel-section">
+          <div className="actions-row">
             <button type="button" className="action-btn action-btn-ghost" onClick={onClear}>
               {t.clear}
             </button>
+          </div>
+          {options?.hasAny === false && (
+            <span style={{fontSize:'11px', color:'#e06c26', marginTop:'6px', display:'block'}}>
+              {t.buildAvailable}
+            </span>
           )}
         </div>
-        {options?.hasAny === false && state.selectedPosition && (
-          <span style={{fontSize:'11px', color:'#e06c26', marginTop:'6px', display:'block'}}>
-            {t.buildAvailable}
-          </span>
-        )}
-      </div>
+      )}
     </>
   );
 }
