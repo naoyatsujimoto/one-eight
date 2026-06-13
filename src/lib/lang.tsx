@@ -57,9 +57,25 @@ export const T = {
     pass: 'Pass',
     clear: 'Clear',
     buildAvailable: 'Build available — pass not allowed',
-    rulesTitle: 'Rules / Build Types',
+    rulesTitle: 'Rules',
+    buildTypesTitle: 'Build Types',
+    rulesBody: [
+      { heading: '1. Winning', body: 'The player who holds more of the 13 Positions at the end of the game wins. If both players hold the same number, the game is a draw.' },
+      { heading: '2. Position', body: 'The board has 13 Positions labeled A–M. A player holds a Position by placing their Symbol on it.' },
+      { heading: '3. Gate', body: 'The board has 12 Gates numbered 1–12 around the perimeter. Each Gate has Slots for Assets.\nLarge Slots: 2 · Middle Slots: 2 · Small Slots: 4' },
+      { heading: '4. Diagonal Gate', body: 'Each Position has 4 diagonally connected Gates called its Diagonal Gates. Build up is only performed on the Diagonal Gates of the specified Position.' },
+      { heading: '5. Turn', body: 'On your turn, select one Position: an empty Position, a capturable opponent Position, or a Build-up-able own Position. If Build up is possible after selecting, it is mandatory. Passing at will is not allowed.' },
+      { heading: '6. Taking an Empty Position', body: 'Select an empty Position to place your Symbol on it, then Build up on its Diagonal Gates.' },
+      { heading: '7. Capturing an Opponent Position', body: 'You may capture an opponent Position when you are dominant in its Diagonal Gates.\n\nCompare the most built-up Gate among the Diagonal Gates. If your Build value there exceeds your opponent\'s, you capture the Position.\n\nIf multiple Gates are tied as most-built, compare all of them. You capture only if you dominate more of those tied Gates than your opponent.' },
+      { heading: '8. Asset Values', body: 'Build values: Small = 1 · Middle = 8 · Large = 64' },
+      { heading: '9. Build Up', body: 'Massive — place 1 Large Asset into one Diagonal Gate.\nSelective — place 1 Middle Asset into each of 2 different Diagonal Gates.\nQuad — place 1 Small Asset into each of the 4 Diagonal Gates.' },
+      { heading: '10. Slot Shortage', body: 'If a Slot is unavailable during Build up, skip that Slot. If at least one Slot is available, place as many Assets as possible.' },
+      { heading: '11. Auto Pass', body: 'If no legal move exists at the start of your turn (no empty Position to take, no opponent Position to capture, no Build up possible), the turn ends automatically and P is recorded in the game record.' },
+      { heading: '12. Game End', body: 'The game ends when no further Build up is possible. The winner is determined by rule 1.' },
+      { heading: '13. Game Record', body: 'Notation uses Position and Build up content.\nG,m(7): select Position G, Massive on Gate 7\nM,s(6,8): select Position M, Selective on Gates 6 and 8\nA,q: select Position A, Quad\nP: Auto Pass\nPosition names and Gate numbers use shared coordinates for both players.' },
+    ],
     massive: 'Massive',
-    massiveDesc: 'Large Asset pocket — click once',
+    massiveDesc: 'Large Asset Slot — click once',
     selective: 'Selective',
     selectiveDesc: 'Middle × 2 gates',
     quad: 'Quad',
@@ -517,9 +533,25 @@ export const T = {
     pass: 'パス',
     clear: 'クリア',
     buildAvailable: 'Build 可能 — パスできません',
-    rulesTitle: 'ルール / Build タイプ',
+    rulesTitle: '競技規則',
+    buildTypesTitle: 'Build タイプ',
+    rulesBody: [
+      { heading: '1. 勝敗', body: '本ゲームは、13個のPositionの保持数を競う。ゲーム終了時、保持しているPosition数が多いプレイヤーを勝者とする。保持数が同数の場合は引き分けとする。' },
+      { heading: '2. Position', body: '盤上にはA〜Mの13個のPositionがある。Positionに自分のSymbolを置いているプレイヤーは、そのPositionを保持する。' },
+      { heading: '3. Gate', body: '盤の外周には1〜12の12個のGateがある。各Gateには、Assetを置くためのSlotがある。\nLarge Slot：2 · Middle Slot：2 · Small Slot：4' },
+      { heading: '4. Diagonal Gate', body: '各Positionには、斜め方向に対応する4つのGateがある。これを、そのPositionのDiagonal Gateとする。Build upは、手番で指定したPositionのDiagonal Gateに対してのみ行う。' },
+      { heading: '5. 手番', body: 'プレイヤーは手番において、Positionを1つ指定する。指定できるPositionは、空きPosition・奪取可能な相手Position・Build up可能な自分Positionのいずれかに限る。Position指定後、Build upが可能な場合、プレイヤーは必ずBuild upを行う。任意のPassは認められない。' },
+      { heading: '6. 空きPositionの取得', body: '空きPositionを指定した場合、そのPositionに自分のSymbolを置く。その後、そのPositionのDiagonal GateにBuild upを行う。' },
+      { heading: '7. 相手Positionの奪取', body: '相手Positionは、そのPositionのDiagonal Gateにおいて自分が優勢である場合に奪取できる。\n\n奪取判定では、対象PositionのDiagonal Gateのうち、最もBuild upされているGateを比較する。そのGateにおける自分のBuild値が相手のBuild値を上回る場合、対象Positionを奪取できる。\n\n最もBuild upされているGateが複数ある場合は、それらすべてを比較する。この場合、自分が優勢なGateの数が相手を上回るときに限り、対象Positionを奪取できる。' },
+      { heading: '8. Assetの価値', body: 'Build値：Small = 1 · Middle = 8 · Large = 64' },
+      { heading: '9. Build up', body: 'Massive — 指定PositionのDiagonal Gateのうち、1つのGateにLargeを1個置く。\nSelective — 指定PositionのDiagonal Gateのうち、異なる2つのGateにMiddleを1個ずつ置く。\nQuad — 指定Positionの4つのDiagonal GateにSmallを1個ずつ置く。' },
+      { heading: '10. Slot不足', body: 'Build up時に置けないSlotがある場合、そのSlotにはAssetを置かない。ただし、置けるSlotがある場合は、置ける分だけAssetを置く。' },
+      { heading: '11. 自動P', body: '手番開始時点で、空きPositionの取得・相手Positionの奪取・自分PositionからのBuild upがすべて不可能な場合、合法手がないものとする。この場合、操作を待たずに自動的にターンを終了し、棋譜にはPと記録する。' },
+      { heading: '12. ゲーム終了', body: 'これ以上Build upできない状態になった時点で、ゲームは終了する。勝敗は第1条に従って判定する。' },
+      { heading: '13. 棋譜', body: '棋譜は、PositionとBuild upの内容で記録する。\nG,m(7)：Position Gを指定し、Gate 7にMassiveを行った手\nM,s(6,8)：Position Mを指定し、Gate 6と8にSelectiveを行った手\nA,q：Position Aを指定し、Quadを行った手\nP：合法手なしによる自動ターン終了\nPosition名およびGate番号は、先手・後手に共通の座標で記録する。' },
+    ],
     massive: 'Massive',
-    massiveDesc: 'Large Asset ポケット — 1回クリック',
+    massiveDesc: 'Large Asset Slot — 1回クリック',
     selective: 'Selective',
     selectiveDesc: 'Middle × 2 Gate',
     quad: 'Quad',
@@ -953,6 +985,8 @@ export type Translations = {
   clear: string;
   buildAvailable: string;
   rulesTitle: string;
+  buildTypesTitle: string;
+  rulesBody: { heading: string; body: string }[];
   massive: string;
   massiveDesc: string;
   selective: string;

@@ -751,6 +751,42 @@ html, body {
   font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
 }
 
+/* ── Rule collapsible toggle ── */
+.rule-toggle-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; background: none; border: none; padding: 0;
+  cursor: pointer; text-align: left;
+}
+.rule-toggle-eyebrow {
+  margin: 0;
+}
+.rule-toggle-icon {
+  font-size: 8px; color: var(--ink-3); margin-left: 6px; flex-shrink: 0;
+}
+
+/* ── Rule body ── */
+.rule-body {
+  margin-top: 12px;
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.rule-article {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.rule-article-heading {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink);
+  font-weight: 600;
+}
+.rule-article-body {
+  font-family: var(--mono);
+  font-size: 10px; line-height: 1.8;
+  color: var(--ink-2);
+}
+
 /* ── Rules ── */
 .rules-list-new {
   font-family: var(--mono); font-size: 10px; line-height: 1.7;
