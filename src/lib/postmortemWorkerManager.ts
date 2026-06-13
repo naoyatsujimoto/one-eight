@@ -143,6 +143,16 @@ class PostmortemWorkerManager {
     }
 
     worker.addEventListener('message', (e: MessageEvent<PostmortemWorkerResponse>) => {
+      // metric / metric-warn は main thread 側で出力（Worker console は Web Inspector に出ない）
+      if (e.data.type === 'metric') {
+        console.log('[PM/run]', e.data.payload)
+        return
+      }
+      if (e.data.type === 'metric-warn') {
+        console.warn('[PM/run]', e.data.payload)
+        return
+      }
+
       const elapsedMs = Math.round(performance.now() - workerStartTime)
       if (e.data.type === 'done') {
         console.log('[PM/manager] worker done', { gameId: job.gameId, elapsedMs })

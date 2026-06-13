@@ -233,6 +233,47 @@ function shortRecord(r: MoveRecord): string {
 
 // ─── 公開型 ───────────────────────────────────────────────────────────────────
 
+/**
+ * runPostmortem 内部計測ログの型。
+ * Worker→main thread 転送に使用する。
+ * warn=true の場合は console.warn で出力する。
+ */
+export type PostmortemMetric =
+  | {
+      warn?: false
+      scope: 'run'
+      label: 'row detail'
+      index: number
+      moveNumber: number
+      applyMs: number
+      evaluateMs: number
+      enumerateMs: number
+      simulateTotalMs: number
+      simulateCount: number
+      strategyMs: number
+      totalMs: number
+    }
+  | {
+      warn: true
+      scope: 'run'
+      label: 'slow row'
+      index: number
+      moveNumber: number
+      totalMs: number
+      simulateTotalMs: number
+      strategyMs: number
+    }
+  | {
+      warn?: false
+      scope: 'run'
+      label: 'all rows done'
+      totalMs: number
+      rowCount: number
+    }
+
+/** metricSink コールバック型 */
+export type PostmortemMetricSink = (metric: PostmortemMetric) => void
+
 /** 候補手1件（top3の1つ） */
 export interface CandidateMove {
   rank: number;          // 1-indexed
@@ -411,7 +452,7 @@ function computeMediumPatternIdsFromHistory(history: MoveRecord[]): (string | un
  *   - 'white': 後手（偶数手）のみ候補手を計算・表示
  *   - null/undefined: 安全側として候補手を計算しない
  */
-export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'white' | null): PostmortemResult {
+export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'white' | null, metricSink?: PostmortemMetricSink): PostmortemResult {
   const DEPTH = 3;
   let state: GameState = createInitialState(null);
   // Black first: currentPlayer は 'black' が初期値
@@ -539,7 +580,9 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
 
     const totalMs = Math.round(performance.now() - tRowStart);
 
-    console.log('[PM/run] row detail', {
+    const rowDetailMetric: PostmortemMetric = {
+      scope: 'run',
+      label: 'row detail',
       index: idx,
       moveNumber,
       applyMs,
@@ -549,21 +592,25 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
       simulateCount,
       strategyMs,
       totalMs,
-    });
+    };
+    console.log('[PM/run] row detail', rowDetailMetric);
+    metricSink?.(rowDetailMetric);
 
     console.log('[PM/run] row done', { index: idx, moveNumber, elapsedMs: totalMs });
 
     if (totalMs > 500) {
-      console.warn('[PM/run] slow row', {
+      const slowMetric: PostmortemMetric = {
+        warn: true,
+        scope: 'run',
+        label: 'slow row',
         index: idx,
         moveNumber,
         totalMs,
-        applyMs,
-        evaluateMs,
-        enumerateMs,
         simulateTotalMs,
         strategyMs,
-      });
+      };
+      console.warn('[PM/run] slow row', slowMetric);
+      metricSink?.(slowMetric);
     }
     if (totalMs > 1000) {
       console.warn('[PM/run] slow row >1000ms', {
@@ -608,7 +655,14 @@ export function runPostmortem(history: MoveRecord[], humanColor?: 'black' | 'whi
     state = next;
   }
 
-  console.log('[PM/run] all rows done', { totalMs: Math.round(performance.now() - tRunStart), rowCount: rows.length });
+  const allRowsDoneMetric: PostmortemMetric = {
+    scope: 'run',
+    label: 'all rows done',
+    totalMs: Math.round(performance.now() - tRunStart),
+    rowCount: rows.length,
+  };
+  console.log('[PM/run] all rows done', allRowsDoneMetric);
+  metricSink?.(allRowsDoneMetric);
 
   // 50%跨ぎを検出
   const crossings: PostmortemCrossing[] = [];

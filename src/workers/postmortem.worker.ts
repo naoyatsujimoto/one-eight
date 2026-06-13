@@ -1,7 +1,7 @@
 // src/workers/postmortem.worker.ts
 import { runPostmortem } from '../game/postmortem'
 import type { MoveRecord } from '../game/types'
-import type { PostmortemResult } from '../game/postmortem'
+import type { PostmortemResult, PostmortemMetric } from '../game/postmortem'
 
 // Worker へのメッセージ型
 export interface PostmortemWorkerRequest {
@@ -14,12 +14,20 @@ export interface PostmortemWorkerRequest {
 export type PostmortemWorkerResponse =
   | { type: 'done'; result: PostmortemResult }
   | { type: 'error'; message: string }
+  | { type: 'metric'; payload: PostmortemMetric }
+  | { type: 'metric-warn'; payload: PostmortemMetric }
 
 self.addEventListener('message', (e: MessageEvent<PostmortemWorkerRequest>) => {
   if (e.data.type === 'run') {
     const t0 = performance.now()
     try {
-      const result = runPostmortem(e.data.history, e.data.humanColor)
+      const result = runPostmortem(e.data.history, e.data.humanColor, (metric) => {
+        if (metric.warn) {
+          self.postMessage({ type: 'metric-warn', payload: metric } satisfies PostmortemWorkerResponse)
+        } else {
+          self.postMessage({ type: 'metric', payload: metric } satisfies PostmortemWorkerResponse)
+        }
+      })
       const elapsedMs = Math.round(performance.now() - t0)
       console.log('[PM/worker] runPostmortem done', {
         elapsedMs,
