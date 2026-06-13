@@ -7,8 +7,8 @@
  *   - 分析完了後に結果モーダルを表示する
  *   - onAnalyzing(true/false) で分析中状態を呼び出し元に通知する
  */
-import { useState, useEffect, useCallback } from 'react';
-import { enrichPostmortemWithStats, buildResolvedWPSeries, type PostmortemResult, type CandidateMove } from '../game/postmortem';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { enrichPostmortemWithStats, enrichWithCandidateMoves, buildResolvedWPSeries, type PostmortemResult, type CandidateMove } from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
 
 import type { MoveRecord } from '../game/types';
@@ -38,6 +38,9 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
   const { t } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [computingCandidates, setComputingCandidates] = useState(false);
+  const [candidatesComputed, setCandidatesComputed] = useState(false);
+  const candidateCancelRef = useRef<boolean>(false);
   const { getStatus, run: runWorker } = usePostmortemWorker();
   const jobStatus = getStatus(gameId);
 
@@ -87,6 +90,34 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
       handleAnalyze();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 候補手を計算するハンドラ
+  const handleShowCandidates = useCallback(async () => {
+    if (!result || !humanColor || computingCandidates || candidatesComputed) return;
+    candidateCancelRef.current = false;
+    setComputingCandidates(true);
+    try {
+      const enriched = await enrichWithCandidateMoves(
+        result,
+        history,
+        humanColor,
+        () => candidateCancelRef.current,
+      );
+      setResult(enriched);
+      setCandidatesComputed(true);
+    } catch {
+      // サイレントに無視
+    } finally {
+      setComputingCandidates(false);
+    }
+  }, [result, history, humanColor, computingCandidates, candidatesComputed]);
+
+  // unmount 時に候補手計算をキャンセル
+  useEffect(() => {
+    return () => {
+      candidateCancelRef.current = true;
+    };
   }, []);
 
   // シングルトン Worker は unmount 時に停止しない（継続動作させる）
@@ -184,7 +215,21 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
               <WPChart rows={result.rows} wpInitial={result.wpInitial} decisiveMoveNum={result.decisiveCrossing?.moveNum ?? null} />
             </section>
 
-            {/* 棋譜一覧 */}
+            {/* 候補手を表示ボタン: Pro かつ humanColor あり かつ 未計算の場合のみ表示 */}
+            {proActive && humanColor && !candidatesComputed && (
+              <div style={styles.candidateBtnRow}>
+                <button
+                  type="button"
+                  onClick={handleShowCandidates}
+                  disabled={computingCandidates}
+                  style={computingCandidates ? styles.candidateBtnDisabled : styles.candidateBtn}
+                >
+                  {computingCandidates ? t.computingCandidates : t.showCandidateMoves}
+                </button>
+              </div>
+            )}
+
+            {/* 棋譟一覧 */}
             {result.rows.length > 0 && (
               <section style={styles.section}>
                 <div style={styles.sectionTitle}>{t.historySection}</div>
@@ -644,6 +689,31 @@ const styles: Record<string, React.CSSProperties> = {
   candidateUpgrade: {
     fontSize: '0.72rem',
     color: '#b8860b',
+  },
+  candidateBtnRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: '1rem',
+  },
+  candidateBtn: {
+    background: '#f0f0f0',
+    border: '1px solid #ccc',
+    borderRadius: 8,
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: '#333',
+    cursor: 'pointer',
+    padding: '0.45rem 1.4rem',
+  },
+  candidateBtnDisabled: {
+    background: '#f0f0f0',
+    border: '1px solid #ccc',
+    borderRadius: 8,
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: '#999',
+    cursor: 'not-allowed',
+    padding: '0.45rem 1.4rem',
   },
 };
 

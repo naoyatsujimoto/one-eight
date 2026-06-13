@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { runPostmortem, enrichPostmortemWithStats } from '../game/postmortem';
+import { runPostmortem, enrichPostmortemWithStats, enrichWithCandidateMoves } from '../game/postmortem';
 import { isProActive } from '../lib/profile';
 import type { PostmortemResult } from '../game/postmortem';
 import type { MoveRecord } from '../game/types';
@@ -90,10 +90,12 @@ describe('runPostmortem -- candidateMoves (Phase P-2b)', () => {
     expect(result.wpInitial).toBeLessThan(1);
   });
 
-  it('実際の棋譜: humanColor=black の場合、Black 手の全行に candidateMoves が存在する', () => {
+  it('実際の棋譜: humanColor=black の場合、enrichWithCandidateMoves 後に Black 手の全行に candidateMoves が存在する', async () => {
     const history = makeMinimalHistory();
-    // humanColor='black' を渡すことで Black 手に候補手を計算
-    const result = runPostmortem(history, 'black');
+    // 初回 Analyze では候補手なし
+    const base = runPostmortem(history);
+    // enrichWithCandidateMoves で候補手を別途計算
+    const result = await enrichWithCandidateMoves(base, history, 'black');
 
     expect(result.rows.length).toBeGreaterThan(0);
 
@@ -119,10 +121,12 @@ describe('runPostmortem -- candidateMoves (Phase P-2b)', () => {
     }
   });
 
-  it('実際の棋譜: humanColor=white の場合、White 手の全行に candidateMoves が存在する', () => {
+  it('実際の棋譜: humanColor=white の場合、enrichWithCandidateMoves 後に White 手の全行に candidateMoves が存在する', async () => {
     const history = makeMinimalHistory();
-    // humanColor='white' を渡すことで White 手に候補手を計算
-    const result = runPostmortem(history, 'white');
+    // 初回 Analyze では候補手なし
+    const base = runPostmortem(history);
+    // enrichWithCandidateMoves で候補手を別途計算
+    const result = await enrichWithCandidateMoves(base, history, 'white');
 
     expect(result.rows.length).toBeGreaterThan(0);
 

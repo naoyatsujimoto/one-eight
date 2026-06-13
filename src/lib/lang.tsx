@@ -434,6 +434,8 @@ export const T = {
 
     // Postmortem
     postmortemRetry: 'Retry',
+    showCandidateMoves: 'Show candidate moves',
+    computingCandidates: 'Computing candidates…',
 
     // ConfirmModal
     execute: 'Execute',
@@ -907,6 +909,8 @@ export const T = {
 
     // Postmortem
     postmortemRetry: '再試行',
+    showCandidateMoves: '候補手を表示',
+    computingCandidates: '候補手を計算中…',
 
     // ConfirmModal
     execute: '実行',
@@ -1330,6 +1334,8 @@ export type Translations = {
 
   // Postmortem
   postmortemRetry: string;
+  showCandidateMoves: string;
+  computingCandidates: string;
 
   // ConfirmModal
   execute: string;
