@@ -682,10 +682,53 @@ export function Board({
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;
     if (isMobile) {
       scaler.style.width = `${Math.ceil(BOARD_W * scale)}px`;
+      // Option C mobile fix: on mobile the CSS @media rule sets transform: scale() on .board-inner,
+      // overriding .board-inner.board-inner-rotated { transform: rotate(180deg) }.
+      // Apply scale+rotate together via inline style on board-inner when rotated.
+      // translate(W*s, H*s) corrects the position when using transform-origin: top left.
+      const boardInner = containerRef.current;
+      if (boardInner) {
+        const isRotated = boardInner.classList.contains('board-inner-rotated');
+        if (isRotated) {
+          const s = scale;
+          boardInner.style.transformOrigin = 'top left';
+          boardInner.style.transform = `translate(${BOARD_W * s}px, ${BOARD_H * s}px) scale(${s}) rotate(180deg)`;
+        } else {
+          // Non-rotated: let CSS handle scale; clear any inline override
+          boardInner.style.removeProperty('transform');
+          boardInner.style.removeProperty('transform-origin');
+        }
+      }
     } else {
+      // Desktop: clear any mobile inline override; CSS handles rotation via .board-inner-rotated
+      const boardInner = containerRef.current;
+      if (boardInner) {
+        boardInner.style.removeProperty('transform');
+        boardInner.style.removeProperty('transform-origin');
+      }
       scaler.style.removeProperty('width');
     }
     scaler.style.removeProperty('--board-left-offset');
+  }, []);
+
+  // Option C mobile fix: update board-inner inline transform when labelPerspective changes.
+  // applyScale handles this via lastScaleRef, but it bails early if scale hasn't changed.
+  // This effect re-applies the inline transform whenever perspective changes.
+  const applyBoardInlineTransform = useCallback((isRotated: boolean) => {
+    const boardInner = containerRef.current;
+    if (!boardInner) return;
+    const isMobile = window.innerWidth <= 600;
+    if (isMobile && isRotated) {
+      const s = lastScaleRef.current > 0 ? lastScaleRef.current : 0.5;
+      boardInner.style.transformOrigin = 'top left';
+      boardInner.style.transform = `translate(${BOARD_W * s}px, ${BOARD_H * s}px) scale(${s}) rotate(180deg)`;
+    } else if (isMobile) {
+      boardInner.style.removeProperty('transform');
+      boardInner.style.removeProperty('transform-origin');
+    } else {
+      boardInner.style.removeProperty('transform');
+      boardInner.style.removeProperty('transform-origin');
+    }
   }, []);
 
   useEffect(() => {
@@ -701,6 +744,11 @@ export function Board({
     window.addEventListener('resize', applyScale);
     return () => { cancelAnimationFrame(rafId); ro.disconnect(); window.removeEventListener('resize', applyScale); };
   }, [applyScale]);
+
+  // Re-apply inline transform when labelPerspective changes (e.g., new game with different color)
+  useEffect(() => {
+    applyBoardInlineTransform(labelPerspective === 'white');
+  }, [labelPerspective, applyBoardInlineTransform]);
 
   useEffect(() => {
     if (!selectedId || !containerRef.current) {

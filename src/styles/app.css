@@ -821,13 +821,17 @@ html, body {
 }
 
 /* Option C: White-perspective board rotation */
-/* The entire board is physically rotated 180°. Labels counter-rotate to remain readable. */
-.board-inner-rotated {
+/* The entire board is physically rotated 180°. Labels counter-rotate to remain readable.
+   Use double-class selector (.board-inner.board-inner-rotated) for specificity 0,0,2,0
+   so it overrides the mobile @media .board-inner { transform: scale() } rule (0,0,1,0).
+   On mobile, --board-scale is set inline on the scaler (inherited by board-inner),
+   so we combine scale + rotate here to cover both desktop and mobile. */
+.board-inner.board-inner-rotated {
   transform: rotate(180deg);
   transform-origin: center center;
 }
-.board-inner-rotated .pos-id,
-.board-inner-rotated .gate-card-id {
+.board-inner.board-inner-rotated .pos-id,
+.board-inner.board-inner-rotated .gate-card-id {
   display: inline-block;
   transform: rotate(180deg);
   transform-origin: center center;
@@ -1928,7 +1932,6 @@ ol { padding-left: 20px; }
     transform: scale(var(--board-scale, 0.50));
     display: block;
   }
-
   /* Position buttons: ensure tap target inside scaled board */
   .position-btn { min-width: 44px; min-height: 44px; }
 }
