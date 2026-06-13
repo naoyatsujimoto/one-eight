@@ -452,14 +452,20 @@ export const T = {
 
     // AuthGate
     authMagicLink: 'Magic Link',
-    authPasswordLogin: 'Password Login',
+    authOtpLogin: 'Email Code',
     authEmailSent: 'Email sent. Click the link in your inbox to log in.',
     authSendMagicLink: 'Send Magic Link',
     authSending: 'Sending…',
-    authPassword: 'Password',
     authLogIn: 'Log In',
     authLoggingIn: 'Logging in…',
     authTagline: 'ONE EIGHT is a competitive abstract strategy game. Monthly membership available.',
+    authSendLoginCode: 'Send login code',
+    authEnterLoginCode: 'Enter the code from your email',
+    authVerifyLoginCode: 'Log in',
+    authCodeSent: 'A login code has been sent to your email. Enter it below.',
+    authCodeLoginHint: 'If you are using the app from your iPhone Home Screen, use the email code instead of opening the magic link.',
+    authInvalidCode: 'Invalid or expired code. Please try again.',
+    authResendCode: 'Resend code',
 
     // Arena (additional)
     arenaProcessing: 'Processing…',
@@ -919,14 +925,20 @@ export const T = {
 
     // AuthGate
     authMagicLink: 'マジックリンク',
-    authPasswordLogin: 'パスワードログイン',
+    authOtpLogin: 'メール認証コード',
     authEmailSent: 'メールを送信しました。受信箱のリンクをクリックしてログインしてください。',
     authSendMagicLink: 'マジックリンクを送信',
     authSending: '送信中…',
-    authPassword: 'パスワード',
     authLogIn: 'ログイン',
     authLoggingIn: 'ログイン中…',
     authTagline: 'ONE EIGHT は競技性のあるアブストラクト戦略ゲームです。月額メンバーシップあり。',
+    authSendLoginCode: 'ログインコードを送信',
+    authEnterLoginCode: 'メールに届いたコードを入力',
+    authVerifyLoginCode: 'ログイン',
+    authCodeSent: 'ログインコードをメールに送信しました。下に入力してください。',
+    authCodeLoginHint: 'iPhoneのホーム画面から起動している場合は、メールリンクではなくコード入力でログインしてください。',
+    authInvalidCode: 'コードが無効または期限切れです。もう一度お試しください。',
+    authResendCode: 'コードを再送信',
 
     // Arena (additional)
     arenaProcessing: '処理中…',
@@ -1336,14 +1348,20 @@ export type Translations = {
 
   // AuthGate
   authMagicLink: string;
-  authPasswordLogin: string;
+  authOtpLogin: string;
   authEmailSent: string;
   authSendMagicLink: string;
   authSending: string;
-  authPassword: string;
   authLogIn: string;
   authLoggingIn: string;
   authTagline: string;
+  authSendLoginCode: string;
+  authEnterLoginCode: string;
+  authVerifyLoginCode: string;
+  authCodeSent: string;
+  authCodeLoginHint: string;
+  authInvalidCode: string;
+  authResendCode: string;
 
   // Arena (additional)
   arenaProcessing: string;

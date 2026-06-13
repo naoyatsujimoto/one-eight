@@ -8,13 +8,15 @@ interface Props {
   children: ReactNode;
 }
 
-type LoginMode = 'magic' | 'password';
+type LoginMode = 'magic' | 'otp';
+type OtpStep = 'email' | 'code';
 
 export function AuthGate({ children }: Props) {
-  const { user, loading, signInWithMagicLink, signInWithPassword, signOut } = useAuth();
+  const { user, loading, signInWithMagicLink, signInWithOtpCode, verifyOtpCode, signOut } = useAuth();
   const { t } = useLang();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpStep, setOtpStep] = useState<OtpStep>('email');
   const [sent, setSent] = useState(false);
   const [proActive, setProActive] = useState(false);
 
@@ -48,21 +50,46 @@ export function AuthGate({ children }: Props) {
       else setSent(true);
     }
 
-    async function handlePassword(e: React.FormEvent) {
+    async function handleSendOtp(e: React.FormEvent) {
       e.preventDefault();
-      if (!email.trim() || !password) return;
+      if (!email.trim()) return;
       setSubmitting(true);
       setError(null);
-      const { error: err } = await signInWithPassword(email.trim(), password);
+      const { error: err } = await signInWithOtpCode(email.trim());
+      setSubmitting(false);
+      if (err) {
+        setError(err);
+      } else {
+        setOtpStep('code');
+        setOtpCode('');
+      }
+    }
+
+    async function handleVerifyOtp(e: React.FormEvent) {
+      e.preventDefault();
+      if (!email.trim() || !otpCode.trim()) return;
+      setSubmitting(true);
+      setError(null);
+      const { error: err } = await verifyOtpCode(email.trim(), otpCode.trim());
+      setSubmitting(false);
+      if (err) setError(t.authInvalidCode);
+    }
+
+    async function handleResendOtp() {
+      setSubmitting(true);
+      setError(null);
+      const { error: err } = await signInWithOtpCode(email.trim());
       setSubmitting(false);
       if (err) setError(err);
+      else setOtpCode('');
     }
 
     function switchMode(next: LoginMode) {
       setMode(next);
       setError(null);
       setSent(false);
-      setPassword('');
+      setOtpStep('email');
+      setOtpCode('');
     }
 
     return (
@@ -84,10 +111,10 @@ export function AuthGate({ children }: Props) {
             </button>
             <button
               type="button"
-              style={{ ...styles.tab, ...(mode === 'password' ? styles.tabActive : {}) }}
-              onClick={() => switchMode('password')}
+              style={{ ...styles.tab, ...(mode === 'otp' ? styles.tabActive : {}) }}
+              onClick={() => switchMode('otp')}
             >
-              {t.authPasswordLogin}
+              {t.authOtpLogin}
             </button>
           </div>
 
@@ -116,31 +143,55 @@ export function AuthGate({ children }: Props) {
             )
           )}
 
-          {/* Password form */}
-          {mode === 'password' && (
-            <form onSubmit={handlePassword} style={styles.form}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                style={styles.input}
-                autoFocus
-              />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t.authPassword}
-                required
-                style={styles.input}
-              />
-              {error && <p style={styles.error}>{error}</p>}
-              <button type="submit" disabled={submitting} style={styles.button}>
-                {submitting ? t.authLoggingIn : t.authLogIn}
-              </button>
-            </form>
+          {/* OTP Email Code form */}
+          {mode === 'otp' && (
+            <div>
+              <p style={styles.hint}>{t.authCodeLoginHint}</p>
+              {otpStep === 'email' ? (
+                <form onSubmit={handleSendOtp} style={styles.form}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    required
+                    style={styles.input}
+                    autoFocus
+                  />
+                  {error && <p style={styles.error}>{error}</p>}
+                  <button type="submit" disabled={submitting} style={styles.button}>
+                    {submitting ? t.authSending : t.authSendLoginCode}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} style={styles.form}>
+                  <p style={styles.info}>{t.authCodeSent}</p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    placeholder={t.authEnterLoginCode}
+                    required
+                    style={styles.input}
+                    autoFocus
+                    autoComplete="one-time-code"
+                  />
+                  {error && <p style={styles.error}>{error}</p>}
+                  <button type="submit" disabled={submitting} style={styles.button}>
+                    {submitting ? t.authLoggingIn : t.authVerifyLoginCode}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={submitting}
+                    style={styles.resendBtn}
+                  >
+                    {t.authResendCode}
+                  </button>
+                </form>
+              )}
+            </div>
           )}
 
           {/* Legal links */}
@@ -309,5 +360,22 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.6,
     marginBottom: '1.25rem',
     marginTop: '-0.5rem',
+  },
+  hint: {
+    fontSize: '0.75rem',
+    color: '#888',
+    lineHeight: 1.6,
+    marginBottom: '0.75rem',
+    textAlign: 'left' as const,
+  },
+  resendBtn: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.8rem',
+    color: '#555',
+    textDecoration: 'underline',
+    padding: '0.25rem 0',
+    alignSelf: 'center' as const,
   },
 };

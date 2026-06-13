@@ -10,7 +10,8 @@ export interface AuthState {
 
 export function useAuth(): AuthState & {
   signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
-  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithOtpCode: (email: string) => Promise<{ error: string | null }>;
+  verifyOtpCode: (email: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 } {
   const [session, setSession] = useState<Session | null>(null);
@@ -39,8 +40,22 @@ export function useAuth(): AuthState & {
     return { error: error ? error.message : null };
   }
 
-  async function signInWithPassword(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  async function signInWithOtpCode(email: string) {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+      },
+    });
+    return { error: error ? error.message : null };
+  }
+
+  async function verifyOtpCode(email: string, token: string) {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
     return { error: error ? error.message : null };
   }
 
@@ -53,7 +68,8 @@ export function useAuth(): AuthState & {
     user: session?.user ?? null,
     loading,
     signInWithMagicLink,
-    signInWithPassword,
+    signInWithOtpCode,
+    verifyOtpCode,
     signOut,
   };
 }
