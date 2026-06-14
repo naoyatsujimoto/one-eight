@@ -41,9 +41,7 @@ export interface SubmitTaxParams {
   postal_code:                        string;
   country:                            string;
   tax_residence_country:              string;
-  domestic_or_foreign:                string;
   paypal_email:                       string;
-  preferred_currency:                 string;
   user_confirmed_legal_responsibility: boolean;
   user_confirmed_paypal_name_match:    boolean;
 }
@@ -157,9 +155,7 @@ export async function submitPrizeTaxSubmission(
     p_postal_code:                        params.postal_code,
     p_country:                            params.country,
     p_tax_residence_country:              params.tax_residence_country,
-    p_domestic_or_foreign:                params.domestic_or_foreign,
     p_paypal_email:                       params.paypal_email,
-    p_preferred_currency:                 params.preferred_currency,
     p_user_confirmed_legal_responsibility: params.user_confirmed_legal_responsibility,
     p_user_confirmed_paypal_name_match:    params.user_confirmed_paypal_name_match,
   });

@@ -36,9 +36,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
   const [postalCode,              setPostalCode]              = useState('');
   const [country,                 setCountry]                 = useState('');
   const [taxResidenceCountry,     setTaxResidenceCountry]     = useState('');
-  const [domesticOrForeign,       setDomesticOrForeign]       = useState<'domestic' | 'foreign' | 'unknown'>('unknown');
   const [paypalEmail,             setPaypalEmail]             = useState('');
-  const [preferredCurrency,       setPreferredCurrency]       = useState<'USD' | 'JPY' | 'EUR' | 'GBP'>('USD');
 
   // 同意チェックボックス
   const [confirmedPaypalName,     setConfirmedPaypalName]     = useState(false);
@@ -64,7 +62,6 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
       postalCode.trim() !== '' &&
       country.trim() !== '' &&
       taxResidenceCountry.trim() !== '' &&
-      domesticOrForeign !== undefined &&
       isValidEmail(paypalEmail) &&
       confirmedPaypalName &&
       confirmedTaxResponsibility &&
@@ -94,9 +91,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
       postal_code:                        postalCode.trim(),
       country:                            country.trim(),
       tax_residence_country:              taxResidenceCountry.trim(),
-      domestic_or_foreign:                domesticOrForeign,
       paypal_email:                       paypalEmail.trim(),
-      preferred_currency:                 preferredCurrency,
       user_confirmed_legal_responsibility: confirmedTaxResponsibility,
       user_confirmed_paypal_name_match:    confirmedPaypalName,
     });
@@ -278,21 +273,6 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
             />
           </label>
 
-          {/* Domestic / Foreign */}
-          <label style={s.label}>
-            {t.prizeClaimLabelDomesticForeign}
-            <select
-              style={s.select}
-              value={domesticOrForeign}
-              onChange={e => setDomesticOrForeign(e.target.value as 'domestic' | 'foreign' | 'unknown')}
-              required
-            >
-              <option value="unknown">{t.prizeClaimSelectDefault}</option>
-              <option value="domestic">{t.prizeClaimOptionDomestic}</option>
-              <option value="foreign">{t.prizeClaimOptionForeign}</option>
-            </select>
-          </label>
-
           {/* PayPal email */}
           <label style={s.label}>
             {t.prizeClaimLabelPaypalEmail}
@@ -308,22 +288,6 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
             {paypalEmail.trim() !== '' && !isValidEmail(paypalEmail) && (
               <span style={s.fieldError}>{t.prizeClaimInvalidEmail}</span>
             )}
-          </label>
-
-          {/* Preferred currency */}
-          <label style={s.label}>
-            {t.prizeClaimLabelPreferredCurrency}
-            <select
-              style={s.select}
-              value={preferredCurrency}
-              onChange={e => setPreferredCurrency(e.target.value as 'USD' | 'JPY' | 'EUR' | 'GBP')}
-              required
-            >
-              <option value="USD">USD</option>
-              <option value="JPY">JPY</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-            </select>
           </label>
 
           {/* 同意チェックボックス */}

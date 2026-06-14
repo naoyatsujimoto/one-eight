@@ -482,9 +482,7 @@ export const T = {
     prizeClaimLabelPostalCode: 'Postal Code *',
     prizeClaimLabelCountry: 'Country *',
     prizeClaimLabelTaxResidenceCountry: 'Tax Residence Country *',
-    prizeClaimLabelDomesticForeign: 'Domestic / Foreign *',
     prizeClaimLabelPaypalEmail: 'PayPal Receiving Email *',
-    prizeClaimLabelPreferredCurrency: 'Preferred Currency *',
     prizeClaimPlaceholderLegalName: 'Full legal name as it appears on official documents',
     prizeClaimPlaceholderDisplayName: 'Game display name (optional)',
     prizeClaimPlaceholderResidenceCountry: 'e.g. Japan',
@@ -496,9 +494,6 @@ export const T = {
     prizeClaimPlaceholderCountry: 'e.g. Japan',
     prizeClaimPlaceholderTaxResidenceCountry: 'Country where you are a tax resident',
     prizeClaimPlaceholderPaypalEmail: 'your@paypal.com',
-    prizeClaimSelectDefault: '— Select —',
-    prizeClaimOptionDomestic: 'Domestic',
-    prizeClaimOptionForeign: 'Foreign',
     prizeClaimConfirmationsTitle: 'Confirmations (all required)',
     prizeClaimConfirmPaypalName: 'I confirm that my PayPal account name matches the legal name provided above.',
     prizeClaimConfirmTaxResponsibility: 'I understand that tax reporting is my own responsibility.',
@@ -1014,9 +1009,7 @@ export const T = {
     prizeClaimLabelPostalCode: '郵便番号 *',
     prizeClaimLabelCountry: '国 *',
     prizeClaimLabelTaxResidenceCountry: '税務居住国 *',
-    prizeClaimLabelDomesticForeign: '国内 / 海外 *',
     prizeClaimLabelPaypalEmail: 'PayPal受取メール *',
-    prizeClaimLabelPreferredCurrency: '希望通貨 *',
     prizeClaimPlaceholderLegalName: '公的書類と同じ氏名',
     prizeClaimPlaceholderDisplayName: 'ゲーム内表示名（任意）',
     prizeClaimPlaceholderResidenceCountry: '例：Japan',
@@ -1028,9 +1021,6 @@ export const T = {
     prizeClaimPlaceholderCountry: '例：Japan',
     prizeClaimPlaceholderTaxResidenceCountry: '税務上の居住国',
     prizeClaimPlaceholderPaypalEmail: 'your@paypal.com',
-    prizeClaimSelectDefault: '— 選択 —',
-    prizeClaimOptionDomestic: '国内',
-    prizeClaimOptionForeign: '海外',
     prizeClaimConfirmationsTitle: '同意事項（すべて必須）',
     prizeClaimConfirmPaypalName: 'PayPalアカウント名が上記の法定氏名と一致することを確認します。',
     prizeClaimConfirmTaxResponsibility: '税務申告は受賞者本人の責任であることを理解しています。',
@@ -1496,9 +1486,7 @@ export type Translations = {
   prizeClaimLabelPostalCode: string;
   prizeClaimLabelCountry: string;
   prizeClaimLabelTaxResidenceCountry: string;
-  prizeClaimLabelDomesticForeign: string;
   prizeClaimLabelPaypalEmail: string;
-  prizeClaimLabelPreferredCurrency: string;
   prizeClaimPlaceholderLegalName: string;
   prizeClaimPlaceholderDisplayName: string;
   prizeClaimPlaceholderResidenceCountry: string;
@@ -1510,9 +1498,6 @@ export type Translations = {
   prizeClaimPlaceholderCountry: string;
   prizeClaimPlaceholderTaxResidenceCountry: string;
   prizeClaimPlaceholderPaypalEmail: string;
-  prizeClaimSelectDefault: string;
-  prizeClaimOptionDomestic: string;
-  prizeClaimOptionForeign: string;
   prizeClaimConfirmationsTitle: string;
   prizeClaimConfirmPaypalName: string;
   prizeClaimConfirmTaxResponsibility: string;
