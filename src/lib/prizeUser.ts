@@ -74,7 +74,7 @@ export async function getUserAwards(): Promise<{
   const { data, error } = await supabase
     .from('prize_award_payment_state')
     .select(
-      'award_id, award_status, amount_cents, currency, source, payout_id, payout_status, paid_at, payout_created_at',
+      'award_id, award_status, amount_cents, currency, source_kind, payout_id, payout_status, paid_at, payout_created_at',
     )
     .order('award_id', { ascending: true });
 
@@ -85,7 +85,7 @@ export async function getUserAwards(): Promise<{
     status:        r.award_status as string,
     amount_cents:  r.amount_cents as number,
     currency:      r.currency as string,
-    source_kind:   (r.source as string | null) ?? null,
+    source_kind:   (r.source_kind as string | null) ?? null,
     prize_kind:    null,
     notes:         null,
     created_at:    '',
