@@ -66,47 +66,33 @@ export async function getUserAwards(): Promise<{
   data: UserPrizeAwardRow[] | null;
   error: string | null;
 }> {
+  // prize_award_payment_state view から直接取得する。
+  // security_invoker = true の view なので RLS が呼び出し元ユーザーで評価され、
+  // 自分の award のみ返される。
+  // ※ prize_awards テーブルには source_kind / prize_kind カラムが存在しないため
+  //    2次クエリは行わず、view の source カラムを source_kind にマッピングする。
   const { data, error } = await supabase
     .from('prize_award_payment_state')
     .select(
       'award_id, award_status, amount_cents, currency, source, payout_id, payout_status, paid_at, payout_created_at',
     )
-    .order('payout_created_at', { ascending: false, nullsFirst: false });
+    .order('award_id', { ascending: true });
 
   if (error) return { data: null, error: error.message };
 
-  // prize_awards から追加情報を取得（source_kind / prize_kind / notes / created_at）
-  const awardIds = (data ?? []).map((r: Record<string, unknown>) => r.award_id as string);
-  if (awardIds.length === 0) return { data: [], error: null };
-
-  const { data: awardDetails, error: awardErr } = await supabase
-    .from('prize_awards')
-    .select('id, source_kind, prize_kind, notes, created_at')
-    .in('id', awardIds);
-
-  if (awardErr) return { data: null, error: awardErr.message };
-
-  const detailMap = new Map<string, Record<string, unknown>>();
-  for (const d of awardDetails ?? []) {
-    detailMap.set((d as Record<string, unknown>).id as string, d as Record<string, unknown>);
-  }
-
-  const rows: UserPrizeAwardRow[] = (data ?? []).map((r: Record<string, unknown>) => {
-    const detail = detailMap.get(r.award_id as string) ?? {};
-    return {
-      award_id:      r.award_id as string,
-      status:        r.award_status as string,
-      amount_cents:  r.amount_cents as number,
-      currency:      r.currency as string,
-      source_kind:   (detail.source_kind as string | null) ?? (r.source as string | null) ?? null,
-      prize_kind:    (detail.prize_kind as string | null) ?? null,
-      notes:         (detail.notes as string | null) ?? null,
-      created_at:    (detail.created_at as string) ?? '',
-      payout_id:     (r.payout_id as string | null) ?? null,
-      payout_status: (r.payout_status as string | null) ?? null,
-      paid_at:       (r.paid_at as string | null) ?? null,
-    };
-  });
+  const rows: UserPrizeAwardRow[] = (data ?? []).map((r: Record<string, unknown>) => ({
+    award_id:      r.award_id as string,
+    status:        r.award_status as string,
+    amount_cents:  r.amount_cents as number,
+    currency:      r.currency as string,
+    source_kind:   (r.source as string | null) ?? null,
+    prize_kind:    null,
+    notes:         null,
+    created_at:    '',
+    payout_id:     (r.payout_id as string | null) ?? null,
+    payout_status: (r.payout_status as string | null) ?? null,
+    paid_at:       (r.paid_at as string | null) ?? null,
+  }));
 
   return { data: rows, error: null };
 }
