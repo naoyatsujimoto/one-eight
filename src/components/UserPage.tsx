@@ -551,9 +551,11 @@ function PrizeSection({
           <div key={award.award_id} style={sp.card}>
             <div style={sp.cardHeader}>
               <span style={{ ...sp.statusBadge, color: prizeStatusColor(award.status) }}>
-                {award.status.toUpperCase()}
+                {award.status === 'eligible' ? t.prizeStatusEligible
+                  : award.status === 'pending' ? t.prizeStatusPending
+                  : award.status.toUpperCase()}
               </span>
-              <span style={sp.cardKind}>{award.prize_kind ?? 'cash'}</span>
+              <span style={sp.cardKind}>{award.prize_kind ? award.prize_kind : t.prizeKindCash}</span>
             </div>
 
             <div style={sp.cardBody}>
@@ -614,8 +616,8 @@ function PrizeSection({
             {['on_hold', 'canceled', 'expired'].includes(award.status) && !submission && (
               <div style={sp.ineligibleNote}>
                 {award.status === 'on_hold' && t.prizeStatusOnHold}
-                {award.status === 'canceled' && 'This award has been canceled.'}
-                {award.status === 'expired' && 'This award has expired.'}
+                {award.status === 'canceled' && t.prizeStatusCanceled}
+                {award.status === 'expired' && t.prizeStatusExpired}
               </div>
             )}
           </div>

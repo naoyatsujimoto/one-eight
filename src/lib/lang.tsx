@@ -460,6 +460,11 @@ export const T = {
     prizePaid: 'Paid',
     prizeOfficialArena: 'Official Arena',
     prizeMasterReward: 'Master Reward',
+    prizeStatusEligible: 'Eligible',
+    prizeStatusPending: 'Pending',
+    prizeStatusCanceled: 'This award has been canceled.',
+    prizeStatusExpired: 'This award has expired.',
+    prizeKindCash: 'Cash',
 
     // AuthGate
     authMagicLink: 'Magic Link',
@@ -944,6 +949,11 @@ export const T = {
     prizePaid: '支払済み',
     prizeOfficialArena: '公式アリーナ',
     prizeMasterReward: 'Master報酬',
+    prizeStatusEligible: '受賞対象',
+    prizeStatusPending: '処理待ち',
+    prizeStatusCanceled: 'この受賞はキャンセルされました。',
+    prizeStatusExpired: 'この受賞は期限切れです。',
+    prizeKindCash: '現金',
 
     // AuthGate
     authMagicLink: 'マジックリンク',
@@ -1378,6 +1388,11 @@ export type Translations = {
   prizePaid: string;
   prizeOfficialArena: string;
   prizeMasterReward: string;
+  prizeStatusEligible: string;
+  prizeStatusPending: string;
+  prizeStatusCanceled: string;
+  prizeStatusExpired: string;
+  prizeKindCash: string;
 
   // AuthGate
   authMagicLink: string;
