@@ -12,9 +12,11 @@ import {
   adminListPrizeAwards,
   adminCreatePrizeAward,
   adminUpdatePrizeAwardStatus,
+  adminGenerateArenaAwards,
   type AdminPrizeAwardRow,
   type SourceKind,
   type PrizeKind,
+  type GenerateArenaAwardRow,
 } from '../lib/prizeAdmin';
 import { PrizeWinnerFilePrint } from './PrizeWinnerFilePrint';
 import { PrizePaymentDashboard } from './PrizePaymentDashboard';
@@ -75,6 +77,16 @@ export function AdminPage({ onBack }: Props) {
   const [actionError, setActionError]     = useState<string | null>(null);
   const [reasonInput, setReasonInput]     = useState<Record<string, string>>({});
 
+  // Generate Arena Awards フォーム
+  const [showGenerate, setShowGenerate]     = useState(false);
+  const [generating, setGenerating]         = useState(false);
+  const [generateError, setGenerateError]   = useState<string | null>(null);
+  const [generateResult, setGenerateResult] = useState<GenerateArenaAwardRow[] | null>(null);
+  const [gEventId, setGEventId]             = useState('');
+  const [gAmountStr, setGAmountStr]         = useState('');
+  const [gCurrency, setGCurrency]           = useState('JPY');
+  const [gPrizeKind, setGPrizeKind]         = useState<PrizeKind>('cash');
+
   // ── 一覧取得 ──────────────────────────────────────────────────────────────
 
   async function loadAwards() {
@@ -129,6 +141,45 @@ export function AdminPage({ onBack }: Props) {
       await loadAwards();
     }
     setCreating(false);
+  }
+
+  // ── Arena Award 自動生成 ───────────────────────────────────────────────────
+
+  async function handleGenerate(e: React.FormEvent) {
+    e.preventDefault();
+    setGenerating(true);
+    setGenerateError(null);
+    setGenerateResult(null);
+
+    const eventId = gEventId.trim();
+    if (!eventId) {
+      setGenerateError('Arena Event ID is required.');
+      setGenerating(false);
+      return;
+    }
+
+    const amountNum = parseFloat(gAmountStr);
+    if (isNaN(amountNum) || amountNum < 0) {
+      setGenerateError('Amount must be a non-negative number.');
+      setGenerating(false);
+      return;
+    }
+    const amountCents = Math.round(amountNum * 100);
+
+    const { data, error } = await adminGenerateArenaAwards(
+      eventId,
+      amountCents,
+      gCurrency.trim().toUpperCase(),
+      gPrizeKind,
+    );
+
+    if (error) {
+      setGenerateError(error);
+    } else {
+      setGenerateResult(data ?? []);
+      await loadAwards();
+    }
+    setGenerating(false);
   }
 
   // ── ステータス変更 ─────────────────────────────────────────────────────────
@@ -211,7 +262,109 @@ export function AdminPage({ onBack }: Props) {
         >
           Payment Dashboard
         </button>
+        <div style={s.navDivider} />
+        <button
+          type="button"
+          style={{ ...s.navBtn, ...(showGenerate ? s.navBtnActive : {}) }}
+          onClick={() => { setShowGenerate(v => !v); setGenerateError(null); setGenerateResult(null); }}
+        >
+          {showGenerate ? '× Cancel' : '⚡ Arena賞金を生成'}
+        </button>
       </div>
+
+      {/* Arena Award 自動生成フォーム */}
+      {showGenerate && (
+        <div style={s.formCard}>
+          <div style={s.formEyebrow}>Generate Arena Awards</div>
+          <div style={{ fontSize: 12, color: '#555', marginBottom: 12 }}>
+            指定した Arena Event の master match winner に Prize Award を自動生成します。<br/>
+            重複の場合は既存 Award を返します（新規作成しません）。
+          </div>
+          {generateError && <div style={s.errorBanner}><span>⚠ {generateError}</span></div>}
+          <form style={s.form} onSubmit={handleGenerate}>
+            <label style={s.label}>
+              <span style={s.labelText}>Arena Event ID <span style={s.required}>*</span></span>
+              <input
+                style={s.input}
+                type="text"
+                value={gEventId}
+                onChange={e => setGEventId(e.target.value)}
+                placeholder="uuid"
+                required
+              />
+            </label>
+
+            <div style={s.formRow}>
+              <label style={{ ...s.label, flex: 2 }}>
+                <span style={s.labelText}>Amount <span style={s.required}>*</span></span>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={gAmountStr}
+                  onChange={e => setGAmountStr(e.target.value)}
+                  placeholder="e.g. 5000"
+                  required
+                />
+              </label>
+              <label style={{ ...s.label, flex: 1 }}>
+                <span style={s.labelText}>Currency <span style={s.required}>*</span></span>
+                <input
+                  style={s.input}
+                  type="text"
+                  maxLength={3}
+                  value={gCurrency}
+                  onChange={e => setGCurrency(e.target.value.toUpperCase())}
+                  placeholder="JPY"
+                  required
+                />
+              </label>
+            </div>
+
+            <label style={s.label}>
+              <span style={s.labelText}>Prize Kind <span style={s.required}>*</span></span>
+              <select style={s.select} value={gPrizeKind} onChange={e => setGPrizeKind(e.target.value as PrizeKind)}>
+                <option value="cash">cash</option>
+                <option value="merchandise">merchandise</option>
+                <option value="title_only">title_only</option>
+              </select>
+            </label>
+
+            <button type="submit" style={s.submitBtn} disabled={generating}>
+              {generating ? 'Generating…' : '⚡ Generate Arena Awards'}
+            </button>
+          </form>
+
+          {generateResult !== null && (
+            <div style={{ marginTop: 16 }}>
+              {generateResult.length === 0 ? (
+                <div style={{ color: '#e65100', fontSize: 13 }}>
+                  ⚠ 対象となる master match が見つかりませんでした。
+                  (processed済み / winner有り / end_reason正常系 の条件を満たす match がありません)
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, color: '#2e7d32', fontWeight: 600, marginBottom: 8 }}>
+                    ✓ {generateResult.length} 件処理しました
+                  </div>
+                  {generateResult.map((row, i) => (
+                    <div key={i} style={{ fontSize: 12, background: '#f5f5f5', borderRadius: 6, padding: '8px 12px', marginBottom: 6 }}>
+                      <span style={{ color: row.skipped_reason === 'already_exists' ? '#757575' : '#1565c0', fontWeight: 700 }}>
+                        {row.skipped_reason === 'already_exists' ? 'SKIPPED (already exists)' : 'CREATED'}
+                      </span>
+                      {' '}award_id: {row.award_id.slice(0, 8)}…
+                      {' '}| match: {row.arena_match_id.slice(0, 8)}…
+                      {' '}| recipient: {row.recipient_user_id.slice(0, 8)}…
+                      {' '}| status: {row.status}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Award 作成フォーム */}
       {showCreate && (

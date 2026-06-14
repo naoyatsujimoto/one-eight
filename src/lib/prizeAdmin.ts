@@ -424,6 +424,54 @@ export async function adminMarkPayoutFailed(
   return { data: data as MarkPayoutFailedResult, error: null };
 }
 
+// ── RP-6: Auto Generate Arena Prize Awards ──────────────────────────────────────
+
+/**
+ * admin_generate_arena_prize_awards の戻り値型（1行＝1 award）
+ * skipped_reason が 'already_exists' の場合は重複でスキップされた既存 award。
+ */
+export interface GenerateArenaAwardRow {
+  award_id:          string;
+  arena_id:          string;
+  arena_code:        string | null;
+  arena_event_id:    string;
+  arena_match_id:    string;
+  recipient_user_id: string;
+  amount_cents:      number;
+  currency:          string;
+  prize_kind:        string;
+  status:            string;
+  skipped_reason:    string | null;
+}
+
+/**
+ * adminGenerateArenaAwards
+ * 指定 Arena event の match_kind='master' 勝者を対象に prize_awards を自動生成する。
+ * 重複の場合は既存 award を返し新規作成しない（skipped_reason='already_exists'）。
+ * 対象が 0 件の場合は空配列を返す。
+ *
+ * 生成対象条件:
+ *   - arena_match_history.match_kind = 'master'
+ *   - winner_user_id IS NOT NULL
+ *   - end_reason NOT IN ('no_show', 'no_contest', 'cancelled')
+ *   - arena_matches.status = 'processed'
+ */
+export async function adminGenerateArenaAwards(
+  arenaEventId: string,
+  amountCents:  number,
+  currency:     string,
+  prizeKind:    PrizeKind,
+): Promise<{ data: GenerateArenaAwardRow[] | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_generate_arena_prize_awards', {
+    p_arena_event_id: arenaEventId,
+    p_amount_cents:   amountCents,
+    p_currency:       currency,
+    p_prize_kind:     prizeKind,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: (data as GenerateArenaAwardRow[]) ?? [], error: null };
+}
+
 // ── RP-5d: Cancel / Retry ─────────────────────────────────────────────────────
 
 /**
