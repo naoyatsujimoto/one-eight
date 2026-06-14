@@ -486,19 +486,22 @@ export function AdminPage({ onBack }: Props) {
             }}>
               {award.award_status.toUpperCase()}
             </span>
-            <span style={s.awardIdMono}>{award.award_id.slice(0, 8)}…</span>
+            <span style={s.awardIdMono}>
+              {award.arena_code ? `${award.arena_code} Master` : (award.source_kind ?? 'manual')}
+            </span>
             <span style={s.awardDate}>{fmtDate(award.created_at)}</span>
           </div>
 
           {/* 主要情報グリッド */}
           <div style={s.infoGrid}>
+            <InfoPair label="Award ID"      value={award.award_id} />
             <InfoPair label="Recipient"     value={award.recipient_display_name ?? award.recipient_user_id.slice(0, 8)} />
-            <InfoPair label="Source"        value={award.source_kind ?? '—'} />
+            <InfoPair label="Source"        value={award.arena_code ? `${award.arena_code} Master (${award.source_kind ?? 'arena_master'})` : (award.source_kind ?? '—')} />
             <InfoPair label="Amount"        value={fmtCents(award.amount_cents, award.currency)} />
             <InfoPair label="Prize Kind"    value={award.prize_kind ?? '—'} />
             <InfoPair label="Payout Status" value={award.latest_payout_status ?? 'none'} />
-            {award.source_arena_event_id && <InfoPair label="Arena Event" value={award.source_arena_event_id.slice(0, 8)} />}
-            {award.source_arena_match_id && <InfoPair label="Arena Match" value={award.source_arena_match_id.slice(0, 8)} />}
+            {award.source_arena_event_id && <InfoPair label="Arena Event" value={award.source_arena_event_id} />}
+            {award.source_arena_match_id && <InfoPair label="Arena Match" value={award.source_arena_match_id} />}
             {award.notes        && <InfoPair label="Notes"         value={award.notes} />}
             {award.hold_reason  && <InfoPair label="Hold Reason"   value={award.hold_reason} />}
             {award.cancel_reason && <InfoPair label="Cancel Reason" value={award.cancel_reason} />}

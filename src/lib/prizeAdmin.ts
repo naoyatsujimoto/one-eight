@@ -37,6 +37,7 @@ export interface AdminPrizeAwardRow {
   source_kind:            string | null;
   source_arena_event_id:  string | null;
   source_arena_match_id:  string | null;
+  arena_code:             string | null;
   amount_cents:           number;
   currency:               string;
   prize_kind:             string | null;

@@ -19,6 +19,7 @@ export interface UserPrizeAwardRow {
   amount_cents:         number;
   currency:             string;
   source_kind:          string | null;
+  arena_code:           string | null;
   prize_kind:           string | null;
   notes:                string | null;
   created_at:           string;
@@ -74,7 +75,7 @@ export async function getUserAwards(): Promise<{
   const { data, error } = await supabase
     .from('prize_award_payment_state')
     .select(
-      'award_id, award_status, amount_cents, currency, source_kind, payout_id, payout_status, paid_at, payout_created_at',
+      'award_id, award_status, amount_cents, currency, source_kind, arena_code, payout_id, payout_status, paid_at, payout_created_at',
     )
     .order('award_id', { ascending: true });
 
@@ -86,6 +87,7 @@ export async function getUserAwards(): Promise<{
     amount_cents:  r.amount_cents as number,
     currency:      r.currency as string,
     source_kind:   (r.source_kind as string | null) ?? null,
+    arena_code:    (r.arena_code as string | null) ?? null,
     prize_kind:    null,
     notes:         null,
     created_at:    '',

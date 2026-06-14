@@ -542,7 +542,10 @@ function PrizeSection({
         const canClaim = (award.status === 'eligible' || award.status === 'pending') && !submission;
         const isSubmitted = submission && ['submitted', 'reviewed', 'archived'].includes(submission.status);
         const isDataCleared = submission?.status === 'data_cleared';
-        const shortId = award.award_id.slice(0, 8).toUpperCase();
+        // Arena名表示: arena_codeがある場合は「{ARENA_CODE} Master Reward」、なければ「Official Arena」
+        const arenaLabel = award.arena_code
+          ? `${award.arena_code} ${t.prizeMasterReward}`
+          : t.prizeOfficialArena;
 
         return (
           <div key={award.award_id} style={sp.card}>
@@ -550,17 +553,20 @@ function PrizeSection({
               <span style={{ ...sp.statusBadge, color: prizeStatusColor(award.status) }}>
                 {award.status.toUpperCase()}
               </span>
-              <span style={sp.cardId}>{shortId}…</span>
               <span style={sp.cardKind}>{award.prize_kind ?? 'cash'}</span>
             </div>
 
             <div style={sp.cardBody}>
+              <div style={sp.awardIdRow}>
+                <span style={sp.awardIdLabel}>{t.prizeAwardId}:</span>
+                <span style={sp.awardIdValue}>{award.award_id}</span>
+              </div>
               <div style={sp.amount}>{fmtPrizeAmount(award.amount_cents, award.currency)}</div>
+              <div style={sp.arenaLabel}>{arenaLabel}</div>
               <div style={sp.meta}>
-                {award.source_kind && <span>Source: {award.source_kind}</span>}
                 {award.created_at && <span>Created: {new Date(award.created_at).toLocaleDateString()}</span>}
-                {award.payout_status && <span>Payout: {award.payout_status}</span>}
-                {award.paid_at && <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ Paid: {new Date(award.paid_at).toLocaleDateString()}</span>}
+                {award.payout_status === 'prepared' && <span style={{ color: '#e65100', fontWeight: 600 }}>{t.prizePreparingPayout}</span>}
+                {award.paid_at && <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ {t.prizePaid}: {new Date(award.paid_at).toLocaleDateString()}</span>}
               </div>
             </div>
 
@@ -730,6 +736,28 @@ const sp: Record<string, React.CSSProperties> = {
   submitSuccessMeta: {
     fontSize: 12,
     color: '#555',
+  },
+  awardIdRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 6,
+    flexWrap: 'wrap',
+  } as React.CSSProperties,
+  awardIdLabel: {
+    fontSize: 11,
+    color: '#999',
+    whiteSpace: 'nowrap',
+  } as React.CSSProperties,
+  awardIdValue: {
+    fontSize: 11,
+    color: '#888',
+    fontFamily: 'monospace',
+    wordBreak: 'break-all',
+  } as React.CSSProperties,
+  arenaLabel: {
+    fontSize: 13,
+    color: '#555',
+    fontWeight: 600,
   },
 };
 

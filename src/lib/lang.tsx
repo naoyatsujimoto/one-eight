@@ -453,6 +453,13 @@ export const T = {
     prizeStatusSubmitted: 'Submitted — awaiting processing',
     prizeStatusProcessed: 'Processed',
     prizeStatusOnHold: 'This award is on hold.',
+    prizeAwardId: 'Award ID',
+    prizeSubmitClaim: 'Submit payout and tax information',
+    prizeClaimSubmitted: 'Payout info submitted',
+    prizePreparingPayout: 'Preparing payout',
+    prizePaid: 'Paid',
+    prizeOfficialArena: 'Official Arena',
+    prizeMasterReward: 'Master Reward',
 
     // AuthGate
     authMagicLink: 'Magic Link',
@@ -930,6 +937,13 @@ export const T = {
     prizeStatusSubmitted: '提出済み・処理待ち',
     prizeStatusProcessed: '処理済み',
     prizeStatusOnHold: 'この受賞は保留中です。',
+    prizeAwardId: 'Award ID',
+    prizeSubmitClaim: '受取・税務情報を提出',
+    prizeClaimSubmitted: '受取・税務情報を提出済み',
+    prizePreparingPayout: '支払準備中',
+    prizePaid: '支払済み',
+    prizeOfficialArena: '公式アリーナ',
+    prizeMasterReward: 'Master報酬',
 
     // AuthGate
     authMagicLink: 'マジックリンク',
@@ -1357,6 +1371,13 @@ export type Translations = {
   prizeStatusSubmitted: string;
   prizeStatusProcessed: string;
   prizeStatusOnHold: string;
+  prizeAwardId: string;
+  prizeSubmitClaim: string;
+  prizeClaimSubmitted: string;
+  prizePreparingPayout: string;
+  prizePaid: string;
+  prizeOfficialArena: string;
+  prizeMasterReward: string;
 
   // AuthGate
   authMagicLink: string;
