@@ -466,6 +466,49 @@ export const T = {
     prizeStatusExpired: 'This award has expired.',
     prizeKindCash: 'Cash',
 
+    // PrizeClaimForm
+    prizeClaimFormTitle: 'Reward / Prize — Payout Information',
+    prizeClaimNoticePayment: 'To process a Reward / Prize payout, we need identity confirmation, tax confirmation, and PayPal receiving information.',
+    prizeClaimNoticeSecurity: 'After the submitted information is saved as a Winner File, printed or stored offline, sensitive information in the online database will generally be deleted within 72 hours as an information security measure.',
+    prizeClaimNoticePaypal: 'If the PayPal receiving email is incorrect, the payout may be delayed, placed on hold, or fail.',
+    prizeClaimNoticeTax: 'The accuracy of tax reporting and residence country information is the recipient\'s responsibility.',
+    prizeClaimLabelLegalName: 'Legal Name *',
+    prizeClaimLabelDisplayName: 'Display Name (optional)',
+    prizeClaimLabelResidenceCountry: 'Residence Country *',
+    prizeClaimLabelAddressLine1: 'Address Line 1 *',
+    prizeClaimLabelAddressLine2: 'Address Line 2 (optional)',
+    prizeClaimLabelCity: 'City *',
+    prizeClaimLabelRegion: 'Region / Prefecture (optional)',
+    prizeClaimLabelPostalCode: 'Postal Code *',
+    prizeClaimLabelCountry: 'Country *',
+    prizeClaimLabelTaxResidenceCountry: 'Tax Residence Country *',
+    prizeClaimLabelDomesticForeign: 'Domestic / Foreign *',
+    prizeClaimLabelPaypalEmail: 'PayPal Receiving Email *',
+    prizeClaimLabelPreferredCurrency: 'Preferred Currency *',
+    prizeClaimPlaceholderLegalName: 'Full legal name as it appears on official documents',
+    prizeClaimPlaceholderDisplayName: 'Game display name (optional)',
+    prizeClaimPlaceholderResidenceCountry: 'e.g. Japan',
+    prizeClaimPlaceholderAddressLine1: 'Street address',
+    prizeClaimPlaceholderAddressLine2: 'Apartment, suite, etc. (optional)',
+    prizeClaimPlaceholderCity: 'City',
+    prizeClaimPlaceholderRegion: 'State / Prefecture',
+    prizeClaimPlaceholderPostalCode: 'Postal / ZIP code',
+    prizeClaimPlaceholderCountry: 'e.g. Japan',
+    prizeClaimPlaceholderTaxResidenceCountry: 'Country where you are a tax resident',
+    prizeClaimPlaceholderPaypalEmail: 'your@paypal.com',
+    prizeClaimSelectDefault: '— Select —',
+    prizeClaimOptionDomestic: 'Domestic',
+    prizeClaimOptionForeign: 'Foreign',
+    prizeClaimConfirmationsTitle: 'Confirmations (all required)',
+    prizeClaimConfirmPaypalName: 'I confirm that my PayPal account name matches the legal name provided above.',
+    prizeClaimConfirmTaxResponsibility: 'I understand that tax reporting is my own responsibility.',
+    prizeClaimConfirmDataDeletion: 'I understand that my submitted information will be deleted from the online database within 72 hours after offline archiving.',
+    prizeClaimSubmit: 'Submit',
+    prizeClaimSubmitting: 'Submitting…',
+    prizeClaimCancel: 'Cancel',
+    prizeClaimSubmitFailed: 'Submission failed. Please try again or contact admin.',
+    prizeClaimInvalidEmail: 'Please enter a valid email address.',
+
     // AuthGate
     authMagicLink: 'Magic Link',
     authOtpLogin: 'Email Code',
@@ -955,6 +998,49 @@ export const T = {
     prizeStatusExpired: 'この受賞は期限切れです。',
     prizeKindCash: '現金',
 
+    // PrizeClaimForm
+    prizeClaimFormTitle: 'Reward / Prize — 受取情報',
+    prizeClaimNoticePayment: 'Reward / Prize の支払には、本人確認・税務確認・PayPal受取情報が必要です。',
+    prizeClaimNoticeSecurity: '提出された情報は、Winner FileとしてPDF保存・紙保管・オフライン保管を行った後、情報セキュリティ対策として、原則72時間以内にオンラインDB上の機微情報を削除します。',
+    prizeClaimNoticePaypal: 'PayPal受取メールが誤っている場合、支払が保留または失敗する可能性があります。',
+    prizeClaimNoticeTax: '税務申告・居住国情報の正確性は受賞者本人の責任です。',
+    prizeClaimLabelLegalName: '法定氏名 *',
+    prizeClaimLabelDisplayName: '表示名（任意）',
+    prizeClaimLabelResidenceCountry: '居住国 *',
+    prizeClaimLabelAddressLine1: '住所1 *',
+    prizeClaimLabelAddressLine2: '住所2（任意）',
+    prizeClaimLabelCity: '市区町村 *',
+    prizeClaimLabelRegion: '都道府県・地域（任意）',
+    prizeClaimLabelPostalCode: '郵便番号 *',
+    prizeClaimLabelCountry: '国 *',
+    prizeClaimLabelTaxResidenceCountry: '税務居住国 *',
+    prizeClaimLabelDomesticForeign: '国内 / 海外 *',
+    prizeClaimLabelPaypalEmail: 'PayPal受取メール *',
+    prizeClaimLabelPreferredCurrency: '希望通貨 *',
+    prizeClaimPlaceholderLegalName: '公的書類と同じ氏名',
+    prizeClaimPlaceholderDisplayName: 'ゲーム内表示名（任意）',
+    prizeClaimPlaceholderResidenceCountry: '例：Japan',
+    prizeClaimPlaceholderAddressLine1: '番地・建物名など',
+    prizeClaimPlaceholderAddressLine2: 'マンション名・部屋番号など（任意）',
+    prizeClaimPlaceholderCity: '市区町村',
+    prizeClaimPlaceholderRegion: '都道府県',
+    prizeClaimPlaceholderPostalCode: '郵便番号',
+    prizeClaimPlaceholderCountry: '例：Japan',
+    prizeClaimPlaceholderTaxResidenceCountry: '税務上の居住国',
+    prizeClaimPlaceholderPaypalEmail: 'your@paypal.com',
+    prizeClaimSelectDefault: '— 選択 —',
+    prizeClaimOptionDomestic: '国内',
+    prizeClaimOptionForeign: '海外',
+    prizeClaimConfirmationsTitle: '同意事項（すべて必須）',
+    prizeClaimConfirmPaypalName: 'PayPalアカウント名が上記の法定氏名と一致することを確認します。',
+    prizeClaimConfirmTaxResponsibility: '税務申告は受賞者本人の責任であることを理解しています。',
+    prizeClaimConfirmDataDeletion: '提出した情報は、オフライン保管後72時間以内にオンラインDBから削除されることを理解しています。',
+    prizeClaimSubmit: '送信',
+    prizeClaimSubmitting: '送信中…',
+    prizeClaimCancel: 'キャンセル',
+    prizeClaimSubmitFailed: '送信に失敗しました。もう一度試すか、管理者に連絡してください。',
+    prizeClaimInvalidEmail: '有効なメールアドレスを入力してください。',
+
     // AuthGate
     authMagicLink: 'マジックリンク',
     authOtpLogin: 'メール認証コード',
@@ -1393,6 +1479,49 @@ export type Translations = {
   prizeStatusCanceled: string;
   prizeStatusExpired: string;
   prizeKindCash: string;
+
+  // PrizeClaimForm
+  prizeClaimFormTitle: string;
+  prizeClaimNoticePayment: string;
+  prizeClaimNoticeSecurity: string;
+  prizeClaimNoticePaypal: string;
+  prizeClaimNoticeTax: string;
+  prizeClaimLabelLegalName: string;
+  prizeClaimLabelDisplayName: string;
+  prizeClaimLabelResidenceCountry: string;
+  prizeClaimLabelAddressLine1: string;
+  prizeClaimLabelAddressLine2: string;
+  prizeClaimLabelCity: string;
+  prizeClaimLabelRegion: string;
+  prizeClaimLabelPostalCode: string;
+  prizeClaimLabelCountry: string;
+  prizeClaimLabelTaxResidenceCountry: string;
+  prizeClaimLabelDomesticForeign: string;
+  prizeClaimLabelPaypalEmail: string;
+  prizeClaimLabelPreferredCurrency: string;
+  prizeClaimPlaceholderLegalName: string;
+  prizeClaimPlaceholderDisplayName: string;
+  prizeClaimPlaceholderResidenceCountry: string;
+  prizeClaimPlaceholderAddressLine1: string;
+  prizeClaimPlaceholderAddressLine2: string;
+  prizeClaimPlaceholderCity: string;
+  prizeClaimPlaceholderRegion: string;
+  prizeClaimPlaceholderPostalCode: string;
+  prizeClaimPlaceholderCountry: string;
+  prizeClaimPlaceholderTaxResidenceCountry: string;
+  prizeClaimPlaceholderPaypalEmail: string;
+  prizeClaimSelectDefault: string;
+  prizeClaimOptionDomestic: string;
+  prizeClaimOptionForeign: string;
+  prizeClaimConfirmationsTitle: string;
+  prizeClaimConfirmPaypalName: string;
+  prizeClaimConfirmTaxResponsibility: string;
+  prizeClaimConfirmDataDeletion: string;
+  prizeClaimSubmit: string;
+  prizeClaimSubmitting: string;
+  prizeClaimCancel: string;
+  prizeClaimSubmitFailed: string;
+  prizeClaimInvalidEmail: string;
 
   // AuthGate
   authMagicLink: string;

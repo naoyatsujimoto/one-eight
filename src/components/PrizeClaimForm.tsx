@@ -10,6 +10,7 @@
  */
 import { useState } from 'react';
 import { submitPrizeTaxSubmission, type SubmitTaxResult } from '../lib/prizeUser';
+import { useLang } from '../lib/lang';
 
 interface Props {
   awardId: string;
@@ -22,6 +23,8 @@ interface Props {
 // ── コンポーネント ────────────────────────────────────────────────────────────
 
 export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
+  const { t } = useLang();
+
   // フォーム値（機微情報 — Console log 禁止）
   const [legalName,               setLegalName]               = useState('');
   const [displayName,             setDisplayName]             = useState('');
@@ -118,7 +121,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
       <div style={s.modal}>
         {/* ヘッダー */}
         <div style={s.header}>
-          <h2 style={s.title}>Reward / Prize — Payout Information</h2>
+          <h2 style={s.title}>{t.prizeClaimFormTitle}</h2>
           <button type="button" style={s.closeBtn} onClick={onClose} disabled={submitting}>
             ✕
           </button>
@@ -127,13 +130,12 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
         {/* 注意書き */}
         <div style={s.notice}>
           <p style={s.noticeText}>
-            Reward / Prize の支払には、本人確認・税務確認・PayPal受取情報が必要です。<br />
-            提出された情報は、Winner FileとしてPDF保存・紙保管・オフライン保存を行った後、<br />
-            原則72時間以内にオンラインDB上の機微情報を削除します。
+            {t.prizeClaimNoticePayment}<br />
+            {t.prizeClaimNoticeSecurity}
           </p>
           <p style={s.noticeText}>
-            PayPal受取メールが誤っている場合、支払が保留または失敗する可能性があります。<br />
-            税務申告・居住国情報の正確性は受賞者本人の責任です。
+            {t.prizeClaimNoticePaypal}<br />
+            {t.prizeClaimNoticeTax}
           </p>
         </div>
 
@@ -141,13 +143,13 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* Legal name */}
           <label style={s.label}>
-            Legal Name *
+            {t.prizeClaimLabelLegalName}
             <input
               style={s.input}
               type="text"
               value={legalName}
               onChange={e => setLegalName(e.target.value)}
-              placeholder="Full legal name as it appears on official documents"
+              placeholder={t.prizeClaimPlaceholderLegalName}
               required
               autoComplete="off"
             />
@@ -155,26 +157,26 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* Display name */}
           <label style={s.label}>
-            Display Name (optional)
+            {t.prizeClaimLabelDisplayName}
             <input
               style={s.input}
               type="text"
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
-              placeholder="Game display name (optional)"
+              placeholder={t.prizeClaimPlaceholderDisplayName}
               autoComplete="off"
             />
           </label>
 
           {/* Residence country */}
           <label style={s.label}>
-            Residence Country *
+            {t.prizeClaimLabelResidenceCountry}
             <input
               style={s.input}
               type="text"
               value={residenceCountry}
               onChange={e => setResidenceCountry(e.target.value)}
-              placeholder="e.g. Japan"
+              placeholder={t.prizeClaimPlaceholderResidenceCountry}
               required
               autoComplete="off"
             />
@@ -182,13 +184,13 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* Address line 1 */}
           <label style={s.label}>
-            Address Line 1 *
+            {t.prizeClaimLabelAddressLine1}
             <input
               style={s.input}
               type="text"
               value={addressLine1}
               onChange={e => setAddressLine1(e.target.value)}
-              placeholder="Street address"
+              placeholder={t.prizeClaimPlaceholderAddressLine1}
               required
               autoComplete="off"
             />
@@ -196,39 +198,39 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* Address line 2 */}
           <label style={s.label}>
-            Address Line 2 (optional)
+            {t.prizeClaimLabelAddressLine2}
             <input
               style={s.input}
               type="text"
               value={addressLine2}
               onChange={e => setAddressLine2(e.target.value)}
-              placeholder="Apartment, suite, etc. (optional)"
+              placeholder={t.prizeClaimPlaceholderAddressLine2}
               autoComplete="off"
             />
           </label>
 
-          {/* City */}
+          {/* City + Region */}
           <div style={s.row}>
             <label style={{ ...s.label, flex: 2 }}>
-              City *
+              {t.prizeClaimLabelCity}
               <input
                 style={s.input}
                 type="text"
                 value={city}
                 onChange={e => setCity(e.target.value)}
-                placeholder="City"
+                placeholder={t.prizeClaimPlaceholderCity}
                 required
                 autoComplete="off"
               />
             </label>
             <label style={{ ...s.label, flex: 1 }}>
-              Region / Prefecture (optional)
+              {t.prizeClaimLabelRegion}
               <input
                 style={s.input}
                 type="text"
                 value={region}
                 onChange={e => setRegion(e.target.value)}
-                placeholder="State / Prefecture"
+                placeholder={t.prizeClaimPlaceholderRegion}
                 autoComplete="off"
               />
             </label>
@@ -237,25 +239,25 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
           {/* Postal code + Country */}
           <div style={s.row}>
             <label style={{ ...s.label, flex: 1 }}>
-              Postal Code *
+              {t.prizeClaimLabelPostalCode}
               <input
                 style={s.input}
                 type="text"
                 value={postalCode}
                 onChange={e => setPostalCode(e.target.value)}
-                placeholder="Postal / ZIP code"
+                placeholder={t.prizeClaimPlaceholderPostalCode}
                 required
                 autoComplete="off"
               />
             </label>
             <label style={{ ...s.label, flex: 2 }}>
-              Country *
+              {t.prizeClaimLabelCountry}
               <input
                 style={s.input}
                 type="text"
                 value={country}
                 onChange={e => setCountry(e.target.value)}
-                placeholder="e.g. Japan"
+                placeholder={t.prizeClaimPlaceholderCountry}
                 required
                 autoComplete="off"
               />
@@ -264,13 +266,13 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* Tax residence country */}
           <label style={s.label}>
-            Tax Residence Country *
+            {t.prizeClaimLabelTaxResidenceCountry}
             <input
               style={s.input}
               type="text"
               value={taxResidenceCountry}
               onChange={e => setTaxResidenceCountry(e.target.value)}
-              placeholder="Country where you are a tax resident"
+              placeholder={t.prizeClaimPlaceholderTaxResidenceCountry}
               required
               autoComplete="off"
             />
@@ -278,39 +280,39 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* Domestic / Foreign */}
           <label style={s.label}>
-            Domestic / Foreign *
+            {t.prizeClaimLabelDomesticForeign}
             <select
               style={s.select}
               value={domesticOrForeign}
               onChange={e => setDomesticOrForeign(e.target.value as 'domestic' | 'foreign' | 'unknown')}
               required
             >
-              <option value="unknown">— Select —</option>
-              <option value="domestic">Domestic</option>
-              <option value="foreign">Foreign</option>
+              <option value="unknown">{t.prizeClaimSelectDefault}</option>
+              <option value="domestic">{t.prizeClaimOptionDomestic}</option>
+              <option value="foreign">{t.prizeClaimOptionForeign}</option>
             </select>
           </label>
 
           {/* PayPal email */}
           <label style={s.label}>
-            PayPal Receiving Email *
+            {t.prizeClaimLabelPaypalEmail}
             <input
               style={s.input}
               type="email"
               value={paypalEmail}
               onChange={e => setPaypalEmail(e.target.value)}
-              placeholder="your@paypal.com"
+              placeholder={t.prizeClaimPlaceholderPaypalEmail}
               required
               autoComplete="off"
             />
             {paypalEmail.trim() !== '' && !isValidEmail(paypalEmail) && (
-              <span style={s.fieldError}>Please enter a valid email address.</span>
+              <span style={s.fieldError}>{t.prizeClaimInvalidEmail}</span>
             )}
           </label>
 
           {/* Preferred currency */}
           <label style={s.label}>
-            Preferred Currency *
+            {t.prizeClaimLabelPreferredCurrency}
             <select
               style={s.select}
               value={preferredCurrency}
@@ -326,7 +328,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
 
           {/* 同意チェックボックス */}
           <div style={s.checkboxSection}>
-            <div style={s.checkboxSectionTitle}>Confirmations (all required)</div>
+            <div style={s.checkboxSectionTitle}>{t.prizeClaimConfirmationsTitle}</div>
 
             <label style={s.checkboxLabel}>
               <input
@@ -335,7 +337,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
                 onChange={e => setConfirmedPaypalName(e.target.checked)}
               />
               <span style={s.checkboxText}>
-                I confirm that my PayPal account name matches the legal name provided above.
+                {t.prizeClaimConfirmPaypalName}
               </span>
             </label>
 
@@ -346,7 +348,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
                 onChange={e => setConfirmedTaxResponsibility(e.target.checked)}
               />
               <span style={s.checkboxText}>
-                I understand that tax reporting is my own responsibility.
+                {t.prizeClaimConfirmTaxResponsibility}
               </span>
             </label>
 
@@ -357,8 +359,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
                 onChange={e => setConfirmedDataDeletion(e.target.checked)}
               />
               <span style={s.checkboxText}>
-                I understand that my submitted information will be deleted from the online database
-                within 72 hours after offline archiving.
+                {t.prizeClaimConfirmDataDeletion}
               </span>
             </label>
           </div>
@@ -366,7 +367,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
           {/* エラー表示（機微情報を含めない） */}
           {submitError && (
             <div style={s.errorBanner}>
-              Submission failed. Please try again or contact admin.<br />
+              {t.prizeClaimSubmitFailed}<br />
               <span style={s.errorDetail}>{submitError}</span>
             </div>
           )}
@@ -374,14 +375,14 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
           {/* Submit */}
           <div style={s.actions}>
             <button type="button" style={s.cancelBtn} onClick={onClose} disabled={submitting}>
-              Cancel
+              {t.prizeClaimCancel}
             </button>
             <button
               type="submit"
               style={{ ...s.submitBtn, ...((!canSubmit() || submitting) ? s.submitBtnDisabled : {}) }}
               disabled={!canSubmit() || submitting}
             >
-              {submitting ? 'Submitting…' : 'Submit'}
+              {submitting ? t.prizeClaimSubmitting : t.prizeClaimSubmit}
             </button>
           </div>
         </form>
