@@ -721,6 +721,9 @@ function MyArenaMatchSection({
             <div style={myMatchStyles.resultPendingTitle}>{t.arenaResultPendingTitle}</div>
             <div style={myMatchStyles.resultPendingBody}>{t.arenaResultPendingBody}</div>
             <div style={myMatchStyles.resultPendingNote}>{t.arenaResultPendingNote}</div>
+            <div style={myMatchStyles.finalizingNotice}>
+              {t.arenaFinalizingResults} {t.arenaFinalizingResultsHint}
+            </div>
           </div>
         ) : arenaMatchCancelled ? (
           // Match自体がキャンセル（arena_match_statusがcancelled）
@@ -1596,5 +1599,15 @@ const myMatchStyles: Record<string, React.CSSProperties> = {
     fontSize: '0.78rem',
     color: '#2a7a2a',
     fontWeight: 500,
+  },
+  finalizingNotice: {
+    marginTop: '0.35rem',
+    fontSize: '0.73rem',
+    color: '#7a6a00',
+    background: '#fffbea',
+    border: '1px solid #e8d880',
+    borderRadius: 4,
+    padding: '0.25rem 0.45rem',
+    lineHeight: 1.45,
   },
 };
