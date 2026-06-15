@@ -404,6 +404,16 @@ export const T = {
     arenaNoArenaTitles: 'No Arena titles yet',
     arenaTitleMaster: 'Master',
     arenaTitleCurrentHolder: 'Current holder',
+    // Official Arena Rules (accordion)
+    arenaRulesTitle: 'Official Arena Rules',
+    arenaRulesEventTitle: 'Arena Events',
+    arenaRulesEventBody: 'ELEPHANT and JAGUAR are treated as separate Arenas.\nPoints, titles, and history are managed separately for each Arena.',
+    arenaRulesMatchingTitle: 'Matching',
+    arenaRulesMatchingBody: 'After the entry deadline, matches are created from the entered players.\n\nMatch 1 is the match related to the Master title.\nIf the current Master has entered, the Master plays in Match 1. If the Master is absent, Match 1 is created from the entered players.\n\nMatch 2 and later are paired by Arena points.\nIf there is an odd number of players, the last remaining player receives no match.',
+    arenaRulesOrderTitle: 'First / Second Player',
+    arenaRulesOrderBody: 'In a Master match, the Master plays first.\nIf there is no Master, or in point matches, the player with higher Arena points plays first.\nIf players are tied, the order is decided by the defined tiebreakers.',
+    arenaRulesPointTitle: 'Points',
+    arenaRulesPointBody: 'Arena points are managed separately for each Arena.\n\nWin: +3\nLoss: +1\nNo-show loss: -3\nNo match: 0\n\nPoints can become negative.',
 
     // Timer
     timerClock: 'Time Clock',
@@ -931,6 +941,16 @@ export const T = {
     arenaNoArenaTitles: 'アリーナ称号なし',
     arenaTitleMaster: 'マスター',
     arenaTitleCurrentHolder: '現在の称号保持者',
+    // Official Arena Rules (accordion)
+    arenaRulesTitle: 'Official Arenaルール',
+    arenaRulesEventTitle: 'Arenaの開催',
+    arenaRulesEventBody: 'ELEPHANTとJAGUARは、それぞれ別のArenaとして扱われます。\nポイント、称号、履歴はArenaごとに管理されます。',
+    arenaRulesMatchingTitle: 'マッチング',
+    arenaRulesMatchingBody: '締切後、参加者の中から対戦が組まれます。\n\nMatch 1はMaster称号に関わる対局です。\nMasterが参加している場合はMasterが出場し、不在の場合は参加者の中から対戦が組まれます。\n\nMatch 2以降はポイント順で対戦が組まれます。\n参加者が奇数の場合、最後の1名は不成立となります。',
+    arenaRulesOrderTitle: '先手 / 後手',
+    arenaRulesOrderBody: 'Master戦では、Masterが先手になります。\nMasterがいない場合やポイント戦では、ポイント上位のプレイヤーが先手になります。\n同点の場合は既定のタイブレークにより決定します。',
+    arenaRulesPointTitle: 'ポイント',
+    arenaRulesPointBody: '各Arenaのポイントは、Arenaごとに別々に管理されます。\n\n勝利：+3\n敗北：+1\n不戦敗：-3\n不成立：0\n\nポイントは負の値になることがあります。',
 
     // Timer
     timerClock: 'タイムクロック',
@@ -1408,6 +1428,16 @@ export type Translations = {
   arenaNoArenaTitles: string;
   arenaTitleMaster: string;
   arenaTitleCurrentHolder: string;
+  // Official Arena Rules (accordion)
+  arenaRulesTitle: string;
+  arenaRulesEventTitle: string;
+  arenaRulesEventBody: string;
+  arenaRulesMatchingTitle: string;
+  arenaRulesMatchingBody: string;
+  arenaRulesOrderTitle: string;
+  arenaRulesOrderBody: string;
+  arenaRulesPointTitle: string;
+  arenaRulesPointBody: string;
 
   // Timer
   timerClock: string;

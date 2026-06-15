@@ -994,6 +994,9 @@ export function OfficialArenaOverview({
       {/* Section heading */}
       <div style={overviewStyles.sectionTitle}>{t.arenaOfficialArena}</div>
 
+      {/* Arena Rules accordion */}
+      <ArenaRulesAccordion />
+
       {/* Arena cards */}
       <div style={overviewStyles.cards}>
         {arenas.map((arena) => (
@@ -1021,6 +1024,87 @@ export function OfficialArenaOverview({
     </div>
   );
 }
+
+// ─── Arena Rules Accordion ──────────────────────────────────────────────────
+
+function ArenaRulesAccordion() {
+  const { t } = useLang();
+
+  const items: Array<{ title: string; body: string }> = [
+    { title: t.arenaRulesEventTitle,    body: t.arenaRulesEventBody },
+    { title: t.arenaRulesMatchingTitle, body: t.arenaRulesMatchingBody },
+    { title: t.arenaRulesOrderTitle,    body: t.arenaRulesOrderBody },
+    { title: t.arenaRulesPointTitle,    body: t.arenaRulesPointBody },
+  ];
+
+  return (
+    <div style={rulesStyles.wrapper}>
+      <details style={rulesStyles.outerDetails}>
+        <summary style={rulesStyles.outerSummary}>{t.arenaRulesTitle}</summary>
+        <div style={rulesStyles.innerList}>
+          {items.map((item) => (
+            <details key={item.title} style={rulesStyles.itemDetails}>
+              <summary style={rulesStyles.itemSummary}>{item.title}</summary>
+              <div style={rulesStyles.itemBody}>
+                {item.body.split('\n').map((line, i) =>
+                  line === '' ? <br key={i} /> : <span key={i} style={{ display: 'block' }}>{line}</span>
+                )}
+              </div>
+            </details>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+const rulesStyles: Record<string, React.CSSProperties> = {
+  wrapper: {
+    marginBottom: '0.75rem',
+  },
+  outerDetails: {
+    border: '1px solid #e0dbd5',
+    borderRadius: 6,
+    background: '#faf8f5',
+    overflow: 'hidden',
+  },
+  outerSummary: {
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: '#555',
+    letterSpacing: '0.04em',
+    padding: '0.55rem 0.75rem',
+    cursor: 'pointer',
+    userSelect: 'none',
+    listStyle: 'none',
+  },
+  innerList: {
+    borderTop: '1px solid #e8e3de',
+    padding: '0.4rem 0.5rem 0.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.25rem',
+  },
+  itemDetails: {
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  itemSummary: {
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: '#444',
+    padding: '0.4rem 0.5rem',
+    cursor: 'pointer',
+    userSelect: 'none',
+    listStyle: 'none',
+  },
+  itemBody: {
+    fontSize: '0.78rem',
+    color: '#555',
+    lineHeight: 1.65,
+    padding: '0.3rem 0.75rem 0.5rem',
+  },
+};
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
