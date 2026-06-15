@@ -399,6 +399,14 @@ export const T = {
     arenaResultProcessed: 'Arena result processed.',
     arenaFinalizingResults: 'Finalizing results…',
     arenaFinalizingResultsHint: 'Arena points and titles will be updated shortly.',
+    // Entry blocked: previous results not finalized
+    arenaEntryBlockedPreviousResultsTitle: 'Previous results pending',
+    arenaEntryBlockedPreviousResultsBody: 'Entry for the next Arena will open after the previous Arena results have been finalized.',
+    arenaEntryOpensAfterPreviousResults: 'Entry opens after previous results are finalized.',
+    arenaEntryErrPreviousResultsPending: 'Entry is not available until the previous Arena results are finalized.',
+    arenaEntryBlockedPreviousResultsShort: 'Entry opens after previous results are finalized.',
+    arenaEntryBlockedPreviousResultsShortTitle: 'Previous results pending.',
+    arenaEntryBlockedPreviousResultsShortBody: 'Entry opens after previous results are finalized.',
     // E-6: Arena titles on Profile/UserPage
     arenaArenaTitles: 'Arena Titles',
     arenaNoArenaTitles: 'No Arena titles yet',
@@ -944,6 +952,14 @@ export const T = {
     arenaResultProcessed: 'Arena結果は反映済みです。',
     arenaFinalizingResults: '結果集計中です。',
     arenaFinalizingResultsHint: 'Arenaのポイント・称号反映までしばらくお待ちください。',
+    // Entry blocked: previous results not finalized
+    arenaEntryBlockedPreviousResultsTitle: '前回結果の集計中',
+    arenaEntryBlockedPreviousResultsBody: '前回Arenaの結果集計が完了してから、次回のエントリー受付を開始します。',
+    arenaEntryOpensAfterPreviousResults: '前回結果の集計完了後にエントリー開始',
+    arenaEntryErrPreviousResultsPending: '前回Arenaの結果集計が完了するまでEntryできません。',
+    arenaEntryBlockedPreviousResultsShort: '前回結果の集計完了後にエントリー開始',
+    arenaEntryBlockedPreviousResultsShortTitle: '前回結果の集計中。',
+    arenaEntryBlockedPreviousResultsShortBody: '前回結果の集計完了後にエントリー開始',
     // E-6: Arena titles on Profile/UserPage
     arenaArenaTitles: 'アリーナ称号',
     arenaNoArenaTitles: 'アリーナ称号なし',
@@ -1462,6 +1478,14 @@ export type Translations = {
   arenaRulesNoShowBody: string;
   arenaRulesRewardTitle: string;
   arenaRulesRewardBody: string;
+  // Entry blocked: previous results not finalized
+  arenaEntryBlockedPreviousResultsTitle: string;
+  arenaEntryBlockedPreviousResultsBody: string;
+  arenaEntryOpensAfterPreviousResults: string;
+  arenaEntryErrPreviousResultsPending: string;
+  arenaEntryBlockedPreviousResultsShort: string;
+  arenaEntryBlockedPreviousResultsShortTitle: string;
+  arenaEntryBlockedPreviousResultsShortBody: string;
 
   // Timer
   timerClock: string;

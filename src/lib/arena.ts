@@ -35,6 +35,8 @@ export interface ArenaOverviewItem {
   // My entry
   my_entry_status: string | null;
   my_entered_at: string | null;
+  // Previous event results pending (true = previous event has unprocessed arena_matches)
+  previous_results_pending: boolean;
 }
 
 export interface ArenaRankingRow {
@@ -97,6 +99,8 @@ export interface ArenaDetailData {
   my_entry_status: string | null;
   my_entered_at: string | null;
   my_match: Record<string, unknown> | null;
+  // Previous event results pending (true = previous event has unprocessed arena_matches)
+  previous_results_pending: boolean;
   // Rankings and history
   top_ranking: ArenaRankingRow[];
   recent_match_history: ArenaMatchHistoryRow[];
@@ -182,6 +186,8 @@ export async function enterArenaEvent(
       'pro_required': 'pro_required',
       'already entered': 'already_entered',
       'already_entered': 'already_entered',
+      'previous results pending': 'previous_results_pending',
+      'previous_results_pending': 'previous_results_pending',
     };
     const lc = msg.toLowerCase();
     let reason = 'unknown_error';

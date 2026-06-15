@@ -128,7 +128,8 @@ type EntryButtonState =
   | 'deadline_passed' // 締切後
   | 'no_event'        // next_event なし
   | 'login_required'  // 非ログイン
-  | 'pro_required';   // Free ユーザー
+  | 'pro_required'    // Free ユーザー
+  | 'previous_results_pending'; // 前回結果未処理中
 
 /**
  * ボタン状態判定の優先順位:
@@ -136,10 +137,11 @@ type EntryButtonState =
  * 2. 未ログイン → login_required
  * 3. 非Pro → pro_required
  * 4. Entry済み → already_entered
- * 5. 締切後 → deadline_passed
+ * 5. 前回結果未処理中 → previous_results_pending
+ * 6. 締切後 → deadline_passed
  *    ・event_status が 'closed' / 'completed' / 'cancelled' の場合
  *    ・または deadline が有効かつ過去日時の場合
- * 6. Entry可能 → can_enter
+ * 7. Entry可能 → can_enter
  */
 function getEntryButtonState(opts: {
   isLoggedIn: boolean;
@@ -148,13 +150,17 @@ function getEntryButtonState(opts: {
   entryDeadline: string | null;
   hasNextEvent: boolean;
   eventStatus: string | null;
+  previousResultsPending?: boolean;
 }): EntryButtonState {
-  const { isLoggedIn, isProActive, myEntryStatus, entryDeadline, hasNextEvent, eventStatus } = opts;
+  const { isLoggedIn, isProActive, myEntryStatus, entryDeadline, hasNextEvent, eventStatus, previousResultsPending } = opts;
 
   if (!hasNextEvent) return 'no_event';
   if (!isLoggedIn) return 'login_required';
   if (!isProActive) return 'pro_required';
   if (myEntryStatus && myEntryStatus !== 'withdrawn') return 'already_entered';
+
+  // 前回Arenaの結果集計が未完了の場合はEntry不可
+  if (previousResultsPending) return 'previous_results_pending';
 
   // event_status が明示的に「受付終了」系の場合のみ締切済み扱い
   // 'scheduled' はEntry受付中（enter_arena_event RPC が status='scheduled' のみ許可）
@@ -359,6 +365,7 @@ function ArenaDetailModal({
         entryDeadline: detail.next_event?.entry_deadline ?? null,
         hasNextEvent: !!detail.next_event,
         eventStatus: detail.next_event?.event_status ?? null,
+        previousResultsPending: detail.previous_results_pending,
       })
     : 'no_event';
 
@@ -417,6 +424,7 @@ function mapEntryErrorReason(
     case 'entry_deadline_passed': return t.arenaEntryErrDeadlinePassed;
     case 'event_not_found': return t.arenaEntryErrEventNotFound;
     case 'event_not_open': return t.arenaEntryErrEventNotOpen;
+    case 'previous_results_pending': return t.arenaEntryErrPreviousResultsPending;
     default: return t.arenaEntryErrUnknown;
   }
 }
@@ -818,6 +826,13 @@ function EntryButtonForDetail({
           {t.arenaNoUpcomingEvent}
         </div>
       );
+    case 'previous_results_pending':
+      return (
+        <div style={entryBtnStyles.stateLabel}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>{t.arenaEntryBlockedPreviousResultsShortTitle}</div>
+          <div style={{ fontSize: 13, color: '#888' }}>{t.arenaEntryBlockedPreviousResultsShortBody}</div>
+        </div>
+      );
   }
 }
 
@@ -846,6 +861,7 @@ function ArenaCard({
     entryDeadline: arena.entry_deadline,
     hasNextEvent: !!arena.event_id,
     eventStatus: arena.event_status,
+    previousResultsPending: arena.previous_results_pending,
   });
 
   function renderEntryStatusBadge() {
@@ -860,6 +876,8 @@ function ArenaCard({
         return <span style={cardStyles.entryBadgeInfo}>{t.arenaProRequired}</span>;
       case 'no_event':
         return <span style={cardStyles.entryBadgeInfo}>{t.arenaNoUpcomingEvent}</span>;
+      case 'previous_results_pending':
+        return <span style={cardStyles.entryBadgeInfo}>{t.arenaEntryOpensAfterPreviousResults}</span>;
       case 'can_enter':
         return null; // カード上にはボタンを置かずタップで詳細へ誘導
     }
