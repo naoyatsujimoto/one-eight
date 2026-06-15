@@ -412,8 +412,16 @@ export const T = {
     arenaRulesMatchingBody: 'After the entry deadline, matches are created from the entered players.\n\nMatch 1 is the match related to the Master title.\nIf the current Master has entered, the Master plays in Match 1. If the Master is absent, Match 1 is created from the entered players.\n\nMatch 2 and later are paired by Arena points.\nIf there is an odd number of players, the last remaining player receives no match.',
     arenaRulesOrderTitle: 'First / Second Player',
     arenaRulesOrderBody: 'In a Master match, the Master plays first.\nIf there is no Master, or in point matches, the player with higher Arena points plays first.\nIf players are tied, the order is decided by the defined tiebreakers.',
+    arenaRulesEntryTitle: 'Entry Requirement',
+    arenaRulesEntryBody: 'A Pro account is required to enter Official Arena.',
     arenaRulesPointTitle: 'Points',
     arenaRulesPointBody: 'Arena points are managed separately for each Arena.\n\nWin: +3\nLoss: +1\nNo-show loss: -3\nNo match: 0\n\nPoints can become negative.',
+    arenaRulesMasterTitle: 'Master',
+    arenaRulesMasterBody: 'Each Arena has a Master.\n\nIf the Master loses Match 1, the winner becomes the new Master.\nIf the Master wins, the title is retained.\n\nIf there is no Master, the winner of Match 1 becomes the Interim Master.\nIf the Interim Master wins a later Master-related match, they become the official Master.',
+    arenaRulesNoShowTitle: 'no-show',
+    arenaRulesNoShowBody: 'A player who does not enter the match is treated as a no-show.\n\nIf only one player enters, that player wins.\nIf neither player enters, the match is treated as no contest.',
+    arenaRulesRewardTitle: 'Reward / Prize',
+    arenaRulesRewardBody: 'A Reward / Prize may be assigned for results related to an Arena Master title.\n\nTo receive it, payout information, tax confirmation, and a PayPal receiving email are required.\nPayouts are made through PayPal.',
 
     // Timer
     timerClock: 'Time Clock',
@@ -949,8 +957,16 @@ export const T = {
     arenaRulesMatchingBody: '締切後、参加者の中から対戦が組まれます。\n\nMatch 1はMaster称号に関わる対局です。\nMasterが参加している場合はMasterが出場し、不在の場合は参加者の中から対戦が組まれます。\n\nMatch 2以降はポイント順で対戦が組まれます。\n参加者が奇数の場合、最後の1名は不成立となります。',
     arenaRulesOrderTitle: '先手 / 後手',
     arenaRulesOrderBody: 'Master戦では、Masterが先手になります。\nMasterがいない場合やポイント戦では、ポイント上位のプレイヤーが先手になります。\n同点の場合は既定のタイブレークにより決定します。',
+    arenaRulesEntryTitle: '参加条件',
+    arenaRulesEntryBody: 'Official Arenaへの参加にはProが必要です。',
     arenaRulesPointTitle: 'ポイント',
     arenaRulesPointBody: '各Arenaのポイントは、Arenaごとに別々に管理されます。\n\n勝利：+3\n敗北：+1\n不戦敗：-3\n不成立：0\n\nポイントは負の値になることがあります。',
+    arenaRulesMasterTitle: 'Master称号',
+    arenaRulesMasterBody: '各ArenaにはMasterが存在します。\n\nMasterがMatch 1で敗れた場合、勝者が新しいMasterになります。\nMasterが勝利した場合、その称号を維持します。\n\nMasterが不在の場合、Match 1の勝者はInterim Masterになります。\nInterim Masterが次回以降のMaster関連Matchに勝利すると、正式なMasterになります。',
+    arenaRulesNoShowTitle: 'no-show',
+    arenaRulesNoShowBody: '対局に入室しなかった場合はno-showとなります。\n\n片方のみが入室しなかった場合、入室したプレイヤーの勝利となります。\n両者が入室しなかった場合、その対局は不成立となります。',
+    arenaRulesRewardTitle: 'Reward / Prize',
+    arenaRulesRewardBody: 'ArenaのMaster称号に関わる結果に対して、Reward / Prizeが設定される場合があります。\n\n受け取りには、受取情報・税務確認・PayPal受取メールの提出が必要です。\n支払はPayPalを通じて行われます。',
 
     // Timer
     timerClock: 'タイムクロック',
@@ -1436,8 +1452,16 @@ export type Translations = {
   arenaRulesMatchingBody: string;
   arenaRulesOrderTitle: string;
   arenaRulesOrderBody: string;
+  arenaRulesEntryTitle: string;
+  arenaRulesEntryBody: string;
   arenaRulesPointTitle: string;
   arenaRulesPointBody: string;
+  arenaRulesMasterTitle: string;
+  arenaRulesMasterBody: string;
+  arenaRulesNoShowTitle: string;
+  arenaRulesNoShowBody: string;
+  arenaRulesRewardTitle: string;
+  arenaRulesRewardBody: string;
 
   // Timer
   timerClock: string;

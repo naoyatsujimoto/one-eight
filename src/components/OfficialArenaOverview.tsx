@@ -1031,10 +1031,14 @@ function ArenaRulesAccordion() {
   const { t } = useLang();
 
   const items: Array<{ title: string; body: string }> = [
+    { title: t.arenaRulesEntryTitle,    body: t.arenaRulesEntryBody },
     { title: t.arenaRulesEventTitle,    body: t.arenaRulesEventBody },
     { title: t.arenaRulesMatchingTitle, body: t.arenaRulesMatchingBody },
     { title: t.arenaRulesOrderTitle,    body: t.arenaRulesOrderBody },
     { title: t.arenaRulesPointTitle,    body: t.arenaRulesPointBody },
+    { title: t.arenaRulesMasterTitle,   body: t.arenaRulesMasterBody },
+    { title: t.arenaRulesNoShowTitle,   body: t.arenaRulesNoShowBody },
+    { title: t.arenaRulesRewardTitle,   body: t.arenaRulesRewardBody },
   ];
 
   return (
