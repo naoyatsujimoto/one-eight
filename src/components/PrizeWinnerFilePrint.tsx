@@ -47,7 +47,35 @@ function safeBool(obj: Record<string, unknown> | null | undefined, key: string):
   if (!obj) return '—';
   const v = obj[key];
   if (v === null || v === undefined) return '—';
-  return v ? 'Yes' : 'No';
+  // boolean true/false を人間が読める文字列に変換
+  if (v === true)  return 'Yes / Confirmed';
+  if (v === false) return 'Not confirmed';
+  // 文字列で渡ってきた場合
+  if (typeof v === 'string') {
+    const lower = v.toLowerCase();
+    if (lower === 'true')  return 'Yes / Confirmed';
+    if (lower === 'false') return 'Not confirmed';
+  }
+  return String(v);
+}
+
+// 住所フィールドを Full Address として結合する
+function buildFullAddress(obj: Record<string, unknown> | null | undefined): string {
+  if (!obj) return '—';
+  const parts: string[] = [];
+  const line1     = obj['address_line1'];
+  const line2     = obj['address_line2'];
+  const city      = obj['city'];
+  const region    = obj['region'];
+  const postal    = obj['postal_code'];
+  const country   = obj['country'];
+  if (line1  && String(line1).trim())  parts.push(String(line1).trim());
+  if (line2  && String(line2).trim())  parts.push(String(line2).trim());
+  if (city   && String(city).trim())   parts.push(String(city).trim());
+  if (region && String(region).trim()) parts.push(String(region).trim());
+  if (postal && String(postal).trim()) parts.push(String(postal).trim());
+  if (country && String(country).trim()) parts.push(String(country).trim());
+  return parts.length > 0 ? parts.join(', ') : '—';
 }
 
 // ── コンポーネント ────────────────────────────────────────────────────────────
@@ -295,19 +323,35 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
             <PrintRow label="Delete Due At"      value={fmtDate(printData.delete_after)} />
           </Section>
 
-          {/* 税務・支払情報（submission_data から） */}
+          {/* Payout 情報 */}
+          <Section title="Payout Information">
+            <PrintRow label="Payout ID"          value={printData.payout_id ?? '—'} />
+            <PrintRow label="Payout Status"      value={printData.payout_status ?? '—'} />
+            <PrintRow label="Prepared At"        value={fmtDate(printData.prepared_at)} />
+            <PrintRow label="Paid At"            value={fmtDate(printData.paid_at)} />
+          </Section>
+
+          {/* データソース表示 */}
+          {printData.data_source && printData.data_source !== 'submission_data' && (
+            <div style={s.dataSourceNote}>
+              ⚠ Data source: {printData.data_source === 'payout_snapshot'
+                ? 'Payout Snapshot (submission data was cleared after prepare)'
+                : 'Unavailable — sensitive data has been cleared'}
+            </div>
+          )}
+
+          {/* 税務・支払情報（submission_data または payout_snapshot から） */}
           {sd ? (
             <Section title="Tax &amp; Payment Information (SENSITIVE)">
-              <PrintRow label="Legal Name"             value={safeStr(sd, 'legal_name')} />
-              <PrintRow label="Residence Country"      value={safeStr(sd, 'residence_country')} />
-              <PrintRow label="Address"                value={safeStr(sd, 'address')} />
-              <PrintRow label="Tax Residence Country"  value={safeStr(sd, 'tax_residence_country')} />
-              <PrintRow label="Domestic / Foreign"     value={safeStr(sd, 'domestic_or_foreign')} />
-              <PrintRow label="PayPal Email"           value={safeStr(sd, 'paypal_email')} />
-              <PrintRow label="Preferred Currency"     value={safeStr(sd, 'preferred_currency')} />
-              <PrintRow label="User Confirmed Identity" value={safeBool(sd, 'confirmed_identity')} />
-              <PrintRow label="User Confirmed Tax Info" value={safeBool(sd, 'confirmed_tax_info')} />
-              <PrintRow label="User Confirmed Terms"   value={safeBool(sd, 'confirmed_terms')} />
+              <PrintRow label="Legal Name"                    value={safeStr(sd, 'legal_name')} />
+              <PrintRow label="Residence Country"             value={safeStr(sd, 'residence_country')} />
+              <PrintRow label="Full Address"                  value={buildFullAddress(sd)} />
+              <PrintRow label="Tax Residence Country"         value={safeStr(sd, 'tax_residence_country')} />
+              <PrintRow label="Domestic / Foreign"            value={safeStr(sd, 'domestic_or_foreign')} />
+              <PrintRow label="PayPal Email"                  value={safeStr(sd, 'paypal_email')} />
+              <PrintRow label="Preferred Currency"            value={safeStr(sd, 'preferred_currency')} />
+              <PrintRow label="User Confirmed Identity"       value={safeBool(sd, 'user_confirmed_legal_responsibility')} />
+              <PrintRow label="User Confirmed Paypal Name"    value={safeBool(sd, 'user_confirmed_paypal_name_match')} />
             </Section>
           ) : (
             <Section title="Tax &amp; Payment Information">
@@ -587,5 +631,15 @@ const s: Record<string, React.CSSProperties> = {
     color: '#888',
     fontStyle: 'italic',
     padding: '4px 0',
+  },
+  dataSourceNote: {
+    background: '#fff3e0',
+    border: '1px solid #ffcc80',
+    borderRadius: 4,
+    padding: '6px 10px',
+    fontSize: 11,
+    color: '#e65100',
+    marginBottom: 10,
+    fontWeight: 600,
   },
 };

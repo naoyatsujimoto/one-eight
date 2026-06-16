@@ -131,7 +131,9 @@ export interface PrintSubmissionResult {
   award_id:              string;
   recipient_user_id:     string;
   submission_status:     string;
-  /** 機微情報を含む。Console log 禁止。 */
+  /** 機微情報を含む。Console log 禁止。
+   * submission_data が data_cleared の場合は payout_snapshot から補完される。
+   * data_source フィールドで出典を確認できる。 */
   submission_data:       Record<string, unknown> | null;
   submitted_at:          string | null;
   delete_after:          string | null;
@@ -145,6 +147,13 @@ export interface PrintSubmissionResult {
   source_arena_match_id: string | null;
   prize_kind:            string | null;
   award_status:          string;
+  // payout（2026-06-16 追加）
+  payout_id:             string | null;
+  payout_status:         string | null;
+  prepared_at:           string | null;
+  paid_at:               string | null;
+  /** 機微情報の出典: 'submission_data' | 'payout_snapshot' | 'unavailable' */
+  data_source:           string | null;
 }
 
 export interface ArchiveResult {
