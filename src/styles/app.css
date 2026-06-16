@@ -3212,3 +3212,129 @@ ol { padding-left: 20px; }
   line-height: 1.55;
   letter-spacing: 0.04em;
 }
+
+/* ===========================
+   Splash Screen (title page)
+   =========================== */
+
+.splash-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transform-origin: top center;
+  transition: transform 0.68s cubic-bezier(0.55, 0, 0.45, 1),
+              opacity 0.68s cubic-bezier(0.55, 0, 0.45, 1);
+  outline: none;
+}
+
+.splash-root.splash-turning {
+  transform: perspective(1400px) rotateX(-88deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Background image with slow Ken Burns zoom */
+.splash-bg {
+  position: absolute;
+  inset: -5%;          /* extra margin so zoomed image doesn't expose edges */
+  background-image: url('/title-bg.jpg');
+  background-size: cover;
+  background-position: center 30%;
+  animation: splashZoom 12s ease-out forwards;
+}
+
+@keyframes splashZoom {
+  from { transform: scale(1.0); }
+  to   { transform: scale(1.07); }
+}
+
+/* Dark gradient overlay — stronger at bottom for text contrast */
+.splash-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.10) 40%,
+    rgba(0, 0, 0, 0.55) 80%,
+    rgba(0, 0, 0, 0.70) 100%
+  );
+  pointer-events: none;
+}
+
+/* Copy container — vertically centered, slightly low */
+.splash-copy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2rem;
+  pointer-events: none;
+}
+
+/* Main tagline */
+.splash-tagline {
+  font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.4rem, 5.5vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  margin: 0;
+  text-align: center;
+  line-height: 1.3;
+  animation: splashFadeUp 1.4s ease forwards;
+  animation-delay: 0.6s;
+  opacity: 0;
+}
+
+/* Minimal hint at bottom */
+.splash-hint {
+  position: absolute;
+  bottom: 2.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: splashFadeUp 1.4s ease forwards;
+  animation-delay: 2.2s;
+  opacity: 0;
+}
+
+@keyframes splashFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* For .splash-hint the translateX(-50%) must be preserved */
+.splash-hint {
+  animation: splashFadeUpHint 1.4s ease forwards;
+  animation-delay: 2.2s;
+}
+
+@keyframes splashFadeUpHint {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

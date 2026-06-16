@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getProfile, isProActive } from '../lib/profile';
 import { useLang } from '../lib/lang';
+import { SplashScreen } from './SplashScreen';
 
 interface Props {
   children: ReactNode;
@@ -29,6 +30,14 @@ export function AuthGate({ children }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState<LoginMode>('magic');
+  const [splashDismissed, setSplashDismissed] = useState<boolean>(() => {
+    try { return sessionStorage.getItem('one8_splash_dismissed') === '1'; } catch { return false; }
+  });
+
+  function handleSplashDismiss() {
+    try { sessionStorage.setItem('one8_splash_dismissed', '1'); } catch { /* ignore */ }
+    setSplashDismissed(true);
+  }
 
   if (loading) {
     return (
@@ -36,6 +45,10 @@ export function AuthGate({ children }: Props) {
         <p style={styles.muted}>{t.loading}</p>
       </div>
     );
+  }
+
+  if (!user && !splashDismissed) {
+    return <SplashScreen onDismiss={handleSplashDismiss} />;
   }
 
   if (!user) {
