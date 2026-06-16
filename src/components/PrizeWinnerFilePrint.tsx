@@ -9,7 +9,7 @@
  *   - エラーメッセージに submission_data を含めない。
  *   - Archive 完了後は取り消し不可。
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   adminGetPrizeSubmissionForPrint,
   adminMarkPrizeSubmissionArchived,
@@ -18,6 +18,8 @@ import {
 
 interface Props {
   onBack: () => void;
+  /** 自動ロードする Submission ID（Payout Detail からの遷移時に設定） */
+  initialSubmissionId?: string;
 }
 
 // ── ユーティリティ ────────────────────────────────────────────────────────────
@@ -50,11 +52,34 @@ function safeBool(obj: Record<string, unknown> | null | undefined, key: string):
 
 // ── コンポーネント ────────────────────────────────────────────────────────────
 
-export function PrizeWinnerFilePrint({ onBack }: Props) {
-  const [submissionIdInput, setSubmissionIdInput] = useState('');
+export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
+  const [submissionIdInput, setSubmissionIdInput] = useState(initialSubmissionId ?? '');
   const [loading,           setLoading]           = useState(false);
   const [fetchError,        setFetchError]         = useState<string | null>(null);
   const [printData,         setPrintData]          = useState<PrintSubmissionResult | null>(null);
+
+  // initialSubmissionId が渡された場合は自動フェッチ
+  useEffect(() => {
+    if (initialSubmissionId && initialSubmissionId.trim()) {
+      const id = initialSubmissionId.trim();
+      setSubmissionIdInput(id);
+      setLoading(true);
+      setFetchError(null);
+      setPrintData(null);
+      setArchiveDone(false);
+      setArchiveError(null);
+      setShowArchiveConfirm(false);
+      adminGetPrizeSubmissionForPrint(id).then(({ data, error }) => {
+        if (error) {
+          setFetchError(error);
+        } else {
+          setPrintData(data);
+        }
+        setLoading(false);
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSubmissionId]);
 
   // Archive 完了処理
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);

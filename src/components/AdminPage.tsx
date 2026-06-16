@@ -52,6 +52,8 @@ function statusColor(status: string): string {
 
 export function AdminPage({ onBack }: Props) {
   const [subScreen, setSubScreen] = useState<AdminSubScreen>('awards');
+  /** Payment Dashboard から Winner File へ遷移時に渡す Submission ID */
+  const [winnerFileSubmissionId, setWinnerFileSubmissionId] = useState<string | undefined>(undefined);
   const [awards, setAwards] = useState<AdminPrizeAwardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -203,11 +205,27 @@ export function AdminPage({ onBack }: Props) {
   // ── レンダリング ───────────────────────────────────────────────────────────
 
   if (subScreen === 'winner_file') {
-    return <PrizeWinnerFilePrint onBack={() => setSubScreen('awards')} />;
+    return (
+      <PrizeWinnerFilePrint
+        onBack={() => {
+          setWinnerFileSubmissionId(undefined);
+          setSubScreen('awards');
+        }}
+        initialSubmissionId={winnerFileSubmissionId}
+      />
+    );
   }
 
   if (subScreen === 'payment_dashboard') {
-    return <PrizePaymentDashboard onBack={() => setSubScreen('awards')} />;
+    return (
+      <PrizePaymentDashboard
+        onBack={() => setSubScreen('awards')}
+        onOpenWinnerFile={(submissionId) => {
+          setWinnerFileSubmissionId(submissionId);
+          setSubScreen('winner_file');
+        }}
+      />
+    );
   }
 
   return (

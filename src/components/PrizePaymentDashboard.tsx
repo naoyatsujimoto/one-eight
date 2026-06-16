@@ -15,7 +15,7 @@
  *   - canceled → prepared / failed → prepared の直接 UPDATE
  *   - source payout の変更
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   adminListPayableAwards,
   adminGetPayoutDetail,
@@ -36,6 +36,8 @@ import { supabase } from '../lib/supabase';
 
 interface Props {
   onBack: () => void;
+  /** Winner File 画面への遷移ハンドラ（submission_id を渡す） */
+  onOpenWinnerFile?: (submissionId: string) => void;
 }
 
 // ── ユーティリティ ────────────────────────────────────────────────────────
@@ -1088,9 +1090,32 @@ function MarkAsFailedModal({
 interface PreparedSuccessViewProps {
   result: PreparePayoutResult;
   detail: PayoutDetailResult;
+  onOpenWinnerFile?: (submissionId: string) => void;
 }
 
-function PreparedSuccessView({ result, detail }: PreparedSuccessViewProps) {
+function PreparedSuccessView({ result, detail, onOpenWinnerFile }: PreparedSuccessViewProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopySubId = useCallback(() => {
+    if (!detail.latest_submission_id) return;
+    navigator.clipboard.writeText(detail.latest_submission_id).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // fallback: execCommand
+      const el = document.createElement('textarea');
+      el.value = detail.latest_submission_id!;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [detail.latest_submission_id]);
+
   return (
     <div style={sv.container}>
       <div style={sv.successBadge}>✅ Prepared Successfully</div>
@@ -1101,10 +1126,27 @@ function PreparedSuccessView({ result, detail }: PreparedSuccessViewProps) {
         <DRow label="Status"          value={result.status} />
         <DRow label="Payment Method"  value={result.payment_method} />
         <DRow label="Prepared At"     value={fmtDate(result.prepared_at)} />
-        <DRow label="Source Sub. ID"
-              value={detail.latest_submission_id
+        {/* Source Sub. ID: 省略表示 + Copy ボタン */}
+        <div style={ds.dRow}>
+          <span style={ds.dLabel}>Source Sub. ID</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+            <span style={ds.monoValue}>
+              {detail.latest_submission_id
                 ? detail.latest_submission_id.slice(0, 8) + '...'
-                : '-'} />
+                : '-'}
+            </span>
+            {detail.latest_submission_id && (
+              <button
+                type="button"
+                onClick={handleCopySubId}
+                style={sv.copyBtn}
+                title={`Copy full Submission ID: ${detail.latest_submission_id}`}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            )}
+          </span>
+        </div>
       </div>
 
       <div style={sv.section}>
@@ -1124,6 +1166,22 @@ function PreparedSuccessView({ result, detail }: PreparedSuccessViewProps) {
           <li>Execute manual PayPal payment via PayPal dashboard.</li>
           <li>Mark as Paid (RP-5c, coming later).</li>
         </ol>
+
+        {/* 導線: OPEN WINNER FILE ボタン */}
+        {detail.latest_submission_id && onOpenWinnerFile && (
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              style={sv.openWinnerFileBtn}
+              onClick={() => onOpenWinnerFile(detail.latest_submission_id!)}
+            >
+              📄 OPEN WINNER FILE
+            </button>
+            <div style={sv.openWinnerFileNote}>
+              Winner File 画面で Submission ID を自動ロードします。
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1134,9 +1192,10 @@ function PreparedSuccessView({ result, detail }: PreparedSuccessViewProps) {
 interface DetailModalProps {
   awardId: string;
   onClose: () => void;
+  onOpenWinnerFile?: (submissionId: string) => void;
 }
 
-function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
+function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // ⚠️ detail は PII を含む。console.log / localStorage 禁止。
@@ -1451,7 +1510,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
           <div style={ds.detailBody}>
             {/* Prepare Payout 成功表示 */}
             {prepareResult && (
-              <PreparedSuccessView result={prepareResult} detail={detail} />
+              <PreparedSuccessView result={prepareResult} detail={detail} onOpenWinnerFile={onOpenWinnerFile} />
             )}
 
             {/* Award 情報 */}
@@ -1475,7 +1534,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                 <Section title="Submission">
                   {detail.latest_submission_id ? (
                     <>
-                      <DRow label="Sub ID"     value={detail.latest_submission_id.slice(0, 8) + '...'} />
+                      <SubmissionIdRow submissionId={detail.latest_submission_id} />
                       <DRow label="Status"     value={detail.latest_submission_status ?? '-'} />
                       <DRow label="Submitted"  value={fmtDate(detail.latest_submission_submitted_at)} />
                       <DRow label="Data Exp."  value={fmtDate(detail.latest_submission_delete_after)} />
@@ -1516,6 +1575,24 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
                     </>
                   )}
                 </Section>
+
+                {/* OPEN WINNER FILE 導線 (prepared 状態のとき + submission_id あり) */}
+                {detail.latest_payout_status === 'prepared' &&
+                  detail.latest_submission_id &&
+                  onOpenWinnerFile && (
+                  <div style={{ ...ds.actionArea, background: '#f3f8ff', borderColor: '#90caf9', marginBottom: 8 }}>
+                    <button
+                      type="button"
+                      style={sv.openWinnerFileBtn}
+                      onClick={() => onOpenWinnerFile(detail.latest_submission_id!)}
+                    >
+                      📄 OPEN WINNER FILE
+                    </button>
+                    <div style={ds.prepareNote}>
+                      Winner File 画面で Submission ID を自動ロードします。
+                    </div>
+                  </div>
+                )}
 
                 {/* RP-5b: Prepare Payout ボタン */}
                 {canShowPrepareButton(detail) && (
@@ -1743,7 +1820,7 @@ function PayoutDetailModal({ awardId, onClose }: DetailModalProps) {
 
 // ── コンポーネント: メインダッシュボード ─────────────────────────────────
 
-export function PrizePaymentDashboard({ onBack }: Props) {
+export function PrizePaymentDashboard({ onBack, onOpenWinnerFile }: Props) {
   const [awards, setAwards] = useState<PayableAwardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -1842,6 +1919,7 @@ export function PrizePaymentDashboard({ onBack }: Props) {
             // モーダルを閉じた後に一覧を再取得(Prepare 完了後の表示更新)
             loadAwards();
           }}
+          onOpenWinnerFile={onOpenWinnerFile}
         />
       )}
     </div>
@@ -1855,6 +1933,61 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div style={ds.section}>
       <div style={ds.sectionTitle}>{title}</div>
       {children}
+    </div>
+  );
+}
+
+/** Sub ID 第全表示 + Copy ボタン */
+function SubmissionIdRow({ submissionId }: { submissionId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(submissionId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = submissionId;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div style={ds.dRow}>
+      <span style={ds.dLabel}>Sub ID</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+        <span style={ds.monoValue}>{submissionId.slice(0, 8)}...</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 9,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase' as const,
+            background: copied ? '#e8f5e9' : '#f5f5f5',
+            color: copied ? '#2e7d32' : 'var(--ink-2)',
+            border: '1px solid',
+            borderColor: copied ? '#a5d6a7' : 'var(--rule-strong)',
+            borderRadius: 3,
+            padding: '2px 8px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            minHeight: 22,
+            transition: 'all .15s',
+          }}
+          title={`Copy full Submission ID: ${submissionId}`}
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </span>
     </div>
   );
 }
@@ -2738,5 +2871,44 @@ const sv: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: 'var(--ink-2)',
     lineHeight: 1.8,
+  },
+  copyBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 9,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase' as const,
+    background: '#f5f5f5',
+    color: 'var(--ink-2)',
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 3,
+    padding: '2px 8px',
+    cursor: 'pointer',
+    fontWeight: 600,
+    minHeight: 22,
+    transition: 'all .15s',
+  },
+  openWinnerFileBtn: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    background: '#1a237e',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 4,
+    padding: '10px 20px',
+    cursor: 'pointer',
+    fontWeight: 700,
+    minHeight: 42,
+    width: '100%',
+    marginBottom: 6,
+    transition: 'opacity .15s',
+  },
+  openWinnerFileNote: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
+    textAlign: 'center' as const,
+    letterSpacing: '0.04em',
   },
 };
