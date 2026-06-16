@@ -157,12 +157,16 @@ export interface PrintSubmissionResult {
 }
 
 export interface ArchiveResult {
-  success:         boolean;
-  submission_id:   string;
-  award_id:        string;
-  status:          string;
-  data_cleared_at: string;
-  archived_at:     string;
+  success:                  boolean;
+  submission_id:            string;
+  award_id:                 string;
+  status:                   string;
+  data_cleared_at:          string;
+  archived_at:              string;
+  /** Archive時にpayout_snapshotの機微情報がredactされた場合 true */
+  payout_snapshot_redacted: boolean;
+  /** redactされたpayout_id（あれば） */
+  payout_id:                string | null;
 }
 
 // ── RP-5a: Payment Dashboard ─────────────────────────────────────────────────

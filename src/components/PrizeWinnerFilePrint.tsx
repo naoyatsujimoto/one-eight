@@ -159,7 +159,7 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
       return;
     }
 
-    // 成功: 表示を更新（submission_data はもう存在しない）
+    // 成功: 表示を更新（submission_data はもう存在しない / payout_snapshot も redact済み）
     if (data) {
       setPrintData(prev => prev
         ? {
@@ -168,6 +168,9 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
             submission_data:   null,
             data_cleared_at:   data.data_cleared_at,
             archived_at:       data.archived_at,
+            // Archive後はpayout_snapshotも機微情報がredactされているため
+            // data_sourceを'unavailable'として扱い機微情報セクションを非表示にする
+            data_source: 'unavailable',
           }
         : prev,
       );
@@ -241,7 +244,7 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
             )}
             {(archiveDone || printData.submission_status === 'data_cleared') && (
               <div style={s.archivedBadge}>
-                ✅ Online sensitive data cleared
+                🔒 Online sensitive data cleared &amp; redacted from payout snapshot
                 {printData.data_cleared_at && ` — ${fmtDate(printData.data_cleared_at)}`}
               </div>
             )}
@@ -334,9 +337,9 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
           {/* データソース表示 */}
           {printData.data_source && printData.data_source !== 'submission_data' && (
             <div style={s.dataSourceNote}>
-              ⚠ Data source: {printData.data_source === 'payout_snapshot'
-                ? 'Payout Snapshot (submission data was cleared after prepare)'
-                : 'Unavailable — sensitive data has been cleared'}
+              {printData.data_source === 'payout_snapshot'
+                ? '⚠ Data source: Payout Snapshot (submission data was cleared after prepare)'
+                : '🔒 Sensitive data has been archived and redacted from online database.'}
             </div>
           )}
 
@@ -356,7 +359,10 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
           ) : (
             <Section title="Tax &amp; Payment Information">
               <div style={s.dataCleared}>
-                Sensitive data has been cleared (data_cleared_at: {fmtDate(printData.data_cleared_at)}).
+                {printData.data_source === 'unavailable' || !printData.data_source
+                  ? `🔒 This data has been archived and redacted (archived_at: ${fmtDate(printData.archived_at)}, data_cleared_at: ${fmtDate(printData.data_cleared_at)}). Sensitive information has been removed from the online database as intended.`
+                  : `Sensitive data has been cleared (data_cleared_at: ${fmtDate(printData.data_cleared_at)}).`
+                }
               </div>
             </Section>
           )}
