@@ -5,13 +5,13 @@ interface Props {
 }
 
 export function SplashScreen({ onDismiss }: Props) {
-  const [turning, setTurning] = useState(false);
+  const [fading, setFading] = useState(false);
   const touchStartY = useRef<number | null>(null);
 
   function dismiss() {
-    if (turning) return;
-    setTurning(true);
-    setTimeout(onDismiss, 680);
+    if (fading) return;
+    setFading(true);
+    setTimeout(onDismiss, 650);
   }
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -30,7 +30,7 @@ export function SplashScreen({ onDismiss }: Props) {
 
   return (
     <div
-      className={`splash-root${turning ? ' splash-turning' : ''}`}
+      className={`splash-root${fading ? ' splash-fading' : ''}`}
       onClick={dismiss}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -40,18 +40,21 @@ export function SplashScreen({ onDismiss }: Props) {
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') dismiss(); }}
     >
       {/* Background image with slow zoom */}
-      <div className="splash-bg" />
+      <div className={`splash-bg${fading ? ' splash-bg-fading' : ''}`} />
 
       {/* Overlay gradient for text legibility */}
       <div className="splash-overlay" />
 
+      {/* Cinematic fade-to-black overlay */}
+      <div className={`splash-fade-overlay${fading ? ' splash-fade-overlay-active' : ''}`} />
+
       {/* Main copy */}
-      <div className="splash-copy">
+      <div className={`splash-copy${fading ? ' splash-copy-fading' : ''}`}>
         <p className="splash-tagline">Imagine. Leave your mark.</p>
       </div>
 
       {/* Minimal hint */}
-      <div className="splash-hint">Tap to continue</div>
+      <div className={`splash-hint${fading ? ' splash-hint-fading' : ''}`}>Tap to continue</div>
     </div>
   );
 }

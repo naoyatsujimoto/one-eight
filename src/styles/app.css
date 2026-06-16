@@ -3225,31 +3225,47 @@ ol { padding-left: 20px; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  transform-origin: top center;
-  transition: transform 0.68s cubic-bezier(0.55, 0, 0.45, 1),
-              opacity 0.68s cubic-bezier(0.55, 0, 0.45, 1);
   outline: none;
 }
 
-.splash-root.splash-turning {
-  transform: perspective(1400px) rotateX(-88deg);
-  opacity: 0;
+.splash-root.splash-fading {
   pointer-events: none;
 }
 
 /* Background image with slow Ken Burns zoom */
 .splash-bg {
   position: absolute;
-  inset: -5%;          /* extra margin so zoomed image doesn't expose edges */
+  inset: -3%;          /* extra margin so zoomed image doesn't expose edges */
   background-image: url('/title-bg.jpg');
   background-size: cover;
-  background-position: center 30%;
+  background-position: center center;
   animation: splashZoom 12s ease-out forwards;
+  transition: transform 0.65s ease-out;
+}
+
+.splash-bg.splash-bg-fading {
+  animation-play-state: paused;
+  transform: scale(1.0);
 }
 
 @keyframes splashZoom {
   from { transform: scale(1.0); }
-  to   { transform: scale(1.07); }
+  to   { transform: scale(1.03); }
+}
+
+/* Cinematic fade-to-black overlay */
+.splash-fade-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  z-index: 10;
+}
+
+.splash-fade-overlay.splash-fade-overlay-active {
+  opacity: 1;
 }
 
 /* Dark gradient overlay — base layer + radial vignette around copy */
@@ -3281,6 +3297,13 @@ ol { padding-left: 20px; }
   justify-content: center;
   padding: 0 2rem;
   pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  z-index: 5;
+}
+
+.splash-copy.splash-copy-fading {
+  opacity: 0;
+  transform: translateY(-20px);
 }
 
 /* Main tagline */
@@ -3332,6 +3355,13 @@ ol { padding-left: 20px; }
 .splash-hint {
   animation: splashFadeUpHint 1.4s ease forwards;
   animation-delay: 2.2s;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 5;
+}
+
+.splash-hint.splash-hint-fading {
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(-16px) !important;
 }
 
 @keyframes splashFadeUpHint {
