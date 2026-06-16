@@ -1,81 +1,11 @@
 -- ============================================================
--- RP-5b: Reward / Prize — Prepare Payout RPC + UI
+-- Fix: admin_prepare_payout の submitted_at 参照エラー修正
 --
--- A. Alignment migration
---    1. pgcrypto 有効化
---    2. payment_method CHECK: paypal_manual 追加
---    3. source_submission_id 追加 (prize_payouts → prize_temp_tax_submissions)
---
--- B. admin_prepare_payout(p_award_id uuid) RPC
---    - SECURITY DEFINER / authenticated / is_admin 再確認
---    - submission 判定: submission_data IS NOT NULL (status 文字列不使用)
---    - payment_method = 'paypal_manual' で INSERT
---    - source_submission_id 保存
---    - archive log: payout_prepared (PII不混入)
---    - 戻り値: PIIなし
---
--- 禁止事項:
---   - PayPal API実装
---   - CSV生成
---   - PayPal送金実行
---   - Mark as Paid / Failed / Cancel / Retry RPC
---   - payout result recording
---   - bulk prepare / 自動prepare
---   - cron / pg_cron
---   - Edge Function
---   - submission status文字列によるprepare可否判定
---   - paypal_csv を新規payoutで使用
---   - submission_data の自動clear
---   - archive logへのPII保存
---   - RP-1〜RP-5aの権限緩和
+-- 問題: prize_temp_tax_submissions テーブルに submitted_at カラムは
+--        存在しない。正しいカラムは created_at。
+-- 修正: ORDER BY submitted_at DESC → ORDER BY created_at DESC
 -- ============================================================
 
--- ============================================================
--- A-1. pgcrypto 有効化
--- ============================================================
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- ============================================================
--- A-2. payment_method CHECK に paypal_manual を追加
--- ============================================================
-
-ALTER TABLE prize_payouts
-  DROP CONSTRAINT IF EXISTS prize_payouts_payment_method_check;
-
-ALTER TABLE prize_payouts
-  ADD CONSTRAINT prize_payouts_payment_method_check
-  CHECK (payment_method IN (
-    'paypal_csv',
-    'paypal_api',
-    'paypal_manual',
-    'bank_transfer',
-    'manual'
-  ));
-
-COMMENT ON COLUMN prize_payouts.payment_method IS
-  'paypal_manual = AdminPageで記録する手動PayPal送金。paypal_csvは廃止済み・既存互換のみ。';
-
--- ============================================================
--- A-3. source_submission_id を prize_payouts に追加
--- ============================================================
-
-ALTER TABLE prize_payouts
-  ADD COLUMN IF NOT EXISTS source_submission_id uuid
-  REFERENCES prize_temp_tax_submissions(id);
-
-COMMENT ON COLUMN prize_payouts.source_submission_id IS
-  '本payoutのsnapshotを取得した元submissionへの参照。data_cleared後も保持する。';
-
-CREATE INDEX IF NOT EXISTS idx_prize_payouts_source_submission
-  ON prize_payouts(source_submission_id)
-  WHERE source_submission_id IS NOT NULL;
-
--- ============================================================
--- B. admin_prepare_payout RPC
--- ============================================================
-
--- 既存 DROP（戻り値型変更に備えて）
 DROP FUNCTION IF EXISTS admin_prepare_payout(uuid);
 
 CREATE OR REPLACE FUNCTION admin_prepare_payout(
@@ -139,7 +69,8 @@ BEGIN
     RAISE EXCEPTION 'active_payout_already_exists';
   END IF;
 
-  -- ── 5. submission 取得（最重要：status文字列ではなく submission_data IS NOT NULL で判定） ──
+  -- ── 5. submission 取得（submission_data IS NOT NULL で判定） ──────────
+  --   修正: submitted_at は存在しないカラム → created_at を使用
   SELECT *
     INTO v_submission
     FROM prize_temp_tax_submissions
@@ -266,4 +197,4 @@ REVOKE ALL ON FUNCTION admin_prepare_payout(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION admin_prepare_payout(uuid) TO authenticated;
 
 COMMENT ON FUNCTION admin_prepare_payout(uuid) IS
-  'Admin: prepare a payout for an eligible award. Snapshots payment info from submission_data. Returns payout_id without PII.';
+  'Admin: prepare a payout for an eligible award. Snapshots payment info from submission_data. Returns payout_id without PII. Fix: submitted_at → created_at (2026-06-16)';
