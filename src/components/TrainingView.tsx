@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { FullGameTrainingRunner } from './FullGameTrainingRunner';
+import { isFullGameCompleted } from '../training/fullGameUtils';
 import { Board } from './Board';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from '../game/engine';
 import { POSITION_TO_GATES } from '../game/constants';
@@ -34,7 +36,7 @@ function makeSession(task: TrainingTask): TrainingSession {
   };
 }
 
-type ViewMode = 'intro' | 'task';
+type ViewMode = 'intro' | 'task' | 'fullgame';
 
 interface TrainingViewProps {
   onExit: () => void;
@@ -45,8 +47,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // Keep a ref so advanceSession always reads the latest userId even in stale callbacks
   const userIdRef = useRef<string | null>(userId);
   useEffect(() => { userIdRef.current = userId ?? null; }, [userId]);
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [mode, setMode] = useState<ViewMode>('intro');
+  const [fullGameCompleted, setFullGameCompleted] = useState(() => isFullGameCompleted());
   const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
 
@@ -68,6 +71,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // Re-read completion state whenever we return to intro
   useEffect(() => {
     if (mode === 'intro') {
+      setFullGameCompleted(isFullGameCompleted());
       const set = new Set<TrainingTaskId>();
       if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
       if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
@@ -433,9 +437,55 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               </div>
             );
           })}
+
+          {/* ── Full-game course card ────────────────────────────────── */}
+          <div
+            style={{
+              border: '1px solid #e8e0d8',
+              borderRadius: '8px',
+              padding: '14px 16px',
+              background: '#ffffff',
+              marginTop: '4px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+              <div style={{ fontWeight: 700, fontSize: '15px', color: '#222' }}>
+                {lang === 'ja' ? '一局指南' : 'Guided Game'}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: fullGameCompleted ? '#4a7c4a' : '#7a6a3a',
+                padding: '2px 8px',
+                border: `1px solid ${fullGameCompleted ? '#4a7c4a' : '#c0a060'}`,
+                borderRadius: '4px',
+                whiteSpace: 'nowrap',
+              }}>
+                {fullGameCompleted ? t.trainingTaskStatusComplete : t.trainingTaskStatusAvailable}
+              </div>
+            </div>
+            <div style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
+              {lang === 'ja'
+                ? '実戦を通じて ONE EIGHT の全体戦略を学ぶ一局コース。Black 番で 22 手を指し切る。'
+                : 'A full-game course to learn ONE EIGHT strategy in practice. Play all 22 Black moves.'}
+            </div>
+            <button
+              type="button"
+              className="result-btn result-btn-primary"
+              style={{ marginTop: '4px' }}
+              onClick={() => setMode('fullgame')}
+            >
+              {fullGameCompleted ? t.trainingReplay : t.trainingStart}
+            </button>
+          </div>
         </div>
       </div>
     );
+  }
+
+  // ── Full-game screen ───────────────────────────────────────────────────────
+  if (mode === 'fullgame') {
+    return <FullGameTrainingRunner onComplete={() => setMode('intro')} />;
   }
 
   // ── Task screen ───────────────────────────────────────────────────────────

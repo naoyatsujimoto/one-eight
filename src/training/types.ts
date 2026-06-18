@@ -23,6 +23,121 @@ export interface TrainingTask {
   initialState: GameState;
 }
 
+// ---- Full Game Training types (Phase 1) ----
+
+export type FullGameStepKind = 'auto' | 'user' | 'question';
+
+export interface ScriptedMove {
+  position: string;          // e.g. 'E'
+  buildType: 'massive' | 'selective' | 'quad';
+  gates: number[];           // e.g. [6] or [1,2,7,12]
+}
+
+export interface FullGameTrainingStep {
+  moveNumber: number;        // 1..22
+  player: 'black' | 'white';
+  kind: FullGameStepKind;
+  move: ScriptedMove;
+  learningPoint: string;
+  shortPrompt: string;
+  expectedMove: ScriptedMove;
+  acceptedMoves?: ScriptedMove[];
+  explanation: string;
+  capturesBefore?: string[];  // Positions capturable by player before this move
+  capturesAfter?: string[];   // Expected Position owners after this move
+  note?: string;
+  nextQuestion?: string;      // for Move 21: 勝勢判断questionのプレースホルダー
+}
+
+export interface FullGameTrainingTask {
+  id: string;
+  title: string;
+  description: string;
+  perspective: 'black';
+  steps: FullGameTrainingStep[];
+}
+
+// ---- Full Game Training localized text types (Phase 2a) ----
+
+/** Bilingual string pair used for all UI-facing text in full-game Training. */
+export interface LocalizedText {
+  en: string;
+  ja: string;
+}
+
+/** Text bundle for a USER step (situation context, interactive prompts). */
+export interface FullGameUserStepText {
+  situation: LocalizedText;
+  question: LocalizedText;
+  hint: LocalizedText;
+  success: LocalizedText;
+}
+
+/** Text bundle for an AUTO step (narration shown to learner). */
+export interface FullGameAutoStepText {
+  auto: LocalizedText;
+}
+
+/** One selectable option in a post-step comprehension question. */
+export interface FullGameQuestionOption {
+  en: string;
+  ja: string;
+}
+
+/** Comprehension question shown after a key step (e.g. Move 21 winning-judgment). */
+export interface FullGameQuestionData {
+  question: LocalizedText;
+  options: FullGameQuestionOption[];
+  /** 0-based index into options[] that is the correct answer. */
+  correctOptionIndex: number;
+  hint: LocalizedText;
+  explanation: LocalizedText;
+}
+
+/**
+ * Localized text bundle for one step in a full-game Training.
+ * Keyed by moveNumber so it can be looked up independently of FullGameTrainingStep.
+ */
+export interface FullGameStepText {
+  moveNumber: number;
+  /** Comma-separated tag identifiers for the learning concept(s) in this step. */
+  learningPoint: string;
+  /** Present when step kind === 'user'. */
+  userText?: FullGameUserStepText;
+  /** Present when step kind === 'auto'. */
+  autoText?: FullGameAutoStepText;
+  /**
+   * Comprehension question displayed after the step resolves.
+   * Currently only used for Move 21 (winning-judgment).
+   */
+  postQuestion?: FullGameQuestionData;
+  /**
+   * Summary text displayed after the final auto step resolves (Move 22).
+   */
+  finalText?: LocalizedText;
+}
+
+/** Course-level metadata for a full-game Training. */
+export interface FullGameCourseMeta {
+  title: LocalizedText;
+  description: LocalizedText;
+  finalSummary: LocalizedText;
+}
+
+/**
+ * Top-level localized text data for a full-game Training.
+ * Decoupled from FullGameTrainingTask so UI can load text
+ * independently without re-parsing game logic.
+ */
+export interface FullGameTrainingText {
+  /** Must match the corresponding FullGameTrainingTask.id */
+  courseId: string;
+  meta: FullGameCourseMeta;
+  steps: FullGameStepText[];
+}
+
+// ---- Existing Training Session type ----
+
 export interface TrainingSession {
   task: TrainingTask;
   stepIndex: number;
