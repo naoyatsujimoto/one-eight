@@ -83,7 +83,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       return;
     }
 
-    const nextStep = steps[nextIndex];
+    const nextStep = steps[nextIndex]!;
     setStepIndex(nextIndex);
     setShowHint(false);
     setWrongAttempt(false);
@@ -110,6 +110,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   // ── Handle "次へ" (next) button ───────────────────────────────────────────
   const handleNext = useCallback(() => {
     const currentStep = FULL_GAME_V1.steps[stepIndex];
+    if (!currentStep) return;
 
     if (phase === 'success') {
       const stepText = getStepText(currentStep.moveNumber);
@@ -135,7 +136,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   // ── Handle question answer ────────────────────────────────────────────────
   const handleQuestionAnswer = useCallback((index: number) => {
     setQuestionSelected(index);
-    const stepText = getStepText(FULL_GAME_V1.steps[stepIndex].moveNumber);
+    const stepText = getStepText(FULL_GAME_V1.steps[stepIndex]!.moveNumber);
     const correctIndex = stepText?.postQuestion?.correctOptionIndex ?? 0;
     if (index !== correctIndex) {
       setQuestionShowHint(true);
@@ -376,7 +377,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const noop = useCallback(() => {}, []);
 
   // ── Question section ──────────────────────────────────────────────────────
-  if (phase === 'question' && stepText?.postQuestion) {
+  if (phase === 'question' && currentStep && stepText?.postQuestion) {
     const pq = stepText.postQuestion;
     const correctIndex = pq.correctOptionIndex;
     const isCorrect = questionSelected !== null && questionSelected === correctIndex;
@@ -467,7 +468,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
   // ── Complete section ──────────────────────────────────────────────────────
   if (phase === 'complete') {
-    const finalStep = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1];
+    const finalStep = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1]!;
     const finalStepText = getStepText(finalStep.moveNumber);
     const finalText = finalStepText?.finalText ? L(finalStepText.finalText) : '';
     const summaryText = L(meta.finalSummary);
