@@ -87,7 +87,11 @@ function calcQuadMax(state: GameState): number {
 /** Delay (ms) before CPU executes its move — gives the player a moment to see the board */
 const CPU_MOVE_DELAY_MS = 600;
 
-const SCREENS: Screen[] = ['title', 'tutorial', 'main', 'training'];
+// TUTORIAL_ENABLED: チュートリアルを非表示にするフラグ。true に戻すと元通り表示される
+const TUTORIAL_ENABLED = false;
+const SCREENS: Screen[] = TUTORIAL_ENABLED
+  ? ['title', 'tutorial', 'main', 'training']
+  : ['title', 'main', 'training'];
 
 export default function App() {
   const { user } = useAuth();
@@ -1005,7 +1009,7 @@ export default function App() {
     );
   }
 
-  if (screen === 'tutorial') {
+  if (screen === 'tutorial' && TUTORIAL_ENABLED) {
     return (
       <div className={`screen-wrapper${screenTransition ? ' screen-out' : ''}`}>
         <TutorialScreen
