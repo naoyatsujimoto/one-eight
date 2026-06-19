@@ -366,6 +366,19 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
         {/* Task list */}
         <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* ── Section 1: 小課題 Training ──────────────────────────── */}
+          <div style={{ marginBottom: '4px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
+              {lang === 'ja' ? '小課題 Training' : 'Training Tasks'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              {lang === 'ja'
+                ? '基本操作・Capture・終局などを短い課題で学びます。'
+                : 'Learn basic actions, capture, and endgame rules through short exercises.'}
+            </div>
+          </div>
+
           {TRAINING_TASK_META.map((meta) => {
             const taskId = meta.task.id as TrainingTaskId;
             const isCompleted = completedTasks.has(taskId);
@@ -438,6 +451,18 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             );
           })}
 
+          {/* ── Section 2: 一局通し Training ───────────────────────── */}
+          <div style={{ marginTop: '20px', marginBottom: '4px', paddingTop: '20px', borderTop: '1px solid #e8e0d8' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
+              {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              {lang === 'ja'
+                ? 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。'
+                : 'Play through one guided game as Black and learn build timing, defense, capture, and winning judgment.'}
+            </div>
+          </div>
+
           {/* ── Full-game course card ────────────────────────────────── */}
           <div
             style={{
@@ -445,12 +470,11 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               borderRadius: '8px',
               padding: '14px 16px',
               background: '#ffffff',
-              marginTop: '4px',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
               <div style={{ fontWeight: 700, fontSize: '15px', color: '#222' }}>
-                {lang === 'ja' ? '一局指南' : 'Guided Game'}
+                {lang === 'ja' ? '一局指南' : 'Guided Game — Full Course'}
               </div>
               <div style={{
                 fontSize: '11px',
@@ -466,8 +490,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             </div>
             <div style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
               {lang === 'ja'
-                ? '実戦を通じて ONE EIGHT の全体戦略を学ぶ一局コース。Black 番で 22 手を指し切る。'
-                : 'A full-game course to learn ONE EIGHT strategy in practice. Play all 22 Black moves.'}
+                ? '実戦を通じて ONE EIGHT の全体戦略を学ぶ一局コース。Black番で22手を指し切る。'
+                : 'A full guided course for learning ONE EIGHT strategy through one game. Play 22 moves as Black.'}
             </div>
             <button
               type="button"
