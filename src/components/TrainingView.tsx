@@ -367,8 +367,65 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         {/* Task list */}
         <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          {/* ── Section 1: 小課題 Training ──────────────────────────── */}
+          {/* ── Section 1: 一局通し Training ───────────────────────── */}
           <div style={{ marginBottom: '4px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
+              {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              {lang === 'ja'
+                ? 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。'
+                : 'Play through one guided game as Black and learn build timing, defense, capture, and winning judgment.'}
+            </div>
+          </div>
+
+          {/* ── Full-game course card ────────────────────────────────── */}
+          <div
+            style={{
+              border: '1px solid #d8c8a0',
+              borderLeft: '4px solid #c8a84b',
+              borderRadius: '8px',
+              padding: '14px 16px',
+              background: '#fbf7f0',
+            }}
+          >
+            {/* Small label */}
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#a07830', letterSpacing: '0.05em', marginBottom: '6px', textTransform: 'uppercase' }}>
+              {lang === 'ja' ? '1局通し' : 'Guided Game'}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+              <div style={{ fontWeight: 700, fontSize: '16px', color: '#222' }}>
+                {lang === 'ja' ? '一局指南' : 'Guided Game'}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: fullGameCompleted ? '#4a7c4a' : '#7a6a3a',
+                padding: '2px 8px',
+                border: `1px solid ${fullGameCompleted ? '#4a7c4a' : '#c0a060'}`,
+                borderRadius: '4px',
+                whiteSpace: 'nowrap',
+              }}>
+                {fullGameCompleted ? t.trainingTaskStatusComplete : t.trainingTaskStatusAvailable}
+              </div>
+            </div>
+            <div style={{ fontSize: '13px', color: '#5a4a30', marginBottom: '10px' }}>
+              {lang === 'ja'
+                ? '実戦の流れでONE EIGHTの全体戦略を学ぶコース。Black番で22手を指し切ります。'
+                : 'Learn ONE EIGHT strategy through the flow of one guided game. Play 22 moves as Black.'}
+            </div>
+            <button
+              type="button"
+              className="result-btn result-btn-primary"
+              style={{ marginTop: '4px' }}
+              onClick={() => setMode('fullgame')}
+            >
+              {fullGameCompleted ? t.trainingReplay : t.trainingStart}
+            </button>
+          </div>
+
+          {/* ── Section 2: 小課題 Training ──────────────────────────── */}
+          <div style={{ marginTop: '20px', marginBottom: '4px', paddingTop: '20px', borderTop: '1px solid #e8e0d8' }}>
             <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
               {lang === 'ja' ? '小課題 Training' : 'Training Tasks'}
             </div>
@@ -451,57 +508,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             );
           })}
 
-          {/* ── Section 2: 一局通し Training ───────────────────────── */}
-          <div style={{ marginTop: '20px', marginBottom: '4px', paddingTop: '20px', borderTop: '1px solid #e8e0d8' }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
-              {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
-            </div>
-            <div style={{ fontSize: '12px', color: '#888' }}>
-              {lang === 'ja'
-                ? 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。'
-                : 'Play through one guided game as Black and learn build timing, defense, capture, and winning judgment.'}
-            </div>
-          </div>
-
-          {/* ── Full-game course card ────────────────────────────────── */}
-          <div
-            style={{
-              border: '1px solid #e8e0d8',
-              borderRadius: '8px',
-              padding: '14px 16px',
-              background: '#ffffff',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-              <div style={{ fontWeight: 700, fontSize: '15px', color: '#222' }}>
-                {lang === 'ja' ? '一局指南' : 'Guided Game — Full Course'}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: fullGameCompleted ? '#4a7c4a' : '#7a6a3a',
-                padding: '2px 8px',
-                border: `1px solid ${fullGameCompleted ? '#4a7c4a' : '#c0a060'}`,
-                borderRadius: '4px',
-                whiteSpace: 'nowrap',
-              }}>
-                {fullGameCompleted ? t.trainingTaskStatusComplete : t.trainingTaskStatusAvailable}
-              </div>
-            </div>
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
-              {lang === 'ja'
-                ? '実戦を通じて ONE EIGHT の全体戦略を学ぶ一局コース。Black番で22手を指し切る。'
-                : 'A full guided course for learning ONE EIGHT strategy through one game. Play 22 moves as Black.'}
-            </div>
-            <button
-              type="button"
-              className="result-btn result-btn-primary"
-              style={{ marginTop: '4px' }}
-              onClick={() => setMode('fullgame')}
-            >
-              {fullGameCompleted ? t.trainingReplay : t.trainingStart}
-            </button>
-          </div>
         </div>
       </div>
     );
