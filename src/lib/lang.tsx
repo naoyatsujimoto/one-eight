@@ -202,7 +202,8 @@ export const T = {
     onlineRandomMatch: 'Random Match',
     onlineRandomMatchDesc: 'Be matched with a random opponent.',
     onlineRanked: 'Official Arena',
-    onlineRankedDesc: 'Official Pro competition with ELEPHANT / JAGUAR Arenas.',
+    onlineRankedDesc: 'A weekly Match where players compete for the Arena Master title.',
+    onlineWeeklyBadge: 'Weekly Match',
     onlineTournament: 'Competition',
     onlineTournamentDesc: 'Join an event using an organizer-issued key.',
     onlineComingSoon: 'Coming Soon',
@@ -755,7 +756,8 @@ export const T = {
     onlineRandomMatch: 'ランダムマッチ',
     onlineRandomMatchDesc: 'ランダムに相手とマッチングして対戦。',
     onlineRanked: '公式アリーナ',
-    onlineRankedDesc: 'Pro限定の公式競技。ELEPHANT / JAGUAR アリーナ に参加できます。',
+    onlineRankedDesc: 'Arena Masterの称号を目指して競う、毎週開催のMatchです。',
+    onlineWeeklyBadge: '週次Match',
     onlineTournament: '大会',
     onlineTournamentDesc: '運営発行のキーで参加する大会。',
     onlineComingSoon: '近日公開',
@@ -1260,6 +1262,7 @@ export type Translations = {
   onlineRandomMatchDesc: string;
   onlineRanked: string;
   onlineRankedDesc: string;
+  onlineWeeklyBadge: string;
   onlineTournament: string;
   onlineTournamentDesc: string;
   onlineComingSoon: string;

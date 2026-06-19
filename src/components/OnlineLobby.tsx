@@ -101,26 +101,31 @@ export function OnlineLobby({ userId, proActive = false, onGameReady, onCancel, 
 function ModeSelect({ onSelect }: { onSelect: (m: Mode) => void }) {
   const { t } = useLang();
 
-  const modes: { key: Mode; label: string; desc: string; soon?: boolean }[] = [
+  const modes: { key: Mode; label: string; desc: string; soon?: boolean; official?: boolean; badge?: string }[] = [
     { key: 'friend',     label: t.onlineFriendMatch,  desc: t.onlineFriendMatchDesc },
     // Random Match は SHOW_RANDOM_MATCH=false の間は表示しない
     ...(SHOW_RANDOM_MATCH ? [{ key: 'random' as Mode, label: t.onlineRandomMatch, desc: t.onlineRandomMatchDesc }] : []),
-    { key: 'ranked',     label: t.onlineRanked,       desc: t.onlineRankedDesc },
-    { key: 'tournament', label: t.onlineTournament,   desc: t.onlineTournamentDesc },
+    { key: 'ranked',     label: t.onlineRanked,       desc: t.onlineRankedDesc, official: true, badge: t.onlineWeeklyBadge },
+    { key: 'tournament', label: t.onlineTournament,   desc: t.onlineTournamentDesc, official: true },
   ];
 
   return (
     <div style={styles.modeList}>
-      {modes.map(({ key, label, desc, soon }) => (
+      {modes.map(({ key, label, desc, soon, official, badge }) => (
         <button
           key={key}
           type="button"
-          style={{ ...styles.modeBtn, ...(soon ? styles.modeBtnSoon : {}) }}
+          style={{
+            ...styles.modeBtn,
+            ...(official ? styles.modeBtnOfficial : {}),
+            ...(soon ? styles.modeBtnSoon : {}),
+          }}
           onClick={() => onSelect(key)}
           disabled={soon}
         >
           <span style={styles.modeBtnLabel}>{label}</span>
           <span style={styles.modeBtnDesc}>{desc}</span>
+          {badge && <span style={styles.weeklyBadge}>{badge}</span>}
           {soon && <span style={styles.soonBadge}>{t.onlineComingSoon}</span>}
         </button>
       ))}
@@ -424,6 +429,22 @@ const styles: Record<string, React.CSSProperties> = {
   modeBtnSoon: {
     opacity: 0.6,
     cursor: 'default',
+  },
+  modeBtnOfficial: {
+    background: '#faf8f5',
+    border: '1px solid #c8b99a',
+    borderLeft: '3px solid #8b7355',
+  },
+  weeklyBadge: {
+    display: 'inline-block',
+    marginTop: '0.25rem',
+    padding: '0.1rem 0.45rem',
+    background: '#8b7355',
+    borderRadius: 3,
+    fontSize: '0.68rem',
+    color: '#fff',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
   },
   modeBtnLabel: {
     fontWeight: 700,
