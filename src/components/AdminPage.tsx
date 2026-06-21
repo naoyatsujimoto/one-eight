@@ -13,10 +13,12 @@ import {
   adminCreatePrizeAward,
   adminUpdatePrizeAwardStatus,
   adminGenerateArenaAwards,
+  adminListUnprocessedArenaEvents,
   type AdminPrizeAwardRow,
   type SourceKind,
   type PrizeKind,
   type GenerateArenaAwardRow,
+  type UnprocessedArenaEventRow,
 } from '../lib/prizeAdmin';
 import { PrizeWinnerFilePrint } from './PrizeWinnerFilePrint';
 import { PrizePaymentDashboard } from './PrizePaymentDashboard';
@@ -80,14 +82,24 @@ export function AdminPage({ onBack }: Props) {
   const [reasonInput, setReasonInput]     = useState<Record<string, string>>({});
 
   // Generate Arena Awards フォーム
-  const [showGenerate, setShowGenerate]     = useState(false);
-  const [generating, setGenerating]         = useState(false);
-  const [generateError, setGenerateError]   = useState<string | null>(null);
-  const [generateResult, setGenerateResult] = useState<GenerateArenaAwardRow[] | null>(null);
-  const [gEventId, setGEventId]             = useState('');
-  const [gAmountStr, setGAmountStr]         = useState('');
-  const [gCurrency, setGCurrency]           = useState('JPY');
-  const [gPrizeKind, setGPrizeKind]         = useState<PrizeKind>('cash');
+  const [showGenerate, setShowGenerate]         = useState(false);
+  const [generating, setGenerating]             = useState(false);
+  const [generateError, setGenerateError]       = useState<string | null>(null);
+  const [generateResult, setGenerateResult]     = useState<GenerateArenaAwardRow[] | null>(null);
+  const [gEventId, setGEventId]                 = useState('');
+  const [gAmountStr, setGAmountStr]             = useState('');
+  const [gCurrency, setGCurrency]               = useState('JPY');
+  const [gPrizeKind, setGPrizeKind]             = useState<PrizeKind>('cash');
+
+  // Arena Award 候補一覧
+  const [candidates, setCandidates]             = useState<UnprocessedArenaEventRow[] | null>(null);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [candidatesError, setCandidatesError]   = useState<string | null>(null);
+  // 候補ごとの amount / currency / prize_kind
+  const [candidateInputs, setCandidateInputs]   = useState<Record<string, { amount: string; currency: string; prizeKind: PrizeKind }>>({});
+  // 候補ごとの生成中フラグ・結果
+  const [candidateGenerating, setCandidateGenerating] = useState<Record<string, boolean>>({});
+  const [candidateResults, setCandidateResults] = useState<Record<string, GenerateArenaAwardRow[] | string>>({});
 
   // ── 一覧取得 ──────────────────────────────────────────────────────────────
 
@@ -145,7 +157,62 @@ export function AdminPage({ onBack }: Props) {
     setCreating(false);
   }
 
-  // ── Arena Award 自動生成 ───────────────────────────────────────────────────
+  // ── 候補一覧 読み込み ───────────────────────────────────────────
+
+  async function loadCandidates() {
+    setCandidatesLoading(true);
+    setCandidatesError(null);
+    const { data, error } = await adminListUnprocessedArenaEvents();
+    if (error) {
+      setCandidatesError(error);
+    } else {
+      const rows = data ?? [];
+      setCandidates(rows);
+      setCandidateInputs(prev => {
+        const next = { ...prev };
+        rows.forEach(row => {
+          if (!next[row.arena_match_id]) {
+            next[row.arena_match_id] = { amount: '', currency: 'USD', prizeKind: 'cash' };
+          }
+        });
+        return next;
+      });
+    }
+    setCandidatesLoading(false);
+  }
+
+  async function handleCandidateGenerate(row: UnprocessedArenaEventRow) {
+    const input = candidateInputs[row.arena_match_id];
+    if (!input) return;
+    const amountNum = parseFloat(input.amount);
+    if (isNaN(amountNum) || amountNum < 0) {
+      setCandidateResults(prev => ({ ...prev, [row.arena_match_id]: 'Amount must be a non-negative number.' }));
+      return;
+    }
+    const amountCents = Math.round(amountNum * 100);
+    setCandidateGenerating(prev => ({ ...prev, [row.arena_match_id]: true }));
+    setCandidateResults(prev => {
+      const next = { ...prev };
+      delete next[row.arena_match_id];
+      return next;
+    });
+    const { data, error } = await adminGenerateArenaAwards(
+      row.arena_event_id,
+      amountCents,
+      input.currency.trim().toUpperCase(),
+      input.prizeKind,
+    );
+    if (error) {
+      setCandidateResults(prev => ({ ...prev, [row.arena_match_id]: error }));
+    } else {
+      setCandidateResults(prev => ({ ...prev, [row.arena_match_id]: data ?? [] }));
+      await loadCandidates();
+      await loadAwards();
+    }
+    setCandidateGenerating(prev => ({ ...prev, [row.arena_match_id]: false }));
+  }
+
+  // ── Arena Award 自動生成 (Manual) ────────────────────────────────
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -284,20 +351,144 @@ export function AdminPage({ onBack }: Props) {
         <button
           type="button"
           style={{ ...s.navBtn, ...(showGenerate ? s.navBtnActive : {}) }}
-          onClick={() => { setShowGenerate(v => !v); setGenerateError(null); setGenerateResult(null); }}
+          onClick={() => {
+            const next = !showGenerate;
+            setShowGenerate(next);
+            setGenerateError(null);
+            setGenerateResult(null);
+            if (next && candidates === null) loadCandidates();
+          }}
         >
-          {showGenerate ? '× Cancel' : '⚡ Arena賞金を生成'}
+          {showGenerate ? '× Cancel' : '⚡ Arena Award'}
         </button>
       </div>
 
-      {/* Arena Award 自動生成フォーム */}
+      {/* Arena Award セクション: 候補一覧 + Manual */}
       {showGenerate && (
         <div style={s.formCard}>
-          <div style={s.formEyebrow}>Generate Arena Awards</div>
+
+          {/* ── 候補一覧 ──────────────────────────────── */}
+          <div style={{ ...s.formEyebrow, marginBottom: 4 }}>Arena Award 候補 / Arena Award Candidates</div>
           <div style={{ fontSize: 12, color: '#555', marginBottom: 12 }}>
-            指定した Arena Event の master match winner に Prize Award を自動生成します。<br/>
-            重複の場合は既存 Award を返します（新規作成しません）。
+            処理済みのArena結果のうち、まだPrize Awardが生成されていないものを表示します。内容を確認してGenerateしてください。<br />
+            Processed Arena results without a Prize Award are listed here. Review the details and generate the award.
           </div>
+
+          <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              style={{ ...s.submitBtn, background: '#1565c0', fontSize: 9 }}
+              onClick={loadCandidates}
+              disabled={candidatesLoading}
+            >
+              {candidatesLoading ? '…' : '↻ Reload Candidates'}
+            </button>
+          </div>
+
+          {candidatesError && (
+            <div style={{ ...s.errorBanner, margin: '0 0 12px' }}><span>⚠ {candidatesError}</span></div>
+          )}
+
+          {candidates !== null && candidates.length === 0 && (
+            <div style={{ fontSize: 13, color: '#757575', padding: '10px 0', marginBottom: 16 }}>
+              未生成のArena Award候補はありません。 / No ungenerated Arena Award candidates.
+            </div>
+          )}
+
+          {candidates !== null && candidates.map(row => {
+            const inp = candidateInputs[row.arena_match_id] ?? { amount: '', currency: 'USD', prizeKind: 'cash' as PrizeKind };
+            const res = candidateResults[row.arena_match_id];
+            const isGen = candidateGenerating[row.arena_match_id] ?? false;
+            return (
+              <div key={row.arena_match_id} style={s.candidateCard}>
+                <div style={s.candidateHeader}>
+                  <span style={s.candidateArena}>{row.arena_code ?? '—'} / {row.arena_display_name ?? '—'}</span>
+                  <span style={s.candidateDate}>{new Date(row.scheduled_at).toLocaleString()}</span>
+                </div>
+                <div style={s.candidateInfo}>
+                  <span><b>Winner:</b> {row.winner_display_name ?? row.winner_user_id.slice(0, 8) + '…'}</span>
+                  <span><b>Loser:</b> {row.loser_display_name ?? (row.loser_user_id ? row.loser_user_id.slice(0, 8) + '…' : '—')}</span>
+                  <span><b>End:</b> {row.end_reason}</span>
+                  <span><b>Effect:</b> {row.master_effect ?? '—'}</span>
+                  <span><b>Processed:</b> {row.processed_at ? new Date(row.processed_at).toLocaleString() : '—'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' as const, marginTop: 10 }}>
+                  <label style={{ ...s.label, flex: '2 1 100px' }}>
+                    <span style={s.labelText}>Amount <span style={s.required}>*</span></span>
+                    <input
+                      style={s.input}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={inp.amount}
+                      placeholder="e.g. 50"
+                      onChange={e => setCandidateInputs(prev => ({
+                        ...prev,
+                        [row.arena_match_id]: { ...inp, amount: e.target.value },
+                      }))}
+                    />
+                  </label>
+                  <label style={{ ...s.label, flex: '1 1 60px' }}>
+                    <span style={s.labelText}>Currency</span>
+                    <input
+                      style={s.input}
+                      type="text"
+                      maxLength={3}
+                      value={inp.currency}
+                      onChange={e => setCandidateInputs(prev => ({
+                        ...prev,
+                        [row.arena_match_id]: { ...inp, currency: e.target.value.toUpperCase() },
+                      }))}
+                    />
+                  </label>
+                  <label style={{ ...s.label, flex: '2 1 100px' }}>
+                    <span style={s.labelText}>Prize Kind</span>
+                    <select
+                      style={s.select}
+                      value={inp.prizeKind}
+                      onChange={e => setCandidateInputs(prev => ({
+                        ...prev,
+                        [row.arena_match_id]: { ...inp, prizeKind: e.target.value as PrizeKind },
+                      }))}
+                    >
+                      <option value="cash">cash</option>
+                      <option value="merchandise">merchandise</option>
+                      <option value="title_only">title_only</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    style={{ ...s.submitBtn, alignSelf: 'flex-end', padding: '10px 16px' }}
+                    disabled={isGen}
+                    onClick={() => handleCandidateGenerate(row)}
+                  >
+                    {isGen ? 'Generating…' : '⚡ Generate Award'}
+                  </button>
+                </div>
+                {res !== undefined && typeof res === 'string' && (
+                  <div style={{ color: '#b71c1c', fontSize: 12, marginTop: 6 }}>⚠ {res}</div>
+                )}
+                {res !== undefined && Array.isArray(res) && (
+                  <div style={{ marginTop: 6 }}>
+                    {res.length === 0 ? (
+                      <div style={{ color: '#e65100', fontSize: 12 }}>対象 match が見つかりませんでした。</div>
+                    ) : res.map((r, i) => (
+                      <div key={i} style={{ fontSize: 11, color: r.skipped_reason === 'already_exists' ? '#757575' : '#2e7d32', marginTop: 2 }}>
+                        {r.skipped_reason === 'already_exists' ? 'SKIPPED (already exists)' : '✓ CREATED'}
+                        {' '}award: {r.award_id.slice(0, 8)}… | status: {r.status}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          <div style={{ borderTop: '1px solid var(--rule)', margin: '20px 0 16px', paddingTop: 16 }}>
+            <div style={{ ...s.formEyebrow, marginBottom: 4 }}>Manual Generate</div>
+            <div style={{ fontSize: 12, color: '#555', marginBottom: 12 }}>
+              Arena Event IDを直接指定して生成します（上記候補外のイベントにも使用できます）。
+            </div>
           {generateError && <div style={s.errorBanner}><span>⚠ {generateError}</span></div>}
           <form style={s.form} onSubmit={handleGenerate}>
             <label style={s.label}>
@@ -359,7 +550,6 @@ export function AdminPage({ onBack }: Props) {
               {generateResult.length === 0 ? (
                 <div style={{ color: '#e65100', fontSize: 13 }}>
                   ⚠ 対象となる master match が見つかりませんでした。
-                  (processed済み / winner有り / end_reason正常系 の条件を満たす match がありません)
                 </div>
               ) : (
                 <>
@@ -381,8 +571,10 @@ export function AdminPage({ onBack }: Props) {
               )}
             </div>
           )}
+          </div>{/* end Manual Generate */}
         </div>
       )}
+      {/* /⚡ Arena Award セクション */}
 
       {/* Award 作成フォーム */}
       {showCreate && (
@@ -959,5 +1151,42 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 10,
     color: 'var(--ink-3)',
     letterSpacing: '0.12em',
+  },
+
+  // ── 候補カード ──
+  candidateCard: {
+    border: '1px solid var(--rule-strong)',
+    borderRadius: 6,
+    padding: '12px 14px',
+    marginBottom: 10,
+    background: '#fff',
+  },
+  candidateHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  candidateArena: {
+    fontFamily: 'var(--mono)',
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--ink)',
+    letterSpacing: '0.08em',
+  },
+  candidateDate: {
+    fontFamily: 'var(--mono)',
+    fontSize: 10,
+    color: 'var(--ink-3)',
+  },
+  candidateInfo: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '3px 16px',
+    fontSize: 12,
+    color: 'var(--ink-2)',
+    marginBottom: 2,
   },
 };

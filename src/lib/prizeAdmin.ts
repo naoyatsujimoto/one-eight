@@ -575,3 +575,44 @@ export async function adminRetryPayout(
   if (error) return { data: null, error: error.message };
   return { data: data as RetryPayoutResult, error: null };
 }
+
+// ── admin_list_unprocessed_arena_events ───────────────────────────────────────
+
+/**
+ * admin_list_unprocessed_arena_events の返却型
+ * Prize Award がまだ生成されていない processed 済み Arena master match 候補。
+ * PII を含まない（display_name のみ）。
+ */
+export interface UnprocessedArenaEventRow {
+  arena_event_id:      string;
+  arena_id:            string;
+  arena_code:          string | null;
+  arena_display_name:  string | null;
+  scheduled_at:        string;
+  arena_match_id:      string;
+  official_match_id:   string | null;
+  match_kind:          string;
+  master_subtype:      string | null;
+  master_effect:       string | null;
+  winner_user_id:      string;
+  winner_display_name: string | null;
+  loser_user_id:       string | null;
+  loser_display_name:  string | null;
+  end_reason:          string;
+  processed_at:        string | null;
+  existing_award_count: number;
+}
+
+/**
+ * adminListUnprocessedArenaEvents
+ * Prize Award 未生成の processed 済み Arena master match 候補を返す。
+ * Admin 専用（RPC 内部で is_admin 再確認）。
+ */
+export async function adminListUnprocessedArenaEvents(): Promise<{
+  data: UnprocessedArenaEventRow[] | null;
+  error: string | null;
+}> {
+  const { data, error } = await supabase.rpc('admin_list_unprocessed_arena_events');
+  if (error) return { data: null, error: error.message };
+  return { data: (data as UnprocessedArenaEventRow[]) ?? [], error: null };
+}
