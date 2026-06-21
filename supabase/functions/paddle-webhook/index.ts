@@ -236,10 +236,36 @@ Deno.serve(async (req: Request) => {
 
   switch (eventType) {
     case 'subscription.activated':
-    case 'subscription.updated':
       newPlan   = 'pro';
       newStatus = 'active';
       break;
+    case 'subscription.updated': {
+      // Paddle では支払い方法変更・pause・trialing・past_due でも subscription.updated が発火するため
+      // data.status を参照して正確に状態マッピングする (一律 active 扱いを禁止)
+      const dataStatus = String((sub as { status?: unknown }).status ?? '').toLowerCase();
+      if (dataStatus === 'active') {
+        newPlan   = 'pro';
+        newStatus = 'active';
+      } else if (dataStatus === 'past_due') {
+        // plan は既存 profile の値を維持 (isProActive が false を返す)
+        newStatus = 'past_due';
+      } else if (dataStatus === 'canceled') {
+        newPlan   = 'pro'; // current_period_end まで Pro 維持 (isProActive の canceled 処理と整合)
+        newStatus = 'canceled';
+      } else {
+        // paused / trialing / unknown → active にしない
+        // DB subscription_status 許容値 (SubscriptionStatus): inactive | active | trial | canceled | past_due
+        // paused / trialing は許容値外のため 'inactive' で安全側に倒す
+        newStatus = 'inactive';
+        await auditLog(supabase, {
+          eventId, eventType, supabaseUid,
+          reason: 'subscription_updated_non_active_status',
+          action: 'processed',
+          detail: { data_status: dataStatus || '(empty)' },
+        });
+      }
+      break;
+    }
     case 'subscription.canceled':
       newPlan   = 'pro';      // current_period_end まで Pro 維持
       newStatus = 'canceled';
