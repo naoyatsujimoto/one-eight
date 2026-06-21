@@ -40,6 +40,13 @@ import {
 import { enterOfficialMatch } from '../lib/officialMatch';
 import { useLang } from '../lib/lang';
 
+// ─── Arena Reward constants (front-end fixed values; replace with DB/RPC in future) ──────────────
+
+const ARENA_REWARDS_USD: Record<string, number> = {
+  ELEPHANT: 65,
+  JAGUAR: 65,
+};
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 function formatDatetime(isoStr: string | null, lang: string): string {
@@ -471,9 +478,9 @@ function DetailContent({
         />
       )}
 
-      {/* Next event */}
+      {/* Next Round */}
       <div style={modalStyles.section}>
-        <div style={modalStyles.sectionLabel}>{t.arenaNextEvent}</div>
+        <div style={modalStyles.sectionLabel}>{t.arenaNextRound}</div>
         {detail.next_event ? (
           <>
             <div style={modalStyles.value}>
@@ -894,42 +901,67 @@ function ArenaCard({
       {/* Title name */}
       <div style={cardStyles.titleName}>{arena.title_name}</div>
 
-      {/* Next event datetime */}
-      <div style={cardStyles.row}>
-        <span style={cardStyles.label}>{t.arenaNextEvent}</span>
-        <span style={cardStyles.value}>
-          {arena.event_datetime ? (
-            <>
-              {formatDate(arena.event_datetime, lang)}{' '}
-              {formatTime(arena.event_datetime, lang)}
-            </>
-          ) : '—'}
-        </span>
-      </div>
-
-      {/* Entry deadline */}
-      <div style={cardStyles.row}>
-        <span style={cardStyles.label}>{t.arenaEntryDeadline}</span>
-        <span style={cardStyles.value}>
-          {arena.entry_deadline ? formatDatetime(arena.entry_deadline, lang) : '—'}
-        </span>
-      </div>
-
-      {/* Current Master */}
-      <div style={cardStyles.row}>
-        <span style={cardStyles.label}>{t.arenaCurrentMaster}</span>
-        <span style={cardStyles.value}>
-          {masterName ?? t.arenaNoMaster}
-        </span>
-      </div>
-
-      {/* Interim Master (show only if present) */}
-      {interimName && (
+      {/* Info block */}
+      <div style={cardStyles.infoBlock}>
+        {/* Reward */}
         <div style={cardStyles.row}>
-          <span style={cardStyles.label}>{t.arenaInterimMaster}</span>
-          <span style={cardStyles.value}>{interimName}</span>
+          <span style={cardStyles.label}>{t.arenaReward}</span>
+          <span style={cardStyles.value}>
+            {ARENA_REWARDS_USD[arena.code] != null
+              ? `$${ARENA_REWARDS_USD[arena.code]}`
+              : '—'}
+          </span>
         </div>
-      )}
+
+        {/* Frequency */}
+        <div style={cardStyles.row}>
+          <span style={cardStyles.label}>{t.arenaFrequency}</span>
+          <span style={cardStyles.value}>Weekly</span>
+        </div>
+
+        {/* Next Round */}
+        <div style={cardStyles.row}>
+          <span style={cardStyles.label}>{t.arenaNextRound}</span>
+          <span style={cardStyles.value}>
+            {arena.event_datetime ? (
+              <>
+                {formatDate(arena.event_datetime, lang)}{' '}
+                {formatTime(arena.event_datetime, lang)}
+              </>
+            ) : '—'}
+          </span>
+        </div>
+
+        {/* Entry deadline */}
+        <div style={cardStyles.row}>
+          <span style={cardStyles.label}>{t.arenaEntryDeadline}</span>
+          <span style={cardStyles.value}>
+            {arena.entry_deadline ? formatDatetime(arena.entry_deadline, lang) : '—'}
+          </span>
+        </div>
+
+        {/* Current Master */}
+        <div style={cardStyles.row}>
+          <span style={cardStyles.label}>{t.arenaCurrentMaster}</span>
+          <span style={cardStyles.value}>
+            {masterName ?? t.arenaNoMaster}
+          </span>
+        </div>
+
+        {/* Interim Master (show only if present) */}
+        {interimName && (
+          <div style={cardStyles.row}>
+            <span style={cardStyles.label}>{t.arenaInterimMaster}</span>
+            <span style={cardStyles.value}>{interimName}</span>
+          </div>
+        )}
+
+        {/* Rules */}
+        <div style={cardStyles.row}>
+          <span style={cardStyles.label}>{t.arenaRulesInfoLabel}</span>
+          <span style={cardStyles.value}>Total Time, 10min</span>
+        </div>
+      </div>
 
       {/* My entry status */}
       <div style={cardStyles.row}>
@@ -1212,6 +1244,16 @@ const cardStyles: Record<string, React.CSSProperties> = {
     color: '#888',
     marginBottom: '0.65rem',
     letterSpacing: '0.01em',
+  },
+  infoBlock: {
+    borderTop: '1px solid #ece8e3',
+    borderBottom: '1px solid #ece8e3',
+    paddingTop: '0.55rem',
+    paddingBottom: '0.55rem',
+    marginBottom: '0.5rem',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '0.18rem',
   },
   row: {
     display: 'flex',

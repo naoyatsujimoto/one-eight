@@ -421,7 +421,7 @@ export function AdminPage({ onBack }: Props) {
                       min="0"
                       step="0.01"
                       value={inp.amount}
-                      placeholder="e.g. 50"
+                      placeholder="e.g. 65"
                       onChange={e => setCandidateInputs(prev => ({
                         ...prev,
                         [row.arena_match_id]: { ...inp, amount: e.target.value },

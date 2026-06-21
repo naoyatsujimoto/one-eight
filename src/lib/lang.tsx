@@ -553,6 +553,10 @@ export const T = {
     arenaName: 'Name',
     arenaWin: 'W: ',
     arenaCurrent: '(current)',
+    arenaNextRound: 'Next Round',
+    arenaFrequency: 'Frequency',
+    arenaReward: 'Reward',
+    arenaRulesInfoLabel: 'Rules',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
     labelGuideBlackText: 'Labels are shared canonical coordinates. From Black’s view, Gates 1–4 are on the far side and Gates 7–10 are on the near side. Move records use these shared labels.',
@@ -1107,6 +1111,10 @@ export const T = {
     arenaName: '名前',
     arenaWin: '勝: ',
     arenaCurrent: '(現在)',
+    arenaNextRound: 'Next Round',
+    arenaFrequency: '開催頻度',
+    arenaReward: 'Reward',
+    arenaRulesInfoLabel: 'Rules',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
     labelGuideBlackText: 'GATE番号は左上から時計周りに1→12。POSITION番号は左から右、上から下の順でA→M。（棋譜には打ち手が番号で記載されます）',
@@ -1611,6 +1619,10 @@ export type Translations = {
   arenaName: string;
   arenaWin: string;
   arenaCurrent: string;
+  arenaNextRound: string;
+  arenaFrequency: string;
+  arenaReward: string;
+  arenaRulesInfoLabel: string;
 
   // Label guide captions
   labelGuideBlackText: string;
