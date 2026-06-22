@@ -511,10 +511,13 @@ function DetailContent({
         </div>
       )}
 
-      {/* Arena Point Ranking */}
-      {detail.top_ranking && detail.top_ranking.length > 0 && (
-        <div style={modalStyles.section}>
-          <div style={modalStyles.sectionLabel}>{t.arenaPointRanking}</div>
+      {/* Recent Point Ranking (Last 90 days) */}
+      <div style={modalStyles.section}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.3rem' }}>
+          <div style={modalStyles.sectionLabel}>{t.arenaRecentPointRanking}</div>
+          <span style={{ fontSize: '0.65rem', color: '#aaa', fontStyle: 'italic' }}>{t.arenaLast90Days}</span>
+        </div>
+        {detail.top_ranking && detail.top_ranking.length > 0 ? (
           <table style={modalStyles.table}>
             <thead>
               <tr>
@@ -533,8 +536,10 @@ function DetailContent({
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        ) : (
+          <div style={{ fontSize: '0.78rem', color: '#aaa', fontStyle: 'italic' }}>{t.arenaNoRanking90Days}</div>
+        )}
+      </div>
 
       {/* Recent Match History */}
       {detail.recent_match_history && detail.recent_match_history.length > 0 && (

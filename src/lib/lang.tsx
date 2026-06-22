@@ -336,6 +336,9 @@ export const T = {
     arenaCurrentMaster: 'Current Master',
     arenaInterimMaster: 'Interim Master',
     arenaPointRanking: 'Arena Point Ranking',
+    arenaRecentPointRanking: 'Recent Point Ranking',
+    arenaLast90Days: 'Last 90 days',
+    arenaNoRanking90Days: 'No ranking data in the last 90 days yet.',
     arenaRecentMatchHistory: 'Recent Match History',
     arenaTapForDetail: 'View details',
     arenaMyEntry: 'My entry',
@@ -894,6 +897,9 @@ export const T = {
     arenaCurrentMaster: '現在のMaster',
     arenaInterimMaster: 'Interim Master',
     arenaPointRanking: 'アリーナ Point Ranking',
+    arenaRecentPointRanking: '直近ポイントランキング',
+    arenaLast90Days: '直近90日',
+    arenaNoRanking90Days: '直近90日のランキングデータはまだありません。',
     arenaRecentMatchHistory: '最近のMatch履歴',
     arenaTapForDetail: '詳細を開く',
     arenaMyEntry: 'Entry状態',
@@ -1402,6 +1408,9 @@ export type Translations = {
   arenaCurrentMaster: string;
   arenaInterimMaster: string;
   arenaPointRanking: string;
+  arenaRecentPointRanking: string;
+  arenaLast90Days: string;
+  arenaNoRanking90Days: string;
   arenaRecentMatchHistory: string;
   arenaTapForDetail: string;
   arenaMyEntry: string;
