@@ -624,7 +624,7 @@ export const T = {
       { heading: '2. Position', body: '盤上にはA〜Mの13個のPositionがある。Positionに自分のSymbolを置いているプレイヤーは、そのPositionを保持する。' },
       { heading: '3. Gate', body: '盤の外周には1〜12の12個のGateがある。各Gateには、Assetを置くためのSlotがある。\nLarge Slot：2 · Middle Slot：2 · Small Slot：4' },
       { heading: '4. Diagonal Gate', body: '各Positionには、斜め方向に対応する4つのGateがある。これを、そのPositionのDiagonal Gateとする。Build upは、手番で指定したPositionのDiagonal Gateに対してのみ行う。' },
-      { heading: '5. 手番', body: 'プレイヤーは手番において、Positionを1つ指定する。指定できるPositionは、空きPosition・奪取可能な相手Position・Build up可能な自分Positionのいずれかに限る。Position指定後、Build upが可能な場合、プレイヤーは必ずBuild upを行う。任意のPassは認められない。' },
+      { heading: '5. 手番', body: 'プレイヤーは手番において、Positionを1つ指定する。指定できるPositionは、空きPosition / 奪取可能な相手Position / Build up可能な自分Positionのいずれかに限る。Position指定後、Build upが可能な場合、プレイヤーは必ずBuild upを行う。任意のPassは認められない。' },
       { heading: '6. 空きPositionの取得', body: '空きPositionを指定した場合、そのPositionに自分のSymbolを置く。その後、そのPositionのDiagonal GateにBuild upを行う。' },
       { heading: '7. 相手Positionの奪取', body: '相手Positionは、そのPositionのDiagonal Gateにおいて自分が優勢である場合に奪取できる。\n\n奪取判定では、対象PositionのDiagonal Gateのうち、最もBuild upされているGateを比較する。そのGateにおける自分のBuild値が相手のBuild値を上回る場合、対象Positionを奪取できる。\n\n最もBuild upされているGateが複数ある場合は、それらすべてを比較する。この場合、自分が優勢なGateの数が相手を上回るときに限り、対象Positionを奪取できる。' },
       { heading: '8. Assetの価値', body: 'Build値：Small = 1 · Middle = 8 · Large = 64' },
