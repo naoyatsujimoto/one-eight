@@ -9,7 +9,7 @@ export type Lang = 'en' | 'ja';
 export const T = {
   en: {
     // Title
-    titleSub: 'Abstract Strategy Game',
+    titleSub: 'Competitive Board Game',
     titleHint: 'Swipe down to start',
     titleVersion: 'v0.1.0 · Beta',
     langLabel: 'Language',
@@ -571,7 +571,7 @@ export const T = {
 
   ja: {
     // Title
-    titleSub: 'アブストラクト戦略ゲーム',
+    titleSub: '競技性ボードゲーム',
     titleHint: '下にスワイプしてスタート',
     titleVersion: 'v0.1.0 · ベータ版',
     langLabel: '言語',
