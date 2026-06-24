@@ -373,6 +373,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.6,
     marginBottom: '1.25rem',
     marginTop: '-0.5rem',
+    whiteSpace: 'pre-line' as const,
   },
   hint: {
     fontSize: '0.75rem',
