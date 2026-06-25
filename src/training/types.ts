@@ -25,28 +25,28 @@ export interface TrainingTask {
 
 // ---- Full Game Training types (Phase 1) ----
 
-export type FullGameStepKind = 'auto' | 'user' | 'question';
+export type FullGameStepKind = 'auto' | 'user' | 'question' | 'intro' | 'select_only' | 'pass';
 
 export interface ScriptedMove {
   position: string;          // e.g. 'E'
-  buildType: 'massive' | 'selective' | 'quad';
+  buildType: 'massive' | 'selective' | 'quad' | 'selective_single' | 'pass';
   gates: number[];           // e.g. [6] or [1,2,7,12]
 }
 
 export interface FullGameTrainingStep {
-  moveNumber: number;        // 1..22
-  player: 'black' | 'white';
+  moveNumber: number;
+  displayLabel: string;        // "M0", "M1-1", "M2" など
+  player: 'black' | 'white' | 'none';
   kind: FullGameStepKind;
-  move: ScriptedMove;
+  move?: ScriptedMove;
+  expectedMove?: ScriptedMove;
+  expectedPosition?: string;   // select_only 用
   learningPoint: string;
   shortPrompt: string;
-  expectedMove: ScriptedMove;
-  acceptedMoves?: ScriptedMove[];
   explanation: string;
-  capturesBefore?: string[];  // Positions capturable by player before this move
-  capturesAfter?: string[];   // Expected Position owners after this move
+  capturesBefore?: string[];
+  capturesAfter?: string[];
   note?: string;
-  nextQuestion?: string;      // for Move 21: 勝勢判断questionのプレースホルダー
 }
 
 export interface FullGameTrainingTask {
@@ -102,17 +102,18 @@ export interface FullGameStepText {
   moveNumber: number;
   /** Comma-separated tag identifiers for the learning concept(s) in this step. */
   learningPoint: string;
+  /** Present when step kind === 'intro'. */
+  introText?: LocalizedText;
   /** Present when step kind === 'user'. */
   userText?: FullGameUserStepText;
   /** Present when step kind === 'auto'. */
   autoText?: FullGameAutoStepText;
   /**
    * Comprehension question displayed after the step resolves.
-   * Currently only used for Move 21 (winning-judgment).
    */
   postQuestion?: FullGameQuestionData;
   /**
-   * Summary text displayed after the final auto step resolves (Move 22).
+   * Summary text displayed after the final user step resolves (moveNumber 60).
    */
   finalText?: LocalizedText;
 }

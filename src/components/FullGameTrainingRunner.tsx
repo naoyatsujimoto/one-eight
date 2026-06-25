@@ -15,11 +15,13 @@ import type { FullGameStepText, LocalizedText } from '../training/types';
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type FGPhase =
-  | 'auto'          // Auto step: move applied, showing narration, "次へ" button
-  | 'user'          // User step: waiting for board interaction
-  | 'success'       // User step succeeded: showing success text, "次へ"
-  | 'question'      // postQuestion: awaiting answer
-  | 'complete';     // All steps done: showing finalText
+  | 'intro'          // M0: テキスト表示、board非interactive、次へボタン
+  | 'auto'           // Auto step: move applied, showing narration, "次へ" button
+  | 'user'           // User step: waiting for board interaction
+  | 'select_success' // select_only で正しいPositionをタップ後
+  | 'success'        // User step succeeded: showing success text, "次へ"
+  | 'question'       // postQuestion: awaiting answer
+  | 'complete';      // All steps done: showing finalText
 
 const EMPTY_BUILD: BoardBuildState = {
   mode: 'none',
@@ -51,7 +53,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   // ── Core state ────────────────────────────────────────────────────────────
   const [stepIndex, setStepIndex] = useState(0);
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(null));
-  const [phase, setPhase] = useState<FGPhase>('user'); // Move 1 is user
+  const [phase, setPhase] = useState<FGPhase>('intro'); // Move 0 is intro
   const [snapshotRef] = useState({ current: createInitialState(null) }); // rollback point
   const snapshot = useRef(createInitialState(null));
 
@@ -68,10 +70,12 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const [questionSelected, setQuestionSelected] = useState<number | null>(null);
   const [questionShowHint, setQuestionShowHint] = useState(false);
 
-  // Initialize: first step is user (Move 1)
+  // Initialize: first step is intro (Move 0)
   // snapshot starts as empty initial state
   useEffect(() => {
     snapshot.current = createInitialState(null);
+    // Move 0 is intro kind
+    setPhase('intro');
   }, []);
 
   // ── Advance to a step index ───────────────────────────────────────────────
@@ -93,9 +97,22 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     setSelectiveFirst(null);
     setQuadSelected([]);
 
-    if (nextStep.kind === 'auto') {
+    if (nextStep.kind === 'intro') {
+      setGameState(currentGameState);
+      snapshot.current = currentGameState;
+      setPhase('intro');
+    } else if (nextStep.kind === 'select_only') {
+      setGameState(currentGameState);
+      snapshot.current = currentGameState;
+      setPhase('user'); // board interactive (position tap only)
+    } else if (nextStep.kind === 'pass') {
+      const newState = applyScriptedMove(currentGameState, { position: '', buildType: 'pass', gates: [] });
+      setGameState(newState);
+      snapshot.current = newState;
+      setPhase('auto'); // auto と同じ表示（次へボタン）
+    } else if (nextStep.kind === 'auto') {
       // Apply the auto move immediately
-      const newState = applyScriptedMove(currentGameState, nextStep.move);
+      const newState = applyScriptedMove(currentGameState, nextStep.move!);
       setGameState(newState);
       setPhase('auto');
       snapshot.current = newState;
@@ -111,6 +128,21 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const handleNext = useCallback(() => {
     const currentStep = FULL_GAME_V1.steps[stepIndex];
     if (!currentStep) return;
+
+    if (phase === 'select_success') {
+      // gameState を snapshot に rollback（選択を残さない）
+      setGameState(snapshot.current);
+      setBuildState(EMPTY_BUILD);
+      setSelectiveFirst(null);
+      setQuadSelected([]);
+      advanceToStep(stepIndex + 1, snapshot.current);
+      return;
+    }
+
+    if (phase === 'intro') {
+      advanceToStep(stepIndex + 1, gameState);
+      return;
+    }
 
     if (phase === 'success') {
       const stepText = getStepText(currentStep.moveNumber);
@@ -157,6 +189,18 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
   const handleSelectPosition = useCallback((positionId: PositionId) => {
     if (phase !== 'user') return;
+    const currentStep = FULL_GAME_V1.steps[stepIndex];
+
+    // select_only: 正しいPositionをタップしたら select_success へ
+    if (currentStep?.kind === 'select_only') {
+      setGameState((prev) => selectPosition(prev, positionId));
+      if (positionId === currentStep.expectedPosition) {
+        setPhase('select_success');
+      }
+      return;
+    }
+
+    // 通常の user step
     setGameState((prev) => {
       const next = selectPosition(prev, positionId);
       return next;
@@ -165,7 +209,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     setSelectiveFirst(null);
     setQuadSelected([]);
     setWrongAttempt(false);
-  }, [phase]);
+  }, [phase, stepIndex]);
 
   // Commit a move attempt: validate and advance or rollback
   const tryCommitMove = useCallback((newState: GameState) => {
@@ -175,6 +219,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     const lastRecord = newState.history[newState.history.length - 1];
     if (!lastRecord) return;
 
+    if (!currentStep.expectedMove) return;
     const expected = scriptedMoveToExpected(currentStep.expectedMove);
     if (validateMove(lastRecord, expected)) {
       // Correct!
@@ -207,7 +252,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       if (!lastRecord) return prev;
 
       const currentStep = FULL_GAME_V1.steps[stepIndex];
-      if (!currentStep || currentStep.kind !== 'user') return prev;
+      if (!currentStep || currentStep.kind !== 'user' || !currentStep.expectedMove) return prev;
       const expected = scriptedMoveToExpected(currentStep.expectedMove);
 
       if (validateMove(lastRecord, expected)) {
@@ -236,7 +281,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       if (!prev.selectedPosition) return prev;
 
       const currentStep = FULL_GAME_V1.steps[stepIndex];
-      if (!currentStep || currentStep.kind !== 'user') return prev;
+      if (!currentStep || currentStep.kind !== 'user' || !currentStep.expectedMove) return prev;
       const expected = scriptedMoveToExpected(currentStep.expectedMove);
 
       // Selective build handling
@@ -306,7 +351,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     setGameState((prev) => {
       if (!prev.selectedPosition) return prev;
       const currentStep = FULL_GAME_V1.steps[stepIndex];
-      if (!currentStep || currentStep.kind !== 'user') return prev;
+      if (!currentStep || currentStep.kind !== 'user' || !currentStep.expectedMove) return prev;
       if (currentStep.expectedMove.buildType !== 'quad') return prev;
 
       const connectedGates = POSITION_TO_GATES[prev.selectedPosition];
@@ -333,7 +378,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         const lastRecord = newState.history[newState.history.length - 1];
         if (!lastRecord) return prev;
 
-        const expected = scriptedMoveToExpected(currentStep.expectedMove);
+        const expected = scriptedMoveToExpected(currentStep.expectedMove!);
         if (validateMove(lastRecord, expected)) {
           snapshot.current = newState;
           setBuildState(EMPTY_BUILD);
@@ -372,6 +417,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Board interaction is enabled only in 'user' phase
+  // intro / select_success / auto / complete は非interactive
   const boardInteractive = phase === 'user';
 
   const noop = useCallback(() => {}, []);
@@ -527,12 +573,16 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   let situationText = '';
   let successText = '';
   let autoNarration = '';
+  let introNarration = '';
 
   if (currentStep && stepText) {
+    if (phase === 'intro' && stepText.introText) {
+      introNarration = L(stepText.introText);
+    }
     if (phase === 'auto' && stepText.autoText) {
       autoNarration = L(stepText.autoText.auto);
     }
-    if ((phase === 'user' || phase === 'success') && stepText.userText) {
+    if ((phase === 'user' || phase === 'success' || phase === 'select_success') && stepText.userText) {
       situationText = L(stepText.userText.situation);
       instructionText = L(stepText.userText.question);
       successText = L(stepText.userText.success);
@@ -555,15 +605,18 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
       {/* Instruction panel */}
       <div style={{ padding: '12px 16px', background: '#faf7f4', borderBottom: '1px solid #e8e0d8' }}>
+        {phase === 'intro' && (
+          <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{introNarration}</div>
+        )}
         {phase === 'auto' && (
-          <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6 }}>{autoNarration}</div>
+          <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{autoNarration}</div>
         )}
         {phase === 'user' && (
           <>
             {situationText && (
               <div style={{ fontSize: '13px', color: '#666', marginBottom: '6px' }}>{situationText}</div>
             )}
-            <div style={{ fontSize: '14px', fontWeight: 600 }}>{instructionText}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, whiteSpace: 'pre-wrap' }}>{instructionText}</div>
             {wrongAttempt && (
               <div style={{ marginTop: '6px', fontSize: '13px', color: '#b05050' }}>
                 {lang === 'ja' ? '不正解です。もう一度試してください。' : 'Incorrect. Please try again.'}
@@ -576,8 +629,11 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
             )}
           </>
         )}
+        {phase === 'select_success' && (
+          <div style={{ fontSize: '14px', color: '#3a5a3a', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-wrap' }}>{successText}</div>
+        )}
         {phase === 'success' && (
-          <div style={{ fontSize: '14px', color: '#3a5a3a', lineHeight: 1.6, fontWeight: 500 }}>{successText}</div>
+          <div style={{ fontSize: '14px', color: '#3a5a3a', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-wrap' }}>{successText}</div>
         )}
       </div>
 
@@ -598,7 +654,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
       {/* Actions */}
       <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        {(phase === 'auto' || phase === 'success') && (
+        {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') && (
           <button type="button" className="result-btn result-btn-primary" onClick={handleNext}>
             {lang === 'ja' ? '次へ' : 'Next'}
           </button>

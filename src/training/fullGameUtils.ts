@@ -2,7 +2,9 @@ import {
   selectPosition,
   applyMassiveBuild,
   applySelectiveBuild,
+  applySelectiveBuildSingle,
   applyQuadBuildForGates,
+  applyAutoPass,
 } from '../game/engine';
 import type { GameState, GateId, PositionId } from '../game/types';
 import type { ScriptedMove, ExpectedMove } from './types';
@@ -14,6 +16,9 @@ const FULLGAME_V1_COMPLETED_KEY = 'one_eight_fullgame_v1_completed';
  * Used for both auto-steps and for building the expected state in tests.
  */
 export function applyScriptedMove(state: GameState, move: ScriptedMove): GameState {
+  if (move.buildType === 'pass') {
+    return applyAutoPass(state);
+  }
   const pos = move.position as PositionId;
   const next = selectPosition(state, pos);
 
@@ -22,6 +27,9 @@ export function applyScriptedMove(state: GameState, move: ScriptedMove): GameSta
   }
   if (move.buildType === 'selective') {
     return applySelectiveBuild(next, [move.gates[0] as GateId, move.gates[1] as GateId]);
+  }
+  if (move.buildType === 'selective_single') {
+    return applySelectiveBuildSingle(next, move.gates[0] as GateId);
   }
   // quad
   return applyQuadBuildForGates(next, move.gates as GateId[]);
