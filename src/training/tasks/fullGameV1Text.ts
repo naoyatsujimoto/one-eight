@@ -30,7 +30,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'intro',
       introText: {
         en: 'The game proceeds by selecting a Position and performing a Build up to complete one turn.\n\nSelect one of the 13 Positions in the center of the board, then Build up Assets to the Gates accessible from that Position.\nWhen the Build up is complete, the turn passes to the opponent.\n\nLet\'s try it out.',
-        ja: 'ゲームは基本的に、Positionの選択 と Build up によって一手が完了します。\n\n盤面中央の13個のPositionから1つを選択し、そのPositionからアクセス可能なGateにAssetをBuild upします。\nBuild upが完了すると、相手のターンに移ります。\n\nまずは実際にやってみましょう。',
+        ja: '対局は基本的に、Positionの選択 と Build up によって一手が完了します。\n\n盤面中央の13個のPositionから1つを選択し、そのPositionからアクセス可能なGateにAssetをBuild upします。\nBuild upが完了すると、相手のターンに移ります。\n\nまずは実際にやってみましょう。',
       },
     },
 
@@ -1064,7 +1064,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
         },
         success: {
           en: 'This completes all Build ups, and the game ends.\n\nIn ONE EIGHT, the game ends when all slots of all Gates are filled.\nFinally, the player holding more Positions is the winner.',
-          ja: 'これですべてのBuild upが完了し、終局となります。\n\nONE EIGHTでは、すべてのGateのすべてのスロットが埋まった時点でゲームが終了します。\n最後に、より多くのPositionを保持しているプレイヤーが勝者です。',
+          ja: 'これですべてのBuild upが完了し、終局となります。\n\nONE EIGHTでは、すべてのGateのすべてのスロットが埋まった時点で対局が終了します。\n最後に、より多くのPositionを保持しているプレイヤーが勝者です。',
         },
       },
       finalText: {

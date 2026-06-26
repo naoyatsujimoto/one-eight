@@ -130,12 +130,8 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     if (!currentStep) return;
 
     if (phase === 'select_success') {
-      // gameState を snapshot に rollback（選択を残さない）
-      setGameState(snapshot.current);
-      setBuildState(EMPTY_BUILD);
-      setSelectiveFirst(null);
-      setQuadSelected([]);
-      advanceToStep(stepIndex + 1, snapshot.current);
+      // 選択状態を維持したまま次ステップへ進む（rollback しない）
+      advanceToStep(stepIndex + 1, gameState);
       return;
     }
 
