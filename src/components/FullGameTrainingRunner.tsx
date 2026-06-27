@@ -41,6 +41,17 @@ function getStepText(moveNumber: number): FullGameStepText | undefined {
   return FULL_GAME_V1_TEXT.steps.find((s) => s.moveNumber === moveNumber);
 }
 
+// ── Helper: split intro text into sentences ───────────────────────────────
+function splitIntoSentences(text: string): string[] {
+  // Split on 。(Japanese) or . (English) followed by optional whitespace
+  // Preserve the delimiter by using a lookahead split pattern
+  const raw = text
+    .split(/(?<=。)|(?<=\.)(?=\s|$)/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  return raw.length > 0 ? raw : [text];
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 interface FullGameTrainingRunnerProps {
@@ -66,6 +77,9 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const [showHint, setShowHint] = useState(false);
   const [wrongAttempt, setWrongAttempt] = useState(false);
 
+  // Intro sentence navigation (Phase 4)
+  const [introSentenceIndex, setIntroSentenceIndex] = useState(0);
+
   // Question state (Move 21 postQuestion)
   const [questionSelected, setQuestionSelected] = useState<number | null>(null);
   const [questionShowHint, setQuestionShowHint] = useState(false);
@@ -76,6 +90,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     snapshot.current = createInitialState(null);
     // Move 0 is intro kind
     setPhase('intro');
+    setIntroSentenceIndex(0);
   }, []);
 
   // ── Advance to a step index ───────────────────────────────────────────────
@@ -101,6 +116,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       setGameState(currentGameState);
       snapshot.current = currentGameState;
       setPhase('intro');
+      setIntroSentenceIndex(0);
     } else if (nextStep.kind === 'select_only') {
       setGameState(currentGameState);
       snapshot.current = currentGameState;
@@ -136,7 +152,17 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     }
 
     if (phase === 'intro') {
-      advanceToStep(stepIndex + 1, gameState);
+      // Phase 4: sentence-by-sentence navigation
+      const stepText = getStepText(FULL_GAME_V1.steps[stepIndex]?.moveNumber ?? 0);
+      const introFull = stepText?.introText ? pick(stepText.introText, lang) : '';
+      const sentences = splitIntoSentences(introFull);
+      if (introSentenceIndex < sentences.length - 1) {
+        // Advance to next sentence
+        setIntroSentenceIndex((prev) => prev + 1);
+      } else {
+        // Last sentence reached — advance to next step
+        advanceToStep(stepIndex + 1, gameState);
+      }
       return;
     }
 
@@ -410,6 +436,13 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const L = (text: LocalizedText) => pick(text, lang);
   const meta = FULL_GAME_V1_TEXT.meta;
 
+  // Intro sentences (Phase 4)
+  const introSentences = (currentStep && stepText?.introText)
+    ? splitIntoSentences(L(stepText.introText))
+    : [];
+  const currentIntroSentence = introSentences[introSentenceIndex] ?? '';
+  const isLastIntroSentence = introSentenceIndex >= introSentences.length - 1;
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Board interaction is enabled only in 'user' phase
@@ -607,7 +640,21 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       {/* Instruction panel */}
       <div className="trn-instruction-band">
         {phase === 'intro' && (
-          <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{introNarration}</div>
+          <>
+            <div className="trn-narration trn-intro-sentence" style={{ whiteSpace: 'pre-wrap' }}>
+              {currentIntroSentence}
+            </div>
+            {introSentences.length > 1 && (
+              <div className="trn-intro-dots" aria-hidden="true">
+                {introSentences.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`trn-intro-dot${i === introSentenceIndex ? ' trn-intro-dot-active' : ''}`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
         {phase === 'auto' && (
           <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{autoNarration}</div>
@@ -656,7 +703,11 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       <div className="trn-actions-sticky">
         {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') && (
           <button type="button" className="action-btn action-btn-primary" onClick={handleNext}>
-            {lang === 'ja' ? '次へ' : 'Next'}
+            {phase === 'intro'
+              ? isLastIntroSentence
+                ? (lang === 'ja' ? 'はじめる' : 'Start')
+                : (lang === 'ja' ? '次へ' : 'Next')
+              : (lang === 'ja' ? '次へ' : 'Next')}
           </button>
         )}
         {phase === 'user' && !showHint && (

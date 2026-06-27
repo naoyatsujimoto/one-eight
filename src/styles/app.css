@@ -3591,7 +3591,7 @@ ol { padding-left: 20px; }
 .trn-instruction-band {
   padding: 16px 24px;
   border-bottom: 1px solid var(--rule);
-  background: #faf9f7;
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -3663,8 +3663,9 @@ ol { padding-left: 20px; }
 .trn-hint-box {
   margin-top: 4px;
   padding: 10px 14px;
-  background: #fdf8ec;
-  border: 1px solid rgba(201,162,74,0.35);
+  background: transparent;
+  border: none;
+  border-left: 2px solid rgba(201,162,74,0.55);
   font-size: 12px;
   color: #6a5020;
   line-height: 1.6;
@@ -3686,6 +3687,17 @@ ol { padding-left: 20px; }
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 12px 32px -12px rgba(20,20,26,0.30);
+}
+
+/* Phase 3: Center board within trn-board-wrap on mobile */
+.trn-board-wrap .board-section {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.trn-board-wrap .board-inner-scaler {
+  margin: 0 auto;
 }
 
 /* ── Actions bar ── */
@@ -3757,9 +3769,10 @@ ol { padding-left: 20px; }
 
 /* ── Explanation box ── */
 .trn-explanation-box {
-  padding: 12px 16px;
-  background: #f2faf2;
-  border: 1px solid rgba(58,110,58,0.3);
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid rgba(58,110,58,0.45);
   font-size: 13px;
   color: #2e5e2e;
   line-height: 1.65;
@@ -3775,10 +3788,12 @@ ol { padding-left: 20px; }
 }
 
 .trn-summary-box {
-  padding: 14px 18px;
-  background: #faf9f7;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
+  padding: 12px 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
   font-size: 13px;
   color: var(--ink-2);
   line-height: 1.7;
@@ -3829,6 +3844,31 @@ ol { padding-left: 20px; }
   background: var(--highlight);
   border-radius: 999px;
   transition: width 0.45s ease;
+}
+
+/* ── Phase 4: Intro sentence navigator ── */
+.trn-intro-sentence {
+  min-height: 2.6em; /* reserve space so band height is stable between sentences */
+}
+
+.trn-intro-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.trn-intro-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rule-strong);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.trn-intro-dot-active {
+  background: var(--ink-3);
 }
 
 /* ── Sticky actions footer ── */
