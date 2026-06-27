@@ -3374,3 +3374,426 @@ ol { padding-left: 20px; }
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* ══════════════════════════════════════════
+   Training UI — trn-* classes
+   Design tokens: same as main ONE EIGHT UI
+══════════════════════════════════════════ */
+
+/* ── Screen wrapper ── */
+.trn-screen {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Topbar ── */
+.trn-topbar {
+  position: sticky;
+  top: 0;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px 12px;
+  gap: 12px;
+}
+
+.trn-topbar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  flex: 1;
+}
+
+.trn-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.trn-topbar-title {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+/* ── Description band (intro page) ── */
+.trn-desc-band {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.trn-desc-text {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 560px;
+}
+
+/* ── Task list ── */
+.trn-list {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Section headings ── */
+.trn-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.trn-section-head-ruled {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+
+.trn-section-title {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.trn-section-sub {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* ── Task cards ── */
+.trn-card {
+  border: 1px solid var(--rule);
+  padding: 18px 20px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.15s;
+}
+
+.trn-card:not(.trn-card-locked):hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.trn-card-featured {
+  border-color: var(--rule-strong);
+  border-left: 3px solid var(--highlight);
+  background: #fffdf8;
+}
+
+.trn-card-locked {
+  background: #faf9f7;
+  opacity: 0.75;
+}
+
+.trn-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trn-card-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.trn-card-title {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.trn-card-title-sm {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.trn-card-title-locked {
+  color: var(--ink-4);
+}
+
+.trn-card-desc {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.trn-card-desc-locked {
+  color: var(--ink-4);
+}
+
+.trn-locked-msg {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-4);
+}
+
+/* ── Status badges ── */
+.trn-status-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.trn-status-complete {
+  color: #3a6e3a;
+  border: 1px solid #3a6e3a;
+}
+
+.trn-status-available {
+  color: var(--ink-2);
+  border: 1px solid var(--rule-strong);
+}
+
+.trn-status-locked {
+  color: var(--ink-4);
+  border: 1px solid var(--rule);
+}
+
+/* ── Instruction band (task / fullgame screens) ── */
+.trn-instruction-band {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--rule);
+  background: #faf9f7;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trn-step-counter {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.trn-instruction-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+.trn-situation-text {
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.trn-narration {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+.trn-success-text {
+  font-size: 14px;
+  color: #2e5e2e;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.trn-complete-title {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* ── Feedback ── */
+.trn-feedback {
+  font-size: 12px;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  padding: 6px 0 0;
+}
+
+.trn-feedback-wrong {
+  color: #9a3a2a;
+}
+
+.trn-feedback-ok {
+  color: #2e5e2e;
+}
+
+/* ── Hint box ── */
+.trn-hint-box {
+  margin-top: 4px;
+  padding: 10px 14px;
+  background: #fdf8ec;
+  border: 1px solid rgba(201,162,74,0.35);
+  font-size: 12px;
+  color: #6a5020;
+  line-height: 1.6;
+}
+
+/* ── Board area ── */
+.trn-board-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+/* ── Actions bar ── */
+.trn-actions {
+  padding: 16px 24px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--rule);
+}
+
+/* ── Question screen ── */
+.trn-question-body {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trn-question-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+.trn-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trn-option-btn {
+  padding: 12px 16px;
+  border: 1px solid var(--rule-strong);
+  background: var(--bg);
+  text-align: left;
+  font-size: 13px;
+  font-family: var(--sans);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  line-height: 1.5;
+}
+
+.trn-option-btn:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.trn-option-btn:disabled {
+  cursor: default;
+}
+
+.trn-option-correct {
+  border-color: #3a6e3a !important;
+  background: #f2faf2 !important;
+  color: #2e5e2e;
+  font-weight: 600;
+}
+
+.trn-option-wrong {
+  border-color: #9a3a2a !important;
+  background: #fdf4f2 !important;
+  color: #9a3a2a;
+}
+
+/* ── Explanation box ── */
+.trn-explanation-box {
+  padding: 12px 16px;
+  background: #f2faf2;
+  border: 1px solid rgba(58,110,58,0.3);
+  font-size: 13px;
+  color: #2e5e2e;
+  line-height: 1.65;
+}
+
+/* ── Complete / text body ── */
+.trn-text-body {
+  flex: 1;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.trn-summary-box {
+  padding: 14px 18px;
+  background: #faf9f7;
+  border: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .trn-topbar {
+    padding: 10px 14px 8px;
+  }
+  .trn-topbar-title {
+    font-size: 12px;
+  }
+  .trn-list {
+    padding: 16px;
+    gap: 10px;
+  }
+  .trn-card {
+    padding: 14px 16px;
+  }
+  .trn-instruction-band {
+    padding: 12px 16px;
+  }
+  .trn-actions {
+    padding: 12px 16px;
+  }
+  .trn-question-body {
+    padding: 16px;
+  }
+  .trn-text-body {
+    padding: 16px;
+  }
+}

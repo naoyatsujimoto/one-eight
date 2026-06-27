@@ -347,77 +347,60 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // ── Intro screen ─────────────────────────────────────────────────────────
   if (mode === 'intro') {
     return (
-      <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="trn-screen">
         {/* Header */}
-        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
-          <button type="button" className="mode-modal-cancel" onClick={onExit} style={{ margin: 0 }}>
-            {t.trainingBackToMenu}
+        <div className="trn-topbar">
+          <button type="button" className="top-btn" onClick={onExit}>
+            ← {t.trainingBackToMenu}
           </button>
-          <div style={{ flex: 1 }}>
-            <div className="result-eyebrow">{t.trainingTitle}</div>
-            <div style={{ fontWeight: 700, fontSize: '15px' }}>{t.trainingIntroSubtitle}</div>
+          <div className="trn-topbar-center">
+            <span className="trn-eyebrow">{t.trainingTitle}</span>
+            <span className="trn-topbar-title">{t.trainingIntroSubtitle}</span>
           </div>
+          <div style={{ width: '80px' }} />
         </div>
 
         {/* Description */}
-        <div style={{ padding: '16px', background: '#faf7f4', borderBottom: '1px solid #e8e0d8' }}>
-          <div style={{ fontSize: '14px', color: '#555' }}>{t.trainingIntroDesc}</div>
+        <div className="trn-desc-band">
+          <p className="trn-desc-text">{t.trainingIntroDesc}</p>
         </div>
 
         {/* Task list */}
-        <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="trn-list">
 
           {/* ── Section 1: 一局通し Training ───────────────────────── */}
-          <div style={{ marginBottom: '4px' }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
+          <div className="trn-section-head">
+            <span className="trn-section-title">
               {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
-            </div>
-            <div style={{ fontSize: '12px', color: '#888' }}>
+            </span>
+            <span className="trn-section-sub">
               {lang === 'ja'
                 ? 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。'
                 : 'Play through one guided game as Black and learn build timing, defense, capture, and winning judgment.'}
-            </div>
+            </span>
           </div>
 
           {/* ── Full-game course card ────────────────────────────────── */}
-          <div
-            style={{
-              border: '1px solid #d8c8a0',
-              borderLeft: '4px solid #c8a84b',
-              borderRadius: '8px',
-              padding: '14px 16px',
-              background: '#fbf7f0',
-            }}
-          >
-            {/* Small label */}
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#a07830', letterSpacing: '0.05em', marginBottom: '6px', textTransform: 'uppercase' }}>
-              {lang === 'ja' ? '1局通し' : 'Guided Game'}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-              <div style={{ fontWeight: 700, fontSize: '16px', color: '#222' }}>
-                {lang === 'ja' ? '一局指南' : 'Guided Game'}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: fullGameCompleted ? '#4a7c4a' : '#7a6a3a',
-                padding: '2px 8px',
-                border: `1px solid ${fullGameCompleted ? '#4a7c4a' : '#c0a060'}`,
-                borderRadius: '4px',
-                whiteSpace: 'nowrap',
-              }}>
+          <div className="trn-card trn-card-featured">
+            <div className="trn-card-head">
+              <span className="trn-card-eyebrow">
+                {lang === 'ja' ? '1局通し' : 'Guided Game'}
+              </span>
+              <span className={`trn-status-badge ${fullGameCompleted ? 'trn-status-complete' : 'trn-status-available'}`}>
                 {fullGameCompleted ? t.trainingTaskStatusComplete : t.trainingTaskStatusAvailable}
-              </div>
+              </span>
             </div>
-            <div style={{ fontSize: '13px', color: '#5a4a30', marginBottom: '10px' }}>
+            <div className="trn-card-title">
+              {lang === 'ja' ? '一局指南' : 'Guided Game'}
+            </div>
+            <div className="trn-card-desc">
               {lang === 'ja'
                 ? '実戦の流れでONE EIGHTの全体戦略を学ぶコース。Black番で22手を指し切ります。'
                 : 'Learn ONE EIGHT strategy through the flow of one guided game. Play 22 moves as Black.'}
             </div>
             <button
               type="button"
-              className="result-btn result-btn-primary"
-              style={{ marginTop: '4px' }}
+              className="action-btn action-btn-primary"
               onClick={() => setMode('fullgame')}
             >
               {fullGameCompleted ? t.trainingReplay : t.trainingStart}
@@ -425,15 +408,15 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
           </div>
 
           {/* ── Section 2: 小課題 Training ──────────────────────────── */}
-          <div style={{ marginTop: '20px', marginBottom: '4px', paddingTop: '20px', borderTop: '1px solid #e8e0d8' }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: '#444', marginBottom: '4px' }}>
+          <div className="trn-section-head trn-section-head-ruled">
+            <span className="trn-section-title">
               {lang === 'ja' ? '小課題 Training' : 'Training Tasks'}
-            </div>
-            <div style={{ fontSize: '12px', color: '#888' }}>
+            </span>
+            <span className="trn-section-sub">
               {lang === 'ja'
                 ? '基本操作・Capture・終局などを短い課題で学びます。'
                 : 'Learn basic actions, capture, and endgame rules through short exercises.'}
-            </div>
+            </span>
           </div>
 
           {TRAINING_TASK_META.map((meta) => {
@@ -464,41 +447,29 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             return (
               <div
                 key={taskId}
-                style={{
-                  border: '1px solid #e8e0d8',
-                  borderRadius: '8px',
-                  padding: '14px 16px',
-                  background: isLocked ? '#f7f4f0' : '#ffffff',
-                }}
+                className={`trn-card ${isLocked ? 'trn-card-locked' : ''}`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '15px', color: isLocked ? '#aaa' : '#222' }}>
+                <div className="trn-card-head">
+                  <span className={`trn-card-title-sm ${isLocked ? 'trn-card-title-locked' : ''}`}>
                     T{meta.order} — {(t as Record<string, unknown>)[meta.titleKey] as string}
-                  </div>
-                  <div style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: isCompleted ? '#4a7c4a' : isLocked ? '#aaa' : '#7a6a3a',
-                    padding: '2px 8px',
-                    border: `1px solid ${isCompleted ? '#4a7c4a' : isLocked ? '#ccc' : '#c0a060'}`,
-                    borderRadius: '4px',
-                    whiteSpace: 'nowrap',
-                  }}>
+                  </span>
+                  <span className={`trn-status-badge ${
+                    isCompleted ? 'trn-status-complete' : isLocked ? 'trn-status-locked' : 'trn-status-available'
+                  }`}>
                     {statusLabel}
-                  </div>
+                  </span>
                 </div>
                 {descText && (
-                  <div style={{ fontSize: '13px', color: isLocked ? '#bbb' : '#666', marginBottom: '10px' }}>
+                  <div className={`trn-card-desc ${isLocked ? 'trn-card-desc-locked' : ''}`}>
                     {descText}
                   </div>
                 )}
                 {isLocked ? (
-                  <div style={{ fontSize: '12px', color: '#aaa' }}>{t.trainingLockedMessage}</div>
+                  <div className="trn-locked-msg">{t.trainingLockedMessage}</div>
                 ) : (
                   <button
                     type="button"
-                    className="result-btn result-btn-primary"
-                    style={{ marginTop: '4px' }}
+                    className="action-btn action-btn-primary"
                     onClick={() => startTask(meta.task)}
                   >
                     {isCompleted ? t.trainingReplay : t.trainingStart}
@@ -518,7 +489,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     return <FullGameTrainingRunner onComplete={() => setMode('intro')} />;
   }
 
-  // ── Task screen ───────────────────────────────────────────────────────────
+  // ── Task screen (task mode render) ────────────────────────────────────────
   const completeTitle: string = (() => {
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
     if (session.task.id === 'T7_diagonal_gates') return t.trainingT7Complete;
@@ -544,32 +515,31 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   const totalUserSteps = session.task.steps.filter((s) => s.kind === 'user_move').length;
 
   return (
-    <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="trn-screen">
       {/* Header */}
-      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
-        <button type="button" className="mode-modal-cancel" onClick={handleBackToIntro} style={{ margin: 0 }}>
-          {t.trainingBackToIntro}
+      <div className="trn-topbar">
+        <button type="button" className="top-btn" onClick={handleBackToIntro}>
+          ← {t.trainingBackToIntro}
         </button>
-        <div style={{ flex: 1 }}>
-          <div className="result-eyebrow">{t.trainingTitle}</div>
-          <div style={{ fontWeight: 700, fontSize: '15px' }}>{t.trainingRecordeTitle} — {(t[session.task.titleKey as keyof typeof t] as string) ?? session.task.titleKey}</div>
+        <div className="trn-topbar-center">
+          <span className="trn-eyebrow">{t.trainingTitle}</span>
+          <span className="trn-topbar-title">{(t[session.task.titleKey as keyof typeof t] as string) ?? session.task.titleKey}</span>
         </div>
+        <div style={{ width: '80px' }} />
       </div>
 
       {/* Step instruction */}
-      <div style={{ padding: '12px 16px', background: '#faf7f4', borderBottom: '1px solid #e8e0d8' }}>
+      <div className="trn-instruction-band">
         {session.status === 'complete' ? (
-          <div style={{ fontWeight: 700, fontSize: '15px', textAlign: 'center' }}>{completeTitle}</div>
+          <div className="trn-complete-title">{completeTitle}</div>
         ) : (
           <>
-            <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>
-              Step {userStepNum} / {totalUserSteps}
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: 600 }}>{stepLabel}</div>
+            <div className="trn-step-counter">Step {userStepNum} / {totalUserSteps}</div>
+            <div className="trn-instruction-text">{stepLabel}</div>
           </>
         )}
         {session.feedback && (
-          <div style={{ marginTop: '6px', fontSize: '13px', color: session.feedback === t.trainingFeedbackWrong ? '#b05050' : '#4a7c4a' }}>
+          <div className={`trn-feedback ${session.feedback === t.trainingFeedbackWrong ? 'trn-feedback-wrong' : 'trn-feedback-ok'}`}>
             {session.feedback}
           </div>
         )}
@@ -577,7 +547,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
       {/* Board */}
       {session.status !== 'complete' && (
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+        <div className="trn-board-area">
           <Board
             state={session.gameState}
             buildState={buildState}
@@ -593,23 +563,23 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       )}
 
       {/* Actions */}
-      <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+      <div className="trn-actions">
         {session.status === 'complete' ? (
           <>
             {session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && session.task.id !== 'T5_capture_tie' && session.task.id !== 'T8_prepare_capture' && session.task.id !== 'T9_no_build_endgame' && session.task.id !== 'T10_defensive_build' && (
-              <button type="button" className="result-btn result-btn-primary" onClick={handleNextTraining}>
+              <button type="button" className="action-btn action-btn-primary" onClick={handleNextTraining}>
                 {t.trainingNextTraining}
               </button>
             )}
-            <button type="button" className="result-btn" onClick={handleRestart}>
+            <button type="button" className="action-btn" onClick={handleRestart}>
               {t.trainingReplay}
             </button>
-            <button type="button" className="result-btn" onClick={handleBackToIntro}>
+            <button type="button" className="action-btn" onClick={handleBackToIntro}>
               {t.trainingBackToIntro}
             </button>
           </>
         ) : (
-          <button type="button" className="result-btn" onClick={handleRestartStep}>
+          <button type="button" className="action-btn" onClick={handleRestartStep}>
             {t.trainingRestartStep}
           </button>
         )}

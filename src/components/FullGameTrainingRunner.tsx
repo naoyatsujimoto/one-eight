@@ -426,49 +426,36 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     const isWrong = questionSelected !== null && questionSelected !== correctIndex;
 
     return (
-      <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="trn-screen">
         {/* Header */}
-        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
-          <div style={{ flex: 1 }}>
-            <div className="result-eyebrow">{lang === 'ja' ? '一局指南' : 'Guided Game'}</div>
-            <div style={{ fontWeight: 700, fontSize: '15px' }}>
-              Move {currentStep.moveNumber} — {lang === 'ja' ? '確認問題' : 'Question'}
-            </div>
+        <div className="trn-topbar">
+          <div style={{ width: '80px' }} />
+          <div className="trn-topbar-center">
+            <span className="trn-eyebrow">{lang === 'ja' ? '一局指南' : 'Guided Game'}</span>
+            <span className="trn-topbar-title">Move {currentStep.moveNumber} — {lang === 'ja' ? '確認問題' : 'Question'}</span>
           </div>
+          <div style={{ width: '80px' }} />
         </div>
 
         {/* Question */}
-        <div style={{ flex: 1, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ fontSize: '15px', fontWeight: 600 }}>{L(pq.question)}</div>
+        <div className="trn-question-body">
+          <div className="trn-question-text">{L(pq.question)}</div>
 
           {/* Options */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="trn-options">
             {pq.options.map((opt, i) => {
               const optText = lang === 'ja' ? opt.ja : opt.en;
               const selected = questionSelected === i;
               const isThisCorrect = i === correctIndex;
-              let borderColor = '#e8e0d8';
-              let bg = '#fff';
-              if (selected) {
-                borderColor = isThisCorrect ? '#4a7c4a' : '#b05050';
-                bg = isThisCorrect ? '#f0f8f0' : '#fdf0f0';
-              }
+              let optClass = 'trn-option-btn';
+              if (selected) optClass += isThisCorrect ? ' trn-option-correct' : ' trn-option-wrong';
               return (
                 <button
                   key={i}
                   type="button"
+                  className={optClass}
                   onClick={() => handleQuestionAnswer(i)}
                   disabled={isCorrect}
-                  style={{
-                    padding: '12px 16px',
-                    border: `2px solid ${borderColor}`,
-                    borderRadius: '8px',
-                    background: bg,
-                    textAlign: 'left',
-                    fontSize: '14px',
-                    cursor: isCorrect ? 'default' : 'pointer',
-                    fontWeight: selected ? 600 : 400,
-                  }}
                 >
                   {optText}
                 </button>
@@ -478,28 +465,28 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
           {/* Hint */}
           {questionShowHint && (
-            <div style={{ padding: '10px 14px', background: '#faf7f0', border: '1px solid #e8d8a0', borderRadius: '6px', fontSize: '13px', color: '#7a6a2a' }}>
+            <div className="trn-hint-box">
               {L(pq.hint)}
             </div>
           )}
 
           {/* Feedback / Explanation */}
           {isWrong && !questionShowHint && (
-            <div style={{ fontSize: '13px', color: '#b05050' }}>
+            <div className="trn-feedback trn-feedback-wrong">
               {lang === 'ja' ? 'もう一度考えてみてください。' : 'Try again.'}
             </div>
           )}
           {isCorrect && (
-            <div style={{ padding: '10px 14px', background: '#f0f8f0', border: '1px solid #4a7c4a', borderRadius: '6px', fontSize: '13px', color: '#3a5a3a' }}>
+            <div className="trn-explanation-box">
               {L(pq.explanation)}
             </div>
           )}
         </div>
 
         {/* Actions */}
-        <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+        <div className="trn-actions">
           {isCorrect && (
-            <button type="button" className="result-btn result-btn-primary" onClick={handleQuestionNext}>
+            <button type="button" className="action-btn action-btn-primary" onClick={handleQuestionNext}>
               {lang === 'ja' ? '次へ' : 'Next'}
             </button>
           )}
@@ -516,19 +503,19 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     const summaryText = L(meta.finalSummary);
 
     return (
-      <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="trn-screen">
         {/* Header */}
-        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
-          <div style={{ flex: 1 }}>
-            <div className="result-eyebrow">{lang === 'ja' ? '一局指南' : 'Guided Game'}</div>
-            <div style={{ fontWeight: 700, fontSize: '15px' }}>
-              {lang === 'ja' ? '完了' : 'Complete'}
-            </div>
+        <div className="trn-topbar">
+          <div style={{ width: '80px' }} />
+          <div className="trn-topbar-center">
+            <span className="trn-eyebrow">{lang === 'ja' ? '一局指南' : 'Guided Game'}</span>
+            <span className="trn-topbar-title">{lang === 'ja' ? '完了' : 'Complete'}</span>
           </div>
+          <div style={{ width: '80px' }} />
         </div>
 
         {/* Board — final state */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+        <div className="trn-board-area">
           <Board
             state={gameState}
             buildState={EMPTY_BUILD}
@@ -543,18 +530,18 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         </div>
 
         {/* Text */}
-        <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="trn-text-body">
           {finalText && (
-            <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6 }}>{finalText}</div>
+            <div className="trn-narration">{finalText}</div>
           )}
-          <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, padding: '12px', background: '#faf7f4', borderRadius: '6px' }}>
+          <div className="trn-summary-box">
             {summaryText}
           </div>
         </div>
 
         {/* Actions */}
-        <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
-          <button type="button" className="result-btn result-btn-primary" onClick={handleFinish}>
+        <div className="trn-actions">
+          <button type="button" className="action-btn action-btn-primary" onClick={handleFinish}>
             {lang === 'ja' ? '完了' : 'Finish'}
           </button>
         </div>
@@ -588,53 +575,52 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const progressLabel = `Move ${currentStep?.moveNumber ?? 1} / ${totalSteps}`;
 
   return (
-    <div style={{ background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="trn-screen">
       {/* Header */}
-      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e8e0d8' }}>
-        <div style={{ flex: 1 }}>
-          <div className="result-eyebrow">
+      <div className="trn-topbar">
+        <div style={{ width: '80px' }} />
+        <div className="trn-topbar-center">
+          <span className="trn-eyebrow">
             {lang === 'ja' ? '一局指南' : 'Guided Game'} — {progressLabel}
-          </div>
-          <div style={{ fontWeight: 700, fontSize: '15px' }}>{L(meta.title)}</div>
+          </span>
+          <span className="trn-topbar-title">{L(meta.title)}</span>
         </div>
+        <div style={{ width: '80px' }} />
       </div>
 
       {/* Instruction panel */}
-      <div style={{ padding: '12px 16px', background: '#faf7f4', borderBottom: '1px solid #e8e0d8' }}>
+      <div className="trn-instruction-band">
         {phase === 'intro' && (
-          <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{introNarration}</div>
+          <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{introNarration}</div>
         )}
         {phase === 'auto' && (
-          <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{autoNarration}</div>
+          <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{autoNarration}</div>
         )}
         {phase === 'user' && (
           <>
             {situationText && (
-              <div style={{ fontSize: '13px', color: '#666', marginBottom: '6px' }}>{situationText}</div>
+              <div className="trn-situation-text">{situationText}</div>
             )}
-            <div style={{ fontSize: '14px', fontWeight: 600, whiteSpace: 'pre-wrap' }}>{instructionText}</div>
+            <div className="trn-instruction-text" style={{ whiteSpace: 'pre-wrap' }}>{instructionText}</div>
             {wrongAttempt && (
-              <div style={{ marginTop: '6px', fontSize: '13px', color: '#b05050' }}>
+              <div className="trn-feedback trn-feedback-wrong">
                 {lang === 'ja' ? '不正解です。もう一度試してください。' : 'Incorrect. Please try again.'}
               </div>
             )}
             {showHint && stepText?.userText && (
-              <div style={{ marginTop: '8px', padding: '8px 12px', background: '#faf7f0', border: '1px solid #e8d8a0', borderRadius: '6px', fontSize: '13px', color: '#7a6a2a' }}>
+              <div className="trn-hint-box">
                 {L(stepText.userText.hint)}
               </div>
             )}
           </>
         )}
-        {phase === 'select_success' && (
-          <div style={{ fontSize: '14px', color: '#3a5a3a', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-wrap' }}>{successText}</div>
-        )}
-        {phase === 'success' && (
-          <div style={{ fontSize: '14px', color: '#3a5a3a', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-wrap' }}>{successText}</div>
+        {(phase === 'select_success' || phase === 'success') && (
+          <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{successText}</div>
         )}
       </div>
 
       {/* Board */}
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+      <div className="trn-board-area">
         <Board
           state={gameState}
           buildState={boardInteractive ? buildState : EMPTY_BUILD}
@@ -649,17 +635,16 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       </div>
 
       {/* Actions */}
-      <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div className="trn-actions">
         {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') && (
-          <button type="button" className="result-btn result-btn-primary" onClick={handleNext}>
+          <button type="button" className="action-btn action-btn-primary" onClick={handleNext}>
             {lang === 'ja' ? '次へ' : 'Next'}
           </button>
         )}
         {phase === 'user' && !showHint && (
           <button
             type="button"
-            className="result-btn"
-            style={{ fontSize: '13px' }}
+            className="action-btn"
             onClick={() => setShowHint(true)}
           >
             {lang === 'ja' ? 'ヒントを見る' : 'Show Hint'}
