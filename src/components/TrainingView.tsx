@@ -370,9 +370,12 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
           {/* ── Section 1: 一局通し Training ───────────────────────── */}
           <div className="trn-section-head">
-            <span className="trn-section-title">
-              {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
-            </span>
+            <div className="trn-section-eyebrow-row">
+              <span className="trn-eyebrow-dot" />
+              <span className="trn-section-title">
+                {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
+              </span>
+            </div>
             <span className="trn-section-sub">
               {lang === 'ja'
                 ? 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。'
@@ -409,9 +412,12 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
           {/* ── Section 2: 小課題 Training ──────────────────────────── */}
           <div className="trn-section-head trn-section-head-ruled">
-            <span className="trn-section-title">
-              {lang === 'ja' ? '小課題 Training' : 'Training Tasks'}
-            </span>
+            <div className="trn-section-eyebrow-row">
+              <span className="trn-eyebrow-dot" />
+              <span className="trn-section-title">
+                {lang === 'ja' ? '小課題 Training' : 'Training Tasks'}
+              </span>
+            </div>
             <span className="trn-section-sub">
               {lang === 'ja'
                 ? '基本操作・Capture・終局などを短い課題で学びます。'
@@ -528,6 +534,24 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         <div style={{ width: '80px' }} />
       </div>
 
+      {/* Step progress bar */}
+      {session.status !== 'complete' && (
+        <div className="trn-progress-section">
+          <div className="trn-progress-label-row">
+            <span className="trn-progress-label">Step</span>
+            <span className="trn-progress-value">
+              <strong>{String(userStepNum).padStart(2, '0')}</strong> / {totalUserSteps}
+            </span>
+          </div>
+          <div className="trn-progress-track">
+            <div
+              className="trn-progress-fill"
+              style={{ width: `${Math.max(4, totalUserSteps > 0 ? (userStepNum / totalUserSteps) * 100 : 0)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Step instruction */}
       <div className="trn-instruction-band">
         {session.status === 'complete' ? (
@@ -548,22 +572,24 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       {/* Board */}
       {session.status !== 'complete' && (
         <div className="trn-board-area">
-          <Board
-            state={session.gameState}
-            buildState={buildState}
-            onSelectPosition={handleSelectPosition}
-            onLargePocketClick={handleLargePocketClick}
-            onMiddlePocketClick={handleMiddleOrSelective}
-            onSmallPocketClick={handleSmallPocketClick}
-            showLabelToggle={false}
-            defaultLabels={true}
-            labelPerspective="black"
-          />
+          <div className="trn-board-wrap">
+            <Board
+              state={session.gameState}
+              buildState={buildState}
+              onSelectPosition={handleSelectPosition}
+              onLargePocketClick={handleLargePocketClick}
+              onMiddlePocketClick={handleMiddleOrSelective}
+              onSmallPocketClick={handleSmallPocketClick}
+              showLabelToggle={false}
+              defaultLabels={true}
+              labelPerspective="black"
+            />
+          </div>
         </div>
       )}
 
       {/* Actions */}
-      <div className="trn-actions">
+      <div className="trn-actions-sticky">
         {session.status === 'complete' ? (
           <>
             {session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && session.task.id !== 'T5_capture_tie' && session.task.id !== 'T8_prepare_capture' && session.task.id !== 'T9_no_build_endgame' && session.task.id !== 'T10_defensive_build' && (
@@ -571,15 +597,15 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
                 {t.trainingNextTraining}
               </button>
             )}
-            <button type="button" className="action-btn" onClick={handleRestart}>
+            <button type="button" className="action-btn action-btn-ghost" onClick={handleRestart}>
               {t.trainingReplay}
             </button>
-            <button type="button" className="action-btn" onClick={handleBackToIntro}>
+            <button type="button" className="action-btn action-btn-ghost" onClick={handleBackToIntro}>
               {t.trainingBackToIntro}
             </button>
           </>
         ) : (
-          <button type="button" className="action-btn" onClick={handleRestartStep}>
+          <button type="button" className="action-btn action-btn-ghost" onClick={handleRestartStep}>
             {t.trainingRestartStep}
           </button>
         )}

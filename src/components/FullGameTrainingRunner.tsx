@@ -484,7 +484,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         </div>
 
         {/* Actions */}
-        <div className="trn-actions">
+        <div className="trn-actions-sticky">
           {isCorrect && (
             <button type="button" className="action-btn action-btn-primary" onClick={handleQuestionNext}>
               {lang === 'ja' ? '次へ' : 'Next'}
@@ -516,17 +516,19 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
         {/* Board — final state */}
         <div className="trn-board-area">
-          <Board
-            state={gameState}
-            buildState={EMPTY_BUILD}
-            onSelectPosition={noop}
-            onLargePocketClick={noop}
-            onMiddlePocketClick={noop}
-            onSmallPocketClick={noop}
-            showLabelToggle={false}
-            defaultLabels={true}
-            labelPerspective="black"
-          />
+          <div className="trn-board-wrap">
+            <Board
+              state={gameState}
+              buildState={EMPTY_BUILD}
+              onSelectPosition={noop}
+              onLargePocketClick={noop}
+              onMiddlePocketClick={noop}
+              onSmallPocketClick={noop}
+              showLabelToggle={false}
+              defaultLabels={true}
+              labelPerspective="black"
+            />
+          </div>
         </div>
 
         {/* Text */}
@@ -540,7 +542,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         </div>
 
         {/* Actions */}
-        <div className="trn-actions">
+        <div className="trn-actions-sticky">
           <button type="button" className="action-btn action-btn-primary" onClick={handleFinish}>
             {lang === 'ja' ? '完了' : 'Finish'}
           </button>
@@ -572,7 +574,8 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     }
   }
 
-  const progressLabel = `Move ${currentStep?.moveNumber ?? 1} / ${totalSteps}`;
+  const moveNumber = currentStep?.moveNumber ?? 1;
+  const progressPct = totalSteps > 1 ? Math.max(2, (stepIndex / (totalSteps - 1)) * 100) : 2;
 
   return (
     <div className="trn-screen">
@@ -581,11 +584,24 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         <div style={{ width: '80px' }} />
         <div className="trn-topbar-center">
           <span className="trn-eyebrow">
-            {lang === 'ja' ? '一局指南' : 'Guided Game'} — {progressLabel}
+            {lang === 'ja' ? '一局指南' : 'Guided Game'}
           </span>
           <span className="trn-topbar-title">{L(meta.title)}</span>
         </div>
         <div style={{ width: '80px' }} />
+      </div>
+
+      {/* Progress bar */}
+      <div className="trn-progress-section">
+        <div className="trn-progress-label-row">
+          <span className="trn-progress-label">Move</span>
+          <span className="trn-progress-value">
+            <strong>{String(moveNumber).padStart(2, '0')}</strong> / {totalSteps}
+          </span>
+        </div>
+        <div className="trn-progress-track">
+          <div className="trn-progress-fill" style={{ width: `${progressPct}%` }} />
+        </div>
       </div>
 
       {/* Instruction panel */}
@@ -621,21 +637,23 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
       {/* Board */}
       <div className="trn-board-area">
-        <Board
-          state={gameState}
-          buildState={boardInteractive ? buildState : EMPTY_BUILD}
-          onSelectPosition={boardInteractive ? handleSelectPosition : noop}
-          onLargePocketClick={boardInteractive ? handleLargePocketClick : noop}
-          onMiddlePocketClick={boardInteractive ? handleMiddlePocketClick : noop}
-          onSmallPocketClick={boardInteractive ? handleSmallPocketClick : noop}
-          showLabelToggle={false}
-          defaultLabels={true}
-          labelPerspective="black"
-        />
+        <div className="trn-board-wrap">
+          <Board
+            state={gameState}
+            buildState={boardInteractive ? buildState : EMPTY_BUILD}
+            onSelectPosition={boardInteractive ? handleSelectPosition : noop}
+            onLargePocketClick={boardInteractive ? handleLargePocketClick : noop}
+            onMiddlePocketClick={boardInteractive ? handleMiddlePocketClick : noop}
+            onSmallPocketClick={boardInteractive ? handleSmallPocketClick : noop}
+            showLabelToggle={false}
+            defaultLabels={true}
+            labelPerspective="black"
+          />
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="trn-actions">
+      <div className="trn-actions-sticky">
         {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') && (
           <button type="button" className="action-btn action-btn-primary" onClick={handleNext}>
             {lang === 'ja' ? '次へ' : 'Next'}
@@ -644,7 +662,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         {phase === 'user' && !showHint && (
           <button
             type="button"
-            className="action-btn"
+            className="action-btn action-btn-ghost"
             onClick={() => setShowHint(true)}
           >
             {lang === 'ja' ? 'ヒントを見る' : 'Show Hint'}

@@ -3423,9 +3423,9 @@ ol { padding-left: 20px; }
 
 .trn-topbar-title {
   font-family: var(--display);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: var(--ink);
 }
 
@@ -3484,6 +3484,7 @@ ol { padding-left: 20px; }
 /* ── Task cards ── */
 .trn-card {
   border: 1px solid var(--rule);
+  border-radius: 8px;
   padding: 18px 20px;
   background: var(--bg);
   display: flex;
@@ -3493,12 +3494,12 @@ ol { padding-left: 20px; }
 }
 
 .trn-card:not(.trn-card-locked):hover {
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
 .trn-card-featured {
-  border-color: var(--rule-strong);
-  border-left: 3px solid var(--highlight);
+  border-color: var(--highlight);
+  border-left: 4px solid var(--highlight);
   background: #fffdf8;
 }
 
@@ -3605,29 +3606,32 @@ ol { padding-left: 20px; }
 }
 
 .trn-instruction-text {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .trn-situation-text {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-2);
-  line-height: 1.55;
+  line-height: 1.6;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2px;
 }
 
 .trn-narration {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-2);
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 .trn-success-text {
-  font-size: 14px;
+  font-size: 15px;
   color: #2e5e2e;
-  line-height: 1.6;
-  font-weight: 500;
+  line-height: 1.65;
+  font-weight: 600;
 }
 
 .trn-complete-title {
@@ -3671,7 +3675,17 @@ ol { padding-left: 20px; }
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: 12px 0;
+  align-items: flex-start;
+  padding: 14px 16px;
+}
+
+/* Board wrapper: rounds corners, adds shadow matching redesign */
+.trn-board-wrap {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px -12px rgba(20,20,26,0.30);
 }
 
 /* ── Actions bar ── */
@@ -3764,9 +3778,104 @@ ol { padding-left: 20px; }
   padding: 14px 18px;
   background: #faf9f7;
   border: 1px solid var(--rule);
+  border-radius: 6px;
   font-size: 13px;
   color: var(--ink-2);
   line-height: 1.7;
+}
+
+/* ── Progress bar (Move X / total) ── */
+.trn-progress-section {
+  padding: 10px 24px 14px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+}
+
+.trn-progress-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.trn-progress-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.trn-progress-value {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.trn-progress-value strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.trn-progress-track {
+  height: 3px;
+  background: var(--rule);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.trn-progress-fill {
+  height: 100%;
+  background: var(--highlight);
+  border-radius: 999px;
+  transition: width 0.45s ease;
+}
+
+/* ── Sticky actions footer ── */
+.trn-actions-sticky {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 14px 22px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg) 72%, rgba(255,255,255,0));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trn-actions-sticky .action-btn {
+  width: 100%;
+  border-radius: 12px;
+  padding: 15px 22px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Eyebrow row with dot marker ── */
+.trn-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+}
+
+.trn-eyebrow-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--highlight);
+  flex-shrink: 0;
+}
+
+/* ── Section head with dot marker ── */
+.trn-section-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
 }
 
 /* ── Mobile ── */
@@ -3775,7 +3884,7 @@ ol { padding-left: 20px; }
     padding: 10px 14px 8px;
   }
   .trn-topbar-title {
-    font-size: 12px;
+    font-size: 13px;
   }
   .trn-list {
     padding: 16px;
@@ -3785,15 +3894,24 @@ ol { padding-left: 20px; }
     padding: 14px 16px;
   }
   .trn-instruction-band {
-    padding: 12px 16px;
+    padding: 14px 16px;
   }
   .trn-actions {
     padding: 12px 16px;
+  }
+  .trn-actions-sticky {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .trn-progress-section {
+    padding: 8px 16px 12px;
   }
   .trn-question-body {
     padding: 16px;
   }
   .trn-text-body {
     padding: 16px;
+  }
+  .trn-board-area {
+    padding: 10px 12px;
   }
 }
