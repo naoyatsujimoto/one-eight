@@ -3590,7 +3590,7 @@ ol { padding-left: 20px; }
 /* ── Instruction band (task / fullgame screens) ── */
 .trn-instruction-band {
   padding: 16px 24px;
-  border-bottom: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
   background: transparent;
   display: flex;
   flex-direction: column;

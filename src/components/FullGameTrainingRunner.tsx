@@ -931,6 +931,23 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         </div>
       </div>
 
+      {/* Board */}
+      <div className="trn-board-area">
+        <div className="trn-board-wrap">
+          <Board
+            state={gameState}
+            buildState={boardInteractive ? buildState : EMPTY_BUILD}
+            onSelectPosition={boardInteractive ? handleSelectPosition : noop}
+            onLargePocketClick={boardInteractive ? handleLargePocketClick : noop}
+            onMiddlePocketClick={boardInteractive ? handleMiddlePocketClick : noop}
+            onSmallPocketClick={boardInteractive ? handleSmallPocketClick : noop}
+            showLabelToggle={false}
+            defaultLabels={true}
+            labelPerspective="black"
+          />
+        </div>
+      </div>
+
       {/* Instruction panel */}
       {(() => {
         const isTappable = phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success' || phase === 'user_narration';
@@ -1037,23 +1054,6 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       </div>
         );
       })()}
-
-      {/* Board */}
-      <div className="trn-board-area">
-        <div className="trn-board-wrap">
-          <Board
-            state={gameState}
-            buildState={boardInteractive ? buildState : EMPTY_BUILD}
-            onSelectPosition={boardInteractive ? handleSelectPosition : noop}
-            onLargePocketClick={boardInteractive ? handleLargePocketClick : noop}
-            onMiddlePocketClick={boardInteractive ? handleMiddlePocketClick : noop}
-            onSmallPocketClick={boardInteractive ? handleSmallPocketClick : noop}
-            showLabelToggle={false}
-            defaultLabels={true}
-            labelPerspective="black"
-          />
-        </div>
-      </div>
 
       {/* ヒントボタンのみ表示（次へ/はじめるボタンは廃止） */}
       {phase === 'user' && !showHint && (
