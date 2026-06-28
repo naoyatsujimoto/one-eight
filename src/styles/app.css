@@ -3604,6 +3604,7 @@ ol { padding-left: 20px; }
 .trn-instruction-band--tappable:active {
   opacity: 0.7;
 }
+/* trn-tap-guide is superseded by trn-tap-hints in FullGameTrainingRunner */
 .trn-tap-guide {
   align-self: flex-end;
   font-family: var(--mono);
@@ -3613,6 +3614,37 @@ ol { padding-left: 20px; }
   color: var(--ink-3);
   opacity: 0.5;
   margin-top: 4px;
+  pointer-events: none;
+}
+
+/* Tap hints row: left = back, right = forward */
+.trn-tap-hints {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  pointer-events: none;
+  min-height: 16px;
+}
+
+.trn-tap-back {
+  font-size: 10px;
+  color: var(--ink-4);
+  opacity: 0.55;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.trn-tap-back--active {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.trn-tap-forward {
+  font-size: 10px;
+  color: var(--ink-4);
+  opacity: 0.55;
+  letter-spacing: 0.01em;
   pointer-events: none;
 }
 

@@ -181,6 +181,21 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     }
   }, [lang]);
 
+  // ── Handle "戻る" (back) button ──────────────────────────────────────────
+  const handleBack = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase === 'intro') {
+      if (introSentenceIndex > 0) setIntroSentenceIndex((prev) => prev - 1);
+    } else if (
+      phase === 'user_narration' ||
+      phase === 'auto' ||
+      phase === 'success' ||
+      phase === 'select_success'
+    ) {
+      if (sentenceIndex > 0) setSentenceIndex((prev) => prev - 1);
+    }
+  }, [phase, introSentenceIndex, sentenceIndex]);
+
   // ── Handle "次へ" (next) button ───────────────────────────────────────────
   const handleNext = useCallback(() => {
     const currentStep = FULL_GAME_V1.steps[stepIndex];
@@ -756,13 +771,10 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       {/* Instruction panel */}
       {(() => {
         const isTappable = phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success' || phase === 'user_narration';
-        // tapガイドは最終文以外の時に表示
-        const isLastSentence =
-          phase === 'intro' ? isLastIntroSentence
-          : phase === 'auto' ? isLastAutoSentence
-          : phase === 'user_narration' ? isLastUserNarrationSentence
-          : isLastSuccessSentence;
-        const showTapGuide = isTappable && !isLastSentence;
+        // 戻れるかどうか
+        const canGoBack =
+          (phase === 'intro' && introSentenceIndex > 0) ||
+          ((phase === 'user_narration' || phase === 'auto' || phase === 'success' || phase === 'select_success') && sentenceIndex > 0);
         return (
       <div
         className={`trn-instruction-band${isTappable ? ' trn-instruction-band--tappable' : ''}`}
@@ -845,8 +857,19 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
             )}
           </>
         )}
-        {showTapGuide && (
-          <div className="trn-tap-guide" aria-hidden="true">tap ›</div>
+        {isTappable && (
+          <div className="trn-tap-hints">
+            <span
+              className={`trn-tap-back${canGoBack ? ' trn-tap-back--active' : ''}`}
+              onClick={canGoBack ? handleBack : undefined}
+              aria-hidden="true"
+            >
+              {canGoBack ? (lang === 'ja' ? 'Tapして戻る' : 'Tap to go back') : ''}
+            </span>
+            <span className="trn-tap-forward" aria-hidden="true">
+              {lang === 'ja' ? 'Tapして進む' : 'Tap to continue'}
+            </span>
+          </div>
         )}
       </div>
         );
@@ -869,26 +892,9 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="trn-actions-sticky">
-        {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success' || phase === 'user_narration') && (
-          <button type="button" className="action-btn action-btn-primary" onClick={handleNext}>
-            {phase === 'intro'
-              ? isLastIntroSentence
-                ? (lang === 'ja' ? 'はじめる' : 'Start')
-                : (lang === 'ja' ? '次へ' : 'Next')
-              : phase === 'auto'
-                ? isLastAutoSentence
-                  ? (lang === 'ja' ? '次へ' : 'Next')
-                  : (lang === 'ja' ? '次へ' : 'Next')
-              : phase === 'user_narration'
-                ? (lang === 'ja' ? '次へ' : 'Next')
-              : isLastSuccessSentence
-                ? (lang === 'ja' ? '次へ' : 'Next')
-                : (lang === 'ja' ? '次へ' : 'Next')}
-          </button>
-        )}
-        {phase === 'user' && !showHint && (
+      {/* ヒントボタンのみ表示（次へ/はじめるボタンは廃止） */}
+      {phase === 'user' && !showHint && (
+        <div className="trn-actions-sticky">
           <button
             type="button"
             className="action-btn action-btn-ghost"
@@ -896,8 +902,8 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           >
             {lang === 'ja' ? 'ヒントを見る' : 'Show Hint'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
