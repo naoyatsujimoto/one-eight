@@ -679,9 +679,9 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         {/* Text */}
         <div className="trn-text-body">
           {finalText && (
-            <div className="trn-narration">{finalText}</div>
+            <div key="complete-final" className="trn-narration trn-text-animate">{finalText}</div>
           )}
-          <div className="trn-summary-box">
+          <div key="complete-summary" className="trn-summary-box trn-text-animate">
             {summaryText}
           </div>
         </div>
@@ -782,7 +782,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       >
         {phase === 'intro' && (
           <>
-            <div className="trn-narration trn-intro-sentence" style={{ whiteSpace: 'pre-wrap' }}>
+            <div key={`intro-${introSentenceIndex}`} className="trn-narration trn-intro-sentence trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>
               {currentIntroSentence}
             </div>
             {introSentences.length > 1 && (
@@ -799,7 +799,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'auto' && (
           <>
-            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{currentAutoSentence}</div>
+            <div key={`auto-${stepIndex}-${sentenceIndex}`} className="trn-narration trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{currentAutoSentence}</div>
             {autoSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {autoSentences.map((_, i) => (
@@ -814,7 +814,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'user_narration' && (
           <>
-            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{currentUserNarrationSentence}</div>
+            <div key={`narration-${stepIndex}-${sentenceIndex}`} className="trn-narration trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{currentUserNarrationSentence}</div>
             {userNarrationSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {userNarrationSentences.map((_, i) => (
@@ -829,7 +829,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'user' && (
           <>
-            <div className="trn-instruction-text" style={{ whiteSpace: 'pre-wrap' }}>{instructionText}</div>
+            <div key={`instruction-${stepIndex}`} className="trn-instruction-text trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{instructionText}</div>
             {wrongAttempt && (
               <div className="trn-feedback trn-feedback-wrong">
                 {lang === 'ja' ? '不正解です。もう一度試してください。' : 'Incorrect. Please try again.'}
@@ -844,7 +844,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {(phase === 'select_success' || phase === 'success') && (
           <>
-            <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{currentSuccessSentence}</div>
+            <div key={`success-${stepIndex}-${phase}-${sentenceIndex}`} className="trn-success-text trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{currentSuccessSentence}</div>
             {successSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {successSentences.map((_, i) => (

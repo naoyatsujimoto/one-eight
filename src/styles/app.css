@@ -3997,3 +3997,25 @@ ol { padding-left: 20px; }
     padding: 10px 12px;
   }
 }
+
+/* ── Training body text animation ────────────────────────────────────────── */
+.trn-text-animate {
+  animation: trnTextIn 100ms ease-out;
+}
+
+@keyframes trnTextIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trn-text-animate {
+    animation: none;
+  }
+}
