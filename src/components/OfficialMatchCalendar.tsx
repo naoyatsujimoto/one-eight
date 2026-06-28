@@ -441,7 +441,7 @@ export function OfficialMatchCalendar({
 
       if ('error' in result) {
         setLoadError(result.error);
-        setMatches([]);
+        if (!silent) setMatches([]);
       } else {
         // starts_at 昇順でソート
         const sorted = [...result].sort(
@@ -451,7 +451,7 @@ export function OfficialMatchCalendar({
       }
     } catch (e) {
       setLoadError(String(e));
-      setMatches([]);
+      if (!silent) setMatches([]);
     } finally {
       setLoading(false);
     }
@@ -562,6 +562,10 @@ export function OfficialMatchCalendar({
       // silent=true: loading点滅を防ぎ、background refreshとして再取得
       void loadMatches({ silent: true });
     }).catch(() => {
+      // 失敗時は対象IDを削除し、次回の stale check で再試行可能にする
+      for (const m of actionableStale) {
+        checkedExpiryIdsRef.current.delete(m.id);
+      }
       expiryCheckInFlightRef.current = false;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

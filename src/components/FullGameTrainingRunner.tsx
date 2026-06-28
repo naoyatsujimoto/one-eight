@@ -524,8 +524,11 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     if (currentStep?.kind === 'select_only') {
       setGameState((prev) => selectPosition(prev, positionId));
       if (positionId === currentStep.expectedPosition) {
+        setWrongAttempt(false);
         setSentenceIndex(0);
         setPhase('select_success');
+      } else {
+        setWrongAttempt(true);
       }
       return;
     }
