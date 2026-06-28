@@ -1009,7 +1009,9 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'user' && (
           <>
-            <div className="trn-instruction-text" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
+            <div className={`trn-instruction-card${wrongAttempt ? ' trn-instruction-card--error' : ' trn-instruction-card--default'}`}>
+              <div className="trn-instruction-text" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
+            </div>
             {wrongAttempt && (
               <div className="trn-feedback trn-feedback-wrong">
                 {lang === 'ja' ? '不正解です。もう一度試してください。' : 'Incorrect. Please try again.'}
@@ -1024,7 +1026,10 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {(phase === 'select_success' || phase === 'success') && (
           <>
-            <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
+            <div className="trn-instruction-card trn-instruction-card--success">
+              <span className="trn-instruction-good">Good</span>
+            </div>
+            <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap', marginTop: '10px' }}>{visibleText}</div>
             {successSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {successSentences.map((_, i) => (
