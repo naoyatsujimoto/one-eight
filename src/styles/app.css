@@ -4000,22 +4000,22 @@ ol { padding-left: 20px; }
 
 /* ── Training body text animation ────────────────────────────────────────── */
 .trn-text-animate {
-  animation: trnTextIn 160ms ease-out both;
+  animation: trnTextIn 420ms ease-out both;
 }
 
 /* Cycling animation classes — alternate name forces browser to restart animation */
 .trn-ta-a {
-  animation: trnTextInA 160ms ease-out both;
+  animation: trnTextInA 420ms ease-out both;
 }
 
 .trn-ta-b {
-  animation: trnTextInB 160ms ease-out both;
+  animation: trnTextInB 420ms ease-out both;
 }
 
 @keyframes trnTextIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -4026,7 +4026,7 @@ ol { padding-left: 20px; }
 @keyframes trnTextInA {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -4037,7 +4037,7 @@ ol { padding-left: 20px; }
 @keyframes trnTextInB {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
