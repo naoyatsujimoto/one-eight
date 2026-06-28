@@ -3999,56 +3999,5 @@ ol { padding-left: 20px; }
 }
 
 /* ── Training body text animation ────────────────────────────────────────── */
-.trn-text-animate {
-  animation: trnTextIn 420ms ease-out both;
-}
-
-/* Cycling animation classes — alternate name forces browser to restart animation */
-.trn-ta-a {
-  animation: trnTextInA 420ms ease-out both;
-}
-
-.trn-ta-b {
-  animation: trnTextInB 420ms ease-out both;
-}
-
-@keyframes trnTextIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes trnTextInA {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes trnTextInB {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .trn-text-animate,
-  .trn-ta-a,
-  .trn-ta-b {
-    animation: none;
-  }
-}
+/* Removed: trn-text-animate / trn-ta-a / trn-ta-b (fade+translateY)
+   Text reveal is now handled by React typewriter state (visibleText). */

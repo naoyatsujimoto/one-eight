@@ -117,6 +117,20 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const [questionSelected, setQuestionSelected] = useState<number | null>(null);
   const [questionShowHint, setQuestionShowHint] = useState(false);
 
+  // ── Typewriter state ─────────────────────────────────────────────────────
+  const [visibleText, setVisibleText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const typeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentTargetRef = useRef<string>('');
+  const reducedMotionRef = useRef<boolean>(
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false
+  );
+
+  // Complete phase: 0=finalText, 1=summaryText
+  const [completeSentIdx, setCompleteSentIdx] = useState(0);
+
   // Initialize: first step is intro (Move 0)
   // snapshot starts as empty initial state
   useEffect(() => {
@@ -126,12 +140,131 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     setIntroSentenceIndex(0);
   }, []);
 
+  // ── Typewriter helpers ────────────────────────────────────────────────────
+  const startTypewriter = useCallback((text: string) => {
+    if (typeIntervalRef.current !== null) {
+      clearInterval(typeIntervalRef.current);
+      typeIntervalRef.current = null;
+    }
+    currentTargetRef.current = text;
+
+    if (!text || text.length === 0) {
+      setVisibleText('');
+      setIsTyping(false);
+      return;
+    }
+    if (reducedMotionRef.current || text.length <= 1) {
+      setVisibleText(text);
+      setIsTyping(false);
+      return;
+    }
+
+    const duration = Math.min(Math.max(text.length * 10, 200), 600);
+    const intervalMs = Math.max(1, Math.round(duration / text.length));
+
+    setVisibleText('');
+    setIsTyping(true);
+
+    let count = 0;
+    typeIntervalRef.current = setInterval(() => {
+      count++;
+      if (count >= text.length) {
+        setVisibleText(text);
+        setIsTyping(false);
+        if (typeIntervalRef.current !== null) {
+          clearInterval(typeIntervalRef.current);
+          typeIntervalRef.current = null;
+        }
+      } else {
+        setVisibleText(text.slice(0, count));
+      }
+    }, intervalMs);
+  }, []);
+
+  const skipTypewriter = useCallback(() => {
+    if (typeIntervalRef.current !== null) {
+      clearInterval(typeIntervalRef.current);
+      typeIntervalRef.current = null;
+    }
+    setVisibleText(currentTargetRef.current);
+    setIsTyping(false);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typeIntervalRef.current !== null) {
+        clearInterval(typeIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // ── Typewriter trigger ────────────────────────────────────────────────────
+  // Fires when displayed sentence changes (phase / step / sentence index change)
+  useEffect(() => {
+    if (phase === 'complete' || phase === 'question') return;
+
+    const step = FULL_GAME_V1.steps[stepIndex];
+    if (!step) return;
+    const st = FULL_GAME_V1_TEXT.steps.find((s) => s.moveNumber === step.moveNumber);
+
+    let text = '';
+
+    if (phase === 'intro') {
+      const introFull = st?.introText ? pick(st.introText, lang) : '';
+      const sentences = splitIntoSentences(introFull);
+      text = sentences[introSentenceIndex] ?? '';
+    } else if (phase === 'auto') {
+      const fullText = st?.autoText ? pick(st.autoText.auto, lang) : '';
+      const sentences = splitIntoSentences(fullText);
+      text = sentences[sentenceIndex] ?? fullText;
+    } else if (phase === 'user_narration') {
+      if (st?.userText) {
+        const situation = pick(st.userText.situation, lang);
+        const sentences = situation.trim() ? splitIntoSentences(situation.trim()) : [];
+        text = sentences[sentenceIndex] ?? '';
+      }
+    } else if (phase === 'user') {
+      if (st?.userText) {
+        const situation = pick(st.userText.situation, lang);
+        const question = pick(st.userText.question, lang);
+        const { instruction } = extractUserNarrationAndInstruction(situation, question);
+        text = instruction;
+      }
+    } else if (phase === 'success' || phase === 'select_success') {
+      const fullText = st?.userText ? pick(st.userText.success, lang) : '';
+      const sentences = splitIntoSentences(fullText);
+      text = sentences[sentenceIndex] ?? fullText;
+    }
+
+    startTypewriter(text);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, stepIndex, introSentenceIndex, sentenceIndex, lang]);
+
+  // ── Typewriter trigger: complete phase ────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'complete') return;
+    const finalStep = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1];
+    if (!finalStep) return;
+    const finalStepText = FULL_GAME_V1_TEXT.steps.find((s) => s.moveNumber === finalStep.moveNumber);
+
+    if (completeSentIdx === 0) {
+      const text = finalStepText?.finalText ? pick(finalStepText.finalText, lang) : '';
+      startTypewriter(text);
+    } else if (completeSentIdx === 1) {
+      const text = pick(FULL_GAME_V1_TEXT.meta.finalSummary, lang);
+      startTypewriter(text);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, completeSentIdx, lang]);
+
   // ── Advance to a step index ───────────────────────────────────────────────
   const advanceToStep = useCallback((nextIndex: number, currentGameState: GameState) => {
     const steps = FULL_GAME_V1.steps;
 
     if (nextIndex >= steps.length) {
       setPhase('complete');
+      setCompleteSentIdx(0);
       return;
     }
 
@@ -184,6 +317,12 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
   // ── Handle "戻る" (back) button ──────────────────────────────────────────
   const handleBack = useCallback((e: React.MouseEvent) => {
+    // If typewriter is running, skip to end instead of going back
+    if (isTyping) {
+      e.stopPropagation();
+      skipTypewriter();
+      return;
+    }
     e.stopPropagation();
     setAnimTick((t) => t + 1);
     if (phase === 'intro') {
@@ -196,10 +335,15 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     ) {
       if (sentenceIndex > 0) setSentenceIndex((prev) => prev - 1);
     }
-  }, [phase, introSentenceIndex, sentenceIndex]);
+  }, [phase, introSentenceIndex, sentenceIndex, isTyping, skipTypewriter]);
 
   // ── Handle "次へ" (next) button ───────────────────────────────────────────
   const handleNext = useCallback(() => {
+    // If typewriter is still running, skip to end instead of advancing
+    if (isTyping) {
+      skipTypewriter();
+      return;
+    }
     const currentStep = FULL_GAME_V1.steps[stepIndex];
     if (!currentStep) return;
     setAnimTick((t) => t + 1);
@@ -287,7 +431,15 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       advanceToStep(stepIndex + 1, gameState);
       return;
     }
-  }, [phase, stepIndex, gameState, advanceToStep, introSentenceIndex, sentenceIndex, lang]);
+  }, [phase, stepIndex, gameState, advanceToStep, introSentenceIndex, sentenceIndex, lang, isTyping, skipTypewriter]);
+
+  // ── Tap handler for user phase (typewriter skip only, never advance) ────
+  const handleUserTextTap = useCallback(() => {
+    if (isTyping) {
+      skipTypewriter();
+    }
+    // user phase では文章タップで進めない
+  }, [isTyping, skipTypewriter]);
 
   // ── Handle question answer ────────────────────────────────────────────────
   const handleQuestionAnswer = useCallback((index: number) => {
@@ -645,10 +797,15 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
   // ── Complete section ──────────────────────────────────────────────────────
   if (phase === 'complete') {
-    const finalStep = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1]!;
-    const finalStepText = getStepText(finalStep.moveNumber);
-    const finalText = finalStepText?.finalText ? L(finalStepText.finalText) : '';
-    const summaryText = L(meta.finalSummary);
+    const handleCompleteTap = () => {
+      if (isTyping) {
+        skipTypewriter();
+        return;
+      }
+      if (completeSentIdx === 0) {
+        setCompleteSentIdx(1);
+      }
+    };
 
     return (
       <div className="trn-screen">
@@ -679,21 +836,23 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           </div>
         </div>
 
-        {/* Text */}
-        <div className="trn-text-body">
-          {finalText && (
-            <div key={`complete-${stepIndex}-final`} className="trn-narration trn-text-animate">{finalText}</div>
+        {/* Text: sequential typewriter */}
+        <div className="trn-text-body" onClick={completeSentIdx < 1 ? handleCompleteTap : undefined}>
+          {completeSentIdx === 0 && (
+            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
           )}
-          <div key={`complete-${stepIndex}-summary`} className="trn-summary-box trn-text-animate">
-            {summaryText}
-          </div>
+          {completeSentIdx === 1 && (
+            <div className="trn-summary-box" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="trn-actions-sticky">
-          <button type="button" className="action-btn action-btn-primary" onClick={handleFinish}>
-            {lang === 'ja' ? '完了' : 'Finish'}
-          </button>
+          {completeSentIdx >= 1 && !isTyping && (
+            <button type="button" className="action-btn action-btn-primary" onClick={handleFinish}>
+              {lang === 'ja' ? '完了' : 'Finish'}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -782,12 +941,12 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         return (
       <div
         className={`trn-instruction-band${isTappable ? ' trn-instruction-band--tappable' : ''}`}
-        onClick={isTappable ? handleNext : undefined}
+        onClick={isTappable ? handleNext : (phase === 'user' ? handleUserTextTap : undefined)}
       >
         {phase === 'intro' && (
           <>
-            <div key={`intro-${introSentenceIndex}`} className={`trn-narration trn-intro-sentence ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>
-              {currentIntroSentence}
+            <div className="trn-narration trn-intro-sentence" style={{ whiteSpace: 'pre-wrap' }}>
+              {visibleText}
             </div>
             {introSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
@@ -803,7 +962,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'auto' && (
           <>
-            <div key={`auto-${stepIndex}-${sentenceIndex}`} className={`trn-narration ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>{currentAutoSentence}</div>
+            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
             {autoSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {autoSentences.map((_, i) => (
@@ -818,7 +977,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'user_narration' && (
           <>
-            <div key={`narration-${stepIndex}-${sentenceIndex}`} className={`trn-narration ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>{currentUserNarrationSentence}</div>
+            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
             {userNarrationSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {userNarrationSentences.map((_, i) => (
@@ -833,7 +992,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'user' && (
           <>
-            <div key={`instruction-${stepIndex}`} className="trn-instruction-text trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{instructionText}</div>
+            <div className="trn-instruction-text" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
             {wrongAttempt && (
               <div className="trn-feedback trn-feedback-wrong">
                 {lang === 'ja' ? '不正解です。もう一度試してください。' : 'Incorrect. Please try again.'}
@@ -848,7 +1007,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {(phase === 'select_success' || phase === 'success') && (
           <>
-            <div key={`success-${stepIndex}-${phase}-${sentenceIndex}`} className={`trn-success-text ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>{currentSuccessSentence}</div>
+            <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{visibleText}</div>
             {successSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {successSentences.map((_, i) => (
