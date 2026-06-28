@@ -4003,6 +4003,15 @@ ol { padding-left: 20px; }
   animation: trnTextIn 160ms ease-out both;
 }
 
+/* Cycling animation classes — alternate name forces browser to restart animation */
+.trn-ta-a {
+  animation: trnTextInA 160ms ease-out both;
+}
+
+.trn-ta-b {
+  animation: trnTextInB 160ms ease-out both;
+}
+
 @keyframes trnTextIn {
   from {
     opacity: 0;
@@ -4014,8 +4023,32 @@ ol { padding-left: 20px; }
   }
 }
 
+@keyframes trnTextInA {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes trnTextInB {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .trn-text-animate {
+  .trn-text-animate,
+  .trn-ta-a,
+  .trn-ta-b {
     animation: none;
   }
 }

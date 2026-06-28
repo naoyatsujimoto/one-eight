@@ -111,6 +111,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
   // M1以降の文章ブロック用 sentence navigation
   const [sentenceIndex, setSentenceIndex] = useState(0);
+  const [animTick, setAnimTick] = useState(0);
 
   // Question state (Move 21 postQuestion)
   const [questionSelected, setQuestionSelected] = useState<number | null>(null);
@@ -184,6 +185,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   // ── Handle "戻る" (back) button ──────────────────────────────────────────
   const handleBack = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    setAnimTick((t) => t + 1);
     if (phase === 'intro') {
       if (introSentenceIndex > 0) setIntroSentenceIndex((prev) => prev - 1);
     } else if (
@@ -200,6 +202,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const handleNext = useCallback(() => {
     const currentStep = FULL_GAME_V1.steps[stepIndex];
     if (!currentStep) return;
+    setAnimTick((t) => t + 1);
 
     if (phase === 'user_narration') {
       const stepText = getStepText(currentStep.moveNumber);
@@ -740,6 +743,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
   const moveNumber = currentStep?.moveNumber ?? 1;
   const progressPct = totalSteps > 1 ? Math.max(2, (stepIndex / (totalSteps - 1)) * 100) : 2;
+  const animClass = animTick % 2 === 0 ? 'trn-ta-a' : 'trn-ta-b';
 
   return (
     <div className="trn-screen">
@@ -782,7 +786,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       >
         {phase === 'intro' && (
           <>
-            <div key={`intro-${introSentenceIndex}`} className="trn-narration trn-intro-sentence trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>
+            <div key={`intro-${introSentenceIndex}`} className={`trn-narration trn-intro-sentence ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>
               {currentIntroSentence}
             </div>
             {introSentences.length > 1 && (
@@ -799,7 +803,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'auto' && (
           <>
-            <div key={`auto-${stepIndex}-${sentenceIndex}`} className="trn-narration trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{currentAutoSentence}</div>
+            <div key={`auto-${stepIndex}-${sentenceIndex}`} className={`trn-narration ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>{currentAutoSentence}</div>
             {autoSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {autoSentences.map((_, i) => (
@@ -814,7 +818,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {phase === 'user_narration' && (
           <>
-            <div key={`narration-${stepIndex}-${sentenceIndex}`} className="trn-narration trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{currentUserNarrationSentence}</div>
+            <div key={`narration-${stepIndex}-${sentenceIndex}`} className={`trn-narration ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>{currentUserNarrationSentence}</div>
             {userNarrationSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {userNarrationSentences.map((_, i) => (
@@ -844,7 +848,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         )}
         {(phase === 'select_success' || phase === 'success') && (
           <>
-            <div key={`success-${stepIndex}-${phase}-${sentenceIndex}`} className="trn-success-text trn-text-animate" style={{ whiteSpace: 'pre-wrap' }}>{currentSuccessSentence}</div>
+            <div key={`success-${stepIndex}-${phase}-${sentenceIndex}`} className={`trn-success-text ${animClass}`} style={{ whiteSpace: 'pre-wrap' }}>{currentSuccessSentence}</div>
             {successSentences.length > 1 && (
               <div className="trn-intro-dots" aria-hidden="true">
                 {successSentences.map((_, i) => (
