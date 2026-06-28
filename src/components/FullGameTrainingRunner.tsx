@@ -17,6 +17,7 @@ import type { FullGameStepText, LocalizedText } from '../training/types';
 type FGPhase =
   | 'intro'          // M0: テキスト表示、board非interactive、次へボタン
   | 'auto'           // Auto step: move applied, showing narration, "次へ" button
+  | 'user_narration' // NEW: user操作前の前段説明表示フェーズ（ボード非インタラクティブ）
   | 'user'           // User step: waiting for board interaction
   | 'select_success' // select_only で正しいPositionをタップ後
   | 'success'        // User step succeeded: showing success text, "次へ"
@@ -39,6 +40,44 @@ function pick(text: LocalizedText, lang: 'en' | 'ja'): string {
 // ── Step text lookup ────────────────────────────────────────────────────────
 function getStepText(moveNumber: number): FullGameStepText | undefined {
   return FULL_GAME_V1_TEXT.steps.find((s) => s.moveNumber === moveNumber);
+}
+
+// ── Helper: extract narration and instruction from user step ─────────────
+function extractUserNarrationAndInstruction(
+  situation: string,
+  question: string
+): { narration: string; instruction: string } {
+  // If situation is non-empty, it's the narration; question is the instruction
+  if (situation.trim()) {
+    return { narration: situation.trim(), instruction: question };
+  }
+  // Check question for \n\n separation: text before last \n\n = narration, after = instruction
+  const lastDblIdx = question.lastIndexOf('\n\n');
+  if (lastDblIdx !== -1) {
+    const narration = question.substring(0, lastDblIdx).trim();
+    const instruction = question.substring(lastDblIdx + 2).trim();
+    if (narration && instruction) {
+      return { narration, instruction };
+    }
+  }
+  return { narration: '', instruction: question };
+}
+
+function getUserNarrationSentences(stepText: FullGameStepText, lang: 'en' | 'ja'): string[] {
+  if (!stepText.userText) return [];
+  const situation = pick(stepText.userText.situation, lang);
+  const question = pick(stepText.userText.question, lang);
+  const { narration } = extractUserNarrationAndInstruction(situation, question);
+  if (!narration) return [];
+  return splitIntoSentences(narration);
+}
+
+function getUserInstructionText(stepText: FullGameStepText, lang: 'en' | 'ja'): string {
+  if (!stepText.userText) return '';
+  const situation = pick(stepText.userText.situation, lang);
+  const question = pick(stepText.userText.question, lang);
+  const { instruction } = extractUserNarrationAndInstruction(situation, question);
+  return instruction;
 }
 
 // ── Helper: split intro text into sentences ───────────────────────────────
@@ -124,8 +163,10 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     } else if (nextStep.kind === 'select_only') {
       setGameState(currentGameState);
       snapshot.current = currentGameState;
-      setPhase('user'); // board interactive (position tap only)
       setSentenceIndex(0);
+      const nextStepText = getStepText(nextStep.moveNumber);
+      const hasPre = nextStepText ? getUserNarrationSentences(nextStepText, lang).length > 0 : false;
+      setPhase(hasPre ? 'user_narration' : 'user');
     } else if (nextStep.kind === 'pass') {
       const newState = applyScriptedMove(currentGameState, { position: '', buildType: 'pass', gates: [] });
       setGameState(newState);
@@ -143,15 +184,29 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       // user step
       setGameState(currentGameState);
       snapshot.current = currentGameState;
-      setPhase('user');
       setSentenceIndex(0);
+      const nextStepText = getStepText(nextStep.moveNumber);
+      const hasPre = nextStepText ? getUserNarrationSentences(nextStepText, lang).length > 0 : false;
+      setPhase(hasPre ? 'user_narration' : 'user');
     }
-  }, []);
+  }, [lang]);
 
   // ── Handle "次へ" (next) button ───────────────────────────────────────────
   const handleNext = useCallback(() => {
     const currentStep = FULL_GAME_V1.steps[stepIndex];
     if (!currentStep) return;
+
+    if (phase === 'user_narration') {
+      const stepText = getStepText(currentStep.moveNumber);
+      const sentences = stepText ? getUserNarrationSentences(stepText, lang) : [];
+      if (sentenceIndex < sentences.length - 1) {
+        setSentenceIndex((prev) => prev + 1);
+      } else {
+        setSentenceIndex(0);
+        setPhase('user');
+      }
+      return;
+    }
 
     if (phase === 'select_success') {
       // select_success: successText を1文送り。最終文なら次ステップへ。
@@ -488,6 +543,13 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   const currentIntroSentence = introSentences[introSentenceIndex] ?? '';
   const isLastIntroSentence = introSentenceIndex >= introSentences.length - 1;
 
+  // user_narration sentences
+  const userNarrationSentences = (currentStep && stepText && (phase === 'user_narration' || phase === 'user'))
+    ? getUserNarrationSentences(stepText, lang)
+    : [];
+  const currentUserNarrationSentence = userNarrationSentences[sentenceIndex] ?? '';
+  const isLastUserNarrationSentence = sentenceIndex >= userNarrationSentences.length - 1;
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Board interaction is enabled only in 'user' phase
@@ -645,9 +707,14 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     if (phase === 'auto' && stepText.autoText) {
       autoNarration = L(stepText.autoText.auto);
     }
-    if ((phase === 'user' || phase === 'success' || phase === 'select_success') && stepText.userText) {
-      situationText = L(stepText.userText.situation);
-      instructionText = L(stepText.userText.question);
+    if ((phase === 'user' || phase === 'user_narration' || phase === 'success' || phase === 'select_success') && stepText.userText) {
+      situationText = ''; // narration is handled by user_narration phase
+      // In user phase, show only the instruction part (after narration is done)
+      if (phase === 'user' || phase === 'user_narration') {
+        instructionText = getUserInstructionText(stepText, lang);
+      } else {
+        instructionText = L(stepText.userText.question);
+      }
       successText = L(stepText.userText.success);
     }
   }
@@ -698,11 +765,12 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
       {/* Instruction panel */}
       {(() => {
-        const isTappable = phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success';
+        const isTappable = phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success' || phase === 'user_narration';
         // tapガイドは最終文以外の時に表示
         const isLastSentence =
           phase === 'intro' ? isLastIntroSentence
           : phase === 'auto' ? isLastAutoSentence
+          : phase === 'user_narration' ? isLastUserNarrationSentence
           : isLastSuccessSentence;
         const showTapGuide = isTappable && !isLastSentence;
         return (
@@ -745,11 +813,23 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
             )}
           </>
         )}
+        {phase === 'user_narration' && (
+          <>
+            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{currentUserNarrationSentence}</div>
+            {userNarrationSentences.length > 1 && (
+              <div className="trn-intro-dots" aria-hidden="true">
+                {userNarrationSentences.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`trn-intro-dot${i === sentenceIndex ? ' trn-intro-dot-active' : ''}`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
         {phase === 'user' && (
           <>
-            {situationText && (
-              <div className="trn-situation-text">{situationText}</div>
-            )}
             <div className="trn-instruction-text" style={{ whiteSpace: 'pre-wrap' }}>{instructionText}</div>
             {wrongAttempt && (
               <div className="trn-feedback trn-feedback-wrong">
@@ -801,7 +881,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
       {/* Actions */}
       <div className="trn-actions-sticky">
-        {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') && (
+        {(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success' || phase === 'user_narration') && (
           <button type="button" className="action-btn action-btn-primary" onClick={handleNext}>
             {phase === 'intro'
               ? isLastIntroSentence
@@ -811,6 +891,8 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
                 ? isLastAutoSentence
                   ? (lang === 'ja' ? '次へ' : 'Next')
                   : (lang === 'ja' ? '次へ' : 'Next')
+              : phase === 'user_narration'
+                ? (lang === 'ja' ? '次へ' : 'Next')
               : isLastSuccessSentence
                 ? (lang === 'ja' ? '次へ' : 'Next')
                 : (lang === 'ja' ? '次へ' : 'Next')}
