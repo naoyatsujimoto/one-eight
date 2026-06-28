@@ -14,7 +14,7 @@ import type { FullGameStepText, LocalizedText } from '../training/types';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type FGPhase =
+export type FGPhase =
   | 'intro'          // M0: テキスト表示、board非interactive、次へボタン
   | 'auto'           // Auto step: move applied, showing narration, "次へ" button
   | 'user_narration' // NEW: user操作前の前段説明表示フェーズ（ボード非インタラクティブ）
@@ -23,6 +23,24 @@ type FGPhase =
   | 'success'        // User step succeeded: showing success text, "次へ"
   | 'question'       // postQuestion: awaiting answer
   | 'complete';      // All steps done: showing finalText
+
+/** 一局指南の一時中断状態（同一セッション内でのresume用） */
+export type FullGameResumeState = {
+  stepIndex: number;
+  gameState: import('../game/types').GameState;
+  snapshotState: import('../game/types').GameState;
+  phase: FGPhase;
+  sentenceIndex: number;
+  introSentenceIndex: number;
+  buildState: import('../app/App').BoardBuildState;
+  selectiveFirst: import('../game/types').GateId | null;
+  quadSelected: import('../game/types').GateId[];
+  showHint: boolean;
+  wrongAttempt: boolean;
+  questionSelected: number | null;
+  questionShowHint: boolean;
+  completeSentIdx: number;
+};
 
 const EMPTY_BUILD: BoardBuildState = {
   mode: 'none',
@@ -85,38 +103,39 @@ function splitIntoSentences(text: string): string[] {
 
 interface FullGameTrainingRunnerProps {
   onComplete: () => void;
-  onExit?: () => void;
+  onExit?: (state: FullGameResumeState) => void;
+  resumeState?: FullGameResumeState | null;
 }
 
-export function FullGameTrainingRunner({ onComplete, onExit }: FullGameTrainingRunnerProps) {
+export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: FullGameTrainingRunnerProps) {
   const { lang } = useLang();
 
   // ── Core state ────────────────────────────────────────────────────────────
-  const [stepIndex, setStepIndex] = useState(0);
-  const [gameState, setGameState] = useState<GameState>(() => createInitialState(null));
-  const [phase, setPhase] = useState<FGPhase>('intro'); // Move 0 is intro
+  const [stepIndex, setStepIndex] = useState(resumeState?.stepIndex ?? 0);
+  const [gameState, setGameState] = useState<GameState>(() => resumeState?.gameState ?? createInitialState(null));
+  const [phase, setPhase] = useState<FGPhase>(resumeState?.phase ?? 'intro'); // Move 0 is intro
   const [snapshotRef] = useState({ current: createInitialState(null) }); // rollback point
   const snapshot = useRef(createInitialState(null));
 
   // Build UI state
-  const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
-  const [selectiveFirst, setSelectiveFirst] = useState<GateId | null>(null);
-  const [quadSelected, setQuadSelected] = useState<GateId[]>([]);
+  const [buildState, setBuildState] = useState<BoardBuildState>(resumeState?.buildState ?? EMPTY_BUILD);
+  const [selectiveFirst, setSelectiveFirst] = useState<GateId | null>(resumeState?.selectiveFirst ?? null);
+  const [quadSelected, setQuadSelected] = useState<GateId[]>(resumeState?.quadSelected ?? []);
 
   // Feedback
-  const [showHint, setShowHint] = useState(false);
-  const [wrongAttempt, setWrongAttempt] = useState(false);
+  const [showHint, setShowHint] = useState(resumeState?.showHint ?? false);
+  const [wrongAttempt, setWrongAttempt] = useState(resumeState?.wrongAttempt ?? false);
 
   // Intro sentence navigation (Phase 4)
-  const [introSentenceIndex, setIntroSentenceIndex] = useState(0);
+  const [introSentenceIndex, setIntroSentenceIndex] = useState(resumeState?.introSentenceIndex ?? 0);
 
   // M1以降の文章ブロック用 sentence navigation
-  const [sentenceIndex, setSentenceIndex] = useState(0);
+  const [sentenceIndex, setSentenceIndex] = useState(resumeState?.sentenceIndex ?? 0);
   const [animTick, setAnimTick] = useState(0);
 
   // Question state (Move 21 postQuestion)
-  const [questionSelected, setQuestionSelected] = useState<number | null>(null);
-  const [questionShowHint, setQuestionShowHint] = useState(false);
+  const [questionSelected, setQuestionSelected] = useState<number | null>(resumeState?.questionSelected ?? null);
+  const [questionShowHint, setQuestionShowHint] = useState(resumeState?.questionShowHint ?? false);
 
   // ── Typewriter state ─────────────────────────────────────────────────────
   const [visibleText, setVisibleText] = useState('');
@@ -130,15 +149,23 @@ export function FullGameTrainingRunner({ onComplete, onExit }: FullGameTrainingR
   );
 
   // Complete phase: 0=finalText, 1=summaryText
-  const [completeSentIdx, setCompleteSentIdx] = useState(0);
+  const [completeSentIdx, setCompleteSentIdx] = useState(resumeState?.completeSentIdx ?? 0);
+
+  // resume用: mount時の初期 resumeState を一度だけ捕捉する ref
+  const initResumeRef = useRef(resumeState ?? null);
 
   // Initialize: first step is intro (Move 0)
   // snapshot starts as empty initial state
   useEffect(() => {
-    snapshot.current = createInitialState(null);
-    // Move 0 is intro kind
-    setPhase('intro');
-    setIntroSentenceIndex(0);
+    if (initResumeRef.current) {
+      // Resume: snapshot ref を保存済み state から復元（phase/sentenceIndex は useState で初期化済み）
+      snapshot.current = initResumeRef.current.snapshotState;
+    } else {
+      snapshot.current = createInitialState(null);
+      // Move 0 is intro kind
+      setPhase('intro');
+      setIntroSentenceIndex(0);
+    }
   }, []);
 
   // ── Typewriter helpers ────────────────────────────────────────────────────
@@ -468,8 +495,24 @@ export function FullGameTrainingRunner({ onComplete, onExit }: FullGameTrainingR
       clearInterval(typeIntervalRef.current);
       typeIntervalRef.current = null;
     }
-    onExit?.();
-  }, [onExit]);
+    // 現在の進行状態を保存して呼び出し元へ渡す
+    onExit?.({
+      stepIndex,
+      gameState,
+      snapshotState: snapshot.current,
+      phase,
+      sentenceIndex,
+      introSentenceIndex,
+      buildState,
+      selectiveFirst,
+      quadSelected,
+      showHint,
+      wrongAttempt,
+      questionSelected,
+      questionShowHint,
+      completeSentIdx,
+    });
+  }, [onExit, stepIndex, gameState, phase, sentenceIndex, introSentenceIndex, buildState, selectiveFirst, quadSelected, showHint, wrongAttempt, questionSelected, questionShowHint, completeSentIdx]);
 
   // ── Board handlers ────────────────────────────────────────────────────────
 

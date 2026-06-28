@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { FullGameTrainingRunner } from './FullGameTrainingRunner';
+import type { FullGameResumeState } from './FullGameTrainingRunner';
 import { isFullGameCompleted } from '../training/fullGameUtils';
 import { Board } from './Board';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from '../game/engine';
@@ -49,6 +50,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   useEffect(() => { userIdRef.current = userId ?? null; }, [userId]);
   const { t, lang } = useLang();
   const [mode, setMode] = useState<ViewMode>('intro');
+  // 一局指南の一時中断状態（同一セッション内でのresume用、リロード後は消える）
+  const [fullGameResumeState, setFullGameResumeState] = useState<FullGameResumeState | null>(null);
   const [fullGameCompleted, setFullGameCompleted] = useState(() => isFullGameCompleted());
   const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
@@ -492,7 +495,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
   // ── Full-game screen ───────────────────────────────────────────────────────
   if (mode === 'fullgame') {
-    return <FullGameTrainingRunner onComplete={() => setMode('intro')} onExit={() => setMode('intro')} />;
+    return (
+      <FullGameTrainingRunner
+        onComplete={() => { setFullGameResumeState(null); setMode('intro'); }}
+        onExit={(state) => { setFullGameResumeState(state); setMode('intro'); }}
+        resumeState={fullGameResumeState}
+      />
+    );
   }
 
   // ── Task screen (task mode render) ────────────────────────────────────────
