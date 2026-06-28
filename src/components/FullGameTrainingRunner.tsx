@@ -638,10 +638,17 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       </div>
 
       {/* Instruction panel */}
+      {(() => {
+        const isTappable = phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success';
+        const showTapGuide = isTappable && !(phase === 'intro' && isLastIntroSentence);
+        return (
       <div
-        className={`trn-instruction-band${(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') ? ' trn-instruction-band--tappable' : ''}`}
-        onClick={(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') ? handleNext : undefined}
+        className={`trn-instruction-band${isTappable ? ' trn-instruction-band--tappable' : ''}`}
+        onClick={isTappable ? handleNext : undefined}
       >
+        {showTapGuide && (
+          <div className="trn-tap-guide" aria-hidden="true">tap ›</div>
+        )}
         {phase === 'intro' && (
           <>
             <div className="trn-narration trn-intro-sentence" style={{ whiteSpace: 'pre-wrap' }}>
@@ -684,6 +691,8 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{successText}</div>
         )}
       </div>
+        );
+      })()}
 
       {/* Board */}
       <div className="trn-board-area">
