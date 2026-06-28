@@ -47,18 +47,8 @@ function extractUserNarrationAndInstruction(
   situation: string,
   question: string
 ): { narration: string; instruction: string } {
-  // If situation is non-empty, it's the narration; question is the instruction
   if (situation.trim()) {
     return { narration: situation.trim(), instruction: question };
-  }
-  // Check question for \n\n separation: text before last \n\n = narration, after = instruction
-  const lastDblIdx = question.lastIndexOf('\n\n');
-  if (lastDblIdx !== -1) {
-    const narration = question.substring(0, lastDblIdx).trim();
-    const instruction = question.substring(lastDblIdx + 2).trim();
-    if (narration && instruction) {
-      return { narration, instruction };
-    }
   }
   return { narration: '', instruction: question };
 }
