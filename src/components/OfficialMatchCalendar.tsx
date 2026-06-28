@@ -7,7 +7,7 @@
  *   - Enter Match ボタン: enter_official_match RPC 連携
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   listMyOfficialMatches,
   enterOfficialMatch,
@@ -417,9 +417,13 @@ export function OfficialMatchCalendar({
   const [visibleYear, setVisibleYear] = useState<number>(nowInit.getFullYear());
   const [visibleMonth, setVisibleMonth] = useState<number>(nowInit.getMonth());
 
+  // stale expiry チェック用 ref（無限ループ防止）
+  const checkedExpiryIdsRef = useRef<Set<string>>(new Set());
+  const expiryCheckInFlightRef = useRef(false);
+
   // 公式戦一覧を取得（過去12ヶ月 + 今後3ヶ月）
-  const loadMatches = useCallback(async () => {
-    setLoading(true);
+  const loadMatches = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) setLoading(true);
     setLoadError(null);
     try {
       const from = new Date();
@@ -523,20 +527,42 @@ export function OfficialMatchCalendar({
   );
 
   // OM-1d: stale な scheduled/joinable match を no_contest チェック（副作用のみ・非同期）
+  // 無限ループ防止:
+  //   - checkedExpiryIdsRef: 同一match.idを重複チェックしない
+  //   - expiryCheckInFlightRef: 並行実行防止
+  //   - actionableStale: 結果確定済み（winner/end_reason）は除外
+  //   - silent reload: loading点滅を防ぐ
   useEffect(() => {
-    const stale = matches.filter((m) => {
+    // inFlight中は再実行しない
+    if (expiryCheckInFlightRef.current) return;
+
+    const actionableStale = matches.filter((m) => {
       // 確定済みステータスは除外
       if (['completed', 'cancelled', 'forfeited', 'no_contest'].includes(m.status)) return false;
+      // winner または end_reason が確定済みなら除外（DB側で処理済みの可能性が高い）
+      if (m.winner != null || m.end_reason != null) return false;
+      // 既チェック済みIDはスキップ
+      if (checkedExpiryIdsRef.current.has(m.id)) return false;
       // starts_at + totalSeconds を過ぎていれば expiry チェック対象
-      // 注意: online_game_id の有無は問わない。片方入室済みケースも expiry を呼ぶ必要があるため。
       const totalSec = (m.timer_config?.totalSeconds as number | undefined) ?? 600;
       const expiresAt = new Date(m.starts_at).getTime() + totalSec * 1000;
       return Date.now() > expiresAt;
     });
-    if (stale.length === 0) return;
-    void Promise.all(stale.map((m) => checkOfficialMatchExpiry(m.id))).then(() => {
-      // チェック後に一覧を再取得して no_contest 表示を反映
-      void loadMatches();
+
+    if (actionableStale.length === 0) return;
+
+    expiryCheckInFlightRef.current = true;
+    // チェック済みIDをすぐに記録して再エントリを防ぐ
+    for (const m of actionableStale) {
+      checkedExpiryIdsRef.current.add(m.id);
+    }
+
+    void Promise.all(actionableStale.map((m) => checkOfficialMatchExpiry(m.id))).then(() => {
+      expiryCheckInFlightRef.current = false;
+      // silent=true: loading点滅を防ぎ、background refreshとして再取得
+      void loadMatches({ silent: true });
+    }).catch(() => {
+      expiryCheckInFlightRef.current = false;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches]);
@@ -551,7 +577,7 @@ export function OfficialMatchCalendar({
     return (
       <div className="om-error">
         <span>{t.omLoadFailed}</span>
-        <button type="button" className="om-retry-btn" onClick={loadMatches}>
+        <button type="button" className="om-retry-btn" onClick={() => loadMatches()}>
           {t.omRetry}
         </button>
       </div>
