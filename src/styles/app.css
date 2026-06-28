@@ -3626,31 +3626,24 @@ ol { padding-left: 20px; }
 
 .trn-instruction-text {
   font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
   line-height: 1.6;
 }
 
 .trn-situation-text {
   font-size: 13px;
-  color: var(--ink-2);
   line-height: 1.6;
   padding-bottom: 2px;
-  border-bottom: 1px solid var(--rule);
   margin-bottom: 2px;
 }
 
 .trn-narration {
   font-size: 14px;
-  color: var(--ink-2);
   line-height: 1.8;
 }
 
 .trn-success-text {
   font-size: 15px;
-  color: #2e5e2e;
   line-height: 1.65;
-  font-weight: 600;
 }
 
 .trn-complete-title {
@@ -3671,22 +3664,16 @@ ol { padding-left: 20px; }
 }
 
 .trn-feedback-wrong {
-  color: #9a3a2a;
 }
 
 .trn-feedback-ok {
-  color: #2e5e2e;
 }
 
 /* ── Hint box ── */
 .trn-hint-box {
   margin-top: 4px;
   padding: 10px 14px;
-  background: transparent;
-  border: none;
-  border-left: 2px solid rgba(201,162,74,0.55);
   font-size: 12px;
-  color: #6a5020;
   line-height: 1.6;
 }
 
