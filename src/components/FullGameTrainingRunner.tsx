@@ -682,9 +682,9 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         {/* Text */}
         <div className="trn-text-body">
           {finalText && (
-            <div key="complete-final" className="trn-narration trn-text-animate">{finalText}</div>
+            <div key={`complete-${stepIndex}-final`} className="trn-narration trn-text-animate">{finalText}</div>
           )}
-          <div key="complete-summary" className="trn-summary-box trn-text-animate">
+          <div key={`complete-${stepIndex}-summary`} className="trn-summary-box trn-text-animate">
             {summaryText}
           </div>
         </div>
