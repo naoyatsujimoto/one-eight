@@ -3673,20 +3673,23 @@ ol { padding-left: 20px; }
 
 /* ── Board area ── */
 .trn-board-area {
-  flex: 1;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 14px 16px;
 }
 
-/* Board wrapper: rounds corners, adds shadow matching redesign */
+/* Board wrapper: no card styling in Training — background/border/shadow removed */
 .trn-board-wrap {
   width: 100%;
   max-width: 480px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 12px 32px -12px rgba(20,20,26,0.30);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* Phase 3: Center board within trn-board-wrap on mobile */
@@ -3872,12 +3875,12 @@ ol { padding-left: 20px; }
 }
 
 /* ── Sticky actions footer ── */
+/* Note: trn-actions-sticky is used in question/complete screens where sticky is appropriate.
+   For the main Training board screen the layout does NOT set flex:1 on trn-board-area,
+   so the button naturally follows the board without floating to the bottom. */
 .trn-actions-sticky {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
   padding: 14px 22px calc(14px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--bg) 72%, rgba(255,255,255,0));
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 8px;
