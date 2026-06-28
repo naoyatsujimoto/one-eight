@@ -80,6 +80,9 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
   // Intro sentence navigation (Phase 4)
   const [introSentenceIndex, setIntroSentenceIndex] = useState(0);
 
+  // M1以降の文章ブロック用 sentence navigation
+  const [sentenceIndex, setSentenceIndex] = useState(0);
+
   // Question state (Move 21 postQuestion)
   const [questionSelected, setQuestionSelected] = useState<number | null>(null);
   const [questionShowHint, setQuestionShowHint] = useState(false);
@@ -117,26 +120,31 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       snapshot.current = currentGameState;
       setPhase('intro');
       setIntroSentenceIndex(0);
+      setSentenceIndex(0);
     } else if (nextStep.kind === 'select_only') {
       setGameState(currentGameState);
       snapshot.current = currentGameState;
       setPhase('user'); // board interactive (position tap only)
+      setSentenceIndex(0);
     } else if (nextStep.kind === 'pass') {
       const newState = applyScriptedMove(currentGameState, { position: '', buildType: 'pass', gates: [] });
       setGameState(newState);
       snapshot.current = newState;
       setPhase('auto'); // auto と同じ表示（次へボタン）
+      setSentenceIndex(0);
     } else if (nextStep.kind === 'auto') {
       // Apply the auto move immediately
       const newState = applyScriptedMove(currentGameState, nextStep.move!);
       setGameState(newState);
       setPhase('auto');
       snapshot.current = newState;
+      setSentenceIndex(0);
     } else {
       // user step
       setGameState(currentGameState);
       snapshot.current = currentGameState;
       setPhase('user');
+      setSentenceIndex(0);
     }
   }, []);
 
@@ -146,8 +154,17 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     if (!currentStep) return;
 
     if (phase === 'select_success') {
-      // 選択状態を維持したまま次ステップへ進む（rollback しない）
-      advanceToStep(stepIndex + 1, gameState);
+      // select_success: successText を1文送り。最終文なら次ステップへ。
+      const stepText = getStepText(currentStep.moveNumber);
+      const fullText = stepText?.userText ? pick(stepText.userText.success, lang) : '';
+      const sentences = splitIntoSentences(fullText);
+      if (sentenceIndex < sentences.length - 1) {
+        setSentenceIndex((prev) => prev + 1);
+      } else {
+        setSentenceIndex(0);
+        // 選択状態を維持したまま次ステップへ進む（rollback しない）
+        advanceToStep(stepIndex + 1, gameState);
+      }
       return;
     }
 
@@ -168,19 +185,41 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
 
     if (phase === 'success') {
       const stepText = getStepText(currentStep.moveNumber);
-      if (stepText?.postQuestion) {
-        // Go to question phase
-        setPhase('question');
-        setQuestionSelected(null);
-        setQuestionShowHint(false);
-        return;
+      const fullText = stepText?.userText ? pick(stepText.userText.success, lang) : '';
+      const sentences = splitIntoSentences(fullText);
+      if (sentenceIndex < sentences.length - 1) {
+        // success テキストを1文送り
+        setSentenceIndex((prev) => prev + 1);
+      } else {
+        setSentenceIndex(0);
+        if (stepText?.postQuestion) {
+          // Go to question phase
+          setPhase('question');
+          setQuestionSelected(null);
+          setQuestionShowHint(false);
+        } else {
+          // No question: advance to next step
+          advanceToStep(stepIndex + 1, gameState);
+        }
       }
-      // No question: advance to next step
-      advanceToStep(stepIndex + 1, gameState);
       return;
     }
 
-    if (phase === 'auto' || phase === 'complete') {
+    if (phase === 'auto') {
+      // auto narration を1文送り。最終文なら次ステップへ。
+      const stepText = getStepText(currentStep.moveNumber);
+      const fullText = stepText?.autoText ? pick(stepText.autoText.auto, lang) : '';
+      const sentences = splitIntoSentences(fullText);
+      if (sentenceIndex < sentences.length - 1) {
+        setSentenceIndex((prev) => prev + 1);
+      } else {
+        setSentenceIndex(0);
+        advanceToStep(stepIndex + 1, gameState);
+      }
+      return;
+    }
+
+    if (phase === 'complete') {
       // complete → handled by handleFinish
       advanceToStep(stepIndex + 1, gameState);
       return;
@@ -217,6 +256,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     if (currentStep?.kind === 'select_only') {
       setGameState((prev) => selectPosition(prev, positionId));
       if (positionId === currentStep.expectedPosition) {
+        setSentenceIndex(0);
         setPhase('select_success');
       }
       return;
@@ -252,6 +292,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       setQuadSelected([]);
       setWrongAttempt(false);
       setShowHint(false);
+      setSentenceIndex(0);
       setPhase('success');
     } else {
       // Wrong — rollback
@@ -284,6 +325,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         setQuadSelected([]);
         setWrongAttempt(false);
         setShowHint(false);
+        setSentenceIndex(0);
         setTimeout(() => setPhase('success'), 0);
         return newState;
       } else {
@@ -333,6 +375,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           setQuadSelected([]);
           setWrongAttempt(false);
           setShowHint(false);
+          setSentenceIndex(0);
           setTimeout(() => setPhase('success'), 0);
           return newState;
         } else {
@@ -355,6 +398,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
         setSelectiveFirst(null);
         setWrongAttempt(false);
         setShowHint(false);
+        setSentenceIndex(0);
         setTimeout(() => setPhase('success'), 0);
         return newState;
       } else {
@@ -408,6 +452,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           setQuadSelected([]);
           setWrongAttempt(false);
           setShowHint(false);
+          setSentenceIndex(0);
           setTimeout(() => setPhase('success'), 0);
           return newState;
         } else {
@@ -607,6 +652,20 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     }
   }
 
+  // auto フェーズの1文送り
+  const autoSentences = (phase === 'auto' && autoNarration)
+    ? splitIntoSentences(autoNarration)
+    : [];
+  const currentAutoSentence = autoSentences[sentenceIndex] ?? autoNarration;
+  const isLastAutoSentence = sentenceIndex >= autoSentences.length - 1;
+
+  // success / select_success フェーズの1文送り
+  const successSentences = ((phase === 'success' || phase === 'select_success') && successText)
+    ? splitIntoSentences(successText)
+    : [];
+  const currentSuccessSentence = successSentences[sentenceIndex] ?? successText;
+  const isLastSuccessSentence = sentenceIndex >= successSentences.length - 1;
+
   const moveNumber = currentStep?.moveNumber ?? 1;
   const progressPct = totalSteps > 1 ? Math.max(2, (stepIndex / (totalSteps - 1)) * 100) : 2;
 
@@ -640,7 +699,12 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       {/* Instruction panel */}
       {(() => {
         const isTappable = phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success';
-        const showTapGuide = isTappable && !(phase === 'intro' && isLastIntroSentence);
+        // tapガイドは最終文以外の時に表示
+        const isLastSentence =
+          phase === 'intro' ? isLastIntroSentence
+          : phase === 'auto' ? isLastAutoSentence
+          : isLastSuccessSentence;
+        const showTapGuide = isTappable && !isLastSentence;
         return (
       <div
         className={`trn-instruction-band${isTappable ? ' trn-instruction-band--tappable' : ''}`}
@@ -667,7 +731,19 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           </>
         )}
         {phase === 'auto' && (
-          <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{autoNarration}</div>
+          <>
+            <div className="trn-narration" style={{ whiteSpace: 'pre-wrap' }}>{currentAutoSentence}</div>
+            {autoSentences.length > 1 && (
+              <div className="trn-intro-dots" aria-hidden="true">
+                {autoSentences.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`trn-intro-dot${i === sentenceIndex ? ' trn-intro-dot-active' : ''}`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
         {phase === 'user' && (
           <>
@@ -688,7 +764,19 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
           </>
         )}
         {(phase === 'select_success' || phase === 'success') && (
-          <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{successText}</div>
+          <>
+            <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap' }}>{currentSuccessSentence}</div>
+            {successSentences.length > 1 && (
+              <div className="trn-intro-dots" aria-hidden="true">
+                {successSentences.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`trn-intro-dot${i === sentenceIndex ? ' trn-intro-dot-active' : ''}`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
         );
@@ -719,7 +807,13 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
               ? isLastIntroSentence
                 ? (lang === 'ja' ? 'はじめる' : 'Start')
                 : (lang === 'ja' ? '次へ' : 'Next')
-              : (lang === 'ja' ? '次へ' : 'Next')}
+              : phase === 'auto'
+                ? isLastAutoSentence
+                  ? (lang === 'ja' ? '次へ' : 'Next')
+                  : (lang === 'ja' ? '次へ' : 'Next')
+              : isLastSuccessSentence
+                ? (lang === 'ja' ? '次へ' : 'Next')
+                : (lang === 'ja' ? '次へ' : 'Next')}
           </button>
         )}
         {phase === 'user' && !showHint && (
