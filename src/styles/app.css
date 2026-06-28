@@ -3887,8 +3887,9 @@ ol { padding-left: 20px; }
 }
 
 .trn-actions-sticky .action-btn {
-  width: 100%;
-  border-radius: 12px;
+  width: 50%;
+  align-self: center;
+  border-radius: 14px;
   padding: 15px 22px;
   font-size: 11px;
   letter-spacing: 0.18em;
