@@ -224,7 +224,7 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       advanceToStep(stepIndex + 1, gameState);
       return;
     }
-  }, [phase, stepIndex, gameState, advanceToStep]);
+  }, [phase, stepIndex, gameState, advanceToStep, introSentenceIndex, sentenceIndex, lang]);
 
   // ── Handle question answer ────────────────────────────────────────────────
   const handleQuestionAnswer = useCallback((index: number) => {
