@@ -4000,7 +4000,7 @@ ol { padding-left: 20px; }
 
 /* ── Training body text animation ────────────────────────────────────────── */
 .trn-text-animate {
-  animation: trnTextIn 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: trnTextIn 160ms ease-out both;
 }
 
 @keyframes trnTextIn {
