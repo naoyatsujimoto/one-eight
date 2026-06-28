@@ -638,7 +638,10 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       </div>
 
       {/* Instruction panel */}
-      <div className="trn-instruction-band">
+      <div
+        className={`trn-instruction-band${(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') ? ' trn-instruction-band--tappable' : ''}`}
+        onClick={(phase === 'intro' || phase === 'auto' || phase === 'success' || phase === 'select_success') ? handleNext : undefined}
+      >
         {phase === 'intro' && (
           <>
             <div className="trn-narration trn-intro-sentence" style={{ whiteSpace: 'pre-wrap' }}>
