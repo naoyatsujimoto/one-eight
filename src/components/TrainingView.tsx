@@ -492,7 +492,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
   // ── Full-game screen ───────────────────────────────────────────────────────
   if (mode === 'fullgame') {
-    return <FullGameTrainingRunner onComplete={() => setMode('intro')} />;
+    return <FullGameTrainingRunner onComplete={() => setMode('intro')} onExit={() => setMode('intro')} />;
   }
 
   // ── Task screen (task mode render) ────────────────────────────────────────

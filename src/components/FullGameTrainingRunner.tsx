@@ -85,9 +85,10 @@ function splitIntoSentences(text: string): string[] {
 
 interface FullGameTrainingRunnerProps {
   onComplete: () => void;
+  onExit?: () => void;
 }
 
-export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerProps) {
+export function FullGameTrainingRunner({ onComplete, onExit }: FullGameTrainingRunnerProps) {
   const { lang } = useLang();
 
   // ── Core state ────────────────────────────────────────────────────────────
@@ -461,6 +462,15 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     onComplete();
   }, [onComplete]);
 
+  const handleExit = useCallback(() => {
+    // typewriter cleanup
+    if (typeIntervalRef.current !== null) {
+      clearInterval(typeIntervalRef.current);
+      typeIntervalRef.current = null;
+    }
+    onExit?.();
+  }, [onExit]);
+
   // ── Board handlers ────────────────────────────────────────────────────────
 
   const handleSelectPosition = useCallback((positionId: PositionId) => {
@@ -729,7 +739,11 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       <div className="trn-screen">
         {/* Header */}
         <div className="trn-topbar">
-          <div style={{ width: '80px' }} />
+          <div style={{ width: '80px' }}>
+            <button type="button" className="trn-exit-btn" onClick={handleExit}>
+              {lang === 'ja' ? '← 戻る' : '← Back'}
+            </button>
+          </div>
           <div className="trn-topbar-center">
             <span className="trn-eyebrow">{lang === 'ja' ? '一局指南' : 'Guided Game'}</span>
             <span className="trn-topbar-title">Move {currentStep.moveNumber} — {lang === 'ja' ? '確認問題' : 'Question'}</span>
@@ -811,7 +825,11 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
       <div className="trn-screen">
         {/* Header */}
         <div className="trn-topbar">
-          <div style={{ width: '80px' }} />
+          <div style={{ width: '80px' }}>
+            <button type="button" className="trn-exit-btn" onClick={handleExit}>
+              {lang === 'ja' ? '← 戻る' : '← Back'}
+            </button>
+          </div>
           <div className="trn-topbar-center">
             <span className="trn-eyebrow">{lang === 'ja' ? '一局指南' : 'Guided Game'}</span>
             <span className="trn-topbar-title">{lang === 'ja' ? '完了' : 'Complete'}</span>
@@ -908,7 +926,11 @@ export function FullGameTrainingRunner({ onComplete }: FullGameTrainingRunnerPro
     <div className="trn-screen">
       {/* Header */}
       <div className="trn-topbar">
-        <div style={{ width: '80px' }} />
+        <div style={{ width: '80px' }}>
+          <button type="button" className="trn-exit-btn" onClick={handleExit}>
+            {lang === 'ja' ? '← 戻る' : '← Back'}
+          </button>
+        </div>
         <div className="trn-topbar-center">
           <span className="trn-eyebrow">
             {lang === 'ja' ? '一局指南' : 'Guided Game'}
