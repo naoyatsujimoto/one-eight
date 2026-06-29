@@ -20,3 +20,4 @@ scripts/tmp/
 *service_key*
 *_service*.cjs
 *_service*.ts
+supabase/.temp/
