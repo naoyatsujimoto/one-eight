@@ -1,0 +1,329 @@
+/* JournalListPage.css — モノクロ / academic / 余白多め */
+
+/* ── Page layout ─────────────────────────────────────────── */
+.jl-page {
+  min-height: 100vh;
+  background: #fff;
+  color: #111;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.jl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.jl-wordmark {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #111;
+}
+
+.jl-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.jl-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.jl-nav-link {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.78rem;
+  color: #555;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.jl-nav-link:hover {
+  color: #111;
+}
+
+/* ── Lang toggle ─────────────────────────────────────────── */
+.jl-lang-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.jl-lang-btn {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+  border: none;
+  background: #fff;
+  color: #888;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.jl-lang-btn.active {
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Hero ────────────────────────────────────────────────── */
+.jl-hero {
+  padding: 4rem 2rem 3rem;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.jl-hero-eyebrow {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0 0 1rem;
+}
+
+.jl-hero-title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 1rem;
+  letter-spacing: -0.01em;
+}
+
+.jl-hero-desc {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Main content ────────────────────────────────────────── */
+.jl-main {
+  flex: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── State messages ──────────────────────────────────────── */
+.jl-state {
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.jl-state-text {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.jl-state-error .jl-state-text {
+  color: #c00;
+}
+
+/* ── Article list ────────────────────────────────────────── */
+.jl-article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.jl-card {
+  padding: 2.5rem 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.jl-card:first-child {
+  border-top: 1px solid #e8e8e8;
+}
+
+/* ── Fallback notice ─────────────────────────────────────── */
+.jl-fallback-notice {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.72rem;
+  color: #888;
+  font-style: italic;
+  margin-bottom: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  background: #f9f9f9;
+  border-left: 2px solid #ccc;
+}
+
+/* ── Card meta ───────────────────────────────────────────── */
+.jl-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.jl-card-date {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.78rem;
+  color: #888;
+  letter-spacing: 0.03em;
+}
+
+.jl-card-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.jl-tag {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.68rem;
+  color: #666;
+  background: #f2f2f2;
+  border-radius: 2px;
+  padding: 0.15rem 0.45rem;
+  letter-spacing: 0.04em;
+}
+
+/* ── Card title ──────────────────────────────────────────── */
+.jl-card-title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0 0 0.6rem;
+  color: #111;
+}
+
+.jl-no-translation {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* ── Card excerpt ────────────────────────────────────────── */
+.jl-card-excerpt {
+  font-size: 0.92rem;
+  color: #444;
+  line-height: 1.7;
+  margin: 0 0 0.75rem;
+}
+
+/* ── Card author ─────────────────────────────────────────── */
+.jl-card-author {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.78rem;
+  color: #888;
+  margin: 0 0 1rem;
+}
+
+/* ── Card footer ─────────────────────────────────────────── */
+.jl-card-footer {
+  margin-top: 0.5rem;
+}
+
+.jl-read-link {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.jl-read-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.jl-footer {
+  border-top: 1px solid #e0e0e0;
+  padding: 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.jl-footer-cta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.jl-footer-cta-label {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.82rem;
+  color: #555;
+}
+
+.jl-footer-cta-link {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #111;
+  text-decoration: none;
+  border: 1px solid #ccc;
+  padding: 0.3rem 0.8rem;
+  border-radius: 3px;
+}
+
+.jl-footer-cta-link:hover {
+  background: #f5f5f5;
+}
+
+.jl-footer-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.jl-footer-links a {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.72rem;
+  color: #aaa;
+  text-decoration: none;
+}
+
+.jl-footer-links a:hover {
+  color: #555;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .jl-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .jl-hero {
+    padding: 2.5rem 1.25rem 2rem;
+  }
+
+  .jl-main {
+    padding: 0 1.25rem 3rem;
+  }
+
+  .jl-hero-title {
+    font-size: 1.5rem;
+  }
+
+  .jl-footer {
+    padding: 1.5rem 1.25rem;
+  }
+}
