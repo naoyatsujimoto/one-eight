@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/journal-db/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
