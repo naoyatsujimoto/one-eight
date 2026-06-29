@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/journal-db",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/journal-db/",
+      "destination": "/index.html"
+    },
+    {
       "source": "/journal-db/:path*",
       "destination": "/index.html"
     }
