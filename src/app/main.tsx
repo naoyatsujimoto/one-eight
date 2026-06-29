@@ -7,18 +7,31 @@ import { JournalListPage } from '../components/JournalListPage';
 import { JournalArticlePage } from '../components/JournalArticlePage';
 import '../styles/app.css';
 
-// /journal-db 系は AuthGate 外で直接レンダリング（ログイン不要）
+// /journal 系・/journal-db 系は AuthGate 外で直接レンダリング（ログイン不要）
 const pathname = window.location.pathname;
 
 let rootElement: React.ReactNode;
 
-if (pathname === '/journal-db' || pathname === '/journal-db/') {
+// /journal または /journal/ → DB版一覧
+// /journal/:slug → DB版記事詳細 (ただし .html 拡張子付きは静的ファイルとして優先される)
+// /journal-db / /journal-db/:slug → 互換ルート（従来通り）
+const isJournalList =
+  pathname === '/journal' ||
+  pathname === '/journal/' ||
+  pathname === '/journal-db' ||
+  pathname === '/journal-db/';
+
+const isJournalArticle =
+  (pathname.startsWith('/journal/') && !pathname.endsWith('.html')) ||
+  pathname.startsWith('/journal-db/');
+
+if (isJournalList) {
   rootElement = (
     <LangProvider>
       <JournalListPage />
     </LangProvider>
   );
-} else if (pathname.startsWith('/journal-db/')) {
+} else if (isJournalArticle) {
   rootElement = (
     <LangProvider>
       <JournalArticlePage />

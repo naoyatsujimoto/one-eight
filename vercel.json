@@ -11,6 +11,18 @@
     {
       "source": "/journal-db/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/journal",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/journal/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/journal/:path*",
+      "destination": "/index.html"
     }
   ]
 }

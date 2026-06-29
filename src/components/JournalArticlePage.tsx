@@ -17,9 +17,9 @@ import './JournalArticlePage.css';
 export function JournalArticlePage() {
   const { lang: ctxLang } = useLang();
 
-  // slug: pathname の /journal-db/ 以降
+  // slug: /journal/:slug または /journal-db/:slug の両方に対応
   const slug = (() => {
-    const m = window.location.pathname.match(/^\/journal-db\/(.+)$/);
+    const m = window.location.pathname.match(/^\/journal(?:-db)?\/(.+)$/);
     return m ? m[1] : '';
   })();
 
@@ -38,7 +38,7 @@ export function JournalArticlePage() {
   // slug が空なら ListPage へ redirect
   useEffect(() => {
     if (!slug) {
-      window.location.replace('/journal-db');
+      window.location.replace('/journal/');
     }
   }, [slug]);
 
@@ -99,7 +99,7 @@ export function JournalArticlePage() {
         <a href="/" className="ja-wordmark">ONE EIGHT</a>
         <div className="ja-header-right">
           <nav className="ja-nav">
-            <a href="/journal-db" className="ja-nav-link">
+            <a href="/journal/" className="ja-nav-link">
               {lang === 'ja' ? '← Journal' : '← Journal'}
             </a>
           </nav>
@@ -139,7 +139,7 @@ export function JournalArticlePage() {
             <p className="ja-state-text">
               {lang === 'ja' ? '記事が見つかりません。' : 'Article not found.'}
             </p>
-            <a href="/journal-db" className="ja-back-link">
+            <a href="/journal/" className="ja-back-link">
               {lang === 'ja' ? '← Journal 一覧に戻る' : '← Back to Journal'}
             </a>
           </div>
@@ -231,7 +231,7 @@ export function JournalArticlePage() {
 
               {/* Navigation */}
               <div className="ja-article-nav">
-                <a href="/journal-db" className="ja-back-link">
+                <a href="/journal/" className="ja-back-link">
                   {lang === 'ja' ? '← Journal 一覧に戻る' : '← Back to Journal'}
                 </a>
               </div>
@@ -251,7 +251,7 @@ export function JournalArticlePage() {
       <footer className="ja-footer">
         <div className="ja-footer-links">
           <a href="/">ONE EIGHT</a>
-          <a href="/journal-db">Journal</a>
+          <a href="/journal/">Journal</a>
           <a href="/pricing.html">Pricing</a>
           <a href="/terms.html">Terms</a>
           <a href="/privacy.html">Privacy</a>

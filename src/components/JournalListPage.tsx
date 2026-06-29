@@ -153,7 +153,7 @@ export function JournalListPage() {
                   {/* Read link */}
                   <div className="jl-card-footer">
                     <a
-                      href={`/journal-db/${article.slug}${lang !== 'en' ? `?lang=${lang}` : ''}`}
+                      href={`/journal/${article.slug}${lang !== 'en' ? `?lang=${lang}` : ''}`}
                       className="jl-read-link"
                     >
                       {lang === 'ja' ? '記事を読む →' : 'Read article →'}
