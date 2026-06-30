@@ -14,6 +14,7 @@ import { useLang } from '../lib/lang';
 
 interface Props {
   awardId: string;
+  isUpdate?: boolean;  // 情報変更フロー（再提出ではなく更新）
   /** フォームを閉じる（親コンポーネントに委譲） */
   onClose: () => void;
   /** Submit 成功後のコールバック */
@@ -22,7 +23,7 @@ interface Props {
 
 // ── コンポーネント ────────────────────────────────────────────────────────────
 
-export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
+export function PrizeClaimForm({ awardId, isUpdate = false, onClose, onSuccess }: Props) {
   const { t } = useLang();
 
   // フォーム値（機微情報 — Console log 禁止）
@@ -116,7 +117,7 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
       <div style={s.modal}>
         {/* ヘッダー */}
         <div style={s.header}>
-          <h2 style={s.title}>{t.prizeClaimFormTitle}</h2>
+          <h2 style={s.title}>{isUpdate ? 'Update Tax & Payment Information' : t.prizeClaimFormTitle}</h2>
           <button type="button" style={s.closeBtn} onClick={onClose} disabled={submitting}>
             ✕
           </button>
@@ -133,6 +134,15 @@ export function PrizeClaimForm({ awardId, onClose, onSuccess }: Props) {
             {t.prizeClaimNoticeTax}
           </p>
         </div>
+
+        {isUpdate && (
+          <div style={{ ...s.notice, background: '#e3f2fd', borderColor: '#90caf9', marginTop: 8 }}>
+            <p style={{ ...s.noticeText, color: '#1565c0' }}>
+              ℹ️ You have already submitted tax &amp; payment information for a previous award.<br />
+              Submit this form only if your information (name, address, PayPal email, etc.) has changed.
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={s.form}>
 

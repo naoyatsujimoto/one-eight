@@ -23,7 +23,7 @@ import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
 import { getMyArenaTitles, type ArenaTitle } from '../lib/arena';
-import { getUserAwards, getUserAwardSubmissions, type UserPrizeAwardRow } from '../lib/prizeUser';
+import { getUserAwards, getUserAwardSubmissions, getUserHasPriorSubmission, type UserPrizeAwardRow } from '../lib/prizeUser';
 import { PrizeClaimForm } from './PrizeClaimForm';
 import type { SubmitTaxResult } from '../lib/prizeUser';
 
@@ -77,7 +77,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [prizeAwards, setPrizeAwards] = useState<UserPrizeAwardRow[]>([]);
   const [prizeSubmissions, setPrizeSubmissions] = useState<Record<string, { submission_id: string; status: string; delete_after: string | null; data_cleared_at: string | null }>>({});
   const [prizeClaimTarget, setPrizeClaimTarget] = useState<string | null>(null);
+  const [prizeClaimIsUpdate, setPrizeClaimIsUpdate] = useState(false);
   const [prizeSubmitResults, setPrizeSubmitResults] = useState<Record<string, SubmitTaxResult>>({});
+  const [userHasPriorSubmission, setUserHasPriorSubmission] = useState(false);
 
   const displayUserId = (viewOnly && targetUserId) ? targetUserId : userId;
   const defaultName = userEmail ? userEmail.split('@')[0] : 'Player';
@@ -131,6 +133,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             if (subMap) setPrizeSubmissions(subMap);
           });
         }
+      });
+      // user_id 単位での提出済みチェック
+      getUserHasPriorSubmission().then(({ hasPrior }) => {
+        setUserHasPriorSubmission(hasPrior);
       });
     }
     // Load profile: stats_public + display name
@@ -455,7 +461,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               awards={prizeAwards}
               submissions={prizeSubmissions}
               submitResults={prizeSubmitResults}
-              onClaim={(awardId) => setPrizeClaimTarget(awardId)}
+              userHasPriorSubmission={userHasPriorSubmission}
+              onClaim={(awardId, isUpdate) => {
+                setPrizeClaimIsUpdate(isUpdate ?? false);
+                setPrizeClaimTarget(awardId);
+              }}
             />
           </section>
         )}
@@ -481,7 +491,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
       {prizeClaimTarget && (
         <PrizeClaimForm
           awardId={prizeClaimTarget}
-          onClose={() => setPrizeClaimTarget(null)}
+          isUpdate={prizeClaimIsUpdate}
+          onClose={() => { setPrizeClaimTarget(null); setPrizeClaimIsUpdate(false); }}
           onSuccess={(result) => {
             setPrizeSubmitResults(prev => ({ ...prev, [result.award_id]: result }));
             setPrizeSubmissions(prev => ({
@@ -493,7 +504,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 data_cleared_at: null,
               },
             }));
+            // 更新フローで提出した場合も提出済み扱いにする
+            setUserHasPriorSubmission(true);
             setPrizeClaimTarget(null);
+            setPrizeClaimIsUpdate(false);
           }}
         />
       )}
@@ -522,12 +536,14 @@ function PrizeSection({
   awards,
   submissions,
   submitResults,
+  userHasPriorSubmission,
   onClaim,
 }: {
   awards: UserPrizeAwardRow[];
   submissions: Record<string, { submission_id: string; status: string; delete_after: string | null; data_cleared_at: string | null }>;
   submitResults: Record<string, SubmitTaxResult>;
-  onClaim: (awardId: string) => void;
+  userHasPriorSubmission: boolean;
+  onClaim: (awardId: string, isUpdate?: boolean) => void;
 }) {
   const { t } = useLang();
   if (awards.length === 0) {
@@ -539,7 +555,10 @@ function PrizeSection({
       {awards.map((award) => {
         const submission = submissions[award.award_id];
         const submitResult = submitResults[award.award_id];
-        const canClaim = (award.status === 'eligible' || award.status === 'pending') && !submission;
+        // 初回提出: 提出済み submission がなく、かつ過去に一度も提出したことがないユーザー
+        const canClaim = (award.status === 'eligible' || award.status === 'pending') && !submission && !userHasPriorSubmission;
+        // 再提出不要: 提出済み submission がないが、過去に提出したことがある（情報変更時のみ提出）
+        const noResubmitRequired = (award.status === 'eligible' || award.status === 'pending') && !submission && userHasPriorSubmission;
         const isSubmitted = submission && ['submitted', 'reviewed', 'archived'].includes(submission.status);
         const isDataCleared = submission?.status === 'data_cleared';
         // Arena名表示: arena_codeがある場合は「{ARENA_CODE} Master Reward」、なければ「Official Arena」
@@ -577,6 +596,20 @@ function PrizeSection({
               <button type="button" style={sp.claimBtn} onClick={() => onClaim(award.award_id)}>
                 {t.prizeSubmitInfo}
               </button>
+            )}
+
+            {/* 提出不要: 同一ユーザーの過去提出済み */}
+            {noResubmitRequired && !submitResult && (
+              <div style={sp.onFileBlock}>
+                <div style={sp.onFileTitle}>✓ Tax &amp; Payment Info on File</div>
+                <div style={sp.onFileDesc}>
+                  Previous submission found. Naoya will verify using your User ID in the WINNERS FILE.<br />
+                  If your information has changed (name, address, PayPal email, etc.), use the button below.
+                </div>
+                <button type="button" style={sp.updateBtn} onClick={() => onClaim(award.award_id, true)}>
+                  Update Info (if changed)
+                </button>
+              </div>
             )}
 
             {/* 提出済み: submit直後のレスポンス */}
@@ -761,6 +794,36 @@ const sp: Record<string, React.CSSProperties> = {
     color: '#555',
     fontWeight: 600,
   },
+  onFileBlock: {
+    background: '#e8f5e9',
+    border: '1px solid #a5d6a7',
+    borderRadius: 6,
+    padding: '12px 14px',
+    marginTop: 8,
+  } as React.CSSProperties,
+  onFileTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#2e7d32',
+    marginBottom: 4,
+  } as React.CSSProperties,
+  onFileDesc: {
+    fontSize: 12,
+    color: '#388e3c',
+    lineHeight: 1.6,
+    marginBottom: 8,
+  } as React.CSSProperties,
+  updateBtn: {
+    background: '#fff',
+    border: '1px solid #4caf50',
+    borderRadius: 5,
+    padding: '7px 16px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#2e7d32',
+    minHeight: 36,
+  } as React.CSSProperties,
 };
 
 // ── 成績サマリー ──────────────────────────────────────────────────────────────

@@ -226,6 +226,24 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
           </div>
         )}
 
+        {/* WINNERS FILE User ID (screen view) */}
+        {printData && (
+          <div style={{
+            background: '#e8f5e9',
+            border: '1px solid #a5d6a7',
+            borderRadius: 6,
+            padding: '10px 14px',
+            marginBottom: 12,
+            fontSize: 13,
+            color: '#2e7d32',
+            fontWeight: 700,
+            fontFamily: 'monospace',
+            wordBreak: 'break-all',
+          }}>
+            📋 WINNERS FILE — User ID: {printData.recipient_user_id}
+          </div>
+        )}
+
         {/* 印刷ボタン・Archive ボタン（データ取得後） */}
         {printData && (
           <div style={s.actionBar}>
@@ -312,9 +330,9 @@ export function PrizeWinnerFilePrint({ onBack, initialSubmissionId }: Props) {
 
           {/* Award / Submission 情報 */}
           <Section title="Award Information">
+            <PrintRow label="Recipient User ID"  value={printData.recipient_user_id} />
             <PrintRow label="Award ID"           value={printData.award_id} />
             <PrintRow label="Submission ID"      value={printData.submission_id} />
-            <PrintRow label="Recipient User ID"  value={printData.recipient_user_id} />
             <PrintRow label="Prize Kind"         value={printData.prize_kind ?? '—'} />
             <PrintRow label="Amount"             value={fmtCents(printData.amount_cents, printData.currency)} />
             <PrintRow label="Currency"           value={printData.currency} />

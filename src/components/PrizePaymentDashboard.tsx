@@ -1120,6 +1120,11 @@ function PreparedSuccessView({ result, detail, onOpenWinnerFile }: PreparedSucce
     <div style={sv.container}>
       <div style={sv.successBadge}>✅ Prepared Successfully</div>
 
+      {/* WINNERS FILE 確認用 User ID */}
+      <div style={{ background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 4, padding: '8px 12px', marginBottom: 8, fontSize: 12, color: '#2e7d32', fontWeight: 700, fontFamily: 'var(--mono)', wordBreak: 'break-all' }}>
+        📋 WINNERS FILE — User ID: {detail.recipient_user_id}
+      </div>
+
       <div style={sv.section}>
         <div style={sv.sectionTitle}>Payout Record</div>
         <DRow label="Payout ID"       value={result.payout_id} mono />
@@ -1519,6 +1524,10 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
                 <Section title="Award">
                   <DRow label="Award ID"    value={detail.award_id.slice(0, 8) + '...'} />
                   <DRow label="Status"      value={detail.award_status} />
+                  <DRow label="Recipient User ID 🔍" value={detail.recipient_user_id} />
+                  <div style={ds.winnersFileNote}>
+                    📋 WINNERS FILE: Naoyaが {detail.recipient_user_id} でWINNERS FILEを確認します
+                  </div>
                   <DRow label="Amount"      value={fmtCents(detail.amount_cents, detail.currency)} />
                   <DRow label="Prize Kind"  value={detail.prize_kind ?? '-'} />
                   <DRow label="Source"      value={detail.source_kind ?? '-'} />
@@ -1884,6 +1893,7 @@ export function PrizePaymentDashboard({ onBack, onOpenWinnerFile }: Props) {
 
           <div style={s.cardGrid}>
             <CRow label="Recipient"  value={award.recipient_display_name ?? award.recipient_user_id.slice(0, 8)} />
+            <CRow label="User ID 🔍" value={award.recipient_user_id} />
             <CRow label="Amount"     value={fmtCents(award.amount_cents, award.currency)} />
             <CRow label="Prize Kind" value={award.prize_kind ?? '-'} />
             <CRow label="Source"     value={award.source_kind ?? '-'} />
@@ -2525,6 +2535,18 @@ const ds: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: 'var(--ink-3)',
     marginTop: 8,
+  },
+  winnersFileNote: {
+    background: '#e8f5e9',
+    border: '1px solid #a5d6a7',
+    borderRadius: 4,
+    padding: '6px 10px',
+    fontSize: 12,
+    color: '#2e7d32',
+    fontWeight: 600,
+    margin: '4px 0 8px',
+    fontFamily: 'var(--mono)',
+    wordBreak: 'break-all' as const,
   },
 };
 

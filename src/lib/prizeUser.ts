@@ -134,6 +134,39 @@ export async function getUserAwardSubmissions(awardIds: string[]): Promise<{
 }
 
 /**
+ * getUserHasPriorSubmission
+ * 現在のユーザーが過去に税務情報を提出済みかどうかを確認する。
+ * prize_temp_tax_submissions テーブルを RLS で絞り込み (auth.uid() = user_id)、
+ * submitted / reviewed / archived / data_cleared のいずれかが存在すれば true を返す。
+ *
+ * ⚠️ submission_data は取得しない（id, award_id, status のみ）
+ */
+export async function getUserHasPriorSubmission(): Promise<{
+  hasPrior: boolean;
+  earliestAwardId: string | null;
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from('prize_temp_tax_submissions')
+    .select('id, award_id, status')
+    .in('status', ['submitted', 'reviewed', 'archived', 'data_cleared'])
+    .limit(5)
+    .order('created_at', { ascending: true });
+
+  if (error) return { hasPrior: false, earliestAwardId: null, error: error.message };
+
+  const rows = (data ?? []) as Array<{ id: string; award_id: string; status: string }>;
+  if (rows.length === 0) return { hasPrior: false, earliestAwardId: null, error: null };
+
+  const first = rows[0];
+  return {
+    hasPrior: true,
+    earliestAwardId: first ? first.award_id : null,
+    error: null,
+  };
+}
+
+/**
  * submitPrizeTaxSubmission
  * 受賞者本人が支払・税務情報を提出する。
  * 戻り値は PIIなし（submission_id / award_id / status / delete_after のみ）。
