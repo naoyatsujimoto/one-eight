@@ -76,8 +76,16 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: nowrap;
   gap: 0;
   padding: 0 24px;
+  /* 極小幅端末向けフォールバック: 内部スクロール（ページ外にははみ出さない） */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.topbar-row2::-webkit-scrollbar {
+  display: none;
 }
 .wordmark {
   font-family: var(--display);
@@ -110,14 +118,19 @@ html, body {
 .top-btn {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.18em;
+  /* letter-spacing を縮小: 日本語の文字幅差を吸収しつつ可読性を維持 */
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--ink-2);
-  padding: 8px 14px;
+  /* padding を縮小: 項目数が増えても1行に収まるよう調整 */
+  padding: 7px 10px;
   background: none;
   border: none;
   cursor: pointer;
   transition: color .15s;
+  /* 折り返し禁止 + flexで縮まらないよう固定 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .top-btn:hover:not(:disabled) { color: var(--ink); }
 .top-btn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -1898,7 +1911,7 @@ ol { padding-left: 20px; }
   .topbar-row1 { padding: 10px 14px 6px; }
   .topbar-row2 { padding: 0 8px; }
   .wordmark { font-size: 14px; }
-  .top-btn { padding: 6px 8px; font-size: 9px; }
+  .top-btn { padding: 5px 6px; font-size: 9px; letter-spacing: 0.05em; }
   .meta-center { font-size: 9px; }
   .board-stage { padding: 18px 8px; }
 }
