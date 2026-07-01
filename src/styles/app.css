@@ -75,25 +75,19 @@ html, body {
 .topbar-row2 {
   display: flex;
   align-items: center;
-  /* flex-start に固定: overflow-x:auto と組み合わせるため。
-     右揃いは justify-content:flex-end ではなく、最初の子への margin-left:auto で実現する。
-     この方法なら「収まる場合は右揃い、溢れる場合は左端から右方向にスクロール」が両立する。 */
-  justify-content: flex-start;
+  /* space-between: ボタンがヘッダー全幅に均等配置される。
+     コンテンツが収まらない場合は左端から右方向にスクロール。
+     左右の不要な余白が残らない。 */
+  justify-content: space-between;
   flex-wrap: nowrap;
   gap: 0;
-  padding: 0 24px;
+  padding: 0 8px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 .topbar-row2::-webkit-scrollbar {
   display: none;
-}
-/* 最初のボタンに auto margin を付けて右揃いを実現。
-   コンテンツが収まらない場合は auto margin が 0 に潰れ、
-   ボタンが左端から並んで右方向にスクロール可能になる。 */
-.topbar-row2 > :first-child {
-  margin-left: auto;
 }
 .wordmark {
   font-family: var(--display);
@@ -1917,8 +1911,8 @@ ol { padding-left: 20px; }
 @media (max-width: 640px) {
   .topbar { padding: 12px 14px; grid-template-columns: auto 1fr auto; gap: 8px; }
   .topbar-row1 { padding: 10px 14px 6px; }
-  /* モバイル: padding のみ調整。justify-content と overflow 方向はベースルールで解決済み */
-  .topbar-row2 { padding: 0 4px 0 0; }
+  /* モバイル: padding 左右均等。justify-content はベースルール(space-between)で解決済み */
+  .topbar-row2 { padding: 0 4px; }
   .top-divider { margin: 0 3px; }
   .wordmark { font-size: 14px; }
   .top-btn { padding: 5px 6px; font-size: 9px; letter-spacing: 0.05em; }
