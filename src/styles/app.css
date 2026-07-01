@@ -1909,8 +1909,9 @@ ol { padding-left: 20px; }
 @media (max-width: 640px) {
   .topbar { padding: 12px 14px; grid-template-columns: auto 1fr auto; gap: 8px; }
   .topbar-row1 { padding: 10px 14px 6px; }
-  /* 左余白を削除: justify-content:flex-endなので左paddingは空スペースのみ */
-  .topbar-row2 { padding: 0 4px 0 0; }
+  /* flex-start に変更: flex-end+overflow-x:auto だと左側にオーバーフローして
+     スクロール不可になる問題を解消。ボタンを左端から並べ、あふれる場合は右へ */
+  .topbar-row2 { justify-content: flex-start; padding: 0 4px 0 0; }
   .top-divider { margin: 0 3px; }
   .wordmark { font-size: 14px; }
   .top-btn { padding: 5px 6px; font-size: 9px; letter-spacing: 0.05em; }
