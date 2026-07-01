@@ -196,6 +196,8 @@ export interface PayableAwardRow {
   latest_payout_paid_at:             string | null;
   created_at:                        string;
   display_label:                     string;
+  /** RP-7: 同一 user_id に過去提出済み submission が存在する場合 true */
+  user_prior_submission_exists:      boolean;
 }
 
 /**
@@ -225,7 +227,14 @@ export interface PayoutDetailResult {
   // PII — 表示専用。Console log 禁止。
   legal_name:                     string | null;
   paypal_email:                   string | null;
-  pii_data_source:                'payout_snapshot' | 'submission_data' | 'unavailable';
+  /** 'winners_file' = DB に PII なし。Naoya が user_id で WINNERS FILE を確認する。 */
+  pii_data_source:                'payout_snapshot' | 'submission_data' | 'unavailable' | 'winners_file';
+  // RP-7: user_id 単位の過去提出済み情報（PIIなし）
+  user_prior_submission_exists:   boolean;
+  user_prior_submission_count:    number;
+  user_prior_latest_status:       string | null;
+  /** true = WINNERS FILE ベース prepare。Naoya が user_id で WINNERS FILE 確認後に PayPal 手動送金。 */
+  winners_file_check_required:    boolean;
 }
 
 /**
@@ -328,6 +337,63 @@ export async function adminPreparePayout(
   });
   if (error) return { data: null, error: error.message };
   return { data: data as PreparePayoutResult, error: null };
+}
+
+// ── RP-7: WINNERS FILE Prepare ──────────────────────────────────────────────
+
+/**
+ * admin_check_user_prior_submission の戻り値型（PIIなし）
+ */
+export interface UserPriorSubmissionResult {
+  user_id:                  string;
+  has_prior_submission:     boolean;
+  submission_count:         number;
+  latest_submission_status: string | null;
+}
+
+/**
+ * adminCheckUserPriorSubmission
+ * 対象 user_id が過去に税務情報を提出済みかを確認する。PIIなし。
+ * WINNERS FILE ベース prepare 前の確認用。
+ */
+export async function adminCheckUserPriorSubmission(
+  userId: string,
+): Promise<{ data: UserPriorSubmissionResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_check_user_prior_submission', {
+    p_user_id: userId,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as UserPriorSubmissionResult, error: null };
+}
+
+/**
+ * admin_prepare_payout_winners_file の戻り値型（PIIなし）
+ */
+export interface PreparePayoutWinnersFileResult {
+  ok:                          boolean;
+  payout_id:                   string;
+  award_id:                    string;
+  status:                      string;
+  prepared_at:                 string;
+  payment_method:              string;
+  winners_file_check_required: boolean;
+}
+
+/**
+ * adminPreparePayoutWinnersFile
+ * 過去提出済み user_id の新規 Award に対して、PII snapshot なし・
+ * WINNERS FILE 確認前提で prepared 化する。
+ *
+ * ⚠️ PII を DB に保存しない。Naoya が user_id で WINNERS FILE を確認してから手動 PayPal 送金。
+ */
+export async function adminPreparePayoutWinnersFile(
+  awardId: string,
+): Promise<{ data: PreparePayoutWinnersFileResult | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_prepare_payout_winners_file', {
+    p_award_id: awardId,
+  });
+  if (error) return { data: null, error: error.message };
+  return { data: data as PreparePayoutWinnersFileResult, error: null };
 }
 
 // ── RP-5c: Mark as Paid / Failed ─────────────────────────────────────────────

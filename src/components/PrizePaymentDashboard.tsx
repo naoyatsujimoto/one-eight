@@ -20,6 +20,7 @@ import {
   adminListPayableAwards,
   adminGetPayoutDetail,
   adminPreparePayout,
+  adminPreparePayoutWinnersFile,
   adminMarkPayoutPaid,
   adminMarkPayoutFailed,
   adminCancelPayout,
@@ -27,6 +28,7 @@ import {
   type PayableAwardRow,
   type PayoutDetailResult,
   type PreparePayoutResult,
+  type PreparePayoutWinnersFileResult,
   type MarkPayoutPaidResult,
   type MarkPayoutFailedResult,
   type CancelPayoutResult,
@@ -117,7 +119,7 @@ interface PayoutChainRow {
 }
 
 // ── Prepare Payout ボタン表示条件 ────────────────────────────────────────
-// 以下をすべて満たす場合のみ表示:
+// 通常 prepare: 以下をすべて満たす場合のみ表示。
 // 1. award.status = eligible
 // 2. active payout が存在しない (latest_payout_status が prepared/paid でない)
 // 3. latest submission が存在する
@@ -133,6 +135,23 @@ function canShowPrepareButton(detail: PayoutDetailResult): boolean {
   if (!detail.legal_name || !detail.paypal_email) return false;
   if (detail.pii_data_source === 'unavailable') return false;
   return true;
+}
+
+// ── Prepare Payout (WINNERS FILE) ボタン表示条件 ──────────────────────────
+// WINNERS FILE ベース prepare: 以下をすべて満たす場合に表示。
+// 1. award.status = eligible
+// 2. active payout が存在しない
+// 3. この award_id に submission がない（通常 prepare ボタンが出ない状態）
+// 4. user_id に過去提出済み submission がある
+// ※ 最終判定は RPC 側。frontend 条件は UI 補助のみ。
+function canShowPrepareWinnersFileButton(detail: PayoutDetailResult): boolean {
+  if (detail.award_status !== 'eligible') return false;
+  const activePayout = detail.latest_payout_status;
+  if (activePayout === 'prepared' || activePayout === 'paid') return false;
+  // この award に submission がある場合は通常 prepare を使うべき
+  if (detail.latest_submission_id) return false;
+  // user_id 単位で過去提出済みの場合のみ
+  return detail.user_prior_submission_exists === true;
 }
 
 // ── コンポーネント: Cancel Payout 確認モーダル ─────────────────────────────
@@ -1212,6 +1231,11 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
   const [prepareError, setPrepareError] = useState<string | null>(null);
   const [prepareResult, setPrepareResult] = useState<PreparePayoutResult | null>(null);
 
+  // WINNERS FILE Prepare UI state (RP-7)
+  const [isPreparingWF, setIsPreparingWF] = useState(false);
+  const [prepareWFError, setPrepareWFError] = useState<string | null>(null);
+  const [prepareWFResult, setPrepareWFResult] = useState<PreparePayoutWinnersFileResult | null>(null);
+
   // Mark as Paid UI state
   const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
@@ -1464,7 +1488,7 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
   }, [detail?.latest_payout_id, detail?.latest_payout_status, detail?.award_id]);
 
   const anyModalOpen = showPrepareModal || showMarkPaidModal || showMarkFailedModal || showCancelModal || showRetryModal;
-  const anySubmitting = isPreparing || isMarkingPaid || isMarkingFailed || isCanceling || isRetrying;
+  const anySubmitting = isPreparing || isPreparingWF || isMarkingPaid || isMarkingFailed || isCanceling || isRetrying;
 
   return (
     <div style={ds.overlay} onClick={e => { if (e.target === e.currentTarget && !anyModalOpen && !anySubmitting) onClose(); }}>
@@ -1548,6 +1572,19 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
                       <DRow label="Submitted"  value={fmtDate(detail.latest_submission_submitted_at)} />
                       <DRow label="Data Exp."  value={fmtDate(detail.latest_submission_delete_after)} />
                     </>
+                  ) : detail.user_prior_submission_exists ? (
+                    // RP-7: この award に submission なし、しかし user_id に過去提出済みあり
+                    <div style={ds.winnersFileInfo}>
+                      <div style={ds.winnersFileInfoTitle}>✓ Prior submission on file for this user</div>
+                      <div style={ds.winnersFileInfoDesc}>
+                        No submission for this award, but this user has submitted tax &amp; payment info
+                        for a previous award ({detail.user_prior_submission_count} record{detail.user_prior_submission_count !== 1 ? 's' : ''}).
+                        Latest status: <strong>{detail.user_prior_latest_status ?? '-'}</strong>
+                      </div>
+                      <div style={ds.winnersFileUserIdBlock}>
+                        📋 WINNERS FILE — Check by User ID: {detail.recipient_user_id}
+                      </div>
+                    </div>
                   ) : (
                     <div style={ds.noData}>No submission yet.</div>
                   )}
@@ -1559,6 +1596,11 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
                     <>
                       <DRow label="Payout ID" value={detail.latest_payout_id.slice(0, 8) + '...'} />
                       <DRow label="Status"    value={detail.latest_payout_status ?? '-'} />
+                      {detail.winners_file_check_required && (
+                        <div style={ds.winnersFileRequired}>
+                          ⚠️ WINNERS FILE check required before PayPal payment
+                        </div>
+                      )}
                       {detail.latest_payout_paid_at && (
                         <DRow label="Paid At" value={fmtDate(detail.latest_payout_paid_at)} />
                       )}
@@ -1573,6 +1615,23 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
                   {detail.pii_data_source === 'unavailable' ? (
                     <div style={ds.errorBanner}>
                       ⚠️ Cannot Pay: payment information unavailable (data may have been cleared before payout was prepared).
+                    </div>
+                  ) : detail.pii_data_source === 'winners_file' ? (
+                    // RP-7: WINNERS FILE ベース。PII は DB になし。Naoya が WINNERS FILE を確認する。
+                    <div style={ds.winnersFileInfo}>
+                      <div style={ds.winnersFileInfoTitle}>📋 WINNERS FILE — Check before PayPal payment</div>
+                      <div style={ds.winnersFileInfoDesc}>
+                        Payment info is stored in offline WINNERS FILE, not in this database.
+                        {detail.winners_file_check_required
+                          ? ' This payout was prepared in WINNERS FILE mode — PayPal info must be looked up from WINNERS FILE.'
+                          : ' Check WINNERS FILE by User ID before manual PayPal payment.'}
+                      </div>
+                      <div style={ds.winnersFileUserIdBlock}>
+                        📋 User ID: {detail.recipient_user_id}
+                      </div>
+                      <div style={ds.piiNote}>
+                        ℹ Data source: <strong>winners_file</strong> (no PII in this database)
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -1619,6 +1678,60 @@ function PayoutDetailModal({ awardId, onClose, onOpenWinnerFile }: DetailModalPr
                     </button>
                     <div style={ds.prepareNote}>
                       Snapshots payment info. Does NOT execute PayPal transfer.
+                    </div>
+                  </div>
+                )}
+
+                {/* RP-7: Prepare Payout (WINNERS FILE) ボタン */}
+                {canShowPrepareWinnersFileButton(detail) && !prepareWFResult && (
+                  <div style={{ ...ds.actionArea, background: '#e8f5e9', borderColor: '#a5d6a7' }}>
+                    <div style={ds.winnersFileUserIdBlock}>
+                      📋 WINNERS FILE — User ID: {detail.recipient_user_id}
+                    </div>
+                    <button
+                      type="button"
+                      style={ds.prepareWFBtn}
+                      onClick={async () => {
+                        setPrepareWFError(null);
+                        setIsPreparingWF(true);
+                        const { data, error: err } = await adminPreparePayoutWinnersFile(detail.award_id);
+                        setIsPreparingWF(false);
+                        if (err) {
+                          setPrepareWFError(err);
+                        } else if (data) {
+                          setPrepareWFResult(data);
+                          // detail を再取得してUIを更新
+                          const { data: refreshed } = await adminGetPayoutDetail(detail.award_id);
+                          if (refreshed) setDetail(refreshed);
+                        }
+                      }}
+                      disabled={anySubmitting}
+                    >
+                      {isPreparingWF ? 'Preparing…' : 'Prepare Payout (WINNERS FILE)'}
+                    </button>
+                    <div style={ds.prepareNote}>
+                      このユーザーは過去に税務情報を提出済みです。WINNERS FILE を User ID で確認してから
+                      PayPal 手動送金してください。DB に PII は保存しません。
+                    </div>
+                    {prepareWFError && (
+                      <div style={ds.errorBanner} role="alert">⚠️ {prepareWFError}</div>
+                    )}
+                  </div>
+                )}
+
+                {/* RP-7: WINNERS FILE prepare 成功バナー */}
+                {prepareWFResult && (
+                  <div style={{ background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 4, padding: '12px 16px', margin: '8px 16px', fontSize: 13 }}>
+                    <div style={{ fontWeight: 700, color: '#2e7d32', marginBottom: 6 }}>
+                      ✅ Prepared (WINNERS FILE mode)
+                    </div>
+                    <div style={ds.winnersFileUserIdBlock}>
+                      📋 WINNERS FILE — User ID: {detail.recipient_user_id}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#388e3c', marginTop: 6 }}>
+                      Payout ID: {prepareWFResult.payout_id}<br />
+                      Prepared At: {fmtDate(prepareWFResult.prepared_at)}<br />
+                      WINNERS FILE check required before PayPal payment.
                     </div>
                   </div>
                 )}
@@ -1894,6 +2007,9 @@ export function PrizePaymentDashboard({ onBack, onOpenWinnerFile }: Props) {
           <div style={s.cardGrid}>
             <CRow label="Recipient"  value={award.recipient_display_name ?? award.recipient_user_id.slice(0, 8)} />
             <CRow label="User ID 🔍" value={award.recipient_user_id} />
+            {award.user_prior_submission_exists && (
+              <CRow label="Prior Sub" value="✓ On File (WINNERS FILE)" />
+            )}
             <CRow label="Amount"     value={fmtCents(award.amount_cents, award.currency)} />
             <CRow label="Prize Kind" value={award.prize_kind ?? '-'} />
             <CRow label="Source"     value={award.source_kind ?? '-'} />
