@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 600 600" width="600" height="600">
+  <defs><clipPath id="disc"><circle cx="300" cy="300" r="294"></circle></clipPath></defs>
+  <circle cx="300" cy="300" r="294" fill="#EDE7D7"></circle>
+  <g clip-path="url(#disc)"><image xlink:href="jaguar_art.png" href="jaguar_art.png" x="34" y="34" width="532" height="532" preserveAspectRatio="xMidYMid meet"></image></g>
+  <circle cx="300" cy="300" r="294" fill="none" stroke="rgb(30,41,59)" stroke-width="9"></circle>
+  <circle cx="300" cy="300" r="278" fill="none" stroke="rgb(30,41,59)" stroke-width="2"></circle>
+</svg>

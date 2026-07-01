@@ -414,7 +414,12 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               <Muted text={t.arenaNoArenaTitles} />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {arenaTitles.map((title) => (
+                {arenaTitles.map((title) => {
+                  const code = title.arena_code?.toUpperCase();
+                  const badgeSrc = code === 'ELEPHANT' ? '/badges/elephant.svg'
+                                 : code === 'JAGUAR'   ? '/badges/jaguar.svg'
+                                 : null;
+                  return (
                   <div
                     key={title.arena_id}
                     style={{
@@ -427,12 +432,24 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                       border: '1px solid #e8d9b0',
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#7a5c1e' }}>
-                        {title.title_name}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#999', marginTop: 2 }}>
-                        {t.arenaTitleCurrentHolder}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {badgeSrc && (
+                        <img
+                          src={badgeSrc}
+                          alt={code}
+                          width={36}
+                          height={36}
+                          style={{ flexShrink: 0, objectFit: 'contain' }}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#7a5c1e' }}>
+                          {title.title_name}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#999', marginTop: 2 }}>
+                          {t.arenaTitleCurrentHolder}
+                        </div>
                       </div>
                     </div>
                     <div style={{
@@ -447,7 +464,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                       })}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
