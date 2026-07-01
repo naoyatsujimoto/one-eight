@@ -1065,7 +1065,7 @@ export default function App() {
           </button>
           <div className="top-divider" />
           {user && (
-            <button type="button" className="top-btn" onClick={() => goTo('profile')}>{t.stats}</button>
+            <button type="button" className="top-btn" onClick={() => goTo('profile')}>{t.userProfile}</button>
           )}
           {user && (
             <button type="button" className="top-btn" onClick={() => setOnlineLobbyOpen(true)}>{t.onlinePlay}</button>
