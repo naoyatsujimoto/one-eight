@@ -416,8 +416,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {arenaTitles.map((title) => {
                   const code = title.arena_code?.toUpperCase();
-                  const badgeSrc = code === 'ELEPHANT' ? '/badges/elephant.svg'
-                                 : code === 'JAGUAR'   ? '/badges/jaguar.svg'
+                  const badgeSrc = code === 'ELEPHANT' ? '/badges/elephant_art.png'
+                                 : code === 'JAGUAR'   ? '/badges/jaguar_art.png'
                                  : null;
                   return (
                   <div
@@ -437,9 +437,16 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                         <img
                           src={badgeSrc}
                           alt={code}
-                          width={36}
-                          height={36}
-                          style={{ flexShrink: 0, objectFit: 'contain' }}
+                          width={40}
+                          height={40}
+                          style={{
+                            flexShrink: 0,
+                            objectFit: 'cover',
+                            borderRadius: '50%',
+                            border: '2px solid rgb(28,34,70)',
+                            outline: '1px solid rgb(28,34,70)',
+                            outlineOffset: '2px',
+                          }}
                           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                         />
                       )}
