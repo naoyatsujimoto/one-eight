@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getPublishedJournalArticleBySlug, normalizeLang } from '../lib/journal';
 import type { JournalArticleDetail, JournalLang } from '../lib/journal';
+import { getJournalArticleImages } from '../lib/journalImages';
 import { useLang } from '../lib/lang';
 import './JournalArticlePage.css';
 
@@ -155,6 +156,24 @@ export function JournalArticlePage() {
               {article.fallback && notice && (
                 <div className="ja-fallback-notice">{notice}</div>
               )}
+
+              {/* Hero image */}
+              {(() => {
+                const imgs = getJournalArticleImages(article.slug);
+                if (!imgs) return null;
+                return (
+                  <div className="ja-hero-image-wrap">
+                    <img
+                      src={imgs.hero}
+                      alt={imgs.alt}
+                      className="ja-hero-image"
+                      width={1200}
+                      height={630}
+                      loading="eager"
+                    />
+                  </div>
+                );
+              })()}
 
               {/* Header meta */}
               <div className="ja-article-meta">

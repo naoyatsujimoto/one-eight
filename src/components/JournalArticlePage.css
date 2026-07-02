@@ -383,3 +383,20 @@
     padding: 1.25rem 1.25rem;
   }
 }
+
+/* ── Hero image ──────────────────────────────────────────── */
+.ja-hero-image-wrap {
+  width: 100%;
+  margin-bottom: 1.75rem;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 16 / 5;
+  background-color: #111;
+}
+
+.ja-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

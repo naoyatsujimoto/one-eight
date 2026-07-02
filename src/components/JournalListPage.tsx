@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listPublishedJournalArticles, normalizeLang } from '../lib/journal';
 import type { JournalArticleSummary, JournalLang } from '../lib/journal';
+import { getJournalArticleImages } from '../lib/journalImages';
 import { useLang } from '../lib/lang';
 import './JournalListPage.css';
 
@@ -116,6 +117,24 @@ export function JournalListPage() {
               const t = article.translation;
               return (
                 <article key={article.id} className="jl-card">
+                  {/* Thumbnail */}
+                  {(() => {
+                    const imgs = getJournalArticleImages(article.slug);
+                    if (!imgs) return null;
+                    return (
+                      <div className="jl-card-thumb-wrap">
+                        <img
+                          src={imgs.thumbnail}
+                          alt={imgs.alt}
+                          className="jl-card-thumb"
+                          width={640}
+                          height={400}
+                          loading="lazy"
+                        />
+                      </div>
+                    );
+                  })()}
+
                   {/* Fallback notice */}
                   {article.fallback && t && t.lang !== lang && (
                     <div className="jl-fallback-notice">
