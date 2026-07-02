@@ -83,16 +83,23 @@ export function JournalListPage() {
 
       {/* Hero */}
       <section className="jl-hero">
-        <p className="jl-hero-eyebrow">JOURNAL</p>
-        <h1 className="jl-hero-title">
-          {lang === 'ja'
-            ? '構造、局面、配置、意思決定を読む'
-            : 'Reading structure, position, placement, and decision-making'}
-        </h1>
-        <p className="jl-hero-desc">
-          {lang === 'ja'
-            ? 'ゲーム、自然、社会、デザインの中に現れる構造や局面を観察し、配置と意思決定の関係を考えるJournalです。'
-            : 'A journal on the structures and situations that appear in games, nature, society, and design, and on how placement shapes decisions.'}
+        <p className="jl-hero-eyebrow">
+          {lang === 'ja' ? '編集指針' : 'EDITORIAL POLICY'}
+        </p>
+        <p className="jl-hero-body">
+          {lang === 'ja' ? (
+            <>
+              局面への緻密な観察、全体と配置に対する深い思考。<br />
+              隠れた構造と力を見出す想像力溢れる問い。<br />
+              その探究心と情熱に敬意をもって。
+            </>
+          ) : (
+            <>
+              Close observation of each situation. Deep thought about the whole and the placement of things.<br />
+              Imaginative questions that reveal hidden structures and forces.<br />
+              With respect for the curiosity and passion behind that inquiry.
+            </>
+          )}
         </p>
       </section>
 

@@ -110,20 +110,13 @@
   margin: 0 0 1rem;
 }
 
-.jl-hero-title {
+.jl-hero-body {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 1rem;
-  letter-spacing: -0.01em;
-}
-
-.jl-hero-desc {
-  font-size: 0.95rem;
-  color: #555;
-  line-height: 1.7;
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.85;
   margin: 0;
+  max-width: 600px;
 }
 
 /* ── Main content ────────────────────────────────────────── */
@@ -311,10 +304,6 @@
 
   .jl-main {
     padding: 0 1.25rem 3rem;
-  }
-
-  .jl-hero-title {
-    font-size: 1.5rem;
   }
 
   .jl-footer {
