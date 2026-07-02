@@ -61,7 +61,7 @@ export function JournalListPage() {
     <div className="jl-page">
       {/* Header */}
       <header className="jl-header">
-        <a href="/" className="jl-wordmark">ONE EIGHT</a>
+        <a href="/journal/" className="jl-wordmark jl-wordmark-journal">ONE EIGHT Journal</a>
         <div className="jl-header-right">
           <nav className="jl-nav">
             <a href="/journal/" className="jl-nav-link">Archive</a>
@@ -83,12 +83,16 @@ export function JournalListPage() {
 
       {/* Hero */}
       <section className="jl-hero">
-        <p className="jl-hero-eyebrow">Journal</p>
-        <h1 className="jl-hero-title">ONE EIGHT Journal</h1>
+        <p className="jl-hero-eyebrow">JOURNAL</p>
+        <h1 className="jl-hero-title">
+          {lang === 'ja'
+            ? '構造、局面、配置、意思決定を読む'
+            : 'Reading structure, position, placement, and decision-making'}
+        </h1>
         <p className="jl-hero-desc">
           {lang === 'ja'
-            ? 'ONE EIGHTのゲーム設計・競技思想・関連リサーチを扱う読み物。'
-            : 'Essays and research on game design, competitive philosophy, and related topics from ONE EIGHT.'}
+            ? 'ゲーム、自然、社会、デザインの中に現れる構造や局面を観察し、配置と意思決定の関係を考えるJournalです。'
+            : 'A journal on the structures and situations that appear in games, nature, society, and design, and on how placement shapes decisions.'}
         </p>
       </section>
 
@@ -188,19 +192,12 @@ export function JournalListPage() {
 
       {/* Footer */}
       <footer className="jl-footer">
-        <div className="jl-footer-cta">
-          <span className="jl-footer-cta-label">
-            {lang === 'ja' ? 'ONE EIGHT をプレイする' : 'Play ONE EIGHT'}
-          </span>
-          <a href="/pricing.html" className="jl-footer-cta-link">
-            {lang === 'ja' ? 'プランを見る' : 'View plans'}
+        <div className="jl-footer-play-wrap">
+          <a href="/" className="jl-footer-play-link">
+            {lang === 'ja'
+              ? '競技性ボードゲーム ONE EIGHTをプレイする'
+              : 'Play ONE EIGHT, a competitive board game'}
           </a>
-        </div>
-        <div className="jl-footer-links">
-          <a href="/">ONE EIGHT</a>
-          <a href="/pricing.html">Pricing</a>
-          <a href="/terms.html">Terms</a>
-          <a href="/privacy.html">Privacy</a>
         </div>
       </footer>
     </div>

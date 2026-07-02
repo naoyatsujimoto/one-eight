@@ -97,7 +97,7 @@ export function JournalArticlePage() {
     <div className="ja-page">
       {/* Header */}
       <header className="ja-header">
-        <a href="/" className="ja-wordmark">ONE EIGHT</a>
+        <a href="/journal/" className="ja-wordmark ja-wordmark-journal">ONE EIGHT Journal</a>
         <div className="ja-header-right">
           <nav className="ja-nav">
             <a href="/journal/" className="ja-nav-link">
@@ -256,12 +256,7 @@ export function JournalArticlePage() {
                 </a>
               </div>
 
-              {/* Play ONE EIGHT CTA (控えめ) */}
-              <div className="ja-play-cta">
-                <a href="/pricing.html" className="ja-play-cta-link">
-                  {lang === 'ja' ? 'ONE EIGHT をプレイする →' : 'Play ONE EIGHT →'}
-                </a>
-              </div>
+              {/* Play ONE EIGHT CTA: 削除済み (4-6) */}
             </article>
           );
         })()}
@@ -269,12 +264,12 @@ export function JournalArticlePage() {
 
       {/* Footer */}
       <footer className="ja-footer">
-        <div className="ja-footer-links">
-          <a href="/">ONE EIGHT</a>
-          <a href="/journal/">Journal</a>
-          <a href="/pricing.html">Pricing</a>
-          <a href="/terms.html">Terms</a>
-          <a href="/privacy.html">Privacy</a>
+        <div className="ja-footer-play-wrap">
+          <a href="/" className="ja-footer-play-link">
+            {lang === 'ja'
+              ? '競技性ボードゲーム ONE EIGHTをプレイする'
+              : 'Play ONE EIGHT, a competitive board game'}
+          </a>
         </div>
       </footer>
     </div>
