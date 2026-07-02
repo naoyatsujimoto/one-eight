@@ -159,13 +159,14 @@ export function JournalArticlePage() {
               {/* Header meta */}
               <div className="ja-article-meta">
                 <time className="ja-article-date">{formatDate(article.published_at)}</time>
-                {article.tags.length > 0 && (
+                {/* tags 非表示 (データ保持・表示のみ無効化) */}
+                {/* {article.tags.length > 0 && (
                   <div className="ja-article-tags">
                     {article.tags.map(tag => (
                       <span key={tag} className="ja-tag">{tag}</span>
                     ))}
                   </div>
-                )}
+                )} */}
               </div>
 
               {/* Title */}
