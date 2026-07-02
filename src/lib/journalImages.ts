@@ -20,7 +20,7 @@ export interface JournalArticleImages {
  * 画像が追加されたらここへ追記する。
  */
 const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
-  'journal-ecology-community-science-salamander-001': {
+  'citizen-science-salamander-colour-polymorphism': {
     hero: '/journal/journal-ecology-community-science-salamander-001_hero.jpg',
     thumbnail: '/journal/journal-ecology-community-science-salamander-001_thumb.jpg',
     alt: 'Salamander colour polymorphism key visual',
