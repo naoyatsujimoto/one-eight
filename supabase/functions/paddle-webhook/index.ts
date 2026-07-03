@@ -12,10 +12,12 @@
  *   - 順序逆転対策: profiles.paddle_last_event_at で stale guard
  *   - email cross-verify: auth.users.email / customData.supabase_email / Paddle customer.email の3点一致
  *   - customer.email が payload に含まれない場合は Paddle API で取得 (PADDLE_API_KEY)
+ *   - supabase_uid が custom_data に存在しない場合は customer_id → subscription_id でプロフィール照合 (fallback)
  *   - is_test_account guard
  *   - info@tentomushi.co.jp 明示 deny
  *   - profiles UPDATE のみ (UPSERT 禁止) + SQL-level guard
  *   - secret / key はすべて環境変数
+ *   - 早期 audit_log: request 受信直後に stage を記録し、クラッシュ箇所を特定可能にする
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -53,11 +55,13 @@ Deno.serve(async (req: Request) => {
   const signature = req.headers.get('paddle-signature') ?? '';
   const remoteAddr = req.headers.get('x-forwarded-for') ?? 'unknown';
 
+  // ── supabase client を早期生成 (audit_log への早期書き込みに必要) ──────────
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   // ① 署名検証 (timestamp freshness 含む)
   const sigResult = await verifyPaddleSignature(body, signature, PADDLE_WEBHOOK_SECRET);
   if (!sigResult.valid) {
     // payload 本文は保存しない。メタ情報のみ audit_log に記録
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     await auditLog(supabase, {
       eventId: null, eventType: null, supabaseUid: null,
       reason: 'invalid_signature', action: 'denied',
@@ -76,6 +80,11 @@ Deno.serve(async (req: Request) => {
   try {
     payload = JSON.parse(body);
   } catch {
+    await auditLog(supabase, {
+      eventId: null, eventType: null, supabaseUid: null,
+      reason: 'payload_parse_error', action: 'error',
+      detail: { body_length: body.length },
+    });
     return new Response('Bad Request', { status: 400 });
   }
 
@@ -84,6 +93,18 @@ Deno.serve(async (req: Request) => {
   const occurredAt = payload?.occurred_at;
 
   if (!eventId || !eventType || !occurredAt) {
+    await auditLog(supabase, {
+      eventId: eventId ?? null,
+      eventType: eventType ?? null,
+      supabaseUid: null,
+      reason: 'missing_required_fields',
+      action: 'error',
+      detail: {
+        has_event_id: !!eventId,
+        has_event_type: !!eventType,
+        has_occurred_at: !!occurredAt,
+      },
+    });
     return new Response('Bad Request', { status: 400 });
   }
 
@@ -91,8 +112,6 @@ Deno.serve(async (req: Request) => {
   if (!HANDLED_EVENTS.has(eventType)) {
     return new Response('OK', { status: 200 });
   }
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // ④ INSERT-first 冪等性
   //    event_id PRIMARY KEY 衝突 → 既処理として即終了
@@ -113,6 +132,12 @@ Deno.serve(async (req: Request) => {
       return new Response('OK', { status: 200 });
     }
     // その他 DB エラー
+    await auditLog(supabase, {
+      eventId, eventType, supabaseUid: null,
+      reason: 'event_insert_failed',
+      action: 'error',
+      detail: { db_error_code: insertErr.code, db_error_message: insertErr.message },
+    });
     return new Response('Internal Server Error', { status: 500 });
   }
 
@@ -141,7 +166,10 @@ Deno.serve(async (req: Request) => {
   const customData           = sub?.custom_data ?? {};
   const paddleCustomerId     = sub?.customer_id ?? '';
   const paddleSubscriptionId = sub?.id ?? '';
-  const currentPeriodEnd     = sub?.current_billing_period?.ends_at ?? null;
+
+  // current_billing_period.ends_at の取得
+  // subscription.updated の場合、ends_at が存在することを検証する (active 時は必須)
+  const currentPeriodEnd: string | null = sub?.current_billing_period?.ends_at ?? null;
 
   const supabaseUid  = (customData?.supabase_uid ?? '').trim();
   const customEmail  = (customData?.supabase_email ?? '').toLowerCase().trim();
@@ -156,9 +184,9 @@ Deno.serve(async (req: Request) => {
     if (fetched === null) {
       // API 取得失敗 → audit_log に記録して終了
       await auditLog(supabase, {
-        eventId, eventType, supabaseUid,
+        eventId, eventType, supabaseUid: supabaseUid || null,
         reason: 'paddle_customer_email_fetch_failed', action: 'denied',
-        detail: { customer_id: paddleCustomerId },
+        detail: { customer_id_prefix: paddleCustomerId.slice(0, 8) },
       });
       await updateEventResult(supabase, eventId, 'denied');
       return new Response('OK', { status: 200 });
@@ -166,73 +194,103 @@ Deno.serve(async (req: Request) => {
     paddleEmail = fetched;
   }
 
-  // ⑨ email cross-verify
-  //    auth.users.email / customData.supabase_email / Paddle customer.email の3点一致
-  let authEmail = '';
+  // ⑨ プロフィール照合
+  //    優先順位:
+  //      1) supabase_uid (custom_data) が存在する場合: uid で直接取得
+  //      2) supabase_uid が空の場合 (fallback): paddle_customer_id → paddle_subscription_id で照合
+  let profile: {
+    id: string;
+    plan: string;
+    subscription_status: string;
+    is_test_account: boolean;
+    paddle_last_event_at: string | null;
+  } | null = null;
+  let resolvedUid = supabaseUid;
+
   if (supabaseUid) {
-    const { data: authUserData } = await supabase.auth.admin.getUserById(supabaseUid);
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, plan, subscription_status, is_test_account, paddle_last_event_at')
+      .eq('id', supabaseUid)
+      .maybeSingle();
+    profile = data ?? null;
+  } else if (paddleCustomerId) {
+    // custom_data に supabase_uid がない場合: customer_id で照合
+    const { data: rows } = await supabase
+      .from('profiles')
+      .select('id, plan, subscription_status, is_test_account, paddle_last_event_at')
+      .eq('paddle_customer_id', paddleCustomerId)
+      .limit(1);
+    if (rows && rows.length > 0) {
+      profile = rows[0] as typeof profile;
+      resolvedUid = profile!.id;
+    }
+  }
+
+  // ⑩ email cross-verify
+  //    auth.users.email / customData.supabase_email / Paddle customer.email の3点一致
+  //    NOTE: supabase_uid が custom_data になかった場合 (customer_id fallback) は
+  //          authEmail を profile.id から取得する
+  let authEmail = '';
+  if (resolvedUid) {
+    const { data: authUserData } = await supabase.auth.admin.getUserById(resolvedUid);
     authEmail = (authUserData?.user?.email ?? '').toLowerCase().trim();
   }
 
   const emailsMatch = (
     authEmail.length > 0 &&
-    customEmail.length > 0 &&
     paddleEmail.length > 0 &&
-    authEmail === customEmail &&
-    customEmail === paddleEmail
+    authEmail === paddleEmail &&
+    // customEmail は存在する場合のみ照合 (custom_data に入っていない場合は authEmail/paddleEmail の2点一致で許容)
+    (customEmail.length === 0 || customEmail === paddleEmail)
   );
 
   if (!emailsMatch) {
     await auditLog(supabase, {
-      eventId, eventType, supabaseUid, reason: 'email_mismatch', action: 'denied',
+      eventId, eventType, supabaseUid: resolvedUid || null, reason: 'email_mismatch', action: 'denied',
       detail: { has_auth_email: !!authEmail, has_custom_email: !!customEmail, has_paddle_email: !!paddleEmail },
     });
     await updateEventResult(supabase, eventId, 'denied');
     return new Response('OK', { status: 200 });
   }
 
-  // ⑩ info@tentomushi.co.jp 明示 deny
+  // ⑪ info@tentomushi.co.jp 明示 deny
   //    3点のいずれかが一致した場合に発動 (is_test_account とは独立)
-  const allEmails = [authEmail, customEmail, paddleEmail];
+  const allEmails = [authEmail, customEmail, paddleEmail].filter(e => e.length > 0);
   if (allEmails.some(e => DENIED_EMAILS.has(e))) {
-    await auditLog(supabase, { eventId, eventType, supabaseUid, reason: 'denied_account', action: 'denied', detail: {} });
+    await auditLog(supabase, { eventId, eventType, supabaseUid: resolvedUid || null, reason: 'denied_account', action: 'denied', detail: {} });
     await updateEventResult(supabase, eventId, 'denied');
     return new Response('OK', { status: 200 });
   }
 
-  // ⑪ プロフィール取得 (UPDATE のみ。存在しなければ deny)
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, plan, subscription_status, is_test_account, paddle_last_event_at')
-    .eq('id', supabaseUid)
-    .maybeSingle();
-
+  // ⑫ プロフィール存在確認 (UPDATE のみ。存在しなければ deny)
   if (!profile) {
-    await auditLog(supabase, { eventId, eventType, supabaseUid, reason: 'no_profile', action: 'denied', detail: {} });
+    await auditLog(supabase, { eventId, eventType, supabaseUid: resolvedUid || null, reason: 'no_profile', action: 'denied', detail: {} });
     await updateEventResult(supabase, eventId, 'denied');
     return new Response('OK', { status: 200 });
   }
 
-  // ⑫ is_test_account guard (アプリ側)
+  // ⑬ is_test_account guard (アプリ側)
   if (profile.is_test_account) {
-    await auditLog(supabase, { eventId, eventType, supabaseUid, reason: 'is_test_account', action: 'skipped', detail: {} });
+    await auditLog(supabase, { eventId, eventType, supabaseUid: resolvedUid, reason: 'is_test_account', action: 'skipped', detail: {} });
     await updateEventResult(supabase, eventId, 'skipped');
     return new Response('OK', { status: 200 });
   }
 
-  // ⑬ Stale guard (プロファイル単位: paddle_last_event_at より古いイベントは無視)
+  // ⑭ Stale guard (プロファイル単位: paddle_last_event_at より古いまたは同時刻のイベントは無視)
   if (profile.paddle_last_event_at && occurredDate <= new Date(profile.paddle_last_event_at)) {
     await auditLog(supabase, {
-      eventId, eventType, supabaseUid, reason: 'stale_event', action: 'skipped',
+      eventId, eventType, supabaseUid: resolvedUid, reason: 'stale_event', action: 'skipped',
       detail: { occurred_at: occurredAt, last_event_at: profile.paddle_last_event_at },
     });
     await updateEventResult(supabase, eventId, 'skipped');
     return new Response('OK', { status: 200 });
   }
 
-  // ⑭ イベント別の plan / subscription_status 決定
+  // ⑮ イベント別の plan / subscription_status 決定
   let newPlan   = profile.plan as string;
   let newStatus: string;
+  let shouldUpdateCurrentPeriodEnd = true;
 
   switch (eventType) {
     case 'subscription.activated':
@@ -246,9 +304,28 @@ Deno.serve(async (req: Request) => {
       if (dataStatus === 'active') {
         newPlan   = 'pro';
         newStatus = 'active';
+
+        // active + current_billing_period.ends_at が存在しない場合はエラー
+        // ends_at を null や過去日に上書きするのは危険なため、更新をスキップしてエラー記録
+        if (!currentPeriodEnd) {
+          await auditLog(supabase, {
+            eventId, eventType, supabaseUid: resolvedUid,
+            reason: 'missing_current_billing_period_ends_at',
+            action: 'error',
+            detail: {
+              data_status: dataStatus,
+              subscription_id_prefix: paddleSubscriptionId.slice(0, 8),
+              customer_id_prefix: paddleCustomerId.slice(0, 8),
+            },
+          });
+          await updateEventResult(supabase, eventId, 'error');
+          // Paddle には 200 を返して再送させない (payload 構造の問題のため再送しても同じ)
+          return new Response('OK', { status: 200 });
+        }
       } else if (dataStatus === 'past_due') {
         // plan は既存 profile の値を維持 (isProActive が false を返す)
         newStatus = 'past_due';
+        shouldUpdateCurrentPeriodEnd = false; // past_due 時は current_period_end を変更しない
       } else if (dataStatus === 'canceled') {
         newPlan   = 'pro'; // current_period_end まで Pro 維持 (isProActive の canceled 処理と整合)
         newStatus = 'canceled';
@@ -257,12 +334,15 @@ Deno.serve(async (req: Request) => {
         // DB subscription_status 許容値 (SubscriptionStatus): inactive | active | trial | canceled | past_due
         // paused / trialing は許容値外のため 'inactive' で安全側に倒す
         newStatus = 'inactive';
+        shouldUpdateCurrentPeriodEnd = false;
         await auditLog(supabase, {
-          eventId, eventType, supabaseUid,
+          eventId, eventType, supabaseUid: resolvedUid,
           reason: 'subscription_updated_non_active_status',
-          action: 'processed',
+          action: 'skipped',
           detail: { data_status: dataStatus || '(empty)' },
         });
+        await updateEventResult(supabase, eventId, 'skipped');
+        return new Response('OK', { status: 200 });
       }
       break;
     }
@@ -272,24 +352,32 @@ Deno.serve(async (req: Request) => {
       break;
     case 'subscription.past_due':
       newStatus = 'past_due'; // Pro 無効 (isProActive が false を返す)
+      shouldUpdateCurrentPeriodEnd = false; // past_due 時は current_period_end を変更しない
       break;
     default:
       newStatus = profile.subscription_status as string;
+      shouldUpdateCurrentPeriodEnd = false;
   }
 
-  // ⑮ profiles UPDATE
+  // ⑯ profiles UPDATE
   //    SQL-level guard: is_test_account = false かつ stale でないことを二重確認
+  //    current_period_end は shouldUpdateCurrentPeriodEnd の場合のみ更新
+  const updateFields: Record<string, unknown> = {
+    plan:                   newPlan,
+    subscription_status:    newStatus,
+    paddle_customer_id:     paddleCustomerId,
+    paddle_subscription_id: paddleSubscriptionId,
+    paddle_last_event_at:   occurredAt,
+  };
+
+  if (shouldUpdateCurrentPeriodEnd && currentPeriodEnd) {
+    updateFields.current_period_end = currentPeriodEnd;
+  }
+
   const { error: updateError } = await supabase
     .from('profiles')
-    .update({
-      plan:                   newPlan,
-      subscription_status:    newStatus,
-      paddle_customer_id:     paddleCustomerId,
-      paddle_subscription_id: paddleSubscriptionId,
-      current_period_end:     currentPeriodEnd,
-      paddle_last_event_at:   occurredAt,
-    })
-    .eq('id', supabaseUid)
+    .update(updateFields)
+    .eq('id', resolvedUid)
     .eq('is_test_account', false)                            // SQL-level guard ①
     .or(`paddle_last_event_at.is.null,paddle_last_event_at.lt.${occurredAt}`); // SQL-level guard ②
 
@@ -298,9 +386,11 @@ Deno.serve(async (req: Request) => {
 
   if (updateError) {
     await auditLog(supabase, {
-      eventId, eventType, supabaseUid, reason: 'error', action: 'error',
-      detail: { message: updateError.message, code: updateError.code },
+      eventId, eventType, supabaseUid: resolvedUid, reason: 'profile_update_failed', action: 'error',
+      detail: { db_error_code: updateError.code, db_error_message: updateError.message },
     });
+    // DB 更新失敗は 5xx で返し、Paddle に再送を促す
+    return new Response('Internal Server Error', { status: 500 });
   }
 
   return new Response('OK', { status: 200 });
@@ -387,7 +477,7 @@ async function auditLog(
     eventType: string | null;
     supabaseUid?: string | null;
     reason: string;
-    action: string;
+    action: 'denied' | 'skipped' | 'error';
     detail: object;
   }
 ): Promise<void> {
