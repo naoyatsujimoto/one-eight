@@ -1,0 +1,4 @@
+project_id = "farieecfyajbtmjxelop"
+
+[functions.paddle-webhook]
+verify_jwt = false
