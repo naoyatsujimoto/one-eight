@@ -9,7 +9,7 @@ export type Lang = 'en' | 'ja';
 export const T = {
   en: {
     // Title
-    titleSub: 'Competitive Board Game',
+    titleSub: 'Competitive Abstract Board Game',
     titleHint: 'Swipe down to start',
     titleVersion: 'v0.1.0 · Beta',
     langLabel: 'Language',
@@ -542,7 +542,7 @@ export const T = {
     authSending: 'Sending…',
     authLogIn: 'Log In',
     authLoggingIn: 'Logging in…',
-    authTagline: 'A competitive board game in the same genre as Go, chess, and shogi.\nPlay after logging in with a magic link or email verification code.',
+    authTagline: 'A competitive abstract board game in the same genre as Go, chess, and shogi.\nPlay after logging in with a magic link or email verification code.',
     authSendLoginCode: 'Send login code',
     authEnterLoginCode: 'Enter the code from your email',
     authVerifyLoginCode: 'Log in',

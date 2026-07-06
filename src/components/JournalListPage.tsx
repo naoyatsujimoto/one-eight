@@ -203,7 +203,7 @@ export function JournalListPage() {
           <a href="/" className="jl-footer-play-link">
             {lang === 'ja'
               ? '競技性ボードゲーム ONE EIGHTをプレイする'
-              : 'Play ONE EIGHT, a competitive board game'}
+              : 'Play ONE EIGHT, a competitive abstract board game'}
           </a>
         </div>
       </footer>
