@@ -1,6 +1,11 @@
 /**
  * journal.ts — Journal published-article read access layer
  *
+ * i18n note:
+ *   - JournalLang covers DB translation columns: 'en' | 'ja'
+ *   - UI locale (LocaleCode) supports 10 languages; non-en/ja fall back to 'en'
+ *   - Use resolveJournalLang() to convert a LocaleCode to a JournalLang for DB queries
+ *
  * Step C-1: 公開記事読み取りDBアクセス層
  *
  * 方針:
@@ -18,6 +23,7 @@
  */
 
 import { supabase } from './supabase';
+import type { LocaleCode } from './locales';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +108,19 @@ export interface JournalDetailResult {
 export function normalizeLang(lang: string | null | undefined): JournalLang | undefined {
   if (lang === 'en' || lang === 'ja') return lang;
   return undefined;
+}
+
+/**
+ * LocaleCode (10 locales) を JournalLang (DB用 en/ja) に変換する。
+ * - 'ja' → 'ja'
+ * - その他すべて → 'en' (English fallback)
+ *
+ * Journal記事はDB上 en/ja の2言語のみ保存している。
+ * 他言語を選択した場合は English fallback となる。
+ */
+export function resolveJournalLang(code: LocaleCode | string): JournalLang {
+  if (code === 'ja') return 'ja';
+  return 'en';
 }
 
 // ─── Fallback 純粋関数 ─────────────────────────────────────────────────────────

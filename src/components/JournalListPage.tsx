@@ -1,33 +1,48 @@
 import { useEffect, useState } from 'react';
-import { listPublishedJournalArticles, normalizeLang } from '../lib/journal';
+import { listPublishedJournalArticles, resolveJournalLang } from '../lib/journal';
 import type { JournalArticleSummary, JournalLang } from '../lib/journal';
 import { getJournalArticleImages } from '../lib/journalImages';
 import { useLang } from '../lib/lang';
+import { SUPPORTED_LOCALES } from '../lib/locales';
+import type { LocaleCode } from '../lib/locales';
 import './JournalListPage.css';
 
 /**
  * JournalListPage — /journal-db
  *
  * AuthGate 外で直接レンダリングされる。ログイン不要。
+ *
+ * i18n: selectedLocale は10言語 (LocaleCode)
+ *       DB取得用 journalLang は resolveJournalLang() で en/ja に変換
+ *       non-en/ja は English fallback として記事を表示する
  */
 export function JournalListPage() {
   const { lang: ctxLang } = useLang();
 
-  // URL query ?lang=ja / ?lang=en を優先、なければ LangProvider の値
-  const urlLang: JournalLang | undefined = (() => {
+  // URL query ?lang=ja / ?lang=en 等を優先、なければ LangProvider の値
+  const initLocale: LocaleCode = (() => {
     const params = new URLSearchParams(window.location.search);
-    return normalizeLang(params.get('lang')) ?? normalizeLang(ctxLang);
+    const qLang = params.get('lang');
+    if (qLang && SUPPORTED_LOCALES.some(l => l.code === qLang)) {
+      return qLang as LocaleCode;
+    }
+    return ctxLang as LocaleCode;
   })();
 
-  const [lang, setLang] = useState<JournalLang>(urlLang ?? 'en');
+  const [selectedLocale, setSelectedLocale] = useState<LocaleCode>(initLocale);
   const [articles, setArticles] = useState<JournalArticleSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // journalLang: en/ja への変換 (DB取得用)
+  const journalLang: JournalLang = resolveJournalLang(selectedLocale);
+  // 表示用 UI fallback フラグ (英語以外の非対応言語を選択中)
+  const isLocaleFallback = selectedLocale !== 'en' && selectedLocale !== 'ja';
+
   useEffect(() => {
     setLoading(true);
     setError(null);
-    listPublishedJournalArticles(lang).then(({ data, error: err }) => {
+    listPublishedJournalArticles(journalLang).then(({ data, error: err }) => {
       if (err) {
         setError(err);
         setArticles(null);
@@ -36,21 +51,19 @@ export function JournalListPage() {
       }
       setLoading(false);
     });
-  }, [lang]);
+  }, [journalLang]);
 
-  function toggleLang() {
-    const next: JournalLang = lang === 'en' ? 'ja' : 'en';
-    setLang(next);
-    // URL を更新（pushState で履歴を汚さないよう replaceState）
+  function handleLocaleChange(code: LocaleCode) {
+    setSelectedLocale(code);
     const url = new URL(window.location.href);
-    url.searchParams.set('lang', next);
+    url.searchParams.set('lang', code);
     window.history.replaceState(null, '', url.toString());
   }
 
   function formatDate(iso: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+    return d.toLocaleDateString(journalLang === 'ja' ? 'ja-JP' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -66,17 +79,18 @@ export function JournalListPage() {
           <nav className="jl-nav">
             <a href="/journal/" className="jl-nav-link">Archive</a>
           </nav>
-          <div className="jl-lang-toggle">
-            <button
-              type="button"
-              className={lang === 'en' ? 'jl-lang-btn active' : 'jl-lang-btn'}
-              onClick={() => { if (lang !== 'en') { setLang('en'); } }}
-            >EN</button>
-            <button
-              type="button"
-              className={lang === 'ja' ? 'jl-lang-btn active' : 'jl-lang-btn'}
-              onClick={() => { if (lang !== 'ja') { setLang('ja'); } }}
-            >JA</button>
+          {/* 10-locale pill grid */}
+          <div className="jl-lang-switcher">
+            {SUPPORTED_LOCALES.map(({ code, label }) => (
+              <button
+                key={code}
+                type="button"
+                className={`jl-lang-btn${selectedLocale === code ? ' active' : ''}`}
+                onClick={() => handleLocaleChange(code as LocaleCode)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </header>
@@ -84,10 +98,10 @@ export function JournalListPage() {
       {/* Hero */}
       <section className="jl-hero">
         <p className="jl-hero-eyebrow">
-          {lang === 'ja' ? '編集指針' : 'EDITORIAL POLICY'}
+          {journalLang === 'ja' ? '編集指針' : 'EDITORIAL POLICY'}
         </p>
         <p className="jl-hero-body">
-          {lang === 'ja' ? (
+          {journalLang === 'ja' ? (
             <>
               局面への緻密な観察、全体と配置に対する深い思考。<br />
               隠れた構造と力を見出す想像力溢れる問い。<br />
@@ -107,7 +121,7 @@ export function JournalListPage() {
       <main className="jl-main">
         {loading && (
           <div className="jl-state">
-            <span className="jl-state-text">{lang === 'ja' ? '読み込み中…' : 'Loading…'}</span>
+            <span className="jl-state-text">{journalLang === 'ja' ? '読み込み中…' : 'Loading…'}</span>
           </div>
         )}
         {!loading && error && (
@@ -118,7 +132,7 @@ export function JournalListPage() {
         {!loading && !error && articles !== null && articles.length === 0 && (
           <div className="jl-state">
             <span className="jl-state-text">
-              {lang === 'ja' ? '記事はまだありません。' : 'No articles yet.'}
+              {journalLang === 'ja' ? '記事はまだありません。' : 'No articles yet.'}
             </span>
           </div>
         )}
@@ -146,11 +160,11 @@ export function JournalListPage() {
                     );
                   })()}
 
-                  {/* Fallback notice */}
-                  {article.fallback && t && t.lang !== lang && (
+                  {/* Fallback notice: locale fallback (non-en/ja) or article fallback */}
+                  {(isLocaleFallback || (article.fallback && t && t.lang !== journalLang)) && (
                     <div className="jl-fallback-notice">
-                      {lang === 'en'
-                        ? 'This article is currently available in Japanese only.'
+                      {journalLang === 'en'
+                        ? 'This article is currently available in English and Japanese only.'
                         : 'この記事は現在英語のみです。'}
                     </div>
                   )}
@@ -158,14 +172,6 @@ export function JournalListPage() {
                   {/* Meta row */}
                   <div className="jl-card-meta">
                     <time className="jl-card-date">{formatDate(article.published_at)}</time>
-                    {/* tags 非表示 (データ保持・表示のみ無効化) */}
-                    {/* {article.tags.length > 0 && (
-                      <div className="jl-card-tags">
-                        {article.tags.map(tag => (
-                          <span key={tag} className="jl-tag">{tag}</span>
-                        ))}
-                      </div>
-                    )} */}
                   </div>
 
                   {/* Title */}
@@ -184,10 +190,10 @@ export function JournalListPage() {
                   {/* Read link */}
                   <div className="jl-card-footer">
                     <a
-                      href={`/journal/${article.slug}${lang !== 'en' ? `?lang=${lang}` : ''}`}
+                      href={`/journal/${article.slug}${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
                       className="jl-read-link"
                     >
-                      {lang === 'ja' ? '記事を読む →' : 'Read article →'}
+                      {journalLang === 'ja' ? '記事を読む →' : 'Read article →'}
                     </a>
                   </div>
                 </article>
@@ -201,7 +207,7 @@ export function JournalListPage() {
       <footer className="jl-footer">
         <div className="jl-footer-play-wrap">
           <a href="/" className="jl-footer-play-link">
-            {lang === 'ja'
+            {journalLang === 'ja'
               ? '競技性ボードゲーム ONE EIGHTをプレイする'
               : 'Play ONE EIGHT, a competitive abstract board game'}
           </a>
