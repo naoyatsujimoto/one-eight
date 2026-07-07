@@ -33,8 +33,10 @@ describe('normalizeLang', () => {
   });
 
   it('不明な文字列は undefined を返す', () => {
+    // 'zh' (variant なし) は非対応
     expect(normalizeLang('zh')).toBeUndefined();
-    expect(normalizeLang('fr')).toBeUndefined();
+    // 'fr' は 10 言語の 1 つとして対応済み
+    expect(normalizeLang('fr')).toBe('fr');
   });
 
   it('null は undefined を返す', () => {

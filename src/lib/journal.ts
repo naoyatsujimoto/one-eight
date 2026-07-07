@@ -2,8 +2,8 @@
  * journal.ts — Journal published-article read access layer
  *
  * i18n note:
- *   - JournalLang covers DB translation columns: 'en' | 'ja'
- *   - UI locale (LocaleCode) supports 10 languages; non-en/ja fall back to 'en'
+ *   - JournalLang covers DB translation columns: 10 languages
+ *   - UI locale (LocaleCode) supports 10 languages; all map 1:1 to JournalLang
  *   - Use resolveJournalLang() to convert a LocaleCode to a JournalLang for DB queries
  *
  * Step C-1: 公開記事読み取りDBアクセス層
@@ -27,8 +27,8 @@ import type { LocaleCode } from './locales';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** 対応言語 */
-export type JournalLang = 'en' | 'ja';
+/** 対応言語 (DB lang column に対応する 10 言語) */
+export type JournalLang = 'en' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' | 'es' | 'pt-BR' | 'de' | 'fr' | 'it';
 
 /** 翻訳データ */
 export interface JournalTranslation {
@@ -101,25 +101,27 @@ export interface JournalDetailResult {
 
 // ─── 言語正規化 ────────────────────────────────────────────────────────────────
 
+/** 有効な JournalLang の集合 */
+const VALID_JOURNAL_LANGS = new Set<string>([
+  'en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it',
+]);
+
 /**
  * 文字列を JournalLang に正規化する。
- * 'en' / 'ja' 以外は undefined を返す。
+ * 10 言語以外は undefined を返す。
  */
 export function normalizeLang(lang: string | null | undefined): JournalLang | undefined {
-  if (lang === 'en' || lang === 'ja') return lang;
+  if (lang != null && VALID_JOURNAL_LANGS.has(lang)) return lang as JournalLang;
   return undefined;
 }
 
 /**
- * LocaleCode (10 locales) を JournalLang (DB用 en/ja) に変換する。
- * - 'ja' → 'ja'
- * - その他すべて → 'en' (English fallback)
- *
- * Journal記事はDB上 en/ja の2言語のみ保存している。
- * 他言語を選択した場合は English fallback となる。
+ * LocaleCode (10 locales) を JournalLang に変換する。
+ * - 10 言語すべてが 1:1 マッピング
+ * - 未知の locale は 'en' にフォールバック
  */
 export function resolveJournalLang(code: LocaleCode | string): JournalLang {
-  if (code === 'ja') return 'ja';
+  if (VALID_JOURNAL_LANGS.has(code)) return code as JournalLang;
   return 'en';
 }
 

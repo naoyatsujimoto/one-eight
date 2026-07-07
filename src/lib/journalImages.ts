@@ -25,6 +25,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/journal-ecology-community-science-salamander-001_thumb.jpg',
     alt: 'Salamander colour polymorphism key visual',
   },
+  'when-rare-ones-get-recorded': {
+    hero: '/journal/oej-2026-salamander-community-science_when-rare-ones-get-recorded_hero.jpg',
+    thumbnail: '/journal/oej-2026-salamander-community-science_when-rare-ones-get-recorded_thumb.jpg',
+    alt: 'Salamander community science key visual',
+  },
 };
 
 /**
