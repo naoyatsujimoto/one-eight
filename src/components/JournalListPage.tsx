@@ -5,6 +5,7 @@ import { getJournalArticleImages } from '../lib/journalImages';
 import { useLang } from '../lib/lang';
 import { SUPPORTED_LOCALES } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
+import { CompactLanguageSelector } from './CompactLanguageSelector';
 import './JournalListPage.css';
 
 /**
@@ -79,19 +80,11 @@ export function JournalListPage() {
           <nav className="jl-nav">
             <a href="/journal/" className="jl-nav-link">Archive</a>
           </nav>
-          {/* 10-locale pill grid */}
-          <div className="jl-lang-switcher">
-            {SUPPORTED_LOCALES.map(({ code, label }) => (
-              <button
-                key={code}
-                type="button"
-                className={`jl-lang-btn${selectedLocale === code ? ' active' : ''}`}
-                onClick={() => handleLocaleChange(code as LocaleCode)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Compact language selector */}
+          <CompactLanguageSelector
+            selectedLocale={selectedLocale}
+            onSelect={handleLocaleChange}
+          />
         </div>
       </header>
 

@@ -19,8 +19,8 @@ import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type
 import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
-import type { Lang } from '../lib/lang';
-import { SUPPORTED_LOCALES } from '../lib/locales';
+import type { LocaleCode } from '../lib/locales';
+import { CompactLanguageSelector } from './CompactLanguageSelector';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
@@ -266,19 +266,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             <>
               <div style={s.langSettingRow}>
                 <span style={s.langSettingLabel}>{t.langLabel}</span>
-                {/* 10-locale pill grid */}
-                <div style={s.langBtnGroupGrid}>
-                  {SUPPORTED_LOCALES.map(({ code, label }) => (
-                    <button
-                      key={code}
-                      type="button"
-                      style={{ ...s.langBtn, ...(lang === code ? s.langBtnActive : {}) }}
-                      onClick={() => setLangWithSync(code as Lang)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                {/* Compact language selector — single pill, expands on tap */}
+                <CompactLanguageSelector
+                  selectedLocale={lang as LocaleCode}
+                  onSelect={code => setLangWithSync(code)}
+                />
               </div>
               <div style={s.langSettingRow}>
                 <span style={s.langSettingLabel}>{t.statsVisibility}</span>
@@ -1261,11 +1253,6 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.4rem',
   },
-  langBtnGroupGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, auto)',
-    gap: '0.4rem',
-  } as React.CSSProperties,
   langBtn: {
     fontSize: '0.78rem',
     padding: '3px 10px',

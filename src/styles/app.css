@@ -2451,45 +2451,11 @@ ol { padding-left: 20px; }
   text-transform: uppercase;
   color: var(--ink-3);
 }
-.title-lang-switcher {
+/* Compact language selector area in TitleScreen */
+.title-lang-area {
+  margin-top: 28px;
   display: flex;
-  gap: 8px;
-  margin-top: 28px;
-}
-/* 10-locale grid layout */
-.title-lang-switcher--grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 28px;
-  width: 280px;
-}
-@media (min-width: 480px) {
-  .title-lang-switcher--grid {
-    grid-template-columns: repeat(5, 1fr);
-    width: auto;
-  }
-}
-.title-lang-btn {
-  padding: 6px 20px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid var(--ink-4);
-  border-radius: 20px;
-  background: transparent;
-  color: var(--ink-3);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.title-lang-btn.active {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
-}
-.title-lang-btn:not(.active):hover {
-  border-color: var(--ink-2);
-  color: var(--ink-2);
+  justify-content: center;
 }
 .title-version {
   position: absolute;

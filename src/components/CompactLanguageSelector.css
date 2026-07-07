@@ -1,0 +1,119 @@
+/* ── CompactLanguageSelector ─────────────────────────────────────────────────
+   Shared compact language selector used across TitleScreen, UserPage,
+   JournalListPage, and JournalArticlePage.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.cls-root {
+  position: relative;
+  display: inline-block;
+}
+
+/* ── Trigger pill ─────────────────────────────────────── */
+.cls-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.13s, color 0.13s, background 0.13s;
+  line-height: 1.4;
+}
+
+.cls-trigger:hover,
+.cls-trigger.open {
+  border-color: #888;
+  color: #111;
+}
+
+/* Current locale label — slightly bolder */
+.cls-current {
+  font-weight: 600;
+  color: #111;
+}
+
+/* "Language" / "言語" label — subdued */
+.cls-label {
+  font-size: 0.72rem;
+  color: #888;
+  letter-spacing: 0.03em;
+}
+
+/* Chevron arrow */
+.cls-chevron {
+  font-size: 0.6rem;
+  color: #aaa;
+  line-height: 1;
+}
+
+/* ── Panel ────────────────────────────────────────────── */
+.cls-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.13);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  min-width: 200px;
+}
+
+/* On wider screens show 5 columns */
+@media (min-width: 480px) {
+  .cls-panel {
+    grid-template-columns: repeat(5, 1fr);
+    min-width: 0;
+  }
+}
+
+/* ── Option buttons ───────────────────────────────────── */
+.cls-option {
+  font-size: 0.73rem;
+  font-family: inherit;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  transition: all 0.1s;
+  line-height: 1.4;
+}
+
+.cls-option.active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+  font-weight: 600;
+}
+
+.cls-option:not(.active):hover {
+  border-color: #888;
+  color: #111;
+}
+
+/* ── TitleScreen variant ──────────────────────────────── */
+/* In TitleScreen, center the trigger and align panel to center */
+.cls-root--title {
+  display: block;
+  text-align: center;
+}
+
+.cls-root--title .cls-panel {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
