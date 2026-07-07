@@ -270,6 +270,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 <CompactLanguageSelector
                   selectedLocale={lang as LocaleCode}
                   onSelect={code => setLangWithSync(code)}
+                  className="cls-root--profile"
                 />
               </div>
               <div style={s.langSettingRow}>
