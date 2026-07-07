@@ -23,7 +23,7 @@ import './JournalArticlePage.css';
  * admin 登録フロー実装前に sanitize 方針が必要（DOMPurify 等の導入を検討のこと）。
  */
 export function JournalArticlePage() {
-  const { lang: ctxLang } = useLang();
+  const { lang: ctxLang, setLang } = useLang();
 
   // slug: /journal/:slug または /journal-db/:slug の両方に対応
   const slug = (() => {
@@ -47,10 +47,8 @@ export function JournalArticlePage() {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  // journalLang: en/ja への変換 (DB取得用)
+  // journalLang: JournalLang への変換 (DB取得用)
   const journalLang: JournalLang = resolveJournalLang(selectedLocale);
-  // 表示用 UI fallback フラグ (英語以外の非対応言語を選択中)
-  const isLocaleFallback = selectedLocale !== 'en' && selectedLocale !== 'ja';
 
   // slug が空なら ListPage へ redirect
   useEffect(() => {
@@ -80,6 +78,7 @@ export function JournalArticlePage() {
 
   function handleLocaleChange(code: LocaleCode) {
     setSelectedLocale(code);
+    setLang(code);
     const url = new URL(window.location.href);
     url.searchParams.set('lang', code);
     window.history.replaceState(null, '', url.toString());
@@ -95,19 +94,13 @@ export function JournalArticlePage() {
     });
   }
 
-  // fallback notice 文言 (locale fallback + article fallback を統合)
+  // fallback notice 文言 (要求言語の翻訳が存在しない場合のみ)
   function buildFallbackNotice(articleLang: JournalLang): string {
-    if (isLocaleFallback) {
-      // 非対応言語を選択中 → 常に English fallback 旨を表示
-      return 'This article is currently available in English and Japanese only.';
+    if (articleLang === journalLang) return '';
+    if (journalLang === 'ja') {
+      return `この記事は${selectedLocale}では利用できません。${articleLang === 'en' ? '英語' : articleLang}で表示しています。`;
     }
-    if (journalLang === 'en' && articleLang === 'ja') {
-      return 'This article is currently available in Japanese only.';
-    }
-    if (journalLang === 'ja' && articleLang === 'en') {
-      return 'この記事は現在英語のみです。';
-    }
-    return '';
+    return `This article is not available in ${selectedLocale}. Showing in ${articleLang}.`;
   }
 
   if (!slug) return null;
@@ -119,7 +112,10 @@ export function JournalArticlePage() {
         <a href="/journal/" className="ja-wordmark ja-wordmark-journal">ONE EIGHT Journal</a>
         <div className="ja-header-right">
           <nav className="ja-nav">
-            <a href="/journal/" className="ja-nav-link">
+            <a
+              href={`/journal/${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
+              className="ja-nav-link"
+            >
               ← Journal
             </a>
           </nav>
@@ -152,7 +148,10 @@ export function JournalArticlePage() {
             <p className="ja-state-text">
               {journalLang === 'ja' ? '記事が見つかりません。' : 'Article not found.'}
             </p>
-            <a href="/journal/" className="ja-back-link">
+            <a
+              href={`/journal/${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
+              className="ja-back-link"
+            >
               {journalLang === 'ja' ? '← Journal 一覧に戻る' : '← Back to Journal'}
             </a>
           </div>
@@ -164,8 +163,8 @@ export function JournalArticlePage() {
           const notice = t ? buildFallbackNotice(t.lang) : '';
           return (
             <article className="ja-article">
-              {/* Fallback notice: locale fallback or article fallback */}
-              {(isLocaleFallback || article.fallback) && notice && (
+              {/* Fallback notice: 要求言語の翻訳が存在しない場合のみ */}
+              {article.fallback && notice && (
                 <div className="ja-fallback-notice">{notice}</div>
               )}
 
@@ -255,7 +254,10 @@ export function JournalArticlePage() {
 
               {/* Navigation */}
               <div className="ja-article-nav">
-                <a href="/journal/" className="ja-back-link">
+                <a
+                  href={`/journal/${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
+                  className="ja-back-link"
+                >
                   {journalLang === 'ja' ? '← Journal 一覧に戻る' : '← Back to Journal'}
                 </a>
               </div>

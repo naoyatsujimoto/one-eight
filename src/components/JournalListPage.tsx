@@ -18,7 +18,7 @@ import './JournalListPage.css';
  *       non-en/ja は English fallback として記事を表示する
  */
 export function JournalListPage() {
-  const { lang: ctxLang } = useLang();
+  const { lang: ctxLang, setLang } = useLang();
 
   // URL query ?lang=ja / ?lang=en 等を優先、なければ LangProvider の値
   const initLocale: LocaleCode = (() => {
@@ -35,10 +35,8 @@ export function JournalListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // journalLang: en/ja への変換 (DB取得用)
+  // journalLang: JournalLang への変換 (DB取得用)
   const journalLang: JournalLang = resolveJournalLang(selectedLocale);
-  // 表示用 UI fallback フラグ (英語以外の非対応言語を選択中)
-  const isLocaleFallback = selectedLocale !== 'en' && selectedLocale !== 'ja';
 
   useEffect(() => {
     setLoading(true);
@@ -56,6 +54,7 @@ export function JournalListPage() {
 
   function handleLocaleChange(code: LocaleCode) {
     setSelectedLocale(code);
+    setLang(code);
     const url = new URL(window.location.href);
     url.searchParams.set('lang', code);
     window.history.replaceState(null, '', url.toString());
@@ -153,12 +152,12 @@ export function JournalListPage() {
                     );
                   })()}
 
-                  {/* Fallback notice: locale fallback (non-en/ja) or article fallback */}
-                  {(isLocaleFallback || (article.fallback && t && t.lang !== journalLang)) && (
+                  {/* Fallback notice: 要求言語の翻訳が存在しない場合のみ表示 */}
+                  {article.fallback && t && t.lang !== resolveJournalLang(selectedLocale) && (
                     <div className="jl-fallback-notice">
-                      {journalLang === 'en'
-                        ? 'This article is currently available in English and Japanese only.'
-                        : 'この記事は現在英語のみです。'}
+                      {journalLang === 'ja'
+                        ? `この記事は${selectedLocale}では利用できません。${t.lang === 'en' ? '英語' : '別言語'}で表示しています。`
+                        : `This article is not available in ${selectedLocale}. Showing in ${t.lang}.`}
                     </div>
                   )}
 
