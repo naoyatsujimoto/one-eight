@@ -65,7 +65,6 @@ export function CompactLanguageSelector({ selectedLocale, onSelect, className }:
         aria-haspopup="listbox"
       >
         <span className="cls-current">{currentLabel}</span>
-        <span className="cls-label">{t.langLabel}</span>
         <span className="cls-chevron" aria-hidden="true">{open ? '▴' : '▾'}</span>
       </button>
 
