@@ -119,11 +119,13 @@
 }
 
 /* ── UserPage (profile) variant ────────────────────────── */
-/* On narrow viewports (iPhone), anchor the panel to the right edge   */
-/* of the trigger so it doesn't overflow the left side of the screen. */
+/* In UserPage the trigger is left-aligned (flex row: label + trigger).
+   Open the panel rightward from the trigger's left edge so it stays
+   within the viewport on narrow screens (iPhone 375px etc.).         */
 .cls-root--profile .cls-panel {
-  right: 0;
-  left: auto;
+  left: 0;
+  right: auto;
   transform: none;
+  width: min(320px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
 }
