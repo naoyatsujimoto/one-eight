@@ -1,8 +1,14 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { upsertProfile } from './profile';
+import { SUPPORTED_LOCALES, resolveTranslationKey } from './locales';
+import type { LocaleCode } from './locales';
 
-export type Lang = 'en' | 'ja';
+/**
+ * Lang is now an alias for LocaleCode (10 supported locales).
+ * en / ja have full translations; others fall back to English.
+ */
+export type Lang = LocaleCode;
 
 // ── Translations ──────────────────────────────────────────────────────────────
 
@@ -1660,14 +1666,26 @@ const LangContext = createContext<LangContextValue>({
 });
 
 const LANG_LS_KEY = 'one8_lang';
-const SUPPORTED_LANGS: Lang[] = ['en', 'ja'];
+
+/** All supported locale codes (10 locales). */
+const ALL_LOCALE_CODES: string[] = SUPPORTED_LOCALES.map(l => l.code);
 
 function readLangFromStorage(): Lang {
   try {
     const stored = localStorage.getItem(LANG_LS_KEY);
-    if (stored && (SUPPORTED_LANGS as string[]).includes(stored)) return stored as Lang;
+    if (stored && ALL_LOCALE_CODES.includes(stored)) return stored as Lang;
   } catch { /* noop */ }
   return 'en';
+}
+
+/**
+ * Resolve the Translations object for a given Lang.
+ * en / ja: use the full translation object.
+ * All other locales: English fallback.
+ */
+function resolveTranslations(lang: Lang): Translations {
+  const key = resolveTranslationKey(lang);
+  return T[key] as unknown as Translations;
 }
 
 export function LangProvider({ children }: { children: ReactNode }) {
@@ -1687,7 +1705,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, [userId, setLang]);
 
   return (
-    <LangContext.Provider value={{ lang, setLang, setLangWithSync, setUserId, t: T[lang] as unknown as Translations }}>
+    <LangContext.Provider value={{ lang, setLang, setLangWithSync, setUserId, t: resolveTranslations(lang) }}>
       {children}
     </LangContext.Provider>
   );

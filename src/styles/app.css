@@ -2456,6 +2456,20 @@ ol { padding-left: 20px; }
   gap: 8px;
   margin-top: 28px;
 }
+/* 10-locale grid layout */
+.title-lang-switcher--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 28px;
+  width: 280px;
+}
+@media (min-width: 480px) {
+  .title-lang-switcher--grid {
+    grid-template-columns: repeat(5, 1fr);
+    width: auto;
+  }
+}
 .title-lang-btn {
   padding: 6px 20px;
   font-family: var(--sans);

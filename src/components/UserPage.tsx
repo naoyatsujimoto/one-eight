@@ -12,6 +12,7 @@
  *   8. 称号 / バッジ（Coming Soon）
  */
 import { useEffect, useState, useCallback } from 'react';
+import type React from 'react';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
@@ -19,6 +20,7 @@ import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { Lang } from '../lib/lang';
+import { SUPPORTED_LOCALES } from '../lib/locales';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
@@ -264,15 +266,16 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             <>
               <div style={s.langSettingRow}>
                 <span style={s.langSettingLabel}>{t.langLabel}</span>
-                <div style={s.langBtnGroup}>
-                  {(['en', 'ja'] as Lang[]).map((l) => (
+                {/* 10-locale pill grid */}
+                <div style={s.langBtnGroupGrid}>
+                  {SUPPORTED_LOCALES.map(({ code, label }) => (
                     <button
-                      key={l}
+                      key={code}
                       type="button"
-                      style={{ ...s.langBtn, ...(lang === l ? s.langBtnActive : {}) }}
-                      onClick={() => setLangWithSync(l)}
+                      style={{ ...s.langBtn, ...(lang === code ? s.langBtnActive : {}) }}
+                      onClick={() => setLangWithSync(code as Lang)}
                     >
-                      {l === 'en' ? 'English' : '日本語'}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -1258,6 +1261,11 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.4rem',
   },
+  langBtnGroupGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, auto)',
+    gap: '0.4rem',
+  } as React.CSSProperties,
   langBtn: {
     fontSize: '0.78rem',
     padding: '3px 10px',
