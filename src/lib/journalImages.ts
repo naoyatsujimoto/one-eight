@@ -30,6 +30,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-salamander-community-science_when-rare-ones-get-recorded_thumb.jpg',
     alt: 'Salamander community science key visual',
   },
+  'coin-arrived-did-people-change-how-they-paid': {
+    hero: '/journal/oej-2026-coinage-monetary-patterns_coin-arrived-did-people-change-how-they-paid_hero.jpg',
+    thumbnail: '/journal/oej-2026-coinage-monetary-patterns_coin-arrived-did-people-change-how-they-paid_thumb.jpg',
+    alt: 'Coinage monetary patterns key visual',
+  },
 };
 
 /**
