@@ -35,6 +35,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-coinage-monetary-patterns_coin-arrived-did-people-change-how-they-paid_thumb.jpg',
     alt: 'Coinage monetary patterns key visual',
   },
+  'the-shape-a-city-keeps': {
+    hero: '/journal/2026-uk-urban-freight-form-allen-2012_the-shape-a-city-keeps_hero.jpg',
+    thumbnail: '/journal/2026-uk-urban-freight-form-allen-2012_the-shape-a-city-keeps_thumb.jpg',
+    alt: 'Urban freight and city form key visual',
+  },
 };
 
 /**
