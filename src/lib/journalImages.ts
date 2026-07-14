@@ -40,6 +40,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/2026-uk-urban-freight-form-allen-2012_the-shape-a-city-keeps_thumb.jpg',
     alt: 'Urban freight and city form key visual',
   },
+  'nineteen-places-the-map-missed': {
+    hero: '/journal/oej-2026-climate-security-participatory-mapping_nineteen-places-the-map-missed_hero.jpg',
+    thumbnail: '/journal/oej-2026-climate-security-participatory-mapping_nineteen-places-the-map-missed_thumb.jpg',
+    alt: 'Climate security participatory mapping key visual',
+  },
 };
 
 /**
