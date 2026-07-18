@@ -1066,7 +1066,7 @@ export const T = {
     // PrizeClaimForm
     prizeClaimFormTitle: 'Reward / Prize — 受取情報',
     prizeClaimNoticePayment: 'Reward / Prize の支払には、本人確認・税務確認・PayPal受取情報が必要です。',
-    prizeClaimNoticeSecurity: '提出された税務・支払情報は、支払い準備に必要な情報が安全に保存され、かつ提出から72時間が経過した後、定期処理により削除されます。',
+    prizeClaimNoticeSecurity: '提出された税務・支払情報は、支払い準備に必要な情報が安全に保存され、かつ提出から72時間が経過した後、定期処理によりオンラインデータベースから削除されます。',
     prizeClaimNoticePaypal: 'PayPal受取メールが誤っている場合、支払が保留または失敗する可能性があります。',
     prizeClaimNoticeTax: '税務申告・居住国情報の正確性は受賞者本人の責任です。',
     prizeClaimLabelLegalName: '法定氏名 *',
@@ -1094,7 +1094,7 @@ export const T = {
     prizeClaimConfirmationsTitle: '同意事項（すべて必須）',
     prizeClaimConfirmPaypalName: 'PayPalアカウント名が上記の法定氏名と一致することを確認します。',
     prizeClaimConfirmTaxResponsibility: '税務申告は受賞者本人の責任であることを理解しています。',
-    prizeClaimConfirmDataDeletion: '提出した税務・支払情報は、支払い準備に必要な情報が安全に保存され、かつ提出から72時間が経過した後、定期処理によりオンラインDBから削除されることを理解しています。',
+    prizeClaimConfirmDataDeletion: '提出した税務・支払情報が、支払い準備に必要な情報の安全な保存後、かつ提出から72時間が経過した後に、定期処理によりオンラインデータベースから削除されることを確認しました。',
     prizeClaimSubmit: '送信',
     prizeClaimSubmitting: '送信中…',
     prizeClaimCancel: 'キャンセル',
