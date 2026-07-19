@@ -368,7 +368,7 @@ export interface PostmortemMoveRow {
   historicWinRate?: number;        // win_rate_black (0–100)
   sampleCount?: number;            // total games
   confidence?: 'reference' | 'main'; // hidden は設定しない
-  winRateSource?: 'position_stats' | 'symmetry_group' | 'medium_pattern' | 'sim_medium_pattern' | 'sim_position_only' | 'fh_sim_medium_pattern' | 'fh_sim_position_only';
+  winRateSource?: 'position_stats' | 'symmetry_group' | 'medium_pattern' | 'sim_medium_pattern' | 'sim_position_only' | 'fh_sim_medium_pattern' | 'fh_sim_position_only' | 'fvh_sim_medium_pattern' | 'fvh_sim_position_only';
   resolvedWP?: number;                               // 最終的に使用するWP（0–1）
   resolvedWpSource?: 'static' | 'blend' | 'historic'; // どのソースを使ったか
   /** Phase N-4: post-move 局面で成立している戦略的特徴 */
@@ -962,6 +962,8 @@ export async function enrichPostmortemWithStats(
     canonicalMap,
     symmetryMap,
     mediumPatternMap,
+    fvhSimMediumPatternMap,
+    fvhSimPositionOnlyMap,
     fhSimMediumPatternMap,
     fhSimPositionOnlyMap,
     simMediumPatternMap,
@@ -982,6 +984,16 @@ export async function enrichPostmortemWithStats(
       validMediumPatternIds.length > 0
         ? fetchMediumPatternWinRates(validMediumPatternIds, 5, 'all').catch(() => new Map())
         : Promise.resolve(new Map<string, MediumPatternWinRateRow>()),
+
+      // fast very hard sim medium_pattern 統計（Step 2.1 fallback）— min_total=30
+      validMediumPatternIds.length > 0
+        ? fetchSimMediumPatternWinRates(validMediumPatternIds, 30, 'fastveryhard_vs_fastveryhard').catch(() => new Map())
+        : Promise.resolve(new Map<string, SimMediumPatternWinRateRow>()),
+
+      // fast very hard sim position_only 統計（Step 2.2 fallback）— min_total=100
+      validPositionOnlyIds.length > 0
+        ? fetchSimPositionOnlyWinRates(validPositionOnlyIds, 100, 'fastveryhard_vs_fastveryhard').catch(() => new Map())
+        : Promise.resolve(new Map<string, SimPositionOnlyWinRateRow>()),
 
       // fast_hard sim medium_pattern 統計（Step 2.3a fallback）— min_total=30
       validMediumPatternIds.length > 0
@@ -1008,6 +1020,8 @@ export async function enrichPostmortemWithStats(
   console.log('[PM/enrich] fetchPositionWinRates done', { elapsedMs: '(parallel)', count: canonicalMap.size });
   console.log('[PM/enrich] fetchSymmetryGroupWinRates done', { elapsedMs: '(parallel)', count: symmetryMap.size });
   console.log('[PM/enrich] fetchMediumPatternWinRates done', { elapsedMs: '(parallel)', count: mediumPatternMap.size });
+  console.log('[PM/enrich] fetchSimMediumPatternWinRates fvh done', { elapsedMs: '(parallel)', count: fvhSimMediumPatternMap.size });
+  console.log('[PM/enrich] fetchSimPositionOnlyWinRates fvh done', { elapsedMs: '(parallel)', count: fvhSimPositionOnlyMap.size });
   console.log('[PM/enrich] fetchSimMediumPatternWinRates fh done', { elapsedMs: '(parallel)', count: fhSimMediumPatternMap.size });
   console.log('[PM/enrich] fetchSimPositionOnlyWinRates fh done', { elapsedMs: '(parallel)', count: fhSimPositionOnlyMap.size });
   console.log('[PM/enrich] fetchSimMediumPatternWinRates easy done', { elapsedMs: '(parallel)', count: simMediumPatternMap.size });
@@ -1076,6 +1090,50 @@ export async function enrichPostmortemWithStats(
       };
       const resolvedWP = resolveWPForRow(rowWithSym);
       return { ...rowWithSym, resolvedWP, resolvedWpSource: resolveWpSource(rowWithSym) };
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.1: fast very hard sim medium_pattern fallback
+    //   採用条件: total >= 30 (confidence='reference'固定)
+    //   resolvedWP: 0.2 × simWP + 0.8 × staticWP (wpAfter)
+    //   winRateSource: 'fvh_sim_medium_pattern'
+    //   優先度: fast_hard／easyより上位（実戦よりは下位）
+    // ──────────────────────────────────────────────────────────────────────────
+    const fvhSimMedPatternStat = mediumPatternId ? fvhSimMediumPatternMap.get(mediumPatternId) : undefined;
+    if (fvhSimMedPatternStat && fvhSimMedPatternStat.total >= 30 && fvhSimMedPatternStat.win_rate_black !== null) {
+      const simWP = fvhSimMedPatternStat.win_rate_black / 100;
+      const blendedWP = 0.2 * simWP + 0.8 * row.wpAfter;
+      return {
+        ...row,
+        historicWinRate: fvhSimMedPatternStat.win_rate_black,
+        sampleCount: fvhSimMedPatternStat.total,
+        confidence: 'reference' as const,
+        winRateSource: 'fvh_sim_medium_pattern' as const,
+        resolvedWP: blendedWP,
+        resolvedWpSource: 'blend' as const,
+      };
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 2.2: fast very hard sim position_only fallback
+    //   採用条件: total >= 100
+    //   resolvedWP: 0.1 × posWP + 0.9 × staticWP (wpAfter)
+    //   winRateSource: 'fvh_sim_position_only'
+    //   優先度: fast_hard medium_patternより上位
+    // ──────────────────────────────────────────────────────────────────────────
+    const fvhSimPosOnlyStat = positionOnlyId ? fvhSimPositionOnlyMap.get(positionOnlyId) : undefined;
+    if (fvhSimPosOnlyStat && fvhSimPosOnlyStat.total >= 100) {
+      const posWP = fvhSimPosOnlyStat.win_rate_black; // black視点（0–1範囲）
+      const blendedWP = 0.1 * posWP + 0.9 * row.wpAfter;
+      return {
+        ...row,
+        historicWinRate: Math.round(posWP * 10000) / 100, // 0–1 → 0–100
+        sampleCount: fvhSimPosOnlyStat.total,
+        confidence: 'reference' as const,
+        winRateSource: 'fvh_sim_position_only' as const,
+        resolvedWP: blendedWP,
+        resolvedWpSource: 'blend' as const,
+      };
     }
 
     // ──────────────────────────────────────────────────────────────────────────

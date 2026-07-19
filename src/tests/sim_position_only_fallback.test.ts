@@ -103,8 +103,13 @@ describe('sim_position_only_fallback', () => {
     const history = makeHistory([{ mediumPatternId }]);
     await enrichPostmortemWithStats(result, history);
 
-    // fast_hard と easy の2回呼ばれる（どちらも positionOnlyId を含む）
-    expect(mockFetchSimPositionOnly).toHaveBeenCalledTimes(2);
+    // fvh / fast_hard / easy の3回呼ばれる（いずれも positionOnlyId を含む）
+    expect(mockFetchSimPositionOnly).toHaveBeenCalledTimes(3);
+    expect(mockFetchSimPositionOnly).toHaveBeenCalledWith(
+      expect.arrayContaining([positionOnlyId]),
+      100,
+      'fastveryhard_vs_fastveryhard',
+    );
     expect(mockFetchSimPositionOnly).toHaveBeenCalledWith(
       expect.arrayContaining([positionOnlyId]),
       100,
