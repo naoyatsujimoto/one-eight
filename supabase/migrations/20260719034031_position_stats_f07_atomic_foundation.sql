@@ -100,8 +100,8 @@ BEGIN
     RETURN;
   END IF;
 
-  -- full_record 空チェック
-  IF v_full_record IS NULL OR jsonb_array_length(v_full_record) = 0 THEN
+  -- full_record 空チェック: NULL または非array型はスキップ
+  IF v_full_record IS NULL OR jsonb_typeof(v_full_record) != 'array' OR jsonb_array_length(v_full_record) = 0 THEN
     RETURN QUERY SELECT false, 'empty_full_record'::TEXT;
     RETURN;
   END IF;
