@@ -12,19 +12,19 @@ import type { MoveRecord } from '../game/types'
 export type { AnalysisJobStatus }
 
 export function usePostmortemWorker() {
-  // Manager の変化を購読（snapshot は runningId で代用 — 変化検出が目的）
-  const runningId = useSyncExternalStore(
+  // Manager の変化を購読（snapshot は snapshotVersion — 全状態変化で必ずインクリメントされる）
+  const _version = useSyncExternalStore(
     (cb) => postmortemWorkerManager.subscribeNotify(cb),
-    ()  => postmortemWorkerManager.runningId,
-    ()  => postmortemWorkerManager.runningId,
+    ()  => postmortemWorkerManager.snapshotVersion,
+    ()  => postmortemWorkerManager.snapshotVersion,
   )
 
   const getStatus = useCallback(
     (gameId: string): AnalysisJobStatus =>
       postmortemWorkerManager.getStatus(gameId),
-    // runningId を依存に含めることで、状態変化時に getStatus も新しい参照を返す
+    // _version を依存に含めることで、状態変化時に getStatus も新しい参照を返す
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [runningId],
+    [_version],
   )
 
   const run = useCallback(
@@ -47,6 +47,9 @@ export function usePostmortemWorker() {
     () => postmortemWorkerManager.cancelAll(),
     [],
   )
+
+  // runningId: 後方互換のため残存（内部は _version ベースに移行済み）
+  const runningId = postmortemWorkerManager.runningId
 
   return { runningId, getStatus, run, dismiss, cancelJob, cancelAll }
 }

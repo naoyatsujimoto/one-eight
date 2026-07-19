@@ -34,8 +34,12 @@ class PostmortemWorkerManager {
   private _runningId:   string | null = null
   private jobMap:       Map<string, AnalysisJobStatus> = new Map()
   private listeners:    Set<() => void> = new Set()
+  private _revision = 0
 
   // ── 読み取り ───────────────────────────────────────────────────────────────
+
+  /** useSyncExternalStore 用スナップショット: 変化するたびにインクリメントされる整数値 */
+  get snapshotVersion(): number { return this._revision }
 
   /** gameId の現在状態を取得（未登録は idle） */
   getStatus(gameId: string): AnalysisJobStatus {
@@ -66,6 +70,7 @@ class PostmortemWorkerManager {
   // ── 内部ユーティリティ ─────────────────────────────────────────────────────
 
   private notify(): void {
+    this._revision++
     this.listeners.forEach(fn => fn())
   }
 
@@ -252,4 +257,5 @@ class PostmortemWorkerManager {
 
 // ── シングルトンエクスポート ──────────────────────────────────────────────────
 
+export { PostmortemWorkerManager } // テスト用
 export const postmortemWorkerManager = new PostmortemWorkerManager()

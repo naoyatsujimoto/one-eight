@@ -175,6 +175,8 @@ export const T = {
     historySection: 'History',
     refresh: 'Refresh',
     refreshing: 'Refreshing…',
+    analysisDone: '✓ Analysis complete',
+    refreshDone: '✓ Refresh complete',
     noAnalysis: 'Not enough data',
     onlinePlay: 'Online Play',
     onlineCreate: 'Create',
@@ -736,6 +738,8 @@ export const T = {
     historySection: '棋譜',
     refresh: '更新',
     refreshing: '更新中…',
+    analysisDone: '✓ 分析完了',
+    refreshDone: '✓ 更新完了',
     noAnalysis: 'データ不足',
     onlinePlay: 'オンライン対戦',
     onlineCreate: 'ルーム作成',
@@ -1249,6 +1253,8 @@ export type Translations = {
   historySection: string;
   refresh: string;
   refreshing: string;
+  analysisDone: string;
+  refreshDone: string;
   noAnalysis: string;
   onlinePlay: string;
   onlineCreate: string;

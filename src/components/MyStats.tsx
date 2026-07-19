@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { MyStats as MyStatsData, MatchLogRow } from '../lib/matchLog';
 import { fetchMyStats } from '../lib/matchLog';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
@@ -18,8 +18,13 @@ export function MyStats({ userId, onClose }: Props) {
   const [stats, setStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
-  // 更新中の game_id（ボタン disabled 制御）
-  const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
+  // 更新中の game_idセット（per-row 制御）
+  const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
+  // 完了表示用セット
+  const [analyzeCompletedIds, setAnalyzeCompletedIds] = useState<Set<string>>(new Set());
+  const [refreshCompletedIds, setRefreshCompletedIds] = useState<Set<string>>(new Set());
+  // 完了表示タイマー管理
+  const completionTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [proActive, setProActive] = useState<boolean>(false);
 
   // シングルトン Worker（gameId 単位管理・キュー処理）
@@ -56,11 +61,64 @@ export function MyStats({ userId, onClose }: Props) {
     runWorker(record.game_id, record.full_record, hc);
   }
 
+  // 完了表示スケジューラー
+  function scheduleCompletion(gameId: string, kind: 'analyze' | 'refresh') {
+    const existing = completionTimersRef.current.get(gameId);
+    if (existing) clearTimeout(existing);
+    const setter = kind === 'analyze' ? setAnalyzeCompletedIds : setRefreshCompletedIds;
+    setter(prev => new Set([...prev, gameId]));
+    const t = setTimeout(() => {
+      setter(prev => { const n = new Set(prev); n.delete(gameId); return n; });
+      completionTimersRef.current.delete(gameId);
+    }, 2500);
+    completionTimersRef.current.set(gameId, t);
+  }
+
+  // アンマウント時に全タイマーをクリア
+  useEffect(() => {
+    return () => {
+      completionTimersRef.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
+
+  // refreshingIds の worker 状態を監視し、done/error 時に自動解除
+  useEffect(() => {
+    const toRemove: string[] = [];
+    const toDone: string[] = [];
+    for (const gameId of refreshingIds) {
+      const st = getStatus(gameId);
+      if (st.status === 'done') {
+        toRemove.push(gameId);
+        toDone.push(gameId);
+      } else if (st.status === 'error') {
+        toRemove.push(gameId);
+      }
+    }
+    if (toRemove.length === 0) return;
+    setRefreshingIds(prev => {
+      const n = new Set(prev);
+      toRemove.forEach(id => n.delete(id));
+      return n;
+    });
+    for (const gameId of toDone) {
+      scheduleCompletion(gameId, 'refresh');
+    }
+  // getStatusは _version 変化ごとに新参照になるため依存に入れる
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStatus]);
+
   // 更新ボタンのハンドラ: cache 削除→再分析
   function handleRefresh(record: GameRecord) {
     dismissWorker(record.game_id);
     clearPostmortemCache(record.game_id);
-    setRefreshingGameId(record.game_id);
+    // 既存の完了表示タイマーをクリア
+    const existingTimer = completionTimersRef.current.get(record.game_id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      completionTimersRef.current.delete(record.game_id);
+    }
+    setRefreshCompletedIds(prev => { const n = new Set(prev); n.delete(record.game_id); return n; });
+    setRefreshingIds(prev => new Set([...prev, record.game_id]));
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
     setPendingModalGameId(record.game_id);
@@ -69,9 +127,14 @@ export function MyStats({ userId, onClose }: Props) {
 
   // モーダル close
   function handlePostmortemClose() {
-    if (pendingModalGameId) dismissWorker(pendingModalGameId);
+    if (pendingModalGameId) {
+      dismissWorker(pendingModalGameId);
+      // analyze 完了表示（refresh 完了済みの場合はスキップ）
+      if (!refreshCompletedIds.has(pendingModalGameId)) {
+        scheduleCompletion(pendingModalGameId, 'analyze');
+      }
+    }
     setPendingModalGameId(null);
-    setRefreshingGameId(null);
     setCurrentHumanColor(null);
   }
 
@@ -129,22 +192,38 @@ export function MyStats({ userId, onClose }: Props) {
                           <td style={styles.td}>
                             {local ? (
                               <div style={styles.btnGroup}>
-                                <button
-                                  type="button"
-                                  style={(() => { const _st = getStatus(local.game_id); return (_st.status === 'queued' || _st.status === 'running') ? styles.analyzingBtn : styles.analyzeBtn; })()}
-                                  disabled={(() => { const _st = getStatus(local.game_id); return _st.status === 'queued' || _st.status === 'running'; })()}
-                                  onClick={() => handleAnalyzeClick(local)}
-                                >
-                                  {(() => { const _st = getStatus(local.game_id); return (_st.status === 'queued' ? t.analyzing + '…' : _st.status === 'running' ? t.analyzing : t.analyze); })()}
-                                </button>
-                                <button
-                                  type="button"
-                                  style={refreshingGameId === local.game_id ? styles.refreshingBtn : styles.refreshBtn}
-                                  disabled={refreshingGameId === local.game_id}
-                                  onClick={() => handleRefresh(local)}
-                                >
-                                  {refreshingGameId === local.game_id ? t.refreshing : t.refresh}
-                                </button>
+                                {(() => {
+                                  const _st = getStatus(local.game_id);
+                                  const busy = _st.status === 'queued' || _st.status === 'running';
+                                  const isDone = analyzeCompletedIds.has(local.game_id);
+                                  const label = busy
+                                    ? (_st.status === 'queued' ? t.analyzing + '…' : t.analyzing)
+                                    : isDone ? t.analysisDone : t.analyze;
+                                  return (
+                                    <button
+                                      type="button"
+                                      style={busy || isDone ? styles.analyzingBtn : styles.analyzeBtn}
+                                      disabled={busy}
+                                      onClick={() => handleAnalyzeClick(local)}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })()}
+                                {(() => {
+                                  const isRefreshing = refreshingIds.has(local.game_id);
+                                  const isDone = refreshCompletedIds.has(local.game_id);
+                                  return (
+                                    <button
+                                      type="button"
+                                      style={isRefreshing ? styles.refreshingBtn : styles.refreshBtn}
+                                      disabled={isRefreshing}
+                                      onClick={() => handleRefresh(local)}
+                                    >
+                                      {isRefreshing ? t.refreshing : isDone ? t.refreshDone : t.refresh}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             ) : (
                               <span style={styles.noData}>—</span>
@@ -162,22 +241,38 @@ export function MyStats({ userId, onClose }: Props) {
                         <td style={styles.td}>{new Date(r.ended_at).toLocaleDateString('ja-JP')}</td>
                         <td style={styles.td}>
                           <div style={styles.btnGroup}>
-                            <button
-                              type="button"
-                              style={(() => { const _st = getStatus(r.game_id); return (_st.status === 'queued' || _st.status === 'running') ? styles.analyzingBtn : styles.analyzeBtn; })()}
-                              disabled={(() => { const _st = getStatus(r.game_id); return _st.status === 'queued' || _st.status === 'running'; })()}
-                              onClick={() => handleAnalyzeClick(r)}
-                            >
-                              {(() => { const _st = getStatus(r.game_id); return (_st.status === 'queued' ? t.analyzing + '…' : _st.status === 'running' ? t.analyzing : t.analyze); })()}
-                            </button>
-                            <button
-                              type="button"
-                              style={refreshingGameId === r.game_id ? styles.refreshingBtn : styles.refreshBtn}
-                              disabled={refreshingGameId === r.game_id}
-                              onClick={() => handleRefresh(r)}
-                            >
-                              {refreshingGameId === r.game_id ? t.refreshing : t.refresh}
-                            </button>
+                            {(() => {
+                              const _st = getStatus(r.game_id);
+                              const busy = _st.status === 'queued' || _st.status === 'running';
+                              const isDone = analyzeCompletedIds.has(r.game_id);
+                              const label = busy
+                                ? (_st.status === 'queued' ? t.analyzing + '…' : t.analyzing)
+                                : isDone ? t.analysisDone : t.analyze;
+                              return (
+                                <button
+                                  type="button"
+                                  style={busy || isDone ? styles.analyzingBtn : styles.analyzeBtn}
+                                  disabled={busy}
+                                  onClick={() => handleAnalyzeClick(r)}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })()}
+                            {(() => {
+                              const isRefreshing = refreshingIds.has(r.game_id);
+                              const isDone = refreshCompletedIds.has(r.game_id);
+                              return (
+                                <button
+                                  type="button"
+                                  style={isRefreshing ? styles.refreshingBtn : styles.refreshBtn}
+                                  disabled={isRefreshing}
+                                  onClick={() => handleRefresh(r)}
+                                >
+                                  {isRefreshing ? t.refreshing : isDone ? t.refreshDone : t.refresh}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
                       </tr>

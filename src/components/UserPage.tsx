@@ -11,7 +11,7 @@
  *   7. 大会実績（Coming Soon）
  *   8. 称号 / バッジ（Coming Soon）
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type React from 'react';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
@@ -67,7 +67,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const pendingStatus = pendingModalGameId ? getStatus(pendingModalGameId) : null;
   // done になったら自動でモーダルを開く
   const showModal = pendingStatus?.status === 'done' && pendingStatus.history != null;
-  const [refreshingGameId, setRefreshingGameId] = useState<string | null>(null);
+  const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
+  const [analyzeCompletedIds, setAnalyzeCompletedIds] = useState<Set<string>>(new Set());
+  const [refreshCompletedIds, setRefreshCompletedIds] = useState<Set<string>>(new Set());
+  const completionTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
   const [statsPublic, setStatsPublic] = useState(false);
   const [proActive, setProActive] = useState(false);
@@ -193,6 +196,52 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
   }, [getStatus, runWorker]);
+
+  // 完了表示スケジューラー
+  const scheduleCompletion = useCallback((gameId: string, kind: 'analyze' | 'refresh') => {
+    const existing = completionTimersRef.current.get(gameId);
+    if (existing) clearTimeout(existing);
+    const setter = kind === 'analyze' ? setAnalyzeCompletedIds : setRefreshCompletedIds;
+    setter(prev => new Set([...prev, gameId]));
+    const t = setTimeout(() => {
+      setter(prev => { const n = new Set(prev); n.delete(gameId); return n; });
+      completionTimersRef.current.delete(gameId);
+    }, 2500);
+    completionTimersRef.current.set(gameId, t);
+  }, []);
+
+  // アンマウント時に全タイマーをクリア
+  useEffect(() => {
+    return () => {
+      completionTimersRef.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
+
+  // refreshingIds の worker 状態を監視し、done/error 時に自動解除
+  useEffect(() => {
+    const toRemove: string[] = [];
+    const toDone: string[] = [];
+    for (const gameId of refreshingIds) {
+      const st = getStatus(gameId);
+      if (st.status === 'done') {
+        toRemove.push(gameId);
+        toDone.push(gameId);
+      } else if (st.status === 'error') {
+        toRemove.push(gameId);
+      }
+    }
+    if (toRemove.length === 0) return;
+    setRefreshingIds(prev => {
+      const n = new Set(prev);
+      toRemove.forEach(id => n.delete(id));
+      return n;
+    });
+    for (const gameId of toDone) {
+      scheduleCompletion(gameId, 'refresh');
+    }
+  // getStatusは _version 変化ごとに新参照になるため依存に入れる
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStatus, scheduleCompletion]);
 
   function handleCancelEdit() {
     setEditingName(false);
@@ -350,11 +399,17 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     onRefresh={(record) => {
                       dismissWorker(record.game_id);
                       clearPostmortemCache(record.game_id);
-                      setRefreshingGameId(record.game_id);
+                      const existingTimer = completionTimersRef.current.get(record.game_id);
+                      if (existingTimer) { clearTimeout(existingTimer); completionTimersRef.current.delete(record.game_id); }
+                      setRefreshCompletedIds(prev => { const n = new Set(prev); n.delete(record.game_id); return n; });
+                      setRefreshingIds(prev => new Set([...prev, record.game_id]));
                       handleAnalyzeClick(record);
                     }}
                     getStatus={getStatus}
                     onAnalyzeClick={handleAnalyzeClick}
+                    analyzeCompletedIds={analyzeCompletedIds}
+                    refreshCompletedIds={refreshCompletedIds}
+                    refreshingIds={refreshingIds}
                     proActive={proActive}
                   />
                   {totalPages > 1 && (
@@ -537,7 +592,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <PostmortemModal
           history={pendingStatus.history}
           gameId={pendingModalGameId}
-          onClose={() => { dismissWorker(pendingModalGameId); setPendingModalGameId(null); setRefreshingGameId(null); setCurrentHumanColor(null); }}
+          onClose={() => {
+            dismissWorker(pendingModalGameId);
+            if (!refreshCompletedIds.has(pendingModalGameId)) {
+              scheduleCompletion(pendingModalGameId, 'analyze');
+            }
+            setPendingModalGameId(null);
+            setCurrentHumanColor(null);
+          }}
           autoStart
           proActive={proActive}
           humanColor={currentHumanColor}
@@ -945,20 +1007,24 @@ function RecentGamesTable({
   localMap,
   officialGameMap = new Map(),
   onPostmortem,
-  refreshingGameId = null,
+  refreshingIds = new Set(),
   onRefresh,
   getStatus,
   onAnalyzeClick,
+  analyzeCompletedIds = new Set(),
+  refreshCompletedIds = new Set(),
   proActive = false,
 }: {
   games: MatchLogRow[];
   localMap: Map<string, GameRecord>;
   officialGameMap?: Map<string, OfficialMatchListItem>;
   onPostmortem: (r: GameRecord) => void;
-  refreshingGameId?: string | null;
+  refreshingIds?: Set<string>;
   onRefresh?: (r: GameRecord) => void;
   getStatus?: (gameId: string) => import('../hooks/usePostmortemWorker').AnalysisJobStatus;
   onAnalyzeClick?: (r: GameRecord) => void;
+  analyzeCompletedIds?: Set<string>;
+  refreshCompletedIds?: Set<string>;
   proActive?: boolean;
 }) {
   const { t } = useLang();
@@ -1057,11 +1123,18 @@ function RecentGamesTable({
                       {(() => {
                         const st = getStatus ? getStatus(r.game_id) : { status: 'idle' as const };
                         const busy = st.status === 'queued' || st.status === 'running';
-                        const label = st.status === 'queued' ? (t.analyzing + '…') : st.status === 'running' ? t.analyzing : st.status === 'error' ? (t.analyze + ' ↩') : t.analyze;
+                        const isDone = analyzeCompletedIds.has(r.game_id);
+                        const label = busy
+                          ? (st.status === 'queued' ? (t.analyzing + '…') : t.analyzing)
+                          : isDone
+                          ? t.analysisDone
+                          : st.status === 'error'
+                          ? (t.analyze + ' ↩')
+                          : t.analyze;
                         return (
                           <button
                             type="button"
-                            style={busy ? s.analyzingBtn : s.analyzeBtn}
+                            style={busy || isDone ? s.analyzingBtn : s.analyzeBtn}
                             disabled={busy}
                             onClick={() => onAnalyzeClick ? onAnalyzeClick(gameRecord) : handleAnalyze()}
                           >
@@ -1072,11 +1145,15 @@ function RecentGamesTable({
                       {onRefresh && (
                         <button
                           type="button"
-                          style={refreshingGameId === r.game_id ? s.refreshingBtn : s.refreshBtn}
-                          disabled={refreshingGameId === r.game_id}
+                          style={refreshingIds.has(r.game_id) ? s.refreshingBtn : s.refreshBtn}
+                          disabled={refreshingIds.has(r.game_id)}
                           onClick={() => onRefresh(gameRecord)}
                         >
-                          {refreshingGameId === r.game_id ? t.refreshing : t.refresh}
+                          {refreshingIds.has(r.game_id)
+                            ? t.refreshing
+                            : refreshCompletedIds.has(r.game_id)
+                            ? t.refreshDone
+                            : t.refresh}
                         </button>
                       )}
                     </div>
