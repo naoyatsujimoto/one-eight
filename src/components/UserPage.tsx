@@ -395,7 +395,6 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     localMap={localMap}
                     officialGameMap={officialGameMap}
                     onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
-                    refreshingGameId={refreshingGameId}
                     onRefresh={(record) => {
                       dismissWorker(record.game_id);
                       clearPostmortemCache(record.game_id);
