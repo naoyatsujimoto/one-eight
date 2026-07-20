@@ -93,19 +93,7 @@ export function JournalListPage() {
           {journalLang === 'ja' ? '編集指針' : 'EDITORIAL POLICY'}
         </p>
         <p className="jl-hero-body">
-          {journalLang === 'ja' ? (
-            <>
-              局面への緻密な観察、全体と配置に対する深い思考。<br />
-              隠れた構造と力を見出す想像力溢れる問い。<br />
-              その探究心と情熱に敬意をもって。
-            </>
-          ) : (
-            <>
-              Close observation of each situation. Deep thought about the whole and the placement of things.<br />
-              Imaginative questions that reveal hidden structures and forces.<br />
-              With respect for the curiosity and passion behind that inquiry.
-            </>
-          )}
+          探究心と情熱に敬意をもって。
         </p>
       </section>
 
