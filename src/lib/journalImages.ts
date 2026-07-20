@@ -45,6 +45,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-climate-security-participatory-mapping_nineteen-places-the-map-missed_thumb.jpg',
     alt: 'Climate security participatory mapping key visual',
   },
+  'what-comes-back-after-the-tail': {
+    hero: '/journal/oej-2026-lizard-tail-autotomy-regeneration_what-comes-back-after-the-tail_hero.jpg',
+    thumbnail: '/journal/oej-2026-lizard-tail-autotomy-regeneration_what-comes-back-after-the-tail_thumb.jpg',
+    alt: 'Lizard tail autotomy and regeneration key visual',
+  },
 };
 
 /**
