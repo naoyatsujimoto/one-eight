@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { listPublishedJournalArticles, resolveJournalLang } from '../lib/journal';
 import type { JournalArticleSummary, JournalLang } from '../lib/journal';
 import { getJournalArticleImages } from '../lib/journalImages';
+import { getEditorialGuideline } from '../lib/journalUi';
 import { useLang } from '../lib/lang';
 import { SUPPORTED_LOCALES } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
@@ -14,8 +15,8 @@ import './JournalListPage.css';
  * AuthGate 外で直接レンダリングされる。ログイン不要。
  *
  * i18n: selectedLocale は10言語 (LocaleCode)
- *       DB取得用 journalLang は resolveJournalLang() で en/ja に変換
- *       non-en/ja は English fallback として記事を表示する
+ *       DB取得用 journalLang は resolveJournalLang() で JournalLang に1:1変換
+ *       編集指針等の UI 固定文言は selectedLocale をキーに journalUi.ts から取得する
  */
 export function JournalListPage() {
   const { lang: ctxLang, setLang } = useLang();
@@ -93,7 +94,7 @@ export function JournalListPage() {
           {journalLang === 'ja' ? '編集指針' : 'EDITORIAL POLICY'}
         </p>
         <p className="jl-hero-body">
-          探究心と情熱に敬意をもって。
+          {getEditorialGuideline(selectedLocale)}
         </p>
       </section>
 
