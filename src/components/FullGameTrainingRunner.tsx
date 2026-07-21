@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Board } from './Board';
+import { ConfirmModal } from './ConfirmModal';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild, applyQuadBuildForGates } from '../game/engine';
 import { POSITION_TO_GATES } from '../game/constants';
 import { createInitialState } from '../game/initialState';
@@ -139,6 +140,14 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
   // Question state (Move 21 postQuestion)
   const [questionSelected, setQuestionSelected] = useState<number | null>(resumeState?.questionSelected ?? null);
   const [questionShowHint, setQuestionShowHint] = useState(resumeState?.questionShowHint ?? false);
+
+  // Partial Quad Build confirm modal state
+  // pendingQuadGates: gates waiting for user confirmation before applyQuadBuildForGates
+  const [quadConfirmOpen, setQuadConfirmOpen] = useState(false);
+  const [pendingQuadGates, setPendingQuadGates] = useState<GateId[]>([]);
+  const [pendingQuadState, setPendingQuadState] = useState<GameState | null>(null);
+  // Guard against double-tap / rapid confirm
+  const quadConfirmInFlightRef = useRef(false);
 
   // ── Typewriter state ─────────────────────────────────────────────────────
   const [visibleText, setVisibleText] = useState('');
@@ -308,6 +317,10 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     setBuildState(EMPTY_BUILD);
     setSelectiveFirst(null);
     setQuadSelected([]);
+    setQuadConfirmOpen(false);
+    setPendingQuadGates([]);
+    setPendingQuadState(null);
+    quadConfirmInFlightRef.current = false;
 
     if (nextStep.kind === 'intro') {
       setGameState(currentGameState);
@@ -345,6 +358,69 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       setPhase(hasPre ? 'user_narration' : 'user');
     }
   }, [lang]);
+
+  // ── Quad Build confirm / cancel handlers ────────────────────────────────
+
+  const handleQuadConfirm = useCallback(() => {
+    // Guard against double-tap / rapid confirm
+    if (quadConfirmInFlightRef.current) return;
+    quadConfirmInFlightRef.current = true;
+
+    setQuadConfirmOpen(false);
+
+    const prevState = pendingQuadState;
+    const gates = pendingQuadGates;
+    setPendingQuadGates([]);
+    setPendingQuadState(null);
+
+    if (!prevState) {
+      quadConfirmInFlightRef.current = false;
+      return;
+    }
+
+    const currentStep = FULL_GAME_V1.steps[stepIndex];
+    if (!currentStep || currentStep.kind !== 'user' || !currentStep.expectedMove) {
+      quadConfirmInFlightRef.current = false;
+      return;
+    }
+
+    const newState = applyQuadBuildForGates(prevState, gates);
+    const lastRecord = newState.history[newState.history.length - 1];
+    if (!lastRecord) {
+      quadConfirmInFlightRef.current = false;
+      return;
+    }
+
+    const expected = scriptedMoveToExpected(currentStep.expectedMove);
+    if (validateMove(lastRecord, expected)) {
+      setGameState(newState);
+      snapshot.current = newState;
+      setBuildState(EMPTY_BUILD);
+      setSelectiveFirst(null);
+      setQuadSelected([]);
+      setWrongAttempt(false);
+      setShowHint(false);
+      setSentenceIndex(0);
+      setPhase('success');
+    } else {
+      setGameState(snapshot.current);
+      setBuildState(EMPTY_BUILD);
+      setSelectiveFirst(null);
+      setQuadSelected([]);
+      setWrongAttempt(true);
+    }
+    quadConfirmInFlightRef.current = false;
+  }, [stepIndex, pendingQuadState, pendingQuadGates]);
+
+  const handleQuadCancel = useCallback(() => {
+    // Cancel: close dialog, stay on Move 46, allow re-selection
+    setQuadConfirmOpen(false);
+    setPendingQuadGates([]);
+    setPendingQuadState(null);
+    setQuadSelected([]);
+    setBuildState(EMPTY_BUILD);
+    quadConfirmInFlightRef.current = false;
+  }, []);
 
   // ── Handle "戻る" (back) button ──────────────────────────────────────────
   const handleBack = useCallback((e: React.MouseEvent) => {
@@ -697,49 +773,45 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       const connectedGates = POSITION_TO_GATES[prev.selectedPosition];
       if (!connectedGates.includes(gateId)) return prev;
 
+      // Calculate buildable gates: connected gates that have at least one empty small slot.
+      // This correctly handles partial quad scenarios (e.g. Move 46 where Gate 11 is full).
+      const buildableGateIds = connectedGates.filter(
+        (gId) => prev.gates[gId].smallSlots.some((s) => s === null)
+      );
+
       const current = quadSelected;
       let next: GateId[];
+
+      // Only allow selection of gates that are actually buildable
+      if (!buildableGateIds.includes(gateId)) return prev;
 
       if (current.includes(gateId)) {
         // deselect
         next = current.filter((id) => id !== gateId);
         setQuadSelected(next);
-        setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: connectedGates.length });
+        setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: buildableGateIds.length });
         return prev;
       }
 
       next = [...current, gateId];
-      const maxGates = connectedGates.length;
-      const minGates = currentStep.expectedMove.gates.length;
-      const autoCommitThreshold = Math.min(minGates, maxGates);
+      // Use the number of buildable gates (not expectedMove.gates.length or connectedGates.length)
+      // as the threshold. This ensures partial quad scenarios work correctly.
+      const autoCommitThreshold = buildableGateIds.length;
 
       if (next.length >= autoCommitThreshold) {
-        const newState = applyQuadBuildForGates(prev, next);
-        const lastRecord = newState.history[newState.history.length - 1];
-        if (!lastRecord) return prev;
-
-        const expected = scriptedMoveToExpected(currentStep.expectedMove!);
-        if (validateMove(lastRecord, expected)) {
-          snapshot.current = newState;
-          setBuildState(EMPTY_BUILD);
-          setSelectiveFirst(null);
-          setQuadSelected([]);
-          setWrongAttempt(false);
-          setShowHint(false);
-          setSentenceIndex(0);
-          setTimeout(() => setPhase('success'), 0);
-          return newState;
-        } else {
-          setBuildState(EMPTY_BUILD);
-          setSelectiveFirst(null);
-          setQuadSelected([]);
-          setWrongAttempt(true);
-          return snapshot.current;
-        }
+        // When all buildable gates are selected, show confirm dialog before committing.
+        // Store the pending state for use in the confirm handler.
+        setPendingQuadGates(next);
+        setPendingQuadState(prev);
+        setQuadSelected(next);
+        setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: buildableGateIds.length });
+        quadConfirmInFlightRef.current = false;
+        setQuadConfirmOpen(true);
+        return prev;
       }
 
       setQuadSelected(next);
-      setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: maxGates });
+      setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax: buildableGateIds.length });
       return prev;
     });
   }, [phase, stepIndex, quadSelected]);
@@ -1142,6 +1214,16 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
             {lang === 'ja' ? 'ヒントを見る' : 'Show Hint'}
           </button>
         </div>
+      )}
+
+      {/* Quad Build 確認ダイアログ */}
+      {quadConfirmOpen && (
+        <ConfirmModal
+          open={quadConfirmOpen}
+          label={`Quad Build\nGate ${pendingQuadGates.join(', ​Gate ')}\n${pendingQuadGates.length}/${pendingQuadGates.length}`}
+          onConfirm={handleQuadConfirm}
+          onCancel={handleQuadCancel}
+        />
       )}
     </div>
   );

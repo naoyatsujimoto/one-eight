@@ -579,14 +579,16 @@ export const FULL_GAME_V1: FullGameTrainingTask = {
       explanation: '',
     },
 
-    // ── M37: user, K quad([4,9,10,11]) ────────────────────────────────────
+    // ── M37: user, K partial quad([4,9,10]) — Gate 11 is full ──────────────
     {
       moveNumber: 46,
       displayLabel: 'M37',
       player: 'black',
       kind: 'user',
       move: { position: 'K', buildType: 'quad', gates: [4, 9, 10, 11] },
-      expectedMove: { position: 'K', buildType: 'quad', gates: [4, 9, 10, 11] },
+      // Gate 11 is full at this point — only Gates 4, 9, 10 are buildable.
+      // expectedMove uses [4, 9, 10] so scriptedMoveToExpected generates minGates: 3.
+      expectedMove: { position: 'K', buildType: 'quad', gates: [4, 9, 10] },
       learningPoint: 'partial_quad',
       shortPrompt: 'KにQuad Buildを指してください。',
       explanation: '',
