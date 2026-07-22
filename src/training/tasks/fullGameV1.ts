@@ -738,7 +738,7 @@ export const FULL_GAME_V1: FullGameTrainingTask = {
       player: 'black',
       kind: 'user',
       move: { position: 'B', buildType: 'quad', gates: [2, 3, 6, 11] },
-      expectedMove: { position: 'B', buildType: 'quad', gates: [2, 3, 6, 11] },
+      expectedMove: { position: 'B', buildType: 'quad', gates: [2, 6] },
       learningPoint: 'quad_build',
       shortPrompt: 'BにQuad Buildを指してください。',
       explanation: '',
