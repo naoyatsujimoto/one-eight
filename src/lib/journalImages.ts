@@ -50,6 +50,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-lizard-tail-autotomy-regeneration_what-comes-back-after-the-tail_thumb.jpg',
     alt: 'Lizard tail autotomy and regeneration key visual',
   },
+  'who-the-problem-belongs-to': {
+    hero: '/journal/oej-2026-agrarian-expertise-affect_who-the-problem-belongs-to_hero.jpg',
+    thumbnail: '/journal/oej-2026-agrarian-expertise-affect_who-the-problem-belongs-to_thumb.jpg',
+    alt: 'Diagonal flowering stalk with small purple and pale tubular flowers against a white background',
+  },
 };
 
 /**
