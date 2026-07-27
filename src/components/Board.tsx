@@ -652,83 +652,37 @@ export function Board({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scalerRef = useRef<HTMLDivElement>(null);
+  const scalerLayerRef = useRef<HTMLDivElement>(null);
   const lastScaleRef = useRef<number>(-1);
   const [lines, setLines] = useState<LineCoord[]>([]);
   const [showLabels, setShowLabels] = useState(defaultLabels);
   const [showGhostProNotice, setShowGhostProNotice] = useState(false);
 
   // ── Responsive board scaling ──────────────────────────────────────────────
+  // board-inner-scaler: holds layout space (680*scale × 680*scale)
+  // board-scale-layer:  680×680px, transform:scale(scale) with origin top-left
+  // board-inner:        680×680px coordinate system, handles rotate(180deg) only
   const BOARD_W = 680;
   const BOARD_H = 680;
-
   const applyScale = useCallback(() => {
     const scaler = scalerRef.current;
-    if (!scaler) return;
-    // Measure the board-stage (grandparent of scaler) to get stable available width.
-    // Measuring scaler's direct parent (board-panel section) causes a feedback loop
-    // because applyScale itself changes the scaler's height, which can resize the parent.
-    const stage = scaler.parentElement?.parentElement ?? scaler.parentElement;
-    if (!stage) return;
-    const isMobile = window.innerWidth <= 600;
-    const scaleCap = isMobile ? 0.55 : 1;
-    const padH = isMobile ? 24 : 64; // account for board-stage padding + safety margin
-    const raw = stage.clientWidth > 0 ? stage.clientWidth : 320;
-    const available = Math.max(0, raw - padH);
-    const scale = Math.min(scaleCap, available / BOARD_W);
+    const scaleLayer = scalerLayerRef.current;
+    if (!scaler || !scaleLayer) return;
+    // Measure the direct parent (board-section, padding:0) for available width.
+    // board-section's width is determined by its own parent (not by scaler content),
+    // so setting scaler.width never causes a ResizeObserver feedback loop.
+    const parent = scaler.parentElement;
+    if (!parent) return;
+    const available = parent.clientWidth > 0 ? parent.clientWidth : 320;
+    const scale = Math.min(1, available / BOARD_W);
     // Bail out early if scale hasn't changed (prevents ResizeObserver feedback loop)
     if (Math.abs(scale - lastScaleRef.current) < 0.001) return;
     lastScaleRef.current = scale;
-    scaler.style.setProperty('--board-scale', String(scale));
+    // Set scaler size to match the rendered board footprint in document flow
+    scaler.style.width = `${Math.ceil(BOARD_W * scale)}px`;
     scaler.style.height = `${Math.ceil(BOARD_H * scale)}px`;
-    if (isMobile) {
-      scaler.style.width = `${Math.ceil(BOARD_W * scale)}px`;
-      // Option C mobile fix: on mobile the CSS @media rule sets transform: scale() on .board-inner,
-      // overriding .board-inner.board-inner-rotated { transform: rotate(180deg) }.
-      // Apply scale+rotate together via inline style on board-inner when rotated.
-      // translate(W*s, H*s) corrects the position when using transform-origin: top left.
-      const boardInner = containerRef.current;
-      if (boardInner) {
-        const isRotated = boardInner.classList.contains('board-inner-rotated');
-        if (isRotated) {
-          const s = scale;
-          boardInner.style.transformOrigin = 'top left';
-          boardInner.style.transform = `translate(${BOARD_W * s}px, ${BOARD_H * s}px) scale(${s}) rotate(180deg)`;
-        } else {
-          // Non-rotated: let CSS handle scale; clear any inline override
-          boardInner.style.removeProperty('transform');
-          boardInner.style.removeProperty('transform-origin');
-        }
-      }
-    } else {
-      // Desktop: clear any mobile inline override; CSS handles rotation via .board-inner-rotated
-      const boardInner = containerRef.current;
-      if (boardInner) {
-        boardInner.style.removeProperty('transform');
-        boardInner.style.removeProperty('transform-origin');
-      }
-      scaler.style.removeProperty('width');
-    }
-    scaler.style.removeProperty('--board-left-offset');
-  }, []);
-
-  // Option C mobile fix: update board-inner inline transform when labelPerspective changes.
-  // applyScale handles this via lastScaleRef, but it bails early if scale hasn't changed.
-  // This effect re-applies the inline transform whenever perspective changes.
-  const applyBoardInlineTransform = useCallback((isRotated: boolean) => {
-    const boardInner = containerRef.current;
-    if (!boardInner) return;
-    const isMobile = window.innerWidth <= 600;
-    if (isMobile && isRotated) {
-      const s = lastScaleRef.current > 0 ? lastScaleRef.current : 0.5;
-      boardInner.style.transformOrigin = 'top left';
-      boardInner.style.transform = `translate(${BOARD_W * s}px, ${BOARD_H * s}px) scale(${s}) rotate(180deg)`;
-    } else if (isMobile) {
-      boardInner.style.removeProperty('transform');
-      boardInner.style.removeProperty('transform-origin');
-    } else {
-      boardInner.style.removeProperty('transform');
-      boardInner.style.removeProperty('transform-origin');
-    }
+    // Always apply scale transform to the scale layer (works for all viewport sizes)
+    scaleLayer.style.transform = `scale(${scale})`;
   }, []);
 
   useEffect(() => {
@@ -736,19 +690,14 @@ export function Board({
     // Re-apply after first paint to ensure DOM dimensions are settled
     // (mobile Safari may report clientWidth=0 during the initial synchronous render).
     const rafId = requestAnimationFrame(applyScale);
-    // Observe the board-stage (grandparent) - stable container whose size is not
-    // affected by applyScale, so no feedback loop is triggered.
-    const stage = scalerRef.current?.parentElement?.parentElement ?? scalerRef.current?.parentElement;
+    // Observe board-section (direct parent of scaler): its width is set by its own parent,
+    // not by scaler content, so no ResizeObserver feedback loop.
+    const parent = scalerRef.current?.parentElement;
     const ro = new ResizeObserver(applyScale);
-    if (stage) ro.observe(stage);
+    if (parent) ro.observe(parent);
     window.addEventListener('resize', applyScale);
     return () => { cancelAnimationFrame(rafId); ro.disconnect(); window.removeEventListener('resize', applyScale); };
   }, [applyScale]);
-
-  // Re-apply inline transform when labelPerspective changes (e.g., new game with different color)
-  useEffect(() => {
-    applyBoardInlineTransform(labelPerspective === 'white');
-  }, [labelPerspective, applyBoardInlineTransform]);
 
   useEffect(() => {
     if (!selectedId || !containerRef.current) {
@@ -759,9 +708,9 @@ export function Board({
     const cRect = container.getBoundingClientRect();
 
     // Compute CSS-transform scale (board-inner may be scaled by a parent wrapper).
-    // offsetWidth is the layout-space width (always 600); cRect.width is the
+    // offsetWidth is the layout-space width (always 680); cRect.width is the
     // viewport-space width after transform. Dividing coords by `scale` converts
-    // them back to the SVG's internal coordinate space (0-600).
+    // them back to the SVG's internal coordinate space (0-680).
     const scale = container.offsetWidth > 0 ? cRect.width / container.offsetWidth : 1;
 
     const posBtn = container.querySelector<HTMLElement>(`[data-pos-id="${selectedId}"]`);
@@ -839,6 +788,7 @@ export function Board({
     <section className="board-section">
 
       <div className="board-inner-scaler" ref={scalerRef}>
+      <div className="board-scale-layer" ref={scalerLayerRef}>
       <div
         className={['board-inner', showLabels ? '' : 'labels-hidden', labelPerspective === 'white' ? 'board-inner-rotated' : ''].filter(Boolean).join(' ')}
         ref={containerRef}
@@ -991,6 +941,7 @@ export function Board({
           })}
         </div>
       </div>
+      </div>{/* board-scale-layer */}
       </div>{/* board-inner-scaler */}
 
       {/* Label toggle + Ghost Mode toggle */}

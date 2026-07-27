@@ -835,12 +835,17 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Scale wrapper: applies transform:scale() to fit the board into available width.
+   Separate from board-inner so scale and rotate live on different elements. */
+.board-scale-layer {
+  position: relative;
+  width: 680px;
+  height: 680px;
+  transform-origin: top left;
+}
+
 /* Option C: White-perspective board rotation */
-/* The entire board is physically rotated 180°. Labels counter-rotate to remain readable.
-   Use double-class selector (.board-inner.board-inner-rotated) for specificity 0,0,2,0
-   so it overrides the mobile @media .board-inner { transform: scale() } rule (0,0,1,0).
-   On mobile, --board-scale is set inline on the scaler (inherited by board-inner),
-   so we combine scale + rotate here to cover both desktop and mobile. */
+/* board-inner handles rotation only; scale is handled by the parent board-scale-layer. */
 .board-inner.board-inner-rotated {
   transform: rotate(180deg);
   transform-origin: center center;
@@ -1926,29 +1931,11 @@ ol { padding-left: 20px; }
      scaler gets the full viewport width with no wasted pixels. */
   .board-section {
     padding: 4px 0;
-    overflow: hidden;
     min-width: 0;
     border: none;
     border-radius: 0;
   }
 
-  /*
-   * board-inner is 600×680px absolutely. We wrap it in a scaler div
-   * that constrains the layout width to the available viewport.
-   * We use CSS custom property --board-scale (set inline by JS) but
-   * also provide a CSS fallback via transform on .board-inner-scaler.
-   */
-  .board-inner-scaler {
-    overflow: hidden;
-    max-width: 100%;
-    margin: 0;
-    min-width: 0;
-  }
-  .board-inner {
-    transform-origin: top left;
-    transform: scale(var(--board-scale, 0.50));
-    display: block;
-  }
   /* Position buttons: ensure tap target inside scaled board */
   .position-btn { min-width: 44px; min-height: 44px; }
 }
@@ -2311,7 +2298,6 @@ ol { padding-left: 20px; }
 @media (max-width: 600px) {
   .board-section {
     padding: 4px 0;
-    overflow: hidden;
     min-width: 0;
   }
 }
