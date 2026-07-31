@@ -10,7 +10,7 @@ English (`en`) is the **sole canonical source**. All structural changes (adding 
 |---------|-----------------------|--------------------|
 | en      | English               | ✅ Full translation |
 | ja      | 日本語                | ✅ Full translation |
-| zh-Hant | 繁體中文              | 🔄 English fallback |
+| zh-Hant | 繁體中文              | ✅ Full translation |
 | zh-Hans | 简体中文              | 🔄 English fallback |
 | ko      | 한국어                | 🔄 English fallback |
 | es      | Español               | 🔄 English fallback |
