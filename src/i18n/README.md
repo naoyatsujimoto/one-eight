@@ -15,9 +15,9 @@ English (`en`) is the **sole canonical source**. All structural changes (adding 
 | ko      | 한국어                | ✅ Full translation |
 | es      | Español               | ✅ Full translation |
 | pt-BR   | Português (Brasil)    | ✅ Full translation |
-| de      | Deutsch               | 🔄 English fallback |
-| fr      | Français              | 🔄 English fallback |
-| it      | Italiano              | 🔄 English fallback |
+| de      | Deutsch               | ✅ Full translation |
+| fr      | Français              | ✅ Full translation |
+| it      | Italiano              | ✅ Full translation |
 
 zh-Hans covers Singapore, Malaysia, overseas simplified-literate users, and diaspora. Do NOT annotate zh-Hans as "Mainland China".
 

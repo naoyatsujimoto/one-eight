@@ -8,11 +8,14 @@ import { ZH_HANS_TRANSLATIONS } from '../i18n/zh-Hans';
 import { KO_TRANSLATIONS } from '../i18n/ko';
 import { ES_TRANSLATIONS } from '../i18n/es';
 import { PT_BR_TRANSLATIONS } from '../i18n/pt-BR';
+import { DE_TRANSLATIONS } from '../i18n/de';
+import { FR_TRANSLATIONS } from '../i18n/fr';
+import { IT_TRANSLATIONS } from '../i18n/it';
 import { resolveUiTranslations } from '../i18n/index';
 
 const EXPECTED_LOCALES = ['en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
 
-// Fully translated locales (must resolve to their own dictionary, not EN fallback)
+// All 10 locales are fully translated
 const FULLY_TRANSLATED: Array<{ code: LocaleCode; dict: unknown }> = [
   { code: 'en', dict: EN_TRANSLATIONS },
   { code: 'ja', dict: JA_TRANSLATIONS },
@@ -21,10 +24,10 @@ const FULLY_TRANSLATED: Array<{ code: LocaleCode; dict: unknown }> = [
   { code: 'ko', dict: KO_TRANSLATIONS },
   { code: 'es', dict: ES_TRANSLATIONS },
   { code: 'pt-BR', dict: PT_BR_TRANSLATIONS },
+  { code: 'de', dict: DE_TRANSLATIONS },
+  { code: 'fr', dict: FR_TRANSLATIONS },
+  { code: 'it', dict: IT_TRANSLATIONS },
 ];
-
-// English-fallback locales
-const FALLBACK_LOCALES: LocaleCode[] = ['de', 'fr', 'it'];
 
 // Deep shape comparison utility
 type LeafType = 'string' | 'number' | 'boolean' | 'function' | 'array' | 'object';
@@ -244,7 +247,7 @@ describe('i18n structure', () => {
   });
 
   // ===========================================================
-  // Character contamination checks for non-CJK locales
+  // Character contamination checks
   // ===========================================================
   describe('character contamination checks', () => {
     it('ZH_HANS_TRANSLATIONS contains no Hiragana or Katakana', () => {
@@ -288,16 +291,52 @@ describe('i18n structure', () => {
       const contaminated = leaves.filter(l => HIRAGANA_KATAKANA_RE.test(l.value));
       expect(contaminated).toEqual([]);
     });
+
+    it('DE_TRANSLATIONS contains no CJK or Kana characters', () => {
+      const leaves = collectStringLeaves(DE_TRANSLATIONS);
+      const contaminated = leaves.filter(l => CJK_KANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('DE_TRANSLATIONS contains no Hangul characters', () => {
+      const leaves = collectStringLeaves(DE_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HANGUL_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('FR_TRANSLATIONS contains no CJK or Kana characters', () => {
+      const leaves = collectStringLeaves(FR_TRANSLATIONS);
+      const contaminated = leaves.filter(l => CJK_KANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('FR_TRANSLATIONS contains no Hangul characters', () => {
+      const leaves = collectStringLeaves(FR_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HANGUL_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('IT_TRANSLATIONS contains no CJK or Kana characters', () => {
+      const leaves = collectStringLeaves(IT_TRANSLATIONS);
+      const contaminated = leaves.filter(l => CJK_KANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('IT_TRANSLATIONS contains no Hangul characters', () => {
+      const leaves = collectStringLeaves(IT_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HANGUL_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
   });
 
   // ===========================================================
-  // Fallback locales — must resolve to EN_TRANSLATIONS
+  // All SUPPORTED_LOCALES resolve to their own dictionary
   // ===========================================================
-  describe('English fallback locales', () => {
-    for (const locale of FALLBACK_LOCALES) {
-      it(`resolveUiTranslations("${locale}") falls back to EN_TRANSLATIONS`, () => {
-        const result = resolveUiTranslations(locale);
-        expect(result).toBe(EN_TRANSLATIONS as any);
+  describe('all SUPPORTED_LOCALES have own dictionaries', () => {
+    for (const { code, dict } of FULLY_TRANSLATED) {
+      it(`resolveUiTranslations("${code}") returns its own dictionary (not EN fallback)`, () => {
+        const result = resolveUiTranslations(code);
+        expect(result).toBe(dict as any);
       });
     }
 
