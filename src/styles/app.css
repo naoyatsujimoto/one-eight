@@ -174,12 +174,16 @@ html, body {
 .board-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .board-stage {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 36px 32px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .panel-col {
   border-left: 1px solid var(--rule);
@@ -1899,7 +1903,7 @@ ol { padding-left: 20px; }
 
 /* ─── Tablet (≤ 960px): single-column ───────────── */
 @media (max-width: 960px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
   .panel-col { border-left: none; border-top: 1px solid var(--rule); }
 }
 
@@ -2082,6 +2086,10 @@ ol { padding-left: 20px; }
   border: none;
   padding: 0;
   margin: 0;
+  width: 100%;
+  max-width: 680px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* ── labels-hidden: ポジションラベル・ゲート番号を非表示 ── */
