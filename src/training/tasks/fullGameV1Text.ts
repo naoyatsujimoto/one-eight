@@ -18,7 +18,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       ja: 'Black視点で、1局の流れを通して学びます。Massive Build・Selective Build・Quad Build・Capture・防衛・終盤の判断を体験してください。',
     },
     finalSummary: {
-      en: 'You have completed one full game of ONE EIGHT. Build to prepare, build to defend, and capture when the gate values give you the right to do so.',
+      en: 'You have completed a full game of ONE EIGHT. Remember to use Build up to prepare, to defend, and to capture when the Gate control values meet the required conditions.',
       ja: 'ONE EIGHTの一局を完走しました。準備するBuild、防ぐBuild、そしてGate支配値が条件を満たした時のCaptureを意識してください。',
     },
   },
@@ -29,7 +29,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       moveNumber: 0,
       learningPoint: 'intro',
       introText: {
-        en: 'The game proceeds by selecting a Position and performing a Build up to complete one turn.\n\nSelect one of the 13 Positions in the center of the board, then Build up Assets to the Gates accessible from that Position.\nWhen the Build up is complete, the turn passes to the opponent.\n\nLet\'s try it out.',
+        en: 'A turn is completed by selecting a Position and then performing a Build up.\n\nSelect one of the 13 Positions in the center of the board, then Build up Assets at the Gates accessible from that Position.\nOnce the Build up is complete, the turn passes to your opponent.\n\nLet\'s try it.',
         ja: '対局は基本的に、Positionの選択 と Build up によって一手が完了します。\n\n盤面中央の13個のPositionから1つを選択し、そのPositionからアクセス可能なGateにAssetをBuild upします。\nBuild upが完了すると、相手のターンに移ります。\n\nまずは実際にやってみましょう。',
       },
     },
@@ -64,7 +64,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'position_select',
       userText: {
         situation: {
-          en: 'The Gates diagonally connected to a selected Position are called the Diagonal Gates of that Position.\nThe blue-highlighted Gates are the Gates you can Build up from that Position.',
+          en: 'The Gates diagonally connected to a selected Position are called the Diagonal Gates of that Position.\nThe blue-highlighted Diagonal Gates are available for Build up from that Position.',
           ja: '選択したPositionの対角線上にあるGateを、そのPositionのDiagonal Gateと呼びます。\n青くハイライトされているDiagonal Gateが、そのPositionからBuild upできるGateです。',
         },
         question: {
@@ -76,7 +76,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Gをタップしてください。',
         },
         success: {
-          en: 'Each Position has different Diagonal Gates that can be built up.\nBy reselecting a Position, the Gates available for Build up change as well.',
+          en: 'The Gates available for Build up differ by Position.\nBy reselecting a Position, the Gates available for Build up change as well.',
           ja: 'Positionごとに、Build upできるGateは異なります。\nPositionを選び直すことで、Build upできるGateも変わります。',
         },
       },
@@ -88,19 +88,19 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'massive_build',
       userText: {
         situation: {
-          en: 'Build up is performed by placing Assets in the large, medium, and small slots at a Gate.\nDepending on the size of the slot you select, there are three types of Build up:\nMassive Build\nSelective Build\nQuad Build\nThis time, perform a Massive Build on Gate 4.\nIf there are multiple slots of the same size, you can tap either one.',
+          en: 'Build up is performed by placing Assets in the Large Slot, Middle Slot, or Small Slot of a Diagonal Gate.\nDepending on the size of the Slot you select, there are three types of Build up:\nMassive Build\nSelective Build\nQuad Build\nThis time, perform a Massive Build on Gate 4.\nIf there are multiple Slots of the same size, you can tap either one.',
           ja: 'Build upは、Diagonal GateにあるLarge Slot・Middle Slot・Small SlotにAssetを設置することで行います。\n選択するSlotのサイズによって、Build upには次の3種類があります。\nMassive Build\nSelective Build\nQuad Build\n今回は、Gate 4に対して Massive Build を実行します。\n同じサイズのSlotであれば、どちらをタップしても問題ありません。',
         },
         question: {
-          en: 'Tap the largest slot at Gate 4 to place an Asset.',
+          en: 'Tap the largest Slot at Gate 4 to place an Asset.',
           ja: 'Gate 4の一番大きなSlotをタップして、Assetを設置してください。',
         },
         hint: {
-          en: 'Tap the large slot (the largest slot) at Gate 4.',
+          en: 'Tap the Large Slot (the largest Slot) at Gate 4.',
           ja: 'Gate 4のLarge Slot（一番大きなSlot）をタップしてください。',
         },
         success: {
-          en: 'With Massive Build, you place an Asset in the large slot of one Gate.\nLarge Assets hold great value in later Position control.',
+          en: 'With Massive Build, you place an Asset in the Large Slot of one Gate.\nLarge Assets hold great value in later Position control.',
           ja: 'Massive Buildでは、1つのGateのLarge SlotにLarge Assetを設置します。\nLarge Assetは、後のPosition支配で非常に大きな価値を持ちます。',
         },
       },
@@ -112,7 +112,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'auto',
       autoText: {
         auto: {
-          en: 'White selected Position J and performed a Massive Build on Gate 7.\n\nThe pieces placed by Build up are called Assets. An Asset shows which player performed the Build up by the direction of its arrow.\n\nThe Asset facing toward you is the one placed by your own Build up.',
+          en: 'White selected Position J and performed a Massive Build on Gate 7.\n\nThe pieces placed through Build up are called Assets. The direction of an Asset\'s arrow indicates which player placed it.\n\nAn Asset pointing toward you was placed by you.',
           ja: '後攻の白は、Position Jを選択し、Gate 7にMassive Buildを実行しました。\n\nBuild upによって置かれたコマを Asset と呼びます。Assetは、矢印の向きによって、どちらのプレイヤーによるBuild upかを示しています。\n\n自分の方を向いているAssetが、自分のBuild upによるAssetです。',
         },
       },
@@ -124,7 +124,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'selective_build',
       userText: {
         situation: {
-          en: 'With Selective Build, you place Assets in the medium slots of two different Gates.\nYou cannot place Assets in both medium slots of the same Gate in one Selective Build.',
+          en: 'With Selective Build, you place Assets in the Middle Slots of two different Gates.\nYou cannot place Assets in both Middle Slots of the same Gate in one Selective Build.',
           ja: 'Selective Buildでは、異なる2つのGateのMiddle Slotに、それぞれAssetを設置します。\n同じGateにある2つのMiddle Slotへ、1回のSelective BuildでAssetを置くことはできません。',
         },
         question: {
@@ -132,11 +132,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Kを選択し、Gate 4とGate 10に Selective Build を実行しましょう。',
         },
         hint: {
-          en: 'Tap Position K, then tap the medium slot of Gate 4, then the medium slot of Gate 10.',
+          en: 'Tap Position K, then tap the Middle Slot of Gate 4, then the Middle Slot of Gate 10.',
           ja: 'Position Kをタップし、Gate 4のMiddle Slot、次にGate 10のMiddle Slotをタップしてください。',
         },
         success: {
-          en: 'Selective Build is a Build up that distributes medium Assets across two Gates.\nWhile its impact at any single point is less than Massive Build, it can simultaneously affect multiple Gates.',
+          en: 'Selective Build distributes Middle Assets across two Gates.\nIt has less influence on any single Gate than Massive Build, but it can affect multiple Gates at once.',
           ja: 'Selective Buildは、2つのGateにMiddle Assetを分散して置くBuild upです。\nMassive Buildほど一点の影響は大きくありませんが、複数のGateに同時に影響を与えられます。',
         },
       },
@@ -160,7 +160,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'quad_build',
       userText: {
         situation: {
-          en: 'With Quad Build, you place Assets in the small slots of all four Diagonal Gates accessible from that Position.',
+          en: 'With Quad Build, you place Assets in the Small Slots of all four Diagonal Gates accessible from that Position.',
           ja: 'Quad Buildでは、そのPositionから選択可能な4つのDiagonal Gateすべてに対して、Small SlotへSmall Assetを設置します。',
         },
         question: {
@@ -168,7 +168,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Bを選択し、Quad Build を実行しましょう。',
         },
         hint: {
-          en: 'Tap Position B, then tap any small slot.',
+          en: 'Tap Position B, then tap any Small Slot.',
           ja: 'Position Bをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
@@ -184,7 +184,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'auto',
       autoText: {
         auto: {
-          en: 'White selected Position D and performed a Massive Build on Gate 7.\n\nThis Build up filled the large slot of Gate 7.',
+          en: 'White selected Position D and performed a Massive Build on Gate 7.\n\nThis Build up filled the Large Slot of Gate 7.',
           ja: '白はPosition Dを選択し、Gate 7にMassive Buildを実行しました。\n\nこのBuild upにより、Gate 7のLarge Slotが埋まりました。',
         },
       },
@@ -196,7 +196,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'selective_build',
       userText: {
         situation: {
-          en: 'Like Gate 6 and Gate 10, both Black and White can Build up on the same Gate.\nOne Gate consists of the following slots:\nLarge slots: 2\nMedium slots: 2\nSmall slots: 4',
+          en: 'Like Gate 6 and Gate 10, both Black and White can Build up on the same Gate.\nOne Gate consists of the following Slots:\nLarge Slots: 2\nMedium Slots: 2\nSmall Slots: 4',
           ja: 'Gate 6やGate 10のように、1つのGateに対して、黒と白の両方がBuild upすることができます。\n1つのGateは、次のSlotで構成されています。\nLarge Slot：2つ\nMiddle Slot：2つ\nSmall Slot：4つ',
         },
         question: {
@@ -204,7 +204,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Iを選択し、Gate 8とGate 12にSelective Buildを実行しましょう。',
         },
         hint: {
-          en: 'Tap Position I, then tap the medium slot of Gate 8, then the medium slot of Gate 12.',
+          en: 'Tap Position I, then tap the Middle Slot of Gate 8, then the Middle Slot of Gate 12.',
           ja: 'Position Iをタップし、Gate 8のMiddle Slot、次にGate 12のMiddle Slotをタップしてください。',
         },
         success: {
@@ -220,7 +220,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'auto',
       autoText: {
         auto: {
-          en: 'White selected Position L and performed a Quad Build.\n\nThe game ends when all slots of all Gates are filled by both players taking turns.\n\nAt the end of the game, the player holding more Positions is the winner.',
+          en: 'White selected Position L and performed a Quad Build.\n\nThe game ends once every Slot at every Gate has been filled through alternating turns.\n\nAt the end of the game, the player holding more Positions is the winner.',
           ja: '白はPosition Lを選択し、Quad Buildを実行しました。\n\nお互いに手を進め、すべてのGateのすべてのSlotが埋まった時点で終局となります。\n\n終局時に、より多くのPositionを保持しているプレイヤーが勝者です。',
         },
       },
@@ -237,7 +237,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Cを選択し、Gate 3とGate 4にSelective Buildを実行しましょう。',
         },
         hint: {
-          en: 'Tap Position C, then tap the medium slot of Gate 3, then the medium slot of Gate 4.',
+          en: 'Tap Position C, then tap the Middle Slot of Gate 3, then the Middle Slot of Gate 4.',
           ja: 'Position Cをタップし、Gate 3のMiddle Slot、次にGate 4のMiddle Slotをタップしてください。',
         },
         success: {
@@ -270,7 +270,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Aを選択し、Gate 1にMassive Buildを実行しましょう。',
         },
         hint: {
-          en: 'Tap Position A, then tap the large slot of Gate 1.',
+          en: 'Tap Position A, then tap the Large Slot of Gate 1.',
           ja: 'Position Aをタップし、Gate 1のLarge Slotをタップしてください。',
         },
         success: {
@@ -306,7 +306,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Gを選択し、Gate 1にMassive Buildを実行しましょう。',
         },
         hint: {
-          en: 'Tap Position G, then tap the large slot of Gate 1.',
+          en: 'Tap Position G, then tap the Large Slot of Gate 1.',
           ja: 'Position Gをタップし、Gate 1のLarge Slotをタップしてください。',
         },
         success: {
@@ -355,7 +355,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'selective_build',
       userText: {
         situation: {
-          en: 'Let\'s check the Build up status of Position G\'s four Diagonal Gates.\nThe current state is as follows:\nGate 1: 2 large Assets\nGate 4: 1 large Asset, 2 medium Assets\nGate 7: 2 large Assets, 1 medium Asset\nGate 10: 2 medium Assets',
+          en: 'Let\'s check the Build up status of Position G\'s four Diagonal Gates.\nThe current state is as follows:\nGate 1: 2 Large Assets\nGate 4: 1 Large Asset, 2 Middle Assets\nGate 7: 2 Large Assets, 1 Middle Asset\nGate 10: 2 Middle Assets',
           ja: 'Position Gの4つのDiagonal GateのBuild up状況を確認しましょう。\n現在は次のようになっています。\nGate 1：Large Assetが2つ\nGate 4：Large Assetが1つ、Middle Assetが2つ\nGate 7：Large Assetが2つ、Middle Assetが1つ\nGate 10：Middle Assetが2つ',
         },
         question: {
@@ -363,11 +363,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: '次にPosition Aを選択し、Gate 1とGate 2にSelective Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position A, then tap the medium slot of Gate 1, then the medium slot of Gate 2.',
+          en: 'Tap Position A, then tap the Middle Slot of Gate 1, then the Middle Slot of Gate 2.',
           ja: 'Position Aをタップし、Gate 1のMiddle Slot、次にGate 2のMiddle Slotをタップしてください。',
         },
         success: {
-          en: 'Control over a Position is determined by the Build up status of its Diagonal Gates.\nIt is important to see which Gate is built up the most.',
+          en: 'Control over a Position is determined by the Build up status of its Diagonal Gates.\nIt is important to identify which Gate has received the most Build up.',
           ja: 'Positionをめぐる支配は、そのPositionのDiagonal GateのBuild up状況によって決まります。\nどのGateが最もBuild upされているかを見ることが重要です。',
         },
       },
@@ -403,7 +403,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Gをタップしてください。',
         },
         success: {
-          en: 'Even for the same Position, the control situation changes as more Assets are placed on surrounding Gates.',
+          en: 'Even for the same Position, the control situation changes as more Assets are placed on its Diagonal Gates.',
           ja: '同じPositionでも、Diagonal GateにAssetが増えることで、支配状況は変化していきます。',
         },
       },
@@ -415,7 +415,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'selective_build',
       userText: {
         situation: {
-          en: 'No matter how many small or medium Assets are stacked, they cannot reach the value of a single large Asset.\nFurthermore, even four small Assets cannot reach the value of a single medium Asset.\nCurrently, among the four Diagonal Gates of Position G, Gate 7 is the Gate with the most Build up.',
+          en: 'Even all available Small and Middle Assets combined are worth less than one Large Asset.\nFour Small Assets are also worth less than one Middle Asset.\nOf Position G\'s four Diagonal Gates, Gate 7 has received the most Build up.',
           ja: 'Small AssetやMiddle Assetをどれだけ重ねても、Large Asset1つの価値には届きません。\nまた、Small Assetを4つ重ねても、Middle Asset1つの価値には届きません。\n現在、Position Gの4つのDiagonal Gateの中では、Gate 7が最もBuild upの進んだGateです。',
         },
         question: {
@@ -423,7 +423,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Aを選択したまま、Gate 1とGate 2にSelective Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position A, then tap the medium slot of Gate 1, then the medium slot of Gate 2.',
+          en: 'Tap Position A, then tap the Middle Slot of Gate 1, then the Middle Slot of Gate 2.',
           ja: 'Position Aをタップし、Gate 1のMiddle Slot、次にGate 2のMiddle Slotをタップしてください。',
         },
         success: {
@@ -456,7 +456,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Bを選択し、Gate 3とGate 11にSelective Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position B, then tap the medium slot of Gate 3, then the medium slot of Gate 11.',
+          en: 'Tap Position B, then tap the Middle Slot of Gate 3, then the Middle Slot of Gate 11.',
           ja: 'Position Bをタップし、Gate 3のMiddle Slot、次にGate 11のMiddle Slotをタップしてください。',
         },
         success: {
@@ -513,7 +513,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Eを選択したまま、Gate 10にMassive Buildを実行してください。',
         },
         hint: {
-          en: 'Tap the large slot of Gate 10.',
+          en: 'Tap the Large Slot of Gate 10.',
           ja: 'Gate 10のLarge Slotをタップしてください。',
         },
         success: {
@@ -541,7 +541,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'defense',
       userText: {
         situation: {
-          en: 'At Position A, Gate 1 and Gate 7 are built up equally and both are the most built-up Gates.\nWhen there are multiple Gates with the most Build up, compare which player controls more of those Gates.\nAt Position A, Black controls Gate 1 and White controls Gate 7.\nTherefore, White cannot capture Position A.\nBlack is successfully defending Position A.',
+          en: 'At Position A, Gate 1 and Gate 7 have received equal amounts of Build up, tying for the most among its Diagonal Gates.\nWhen multiple Diagonal Gates tie for the most Build up, compare how many of those Gates each player controls.\nAt Position A, Black controls Gate 1 and White controls Gate 7.\nTherefore, White cannot capture Position A.\nBlack is successfully defending Position A.',
           ja: 'Position Aでは、Gate 1とGate 7が同じ数だけBuild upされており、どちらも最もBuild upが進んだDiagonal Gateです。\n最もBuild upが進んでいるDiagonal Gateが複数ある場合は、それらのGateの中で、相手より多くのGateを支配しているかを比較します。\nPosition Aでは、Gate 1は黒が支配し、Gate 7は白が支配しています。\nそのため、白はPosition Aを奪取できません。\n黒はPosition Aを適切に防衛できています。',
         },
         question: {
@@ -565,7 +565,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'defense',
       userText: {
         situation: {
-          en: 'Among Position B\'s Diagonal Gates, Gate 11 is the Gate with the most Build up.\nOne large Asset is worth more than two medium Assets.\nCurrently, White controls Gate 11.\nIf left as is, there is a risk that White will capture Position B on the next turn.',
+          en: 'Among Position B\'s Diagonal Gates, Gate 11 is the Gate with the most Build up.\nOne Large Asset is worth more than two Middle Assets.\nCurrently, White controls Gate 11.\nIf left as is, there is a risk that White will capture Position B on the next turn.',
           ja: 'Position BのDiagonal Gateでは、Gate 11が最もBuild upの進んだGateです。\nLarge Asset1つは、Middle Asset2つよりも価値があります。\nそして現在、Gate 11は白が支配しています。\nこのままでは、次の白手番でPosition Bを奪われる可能性があります。',
         },
         question: {
@@ -594,7 +594,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Bを選択したまま、Gate 11にMassive Buildを実行しましょう。',
         },
         hint: {
-          en: 'Tap the large slot of Gate 11.',
+          en: 'Tap the Large Slot of Gate 11.',
           ja: 'Gate 11のLarge Slotをタップしてください。',
         },
         success: {
@@ -651,11 +651,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Gate 11とGate 12にSelective Buildを実行し、さらにGate 11を強化しましょう。',
         },
         hint: {
-          en: 'Tap the medium slot of Gate 11, then the medium slot of Gate 12.',
+          en: 'Tap the Middle Slot of Gate 11, then the Middle Slot of Gate 12.',
           ja: 'Gate 11のMiddle Slot、次にGate 12のMiddle Slotをタップしてください。',
         },
         success: {
-          en: 'Further strengthening related Gates after capture makes it easier to protect the captured Position.',
+          en: 'Further strengthening the Diagonal Gates after a capture makes it easier to protect the captured Position.',
           ja: '奪取後にさらにDiagonal Gateを強化することで、奪ったPositionを守りやすくなります。',
         },
       },
@@ -679,7 +679,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'defense',
       userText: {
         situation: {
-          en: 'If left as is, Position I will be captured by White on the next turn.\nEven if Black performs a Massive Build on Gate 8, Black cannot become dominant.\nAt Gate 8, White has built up 1 large Asset, 1 medium Asset, and 4 small Assets.\nEven if Black performs a Massive Build there, Black would have 1 large Asset, 1 medium Asset, and 0 small Assets.\nThe difference in small Assets means Black cannot overturn White\'s dominance.',
+          en: 'If left as is, Position I will be captured by White on the next turn.\nEven if Black performs a Massive Build on Gate 8, Black cannot become dominant.\nAt Gate 8, White has built up 1 Large Asset, 1 Middle Asset, and 4 Small Assets.\nEven if Black performs a Massive Build there, Black would have 1 Large Asset, 1 Middle Asset, and 0 Small Assets.\nThe difference in Small Assets means Black cannot overturn White\'s dominance.',
           ja: 'このままだと、次の白手番でPosition Iは奪われてしまいます。\nGate 8にMassive Buildをしても、黒は優勢になれません。\nGate 8では、白がLarge Asset1つ、Middle Asset1つ、Small Asset4つをBuild upしています。\nここに黒がMassive Buildをしても、黒はLarge Asset1つ、Middle Asset1つ、Small Asset0個の状態です。\nSmall Assetの差によって、白の優勢を覆すことはできません。',
         },
         question: {
@@ -691,7 +691,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Iをタップしてください。',
         },
         success: {
-          en: 'Placing a large Asset does not always guarantee you will take control.\nThe difference in already-placed medium and small Assets may prevent the control from being overturned.',
+          en: 'Placing a Large Asset does not always guarantee you will take control.\nThe difference in already-placed Middle and Small Assets may prevent the control from being overturned.',
           ja: 'Large Assetを置けば必ず支配を取れるわけではありません。\n既に置かれているMiddle AssetやSmall Assetの差によって、支配が覆らない場合があります。',
         },
       },
@@ -708,11 +708,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Iを一時的に防衛するため、Gate 4にMassive Buildを実行しましょう。',
         },
         hint: {
-          en: 'Tap the large slot of Gate 4.',
+          en: 'Tap the Large Slot of Gate 4.',
           ja: 'Gate 4のLarge Slotをタップしてください。',
         },
         success: {
-          en: 'Rather than a Gate where direct reversal is impossible, strengthening a different Diagonal Gate can temporarily protect a Position.',
+          en: 'When you cannot reverse control of one Gate directly, strengthening another Diagonal Gate may temporarily protect the Position.',
           ja: '直接逆転できないGateではなく、別のDiagonal Gateを強化することで、一時的にPositionを守れる場合があります。',
         },
       },
@@ -724,7 +724,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'auto',
       autoText: {
         auto: {
-          en: 'White selected Position L and performed a Massive Build on Gate 8.\n\nWhen determining the most built-up Gate, it does not matter whether it is your own or the opponent\'s Build up.\nBoth players\' Build ups are totaled for the judgment.\n\nPosition I\'s Diagonal Gates are Gate 4, Gate 8, Gate 10, and Gate 12.\nCurrently, the most built-up Gate among these is Gate 8.\n\nThis situation cannot be overturned in one move.',
+          en: 'White selected Position L and performed a Massive Build on Gate 8.\n\nWhen determining which Gate has received the most Build up, it does not matter which player placed the Assets.\nAdd both players\' Build up together.\n\nPosition I\'s Diagonal Gates are Gate 4, Gate 8, Gate 10, and Gate 12.\nCurrently, the most built-up Gate among these is Gate 8.\n\nThis situation cannot be overturned in one move.',
           ja: '白はPosition Lを選択し、Gate 8にMassive Buildを実行しました。\n\n最もBuild upが進んだGateを判定するときには、それが自分のBuild upか相手のBuild upかは問いません。\n両者のBuild upを合計して判定します。\n\nPosition IのDiagonal Gateは、Gate 4、Gate 8、Gate 10、Gate 12です。\n現在、この中で最もBuild upが進んでいるGateはGate 8です。\n\nこの状況は、次の一手では覆りません。',
         },
       },
@@ -741,7 +741,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Dを奪取し、Quad Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position D, then tap any small slot.',
+          en: 'Tap Position D, then tap any Small Slot.',
           ja: 'Position Dをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
@@ -769,7 +769,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'quad_build',
       userText: {
         situation: {
-          en: 'As the endgame approaches, the number of open slots decreases.\nIt is important to proceed while checking which Gates can still be built up.',
+          en: 'As the endgame approaches, fewer Slots remain open.\nKeep track of which Gates still have room for Build up.',
           ja: '終盤に近づくほど、空いているSlotは少なくなっていきます。\nどのGateにまだBuild upできるかを確認しながら進めることが重要です。',
         },
         question: {
@@ -777,7 +777,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Aを選択し、Quad Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position A, then tap any small slot.',
+          en: 'Tap Position A, then tap any Small Slot.',
           ja: 'Position Aをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
@@ -810,11 +810,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Gを選択し、Quad Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position G, then tap any small slot.',
+          en: 'Tap Position G, then tap any Small Slot.',
           ja: 'Position Gをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
-          en: 'Quad Build can broadly place Assets in remaining small slots, affecting fine control differences in the endgame.',
+          en: 'By spreading Assets across the remaining Small Slots, Quad Build can affect narrow margins of control in the endgame.',
           ja: 'Quad Buildは、残っているSmall Slotへ広くAssetを置くことで、終盤の細かな支配差に影響します。',
         },
       },
@@ -843,7 +843,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Kを選択し、Quad Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position K, then tap any small slot.',
+          en: 'Tap Position K, then tap any Small Slot.',
           ja: 'Position Kをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
@@ -871,7 +871,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'partial_quad',
       userText: {
         situation: {
-          en: 'Gate 11 no longer has any slots available for small Assets.\nTherefore, you can perform a Quad Build by building up small Assets on Gate 4, Gate 9, and Gate 10.\nWith Selective Build and Quad Build, if the target slots are full, only the available range will be built up.',
+          en: 'Gate 11 no longer has any Slots available for Small Assets.\nTherefore, you can perform a Quad Build by building up Small Assets on Gate 4, Gate 9, and Gate 10.\nWith Selective Build and Quad Build, if some target Slots are full, the Build up is performed only where space remains.',
           ja: 'Gate 11には、もうSmall Assetを置けるSlotがありません。\nそのため、Gate 4、Gate 9、Gate 10にSmall AssetをBuild upすれば、Quad Buildを実行できます。\nSelective BuildとQuad Buildでは、対象となるSlotに空きがない場合、可能な範囲だけをBuild upすることがあります。',
         },
         question: {
@@ -879,11 +879,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Kを選択し、Quad Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position K, then tap any small slot.',
+          en: 'Tap Position K, then tap any Small Slot.',
           ja: 'Position Kをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
-          en: 'Even when you cannot place Assets on all target Gates, you can Build up on Gates that still have open slots.\nThis kind of partial Build up naturally occurs in the endgame.',
+          en: 'Even when you cannot place Assets on all target Gates, you can Build up on Gates that still have open Slots.\nThis kind of partial Build up naturally occurs in the endgame.',
           ja: '対象GateのすべてにAssetを置けない場合でも、空きSlotがあるGateにはBuild upできます。\n終盤では、このような部分的なBuild upが自然に発生します。',
         },
       },
@@ -907,7 +907,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'prepare_capture',
       userText: {
         situation: {
-          en: 'Now, among Position I\'s Diagonal Gates (Gate 4, Gate 8, Gate 10, Gate 12), the three Gates with the most Build up are Gate 4, Gate 8, and Gate 10.\nFurthermore, Black can establish dominance at Gate 4 and Gate 10.\nTherefore, on the next Black turn, Position I can be captured by the difference in the number of controlled Gates.',
+          en: 'Now, among Position I\'s Diagonal Gates (Gate 4, Gate 8, Gate 10, Gate 12), the three Gates with the most Build up are Gate 4, Gate 8, and Gate 10.\nFurthermore, Black can establish dominance at Gate 4 and Gate 10.\nTherefore, Black will be able to recapture Position I on its next turn because it will control more of the tied Gates.',
           ja: 'これで、Position IのDiagonal GateであるGate 4、Gate 8、Gate 10、Gate 12のうち、最もBuild upが進んだGateは、Gate 4、Gate 8、Gate 10の3つになります。\nさらに、Gate 4とGate 10では黒が支配的な状況を作ることができます。\nそのため、次の黒手番では、支配しているGateの数の差によってPosition Iを奪取できます。',
         },
         question: {
@@ -915,11 +915,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Cを選択し、次の黒手番でPosition Iを奪還するためのBuild upを実行してください。',
         },
         hint: {
-          en: 'Tap Position C, then tap any small slot.',
+          en: 'Tap Position C, then tap any Small Slot.',
           ja: 'Position Cをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
-          en: 'Even for a Position that cannot be captured immediately, you can prepare a form to capture it on the next turn by setting up one move in advance.\nIn ONE EIGHT, such preparatory Build ups are important.',
+          en: 'Even if a Position cannot be captured immediately, preparing one move in advance can create the conditions needed to capture it on your next turn.\nIn ONE EIGHT, this kind of preparatory Build up is important.',
           ja: 'すぐに奪取できないPositionでも、1手前に準備することで、次のターンに奪取可能な形を作れます。\nONE EIGHTでは、このような準備のBuild upが重要です。',
         },
       },
@@ -948,11 +948,11 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Iを選択し、Gate 12にMassive Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position I, then tap the large slot of Gate 12.',
+          en: 'Tap Position I, then tap the Large Slot of Gate 12.',
           ja: 'Position Iをタップし、Gate 12のLarge Slotをタップしてください。',
         },
         success: {
-          en: 'Utilizing the prepared control situation, recapture Position I.\nContinuing to Build up after capture allows you to increase your Position count in the endgame.',
+          en: 'The control you prepared allows you to recapture Position I.\nContinuing to Build up after the capture can increase the number of Positions you control in the endgame.',
           ja: '準備した支配状況を活かして、Position Iを奪還します。\n奪取後もBuild upを続けることで、終盤のPosition数を伸ばすことができます。',
         },
       },
@@ -976,7 +976,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'massive_build',
       userText: {
         situation: {
-          en: 'In the endgame, which player takes the remaining large slots has a significant impact.',
+          en: 'In the endgame, which player takes the remaining Large Slots has a significant impact.',
           ja: '終盤では、残っているLarge Slotをどちらが取るかが大きく影響します。',
         },
         question: {
@@ -984,7 +984,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Fを選択し、Gate 12にMassive Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position F, then tap the large slot of Gate 12.',
+          en: 'Tap Position F, then tap the Large Slot of Gate 12.',
           ja: 'Position Fをタップし、Gate 12のLarge Slotをタップしてください。',
         },
         success: {
@@ -1012,7 +1012,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'massive_build',
       userText: {
         situation: {
-          en: 'As the game end approaches, the Gates available for Build up become limited.\nIt is important to secure the remaining large slots reliably.',
+          en: 'As the game nears its end, fewer Gates remain available for Build up.\nIt is important to make sure you secure the remaining Large Slots.',
           ja: '終局が近づくと、Build up可能なGateは限られていきます。\n残っているLarge Slotを確実に押さえることが重要です。',
         },
         question: {
@@ -1020,7 +1020,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Cを選択し、Gate 3にMassive Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position C, then tap the large slot of Gate 3.',
+          en: 'Tap Position C, then tap the Large Slot of Gate 3.',
           ja: 'Position Cをタップし、Gate 3のLarge Slotをタップしてください。',
         },
         success: {
@@ -1048,7 +1048,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'massive_build',
       userText: {
         situation: {
-          en: 'In the endgame, identify Gates the opponent cannot build up on, and fill in the Gates you can reach.',
+          en: 'In the endgame, identify Gates your opponent can no longer reach while filling the remaining Slots at Gates you can still access.',
           ja: '終盤では、相手がBuild upできないGateを見極めながら、自分が届くGateを埋めていきます。',
         },
         question: {
@@ -1056,7 +1056,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Eを選択し、Gate 2にMassive Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position E, then tap the large slot of Gate 2.',
+          en: 'Tap Position E, then tap the Large Slot of Gate 2.',
           ja: 'Position Eをタップし、Gate 2のLarge Slotをタップしてください。',
         },
         success: {
@@ -1084,7 +1084,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'quad_build',
       userText: {
         situation: {
-          en: 'Filling in remaining small slots brings the game closer to its end.',
+          en: 'Filling in remaining Small Slots brings the game closer to its end.',
           ja: '残っているSmall Slotを埋めることで、終局へ近づいていきます。',
         },
         question: {
@@ -1092,7 +1092,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Bを選択し、Quad Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position B, then tap any small slot.',
+          en: 'Tap Position B, then tap any Small Slot.',
           ja: 'Position Bをタップし、いずれかのSmall Slotをタップしてください。',
         },
         success: {
@@ -1108,7 +1108,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'auto_pass',
       autoText: {
         auto: {
-          en: 'White had no available moves and the turn ended automatically.',
+          en: 'White had no legal Build up available, so White\'s turn ended automatically.',
           ja: '白はBuild up可能な手がないため、自動でターンエンドしました。',
         },
       },
@@ -1120,7 +1120,7 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
       learningPoint: 'endgame',
       userText: {
         situation: {
-          en: 'The remaining large slot of Gate 3 cannot be built up from any White Position.\nTherefore, the White turn ended automatically.',
+          en: 'White cannot access the final open Large Slot at Gate 3 from any Position it controls.\nTherefore, White\'s turn ended automatically.',
           ja: '最後に残ったGate 3のLarge Slotには、白のPositionからBuild upすることができません。\nそのため、白手番は自動でターンエンドしました。',
         },
         question: {
@@ -1128,16 +1128,16 @@ export const FULL_GAME_V1_TEXT: FullGameTrainingText = {
           ja: 'Position Cを選択し、Gate 3にMassive Buildを実行してください。',
         },
         hint: {
-          en: 'Tap Position C, then tap the large slot of Gate 3.',
+          en: 'Tap Position C, then tap the Large Slot of Gate 3.',
           ja: 'Position Cをタップし、Gate 3のLarge Slotをタップしてください。',
         },
         success: {
-          en: 'This completes all Build ups, and the game ends.\n\nIn ONE EIGHT, the game ends when all slots of all Gates are filled.\nFinally, the player holding more Positions is the winner.',
+          en: 'All remaining Build up is now complete, and the game ends.\n\nIn ONE EIGHT, the game ends once every Slot at every Gate is filled.\nThe player who controls more Positions at that point wins.',
           ja: 'これですべてのBuild upが完了し、終局となります。\n\nONE EIGHTでは、すべてのGateのすべてのSlotが埋まった時点で対局が終了します。\n最後に、より多くのPositionを保持しているプレイヤーが勝者です。',
         },
       },
       finalText: {
-        en: 'All slots are filled and the game has ended.\n\nWell done. Through one full game of ONE EIGHT, you experienced Massive Build, Selective Build, Quad Build, Capture, defense, and endgame judgment.',
+        en: 'All Slots are filled, and the game is over.\n\nWell done. Over the course of a full game of ONE EIGHT, you experienced Massive Build, Selective Build, Quad Build, Capture, defense, and endgame decision-making.',
         ja: 'すべてのSlotが埋まり、終局となりました。\n\nお疲れさまでした。ONE EIGHTの一局を通して、Massive Build・Selective Build・Quad Build・Capture・防衛・終盤の判断を体験しました。',
       },
     },
