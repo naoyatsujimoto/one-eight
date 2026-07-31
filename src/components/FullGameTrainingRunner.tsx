@@ -7,7 +7,7 @@ import { createInitialState } from '../game/initialState';
 import type { GateId, PositionId, GameState } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
-import { resolveTranslationKey } from '../lib/locales';
+import { resolveTrainingTranslationKey } from '../lib/locales';
 import { FULL_GAME_V1 } from '../training/tasks/fullGameV1';
 import { FULL_GAME_V1_TEXT } from '../training/tasks/fullGameV1Text';
 import { validateMove } from '../training/validateMove';
@@ -112,7 +112,7 @@ interface FullGameTrainingRunnerProps {
 export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: FullGameTrainingRunnerProps) {
   const { lang: _rawLang } = useLang();
   // Resolve to 'en' or 'ja' for pick() — other locales fall back to English
-  const lang = resolveTranslationKey(_rawLang);
+  const lang = resolveTrainingTranslationKey(_rawLang);
 
   // ── Core state ────────────────────────────────────────────────────────────
   const [stepIndex, setStepIndex] = useState(resumeState?.stepIndex ?? 0);
