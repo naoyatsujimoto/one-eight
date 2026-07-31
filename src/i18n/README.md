@@ -11,10 +11,10 @@ English (`en`) is the **sole canonical source**. All structural changes (adding 
 | en      | English               | ✅ Full translation |
 | ja      | 日本語                | ✅ Full translation |
 | zh-Hant | 繁體中文              | ✅ Full translation |
-| zh-Hans | 简体中文              | 🔄 English fallback |
-| ko      | 한국어                | 🔄 English fallback |
-| es      | Español               | 🔄 English fallback |
-| pt-BR   | Português (Brasil)    | 🔄 English fallback |
+| zh-Hans | 简体中文              | ✅ Full translation |
+| ko      | 한국어                | ✅ Full translation |
+| es      | Español               | ✅ Full translation |
+| pt-BR   | Português (Brasil)    | ✅ Full translation |
 | de      | Deutsch               | 🔄 English fallback |
 | fr      | Français              | 🔄 English fallback |
 | it      | Italiano              | 🔄 English fallback |
@@ -52,6 +52,11 @@ zh-Hans covers Singapore, Malaysia, overseas simplified-literate users, and dias
 src/i18n/
 ├── en.ts          ← English canonical dictionary (EN_TRANSLATIONS)
 ├── ja.ts          ← Japanese dictionary (JA_TRANSLATIONS satisfies Translations)
+├── zh-Hant.ts     ← Traditional Chinese (ZH_HANT_TRANSLATIONS satisfies Translations)
+├── zh-Hans.ts     ← Simplified Chinese (ZH_HANS_TRANSLATIONS satisfies Translations)
+├── ko.ts          ← Korean (KO_TRANSLATIONS satisfies Translations)
+├── es.ts          ← Spanish (ES_TRANSLATIONS satisfies Translations)
+├── pt-BR.ts       ← Brazilian Portuguese (PT_BR_TRANSLATIONS satisfies Translations)
 ├── types.ts       ← DeepWiden<typeof EN_TRANSLATIONS> = Translations
 ├── index.ts       ← resolveUiTranslations(locale), UI_TRANSLATIONS registry
 └── README.md      ← This file

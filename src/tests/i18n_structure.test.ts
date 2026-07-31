@@ -4,9 +4,27 @@ import type { LocaleCode } from '../lib/locales';
 import { EN_TRANSLATIONS } from '../i18n/en';
 import { JA_TRANSLATIONS } from '../i18n/ja';
 import { ZH_HANT_TRANSLATIONS } from '../i18n/zh-Hant';
+import { ZH_HANS_TRANSLATIONS } from '../i18n/zh-Hans';
+import { KO_TRANSLATIONS } from '../i18n/ko';
+import { ES_TRANSLATIONS } from '../i18n/es';
+import { PT_BR_TRANSLATIONS } from '../i18n/pt-BR';
 import { resolveUiTranslations } from '../i18n/index';
 
 const EXPECTED_LOCALES = ['en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
+
+// Fully translated locales (must resolve to their own dictionary, not EN fallback)
+const FULLY_TRANSLATED: Array<{ code: LocaleCode; dict: unknown }> = [
+  { code: 'en', dict: EN_TRANSLATIONS },
+  { code: 'ja', dict: JA_TRANSLATIONS },
+  { code: 'zh-Hant', dict: ZH_HANT_TRANSLATIONS },
+  { code: 'zh-Hans', dict: ZH_HANS_TRANSLATIONS },
+  { code: 'ko', dict: KO_TRANSLATIONS },
+  { code: 'es', dict: ES_TRANSLATIONS },
+  { code: 'pt-BR', dict: PT_BR_TRANSLATIONS },
+];
+
+// English-fallback locales
+const FALLBACK_LOCALES: LocaleCode[] = ['de', 'fr', 'it'];
 
 // Deep shape comparison utility
 type LeafType = 'string' | 'number' | 'boolean' | 'function' | 'array' | 'object';
@@ -102,6 +120,10 @@ function collectFunctionKeys(obj: unknown, path = ''): Array<{ path: string; ari
 
 // Hiragana/Katakana detection
 const HIRAGANA_KATAKANA_RE = /[\u3040-\u309F\u30A0-\u30FF]/;
+// CJK Unified Ideographs (漢字・かな範囲)
+const CJK_KANA_RE = /[\u3000-\u9FFF\uF900-\uFAFF]/;
+// Hangul
+const HANGUL_RE = /[\uAC00-\uD7FF\u1100-\u11FF\u3130-\u318F]/;
 
 describe('i18n structure', () => {
   // 1. SUPPORTED_LOCALES が確定10localeと完全一致
@@ -120,54 +142,174 @@ describe('i18n structure', () => {
   it('EN_TRANSLATIONS is the canonical dictionary', () => {
     expect(typeof EN_TRANSLATIONS).toBe('object');
     expect(EN_TRANSLATIONS).toBeTruthy();
-    // en resolves to EN_TRANSLATIONS
     const resolved = resolveUiTranslations('en');
     expect(resolved).toBe(EN_TRANSLATIONS as any);
   });
 
-  // 4-7. 日本語辞書の全key・nested keyが英語と一致し、leaf typeが一致する
-  it('JA_TRANSLATIONS shape matches EN_TRANSLATIONS (all keys, types, arities)', () => {
-    const errors = compareShapes(EN_TRANSLATIONS, JA_TRANSLATIONS);
-    expect(errors).toEqual([]);
+  // ===========================================================
+  // Table-driven tests for all fully-translated locales
+  // ===========================================================
+  describe('fully translated locales (table-driven)', () => {
+    for (const { code, dict } of FULLY_TRANSLATED) {
+      describe(`locale: ${code}`, () => {
+        // 1. resolveUiTranslations returns its own dict
+        it(`resolveUiTranslations("${code}") returns the correct dictionary`, () => {
+          const result = resolveUiTranslations(code);
+          expect(result).toBe(dict as any);
+        });
+
+        // 2. Shape matches EN_TRANSLATIONS (all keys, types, arities)
+        it(`shape matches EN_TRANSLATIONS`, () => {
+          const errors = compareShapes(EN_TRANSLATIONS, dict);
+          expect(errors).toEqual([]);
+        });
+
+        // 3. tutSteps array length matches
+        it(`tutSteps array length matches EN`, () => {
+          expect((dict as any).tutSteps.length).toBe(EN_TRANSLATIONS.tutSteps.length);
+        });
+
+        // 4. rulesBody array length matches
+        it(`rulesBody array length matches EN`, () => {
+          expect((dict as any).rulesBody.length).toBe(EN_TRANSLATIONS.rulesBody.length);
+        });
+
+        // 5. No empty string leaves
+        it(`no empty string leaves`, () => {
+          const leaves = collectStringLeaves(dict);
+          const emptyLeaves = leaves.filter(l => l.value === '');
+          expect(emptyLeaves).toEqual([]);
+        });
+
+        // 6. Function arities match EN
+        it(`function arities match EN_TRANSLATIONS`, () => {
+          const enFuncs = collectFunctionKeys(EN_TRANSLATIONS);
+          const localeFuncs = collectFunctionKeys(dict);
+          expect(localeFuncs.length).toBe(enFuncs.length);
+          for (const enFunc of enFuncs) {
+            const localeFunc = localeFuncs.find(f => f.path === enFunc.path);
+            expect(localeFunc).toBeTruthy();
+            expect(localeFunc?.arity).toBe(enFunc.arity);
+          }
+        });
+
+        // 7. Dynamic function placeholder checks (representative values)
+        it(`hintSelectiveConfirm(gate) preserves gate number`, () => {
+          const result = (dict as any).hintSelectiveConfirm(5);
+          expect(result).toContain('5');
+        });
+
+        it(`hintSelectiveSecond(gate) preserves gate number`, () => {
+          const result = (dict as any).hintSelectiveSecond(3);
+          expect(result).toContain('3');
+        });
+
+        it(`hintQuadConfirm(n, max) preserves n and max`, () => {
+          const result = (dict as any).hintQuadConfirm(2, 4);
+          expect(result).toContain('2');
+          expect(result).toContain('4');
+        });
+
+        it(`analyzingEstimate(sec) short branch preserves sec`, () => {
+          const result = (dict as any).analyzingEstimate(30);
+          expect(result).toContain('30');
+        });
+
+        it(`analyzingEstimate(sec) long branch preserves minutes`, () => {
+          const result = (dict as any).analyzingEstimate(120);
+          expect(result).toContain('2');
+        });
+
+        it(`cpuProfileTitle(d) preserves d`, () => {
+          const result = (dict as any).cpuProfileTitle('al-Kashi');
+          expect(result).toContain('al-Kashi');
+        });
+
+        it(`omStartsIn(label) preserves label`, () => {
+          const result = (dict as any).omStartsIn('5min');
+          expect(result).toContain('5min');
+        });
+
+        it(`proRenewsOn(date) preserves date`, () => {
+          const result = (dict as any).proRenewsOn('2025-08-01');
+          expect(result).toContain('2025-08-01');
+        });
+
+        it(`omMatchesOn(dateStr) preserves dateStr`, () => {
+          const result = (dict as any).omMatchesOn('2025-08-01');
+          expect(result).toContain('2025-08-01');
+        });
+      });
+    }
   });
 
-  // 6. 配列長の確認
-  it('tutSteps array length matches between en and ja', () => {
-    expect(JA_TRANSLATIONS.tutSteps.length).toBe(EN_TRANSLATIONS.tutSteps.length);
+  // ===========================================================
+  // Character contamination checks for non-CJK locales
+  // ===========================================================
+  describe('character contamination checks', () => {
+    it('ZH_HANS_TRANSLATIONS contains no Hiragana or Katakana', () => {
+      const leaves = collectStringLeaves(ZH_HANS_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HIRAGANA_KATAKANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('KO_TRANSLATIONS contains no Hiragana or Katakana', () => {
+      const leaves = collectStringLeaves(KO_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HIRAGANA_KATAKANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('ES_TRANSLATIONS contains no CJK or Kana characters', () => {
+      const leaves = collectStringLeaves(ES_TRANSLATIONS);
+      const contaminated = leaves.filter(l => CJK_KANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('ES_TRANSLATIONS contains no Hangul characters', () => {
+      const leaves = collectStringLeaves(ES_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HANGUL_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('PT_BR_TRANSLATIONS contains no CJK or Kana characters', () => {
+      const leaves = collectStringLeaves(PT_BR_TRANSLATIONS);
+      const contaminated = leaves.filter(l => CJK_KANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('PT_BR_TRANSLATIONS contains no Hangul characters', () => {
+      const leaves = collectStringLeaves(PT_BR_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HANGUL_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
+
+    it('ZH_HANT_TRANSLATIONS contains no Hiragana or Katakana', () => {
+      const leaves = collectStringLeaves(ZH_HANT_TRANSLATIONS);
+      const contaminated = leaves.filter(l => HIRAGANA_KATAKANA_RE.test(l.value));
+      expect(contaminated).toEqual([]);
+    });
   });
 
-  it('rulesBody array length matches between en and ja', () => {
-    expect(JA_TRANSLATIONS.rulesBody.length).toBe(EN_TRANSLATIONS.rulesBody.length);
-  });
+  // ===========================================================
+  // Fallback locales — must resolve to EN_TRANSLATIONS
+  // ===========================================================
+  describe('English fallback locales', () => {
+    for (const locale of FALLBACK_LOCALES) {
+      it(`resolveUiTranslations("${locale}") falls back to EN_TRANSLATIONS`, () => {
+        const result = resolveUiTranslations(locale);
+        expect(result).toBe(EN_TRANSLATIONS as any);
+      });
+    }
 
-  // 8. enは英語辞書を返す
-  it('resolveUiTranslations("en") returns EN_TRANSLATIONS', () => {
-    const result = resolveUiTranslations('en');
-    expect(result).toBe(EN_TRANSLATIONS as any);
-  });
-
-  // 9. jaは日本語辞書を返す
-  it('resolveUiTranslations("ja") returns JA_TRANSLATIONS', () => {
-    const result = resolveUiTranslations('ja');
-    expect(result).toBe(JA_TRANSLATIONS as any);
-  });
-
-  // 10. 未翻訳の追加7localeは英語辞書を返す (zh-Hantは翻訳済のため除外)
-  const FALLBACK_LOCALES: LocaleCode[] = ['zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
-  for (const locale of FALLBACK_LOCALES) {
-    it(`resolveUiTranslations("${locale}") falls back to EN_TRANSLATIONS`, () => {
-      const result = resolveUiTranslations(locale);
+    it('unknown locale safely falls back to EN_TRANSLATIONS', () => {
+      const result = resolveUiTranslations('unknown' as LocaleCode);
       expect(result).toBe(EN_TRANSLATIONS as any);
     });
-  }
-
-  // 11. 未知localeを強制的に渡した場合も英語へfallback
-  it('unknown locale safely falls back to EN_TRANSLATIONS', () => {
-    const result = resolveUiTranslations('unknown' as LocaleCode);
-    expect(result).toBe(EN_TRANSLATIONS as any);
   });
 
-  // 12. Translations型の公開APIが機能する
+  // ===========================================================
+  // EN_TRANSLATIONS integrity checks
+  // ===========================================================
   it('EN_TRANSLATIONS has expected top-level keys', () => {
     expect(typeof EN_TRANSLATIONS.titleSub).toBe('string');
     expect(typeof EN_TRANSLATIONS.tutSteps).toBe('object');
@@ -177,118 +319,22 @@ describe('i18n structure', () => {
     expect(typeof EN_TRANSLATIONS.rulesBody).toBe('object');
   });
 
-  // ===== ZH-HANT 専用テスト =====
-
-  // ZH-1: resolveUiTranslations('zh-Hant')がZH_HANT_TRANSLATIONSを返す
-  it('resolveUiTranslations("zh-Hant") returns ZH_HANT_TRANSLATIONS', () => {
-    const result = resolveUiTranslations('zh-Hant');
-    expect(result).toBe(ZH_HANT_TRANSLATIONS as any);
-  });
-
-  // ZH-2: ZH_HANT_TRANSLATIONSのshapeがEN_TRANSLATIONSと完全一致
-  it('ZH_HANT_TRANSLATIONS shape matches EN_TRANSLATIONS (all keys, types, arities)', () => {
-    const errors = compareShapes(EN_TRANSLATIONS, ZH_HANT_TRANSLATIONS);
-    expect(errors).toEqual([]);
-  });
-
-  // ZH-3: tutSteps配列長一致
-  it('tutSteps array length matches between en and zh-Hant', () => {
-    expect(ZH_HANT_TRANSLATIONS.tutSteps.length).toBe(EN_TRANSLATIONS.tutSteps.length);
-  });
-
-  // ZH-4: rulesBody配列長一致
-  it('rulesBody array length matches between en and zh-Hant', () => {
-    expect(ZH_HANT_TRANSLATIONS.rulesBody.length).toBe(EN_TRANSLATIONS.rulesBody.length);
-  });
-
-  // ZH-5: 全string leafが空でない
-  it('ZH_HANT_TRANSLATIONS has no empty string leaves', () => {
-    const leaves = collectStringLeaves(ZH_HANT_TRANSLATIONS);
-    const emptyLeaves = leaves.filter(l => l.value === '');
-    expect(emptyLeaves).toEqual([]);
-  });
-
-  // ZH-6: ひらがな・カタカナが混入していない
-  it('ZH_HANT_TRANSLATIONS contains no Hiragana or Katakana', () => {
-    const leaves = collectStringLeaves(ZH_HANT_TRANSLATIONS);
-    const contaminated = leaves.filter(l => HIRAGANA_KATAKANA_RE.test(l.value));
-    expect(contaminated).toEqual([]);
-  });
-
-  // ZH-7: 関数arityが英語と一致
-  it('ZH_HANT_TRANSLATIONS function arities match EN_TRANSLATIONS', () => {
-    const enFuncs = collectFunctionKeys(EN_TRANSLATIONS);
-    const zhFuncs = collectFunctionKeys(ZH_HANT_TRANSLATIONS);
-    expect(zhFuncs.length).toBe(enFuncs.length);
-    for (const enFunc of enFuncs) {
-      const zhFunc = zhFuncs.find(f => f.path === enFunc.path);
-      expect(zhFunc).toBeTruthy();
-      expect(zhFunc?.arity).toBe(enFunc.arity);
-    }
-  });
-
-  // ZH-8: 動的関数8件のplaceholder確認
-  it('hintSelectiveConfirm(gate) preserves ${gate}', () => {
-    const result = ZH_HANT_TRANSLATIONS.hintSelectiveConfirm(5);
-    expect(result).toContain('5');
-  });
-
-  it('hintSelectiveSecond(gate) preserves ${gate}', () => {
-    const result = ZH_HANT_TRANSLATIONS.hintSelectiveSecond(3);
-    expect(result).toContain('3');
-  });
-
-  it('hintQuadConfirm(n, max) preserves ${n} and ${max}', () => {
-    const result = ZH_HANT_TRANSLATIONS.hintQuadConfirm(2, 4);
-    expect(result).toContain('2');
-    expect(result).toContain('4');
-  });
-
-  it('analyzingEstimate(sec) - short branch preserves ${sec}', () => {
-    const result = ZH_HANT_TRANSLATIONS.analyzingEstimate(30);
-    expect(result).toContain('30');
-  });
-
-  it('analyzingEstimate(sec) - long branch preserves rounded minutes', () => {
-    const result = ZH_HANT_TRANSLATIONS.analyzingEstimate(120);
-    expect(result).toContain('2');
-  });
-
-  it('cpuProfileTitle(d) preserves ${d}', () => {
-    const result = ZH_HANT_TRANSLATIONS.cpuProfileTitle('al-Kashi');
-    expect(result).toContain('al-Kashi');
-  });
-
-  it('omStartsIn(label) preserves ${label}', () => {
-    const result = ZH_HANT_TRANSLATIONS.omStartsIn('5分鐘');
-    expect(result).toContain('5分鐘');
-  });
-
-  it('proRenewsOn(date) preserves ${date}', () => {
-    const result = ZH_HANT_TRANSLATIONS.proRenewsOn('2025-08-01');
-    expect(result).toContain('2025-08-01');
-  });
-
-  it('omMatchesOn(dateStr) preserves ${dateStr}', () => {
-    const result = ZH_HANT_TRANSLATIONS.omMatchesOn('7月31日');
-    expect(result).toContain('7月31日');
-  });
-
-  // ZH-9: EN_TRANSLATIONSが変更されていない（key数チェック）
   it('EN_TRANSLATIONS top-level key count is unchanged', () => {
     const enKeys = Object.keys(EN_TRANSLATIONS);
-    // 翻訳追加前と同じkey数であること（en.tsは変更禁止）
     expect(enKeys.length).toBeGreaterThan(0);
-    // 必須keyが存在すること
     expect(enKeys).toContain('titleSub');
     expect(enKeys).toContain('tutSteps');
     expect(enKeys).toContain('rulesBody');
     expect(enKeys).toContain('hintSelectiveConfirm');
   });
 
-  // ZH-10: JA_TRANSLATIONSが変更されていない（shape一致確認）
-  it('JA_TRANSLATIONS is still structurally valid after zh-Hant addition', () => {
+  it('JA_TRANSLATIONS is still structurally valid', () => {
     const errors = compareShapes(EN_TRANSLATIONS, JA_TRANSLATIONS);
+    expect(errors).toEqual([]);
+  });
+
+  it('ZH_HANT_TRANSLATIONS is still structurally valid', () => {
+    const errors = compareShapes(EN_TRANSLATIONS, ZH_HANT_TRANSLATIONS);
     expect(errors).toEqual([]);
   });
 });
