@@ -139,6 +139,28 @@ export const JA_TRANSLATIONS = {
     trainingT10WhyDefended: 'Gate 4にBlackのMassiveを置くことで、Gate 4もGate 2と同じ最大値になりました。Gate 2はWhite、Gate 4はBlackが支配するため、支配数が1対1になり、WhiteはEを奪えなくなります。',
     trainingT10Desc: '接続Gateにbuildして自分のPositionを守ることを学ぶ。',
 
+    // TrainingView セクションラベル
+    trainingGuidedGameSection: '一局通し Training',
+    trainingGuidedGameSectionDesc: 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。',
+    trainingGuidedGameEyebrow: '1局通し',
+    trainingGuidedGameTitle: '一局指南',
+    trainingGuidedGameCardDesc: '実戦の流れでONE EIGHTの全体戦略を学ぶコース。Black番で22手を指し切ります。',
+    trainingTasksSection: '小課題 Training',
+    trainingTasksSectionDesc: '基本操作・Capture・終局などを短い課題で学びます。',
+
+    // Guided Game (FullGameTrainingRunner) UI strings — Training専用
+    trainingBackBtn: '← 戻る',
+    trainingGuidedGame: '一局指南',
+    trainingQuestion: '確認問題',
+    trainingTryAgain: 'もう一度考えてみてください。',
+    trainingNextBtn: '次へ',
+    trainingCompleteLabel: '完了',
+    trainingFinishBtn: '完了',
+    trainingIncorrectRetry: '不正解です。もう一度試してください。',
+    trainingTapToGoBack: 'Tapして戻る',
+    trainingTapToContinue: 'Tapして進む',
+    trainingShowHint: 'ヒントを見る',
+
 
     selectMode: 'モードを選択',
     cancel: 'キャンセル',

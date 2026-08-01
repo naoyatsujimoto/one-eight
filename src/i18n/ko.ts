@@ -144,6 +144,28 @@ export const KO_TRANSLATIONS = {
     trainingT10WhyThreat: 'Capture는 대상 Position에 연결된 가장 높은 수치의 Gate만 확인합니다. 초기 상태에서 Gate 2가 유일하게 가장 높은 수치의 Gate였고 White가 제어하고 있었습니다. 이로 인해 White가 E를 Capture할 수 있었습니다.',
     trainingT10WhyDefended: 'Gate 4에 Black Massive를 배치함으로써 Gate 4가 Gate 2와 함께 가장 높은 수치의 Gate가 됩니다. Gate 2는 White가, Gate 4는 Black이 이기므로 지배력 수가 1 대 1 동점이 됩니다. White는 더 이상 E를 Capture할 수 없습니다.',
     trainingT10Desc: '연결된 Gate에 Build하여 Position을 방어하는 방법을 배웁니다.',
+    // TrainingView section labels
+    trainingGuidedGameSection: '전국 가이드',
+    trainingGuidedGameSectionDesc: 'Black으로 한 판 전체를 플레이하며 Build 타이밍, 방어, Capture, 승세 판단을 배웁니다.',
+    trainingGuidedGameEyebrow: '전국 가이드',
+    trainingGuidedGameTitle: '전국 가이드',
+    trainingGuidedGameCardDesc: 'ONE EIGHT 전략을 한 판의 흐름으로 배웁니다. Black으로 22수를 둡니다.',
+    trainingTasksSection: '훈련 과제',
+    trainingTasksSectionDesc: '짧은 과제로 기본 조작, Capture, 종반 규칙을 배웁니다.',
+
+    // Guided Game (FullGameTrainingRunner) UI strings — Training
+    trainingBackBtn: '← 뒤로',
+    trainingGuidedGame: '전국 가이드',
+    trainingQuestion: '확인 문제',
+    trainingTryAgain: '다시 생각해 보세요.',
+    trainingNextBtn: '다음',
+    trainingCompleteLabel: '완료',
+    trainingFinishBtn: '완료',
+    trainingIncorrectRetry: '정답이 아닙니다. 다시 시도하세요.',
+    trainingTapToGoBack: '탭하여 뒤로',
+    trainingTapToContinue: '탭하여 계속',
+    trainingShowHint: '힌트 보기',
+
 
     selectMode: '모드 선택',
     cancel: '취소',

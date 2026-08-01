@@ -144,6 +144,28 @@ export const FR_TRANSLATIONS = {
     trainingT10WhyThreat: 'Le Capture vérifie uniquement les Gates à la valeur la plus élevée connectés à la Position cible. Dans l\'état initial, Gate 2 était le seul Gate à la valeur la plus élevée, et il était contrôlé par White. Cela rendait E Capture-able par White.',
     trainingT10WhyDefended: 'En plaçant un Massive Black sur Gate 4, Gate 4 atteint la même valeur que Gate 2. Gate 2 est gagné par White, et Gate 4 par Black, donc le nombre de domination devient à égalité 1 contre 1. White ne peut plus Capture E.',
     trainingT10Desc: 'Apprenez à défendre votre Position en construisant sur un Gate connecté.',
+    // TrainingView section labels
+    trainingGuidedGameSection: 'Partie guidée',
+    trainingGuidedGameSectionDesc: 'Jouez une partie guidée complète en tant que Black et apprenez le moment du Build, la défense, le Capture et le jugement gagnant.',
+    trainingGuidedGameEyebrow: 'Partie guidée',
+    trainingGuidedGameTitle: 'Partie guidée',
+    trainingGuidedGameCardDesc: 'Apprenez la stratégie de ONE EIGHT à travers le déroulement d\'une partie guidée. Jouez 22 coups en tant que Black.',
+    trainingTasksSection: 'Tâches d\'entraînement',
+    trainingTasksSectionDesc: 'Apprenez les actions de base, le Capture et les règles de fin de partie grâce à de courts exercices.',
+
+    // Guided Game (FullGameTrainingRunner) UI strings — Training
+    trainingBackBtn: '← Retour',
+    trainingGuidedGame: 'Partie guidée',
+    trainingQuestion: 'Question',
+    trainingTryAgain: 'Réessayez.',
+    trainingNextBtn: 'Suivant',
+    trainingCompleteLabel: 'Terminé',
+    trainingFinishBtn: 'Terminer',
+    trainingIncorrectRetry: 'Incorrect. Veuillez réessayer.',
+    trainingTapToGoBack: 'Touchez pour revenir',
+    trainingTapToContinue: 'Touchez pour continuer',
+    trainingShowHint: "Afficher l'indice",
+
 
     selectMode: 'Choisir le mode',
     cancel: 'Annuler',

@@ -140,6 +140,28 @@ export const EN_TRANSLATIONS = {
     trainingT10WhyDefended: 'By placing a Black Massive on Gate 4, Gate 4 matches Gate 2 as a highest-value Gate. Gate 2 is won by White, and Gate 4 is won by Black, so the dominance count becomes tied 1 to 1. White can no longer capture E.',
     trainingT10Desc: 'Learn to defend your Position by building on a connected Gate.',
 
+    // TrainingView section labels
+    trainingGuidedGameSection: 'Guided Game',
+    trainingGuidedGameSectionDesc: 'Play through one guided game as Black and learn build timing, defense, capture, and winning judgment.',
+    trainingGuidedGameEyebrow: 'Guided Game',
+    trainingGuidedGameTitle: 'Guided Game',
+    trainingGuidedGameCardDesc: 'Learn ONE EIGHT strategy through the flow of one guided game. Play 22 moves as Black.',
+    trainingTasksSection: 'Training Tasks',
+    trainingTasksSectionDesc: 'Learn basic actions, capture, and endgame rules through short exercises.',
+
+    // Guided Game (FullGameTrainingRunner) UI strings — Training-specific
+    trainingBackBtn: '← Back',
+    trainingGuidedGame: 'Guided Game',
+    trainingQuestion: 'Question',
+    trainingTryAgain: 'Try again.',
+    trainingNextBtn: 'Next',
+    trainingCompleteLabel: 'Complete',
+    trainingFinishBtn: 'Finish',
+    trainingIncorrectRetry: 'Incorrect. Please try again.',
+    trainingTapToGoBack: 'Tap to go back',
+    trainingTapToContinue: 'Tap to continue',
+    trainingShowHint: 'Show Hint',
+
 
     selectMode: 'Select Mode',
     cancel: 'Cancel',

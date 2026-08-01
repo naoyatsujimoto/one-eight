@@ -376,13 +376,11 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             <div className="trn-section-eyebrow-row">
               <span className="trn-eyebrow-dot" />
               <span className="trn-section-title">
-                {lang === 'ja' ? '一局通し Training' : 'Guided Game'}
+                {t.trainingGuidedGameSection}
               </span>
             </div>
             <span className="trn-section-sub">
-              {lang === 'ja'
-                ? 'Blackとして1局の流れを追いながら、Build、防衛、Capture、勝勢判断を学びます。'
-                : 'Play through one guided game as Black and learn build timing, defense, capture, and winning judgment.'}
+              {t.trainingGuidedGameSectionDesc}
             </span>
           </div>
 
@@ -390,19 +388,17 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
           <div className="trn-card trn-card-featured">
             <div className="trn-card-head">
               <span className="trn-card-eyebrow">
-                {lang === 'ja' ? '1局通し' : 'Guided Game'}
+                {t.trainingGuidedGameEyebrow}
               </span>
               <span className={`trn-status-badge ${fullGameCompleted ? 'trn-status-complete' : 'trn-status-available'}`}>
                 {fullGameCompleted ? t.trainingTaskStatusComplete : t.trainingTaskStatusAvailable}
               </span>
             </div>
             <div className="trn-card-title">
-              {lang === 'ja' ? '一局指南' : 'Guided Game'}
+              {t.trainingGuidedGameTitle}
             </div>
             <div className="trn-card-desc">
-              {lang === 'ja'
-                ? '実戦の流れでONE EIGHTの全体戦略を学ぶコース。Black番で22手を指し切ります。'
-                : 'Learn ONE EIGHT strategy through the flow of one guided game. Play 22 moves as Black.'}
+              {t.trainingGuidedGameCardDesc}
             </div>
             <button
               type="button"
@@ -418,13 +414,11 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
             <div className="trn-section-eyebrow-row">
               <span className="trn-eyebrow-dot" />
               <span className="trn-section-title">
-                {lang === 'ja' ? '小課題 Training' : 'Training Tasks'}
+                {t.trainingTasksSection}
               </span>
             </div>
             <span className="trn-section-sub">
-              {lang === 'ja'
-                ? '基本操作・Capture・終局などを短い課題で学びます。'
-                : 'Learn basic actions, capture, and endgame rules through short exercises.'}
+              {t.trainingTasksSectionDesc}
             </span>
           </div>
 

@@ -22,18 +22,6 @@ export const SUPPORTED_LOCALES = [
 
 export type LocaleCode = typeof SUPPORTED_LOCALES[number]['code'];
 
-/**
- * Locales that have full translations for the FullGame Training text (LocalizedText { en, ja }).
- * UI dictionary locale resolution is handled by src/i18n/index.ts.
- */
-export const TRAINING_TRANSLATED_LOCALES: readonly LocaleCode[] = ['en', 'ja'] as const;
-
-/**
- * Returns the translation key to use for FullGame Training text for a given locale.
- * Locales without Training translations fall back to 'en'.
- * UI dictionary resolution uses resolveUiTranslations() from src/i18n/index.ts instead.
- */
-export function resolveTrainingTranslationKey(code: LocaleCode): 'en' | 'ja' {
-  if (code === 'ja') return 'ja';
-  return 'en'; // English fallback for all non-ja locales
-}
+// TRAINING_TRANSLATED_LOCALES and resolveTrainingTranslationKey have been removed.
+// All 10 locales now have dedicated FullGame Training text bundles in
+// src/training/i18n/fullGameV1/. Use resolveFullGameV1Text() instead.

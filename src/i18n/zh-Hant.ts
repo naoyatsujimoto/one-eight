@@ -144,6 +144,28 @@ export const ZH_HANT_TRANSLATIONS = {
     trainingT10WhyThreat: 'Capture 只檢查連接目標 Position 的最高數值 Gate。初始狀態下，Gate 2 是唯一最高數值 Gate，且由 White 控制。這使得 White 可以 Capture E。',
     trainingT10WhyDefended: '通過在 Gate 4 放置 Black Massive，Gate 4 與 Gate 2 並列為最高數值 Gate。Gate 2 由 White 獲勝，Gate 4 由 Black 獲勝，主導優勢數因此平局 1 比 1。White 無法再 Capture E。',
     trainingT10Desc: '學習通過在相連 Gate 上 Build 來防禦你的 Position。',
+    // TrainingView section labels
+    trainingGuidedGameSection: '全局導引',
+    trainingGuidedGameSectionDesc: '以 Black 身份進行一局完整導引對局，學習 Build 時機、防守、Capture 和勝局判斷。',
+    trainingGuidedGameEyebrow: '全局導引',
+    trainingGuidedGameTitle: '全局導引',
+    trainingGuidedGameCardDesc: '透過一局完整導引對局學習 ONE EIGHT 策略。以 Black 身份進行 22 手。',
+    trainingTasksSection: '訓練任務',
+    trainingTasksSectionDesc: '透過簡短練習學習基本操作、Capture 和終局規則。',
+
+    // Guided Game (FullGameTrainingRunner) UI strings — Training
+    trainingBackBtn: '← 返回',
+    trainingGuidedGame: '全局導引',
+    trainingQuestion: '確認問題',
+    trainingTryAgain: '請再試一次。',
+    trainingNextBtn: '下一步',
+    trainingCompleteLabel: '完成',
+    trainingFinishBtn: '完成',
+    trainingIncorrectRetry: '答案不正確，請再試一次。',
+    trainingTapToGoBack: '點擊返回',
+    trainingTapToContinue: '點擊繼續',
+    trainingShowHint: '顯示提示',
+
 
     selectMode: '選擇模式',
     cancel: '取消',
