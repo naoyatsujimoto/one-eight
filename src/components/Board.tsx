@@ -14,6 +14,7 @@ import type { GameState, GateId, PositionId, AssetSize } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import type { GhostMove } from '../lib/matchLog';
 import { ghostMovesToDisplayTargets, getGhostPocketOpacity } from '../game/ghostUtils';
+import { useLang } from '../lib/lang';
 
 // Diagonal-hatch SVG for Ghost Mode overlay on round pockets (Position owner-dot)
 // ハッチコントラスト: opacity に連動して strokeWidth も変化させる。
@@ -583,12 +584,12 @@ export function Board({
   ghostProOnlyTitle,
   ghostProOnlyText,
   ghostProUpgradeCta,
-  labelsOn = 'LABELS ON',
-  labelsOff = 'LABELS OFF',
-  ghostOn = 'GHOST ON',
-  ghostOff = 'GHOST OFF',
-  ghostModePastMovesTooltip = 'Ghost Mode: show your past moves at this position',
-  ghostProOnlyTooltip = 'Ghost Mode (Pro only)',
+  labelsOn,
+  labelsOff,
+  ghostOn,
+  ghostOff,
+  ghostModePastMovesTooltip,
+  ghostProOnlyTooltip,
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -619,6 +620,14 @@ export function Board({
   ghostModePastMovesTooltip?: string;
   ghostProOnlyTooltip?: string;
 }) {
+  const { t } = useLang();
+  const _labelsOn = labelsOn ?? t.labelsOn;
+  const _labelsOff = labelsOff ?? t.labelsOff;
+  const _ghostOn = ghostOn ?? t.ghostOn;
+  const _ghostOff = ghostOff ?? t.ghostOff;
+  const _ghostModePastMovesTooltip = ghostModePastMovesTooltip ?? t.ghostModePastMovesTooltip;
+  const _ghostProOnlyTooltip = ghostProOnlyTooltip ?? t.ghostProOnlyTitle;
+
   const selectedId = state.selectedPosition;
 
   // Ghost Mode: opacityMap / gateMap を ghostUtils で生成
@@ -968,7 +977,7 @@ export function Board({
               aria-pressed={showLabels}
             >
               <span className="board-label-toggle-dot" />
-              {showLabels ? labelsOn : labelsOff}
+              {showLabels ? _labelsOn : _labelsOff}
             </button>
           )}
           {showGhostToggle && (
@@ -978,10 +987,10 @@ export function Board({
                 className={['board-label-toggle', 'board-ghost-toggle', ghostModeActive ? 'ghost-on' : 'ghost-off'].filter(Boolean).join(' ')}
                 onClick={onGhostModeToggle}
                 aria-pressed={ghostModeActive}
-                title={ghostModePastMovesTooltip}
+                title={_ghostModePastMovesTooltip}
               >
                 <span className="board-label-toggle-dot" />
-                {ghostModeActive ? ghostOn : ghostOff}
+                {ghostModeActive ? _ghostOn : _ghostOff}
               </button>
             ) : (
               <button
@@ -989,7 +998,7 @@ export function Board({
                 className="board-label-toggle board-ghost-toggle ghost-off ghost-pro-locked"
                 onClick={() => setShowGhostProNotice(v => !v)}
                 aria-pressed={false}
-                title={ghostProOnlyTooltip}
+                title={_ghostProOnlyTooltip}
               >
                 <span className="board-label-toggle-dot" />
                 GHOST
@@ -1023,7 +1032,7 @@ export function Board({
             aria-pressed={showLabels}
           >
             <span className="board-label-toggle-dot" />
-            {showLabels ? labelsOn : labelsOff}
+            {showLabels ? _labelsOn : _labelsOff}
           </button>
         </div>
       )}

@@ -80,6 +80,8 @@ export const IT_TRANSLATIONS = {
     moveHistory: 'Cronologia mosse',
     humanVsHuman: 'Giocatore × Giocatore',
     humanVsCpu: 'Giocatore × CPU',
+    statusYourMove: 'IL TUO TURNO',
+    statusThinking: 'PENSANDO',
     modeTraining: 'Allenamento',
     trainingTitle: 'ALLENAMENTO',
     trainingRecordeTitle: 'Recorde Training',

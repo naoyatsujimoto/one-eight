@@ -841,12 +841,12 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
         <div className="trn-topbar">
           <div style={{ width: '80px' }}>
             <button type="button" className="trn-exit-btn" onClick={handleExit}>
-              {t.trainingBackBtn ?? '← Back'}
+              {t.trainingBackBtn}
             </button>
           </div>
           <div className="trn-topbar-center">
-            <span className="trn-eyebrow">{t.trainingGuidedGame ?? 'Guided Game'}</span>
-            <span className="trn-topbar-title">Move {currentStep.moveNumber} — {t.trainingQuestion ?? 'Question'}</span>
+            <span className="trn-eyebrow">{t.trainingGuidedGame}</span>
+            <span className="trn-topbar-title">Move {currentStep.moveNumber} — {t.trainingQuestion}</span>
           </div>
           <div style={{ width: '80px' }} />
         </div>
@@ -886,7 +886,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
           {/* Feedback / Explanation */}
           {isWrong && !questionShowHint && (
             <div className="trn-feedback trn-feedback-wrong">
-              {t.trainingTryAgain ?? 'Try again.'}
+              {t.trainingTryAgain}
             </div>
           )}
           {isCorrect && (
@@ -900,7 +900,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
         <div className="trn-actions-sticky">
           {isCorrect && (
             <button type="button" className="action-btn action-btn-primary" onClick={handleQuestionNext}>
-              {t.trainingNextBtn ?? 'Next'}
+              {t.trainingNextBtn}
             </button>
           )}
         </div>
@@ -926,12 +926,12 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
         <div className="trn-topbar">
           <div style={{ width: '80px' }}>
             <button type="button" className="trn-exit-btn" onClick={handleExit}>
-              {t.trainingBackBtn ?? '← Back'}
+              {t.trainingBackBtn}
             </button>
           </div>
           <div className="trn-topbar-center">
-            <span className="trn-eyebrow">{t.trainingGuidedGame ?? 'Guided Game'}</span>
-            <span className="trn-topbar-title">{t.trainingCompleteLabel ?? 'Complete'}</span>
+            <span className="trn-eyebrow">{t.trainingGuidedGame}</span>
+            <span className="trn-topbar-title">{t.trainingCompleteLabel}</span>
           </div>
           <div style={{ width: '80px' }} />
         </div>
@@ -967,7 +967,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
         <div className="trn-actions-sticky">
           {completeSentIdx >= 1 && !isTyping && (
             <button type="button" className="action-btn action-btn-primary" onClick={handleFinish}>
-              {t.trainingFinishBtn ?? 'Finish'}
+              {t.trainingFinishBtn}
             </button>
           )}
         </div>
@@ -1027,12 +1027,12 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       <div className="trn-topbar">
         <div style={{ width: '80px' }}>
           <button type="button" className="trn-exit-btn" onClick={handleExit}>
-            {t.trainingBackBtn ?? '← Back'}
+            {t.trainingBackBtn}
           </button>
         </div>
         <div className="trn-topbar-center">
           <span className="trn-eyebrow">
-            {t.trainingGuidedGame ?? 'Guided Game'}
+            {t.trainingGuidedGame}
           </span>
           <span className="trn-topbar-title">{meta.title}</span>
         </div>
@@ -1135,7 +1135,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
             </div>
             {wrongAttempt && (
               <div className="trn-feedback trn-feedback-wrong">
-                {t.trainingIncorrectRetry ?? 'Incorrect. Please try again.'}
+                {t.trainingIncorrectRetry}
               </div>
             )}
             {showHint && stepText?.userText && (
@@ -1189,7 +1189,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
             className="action-btn action-btn-ghost"
             onClick={() => setShowHint(true)}
           >
-            {t.trainingShowHint ?? 'Show Hint'}
+            {t.trainingShowHint}
           </button>
         </div>
       )}

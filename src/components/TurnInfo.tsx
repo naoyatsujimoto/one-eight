@@ -86,7 +86,7 @@ export function TurnInfo({
             <div className="turn-meta">
               {t.move} {state.moveNumber}
               <span style={{color:'var(--ink-4)'}}> · </span>
-              {modeLabel ?? 'Human'}
+              {modeLabel ?? t.humanVsHuman}
             </div>
           </div>
         </div>

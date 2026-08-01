@@ -314,7 +314,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
 
   const myColorLabel = myColor === 'black' ? 'Black' : myColor === 'white' ? 'White' : '?';
   const turnLabel = isMyTurn ? t.onlineYourTurn : t.onlineOpponentTurn;
-  const opponentName = opponentProfile?.display_name ?? 'Opponent';
+  const opponentName = opponentProfile?.display_name ?? t.opponent;
   const opponentIsPublic = opponentProfile?.stats_public ?? false;
   const modeLabel = `Online · You: ${myColorLabel}`;
 

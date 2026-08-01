@@ -25,6 +25,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { TimerConfig } from '../game/timerTypes';
+import { useLang } from '../lib/lang';
 
 /**
  * 表示用安全マージン (ms) — OnlineTimerDisplay.tsx と同値で統一する。
@@ -377,9 +378,10 @@ function PerMoveHeader({
     : warn === 'warn' ? 'warn'
     : isMyTurn ? 'your-turn'
     : 'opp-turn';
+  const { t } = useLang();
   const statusText = isFrozen ? buildWaitingText(frozenUntilOnline)
-    : isMyTurn ? 'YOUR MOVE'
-    : 'THINKING';
+    : isMyTurn ? t.statusYourMove
+    : t.statusThinking;
 
   const activeColor = currentPlayer === 'black' ? '#3a2a1c' : '#9a8d76';
   const blackActive = currentPlayer === 'black';
@@ -537,6 +539,7 @@ function TotalTimeHeader({
   const whiteWarn: WarnLevel = whiteActive ? (whiteByoyomi ? 'crit' : warn) : null;
 
   // ステータス判定
+  const { t } = useLang();
   const isCpuTurn = props.mode === 'local' ? (props.isCpuTurn ?? false) : false;
   const isMyTurn = props.mode === 'online' ? (props.isMyTurn ?? true) : !isCpuTurn;
 
@@ -550,16 +553,16 @@ function TotalTimeHeader({
     statusText = buildWaitingText(frozenUntilForText);
   } else if (warn === 'crit') {
     statusKind = 'crit';
-    statusText = isMyTurn ? 'YOUR MOVE' : 'THINKING';
+    statusText = isMyTurn ? t.statusYourMove : t.statusThinking;
   } else if (warn === 'warn') {
     statusKind = 'warn';
-    statusText = isMyTurn ? 'YOUR MOVE' : 'THINKING';
+    statusText = isMyTurn ? t.statusYourMove : t.statusThinking;
   } else if (isMyTurn) {
     statusKind = 'your-turn';
-    statusText = 'YOUR MOVE';
+    statusText = t.statusYourMove;
   } else {
     statusKind = 'opp-turn';
-    statusText = 'THINKING';
+    statusText = t.statusThinking;
   }
 
   return (

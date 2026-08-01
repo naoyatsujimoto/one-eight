@@ -502,12 +502,12 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   const completeTitle: string = (() => {
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
     if (session.task.id === 'T7_diagonal_gates') return t.trainingT7Complete;
-    if (session.task.id === 'T4_partial_build') return (t as Record<string, unknown>)['trainingT4Complete'] as string ?? 'Partial Build Complete';
-    if (session.task.id === 'T6_asset_values') return (t as Record<string, unknown>)['trainingT6Complete'] as string ?? 'Asset Values Complete';
-    if (session.task.id === 'T5_capture_tie') return (t as Record<string, unknown>)['trainingT5Complete'] as string ?? 'Capture Tie Complete';
-    if (session.task.id === 'T8_prepare_capture') return (t as Record<string, unknown>)['trainingT8Complete'] as string ?? 'Prepare Capture Complete';
-    if (session.task.id === 'T9_no_build_endgame') return (t as Record<string, unknown>)['trainingT9Complete'] as string ?? 'No-build Endgame Complete';
-    if (session.task.id === 'T10_defensive_build') return (t as Record<string, unknown>)['trainingT10Complete'] as string ?? 'Defensive Build Complete';
+    if (session.task.id === 'T4_partial_build') return t.trainingT4Complete;
+    if (session.task.id === 'T6_asset_values') return t.trainingT6Complete;
+    if (session.task.id === 'T5_capture_tie') return t.trainingT5Complete;
+    if (session.task.id === 'T8_prepare_capture') return t.trainingT8Complete;
+    if (session.task.id === 'T9_no_build_endgame') return t.trainingT9Complete;
+    if (session.task.id === 'T10_defensive_build') return t.trainingT10Complete;
     return t.trainingCompleteTitle;
   })();
 

@@ -80,6 +80,8 @@ export const KO_TRANSLATIONS = {
     moveHistory: '수순 기록',
     humanVsHuman: '플레이어 × 플레이어',
     humanVsCpu: '플레이어 × CPU',
+    statusYourMove: '당신의 차례',
+    statusThinking: '생각 중',
     modeTraining: '훈련',
     trainingTitle: '훈련',
     trainingRecordeTitle: '기록 훈련',

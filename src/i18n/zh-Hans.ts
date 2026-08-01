@@ -80,6 +80,8 @@ export const ZH_HANS_TRANSLATIONS = {
     moveHistory: '棋谱',
     humanVsHuman: '玩家 × 玩家',
     humanVsCpu: '玩家 × CPU',
+    statusYourMove: '你的回合',
+    statusThinking: '思考中',
     modeTraining: '训练',
     trainingTitle: '训练',
     trainingRecordeTitle: '记录训练',

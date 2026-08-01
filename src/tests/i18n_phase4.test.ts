@@ -305,12 +305,12 @@ describe('Source audit — Board', () => {
   it('no hardcoded LABELS ON rendered in JSX (uses variable)', () => {
     // Default prop values may contain 'LABELS ON' as fallback string,
     // but the JSX render site must use the variable, not the literal.
-    // Check that the render site uses labelsOn/labelsOff variables.
-    expect(src).toContain('{showLabels ? labelsOn : labelsOff}');
+    // Check that the render site uses _labelsOn/_labelsOff variables (via useLang fallback).
+    expect(src).toContain('{showLabels ? _labelsOn : _labelsOff}');
   });
 
   it('no hardcoded GHOST ON rendered in JSX (uses variable)', () => {
-    expect(src).toContain('{ghostModeActive ? ghostOn : ghostOff}');
+    expect(src).toContain('{ghostModeActive ? _ghostOn : _ghostOff}');
   });
 
   it('no hardcoded Ghost Mode: show tooltip in JSX', () => {
@@ -500,5 +500,120 @@ describe('Phase 4補正 — 新規追keyが全に存在', () => {
     // Should contain locale labels, not raw codes
     expect(result).toContain('繁體中文');
     expect(result).toContain('English');
+  });
+});
+
+// ─── 20. Phase 4最終補正 — 構造テスト ―――――――――――――――――――――――――――――――
+
+describe('Phase 4最終補正 — 構造テスト', () => {
+  const boardSrc = readFileSync(resolve(__dirname, '../components/Board.tsx'), 'utf8');
+  const journalListSrc = readFileSync(resolve(__dirname, '../components/JournalListPage.tsx'), 'utf8');
+  const fgRunnerSrc = readFileSync(resolve(__dirname, '../components/FullGameTrainingRunner.tsx'), 'utf8');
+  const trainingViewSrc = readFileSync(resolve(__dirname, '../components/TrainingView.tsx'), 'utf8');
+
+  it('Board has no hardcoded labelsOn English default', () => {
+    expect(boardSrc).not.toContain("labelsOn = 'LABELS ON'");
+  });
+
+  it('Board has no hardcoded labelsOff English default', () => {
+    expect(boardSrc).not.toContain("labelsOff = 'LABELS OFF'");
+  });
+
+  it('Board has no hardcoded ghostOn English default', () => {
+    expect(boardSrc).not.toContain("ghostOn = 'GHOST ON'");
+  });
+
+  it('Board has no hardcoded ghostOff English default', () => {
+    expect(boardSrc).not.toContain("ghostOff = 'GHOST OFF'");
+  });
+
+  it('Board has no hardcoded ghostModePastMovesTooltip English default', () => {
+    expect(boardSrc).not.toContain("ghostModePastMovesTooltip = 'Ghost Mode: show your past moves at this position'");
+  });
+
+  it('Board has no hardcoded ghostProOnlyTooltip English default', () => {
+    expect(boardSrc).not.toContain("ghostProOnlyTooltip = 'Ghost Mode (Pro only)'");
+  });
+
+  it('JournalListPage uses getLocaleLabel import', () => {
+    expect(journalListSrc).toContain('getLocaleLabel');
+  });
+
+  it('JournalListPage fallbackNotice uses getLocaleLabel for both args', () => {
+    expect(journalListSrc).toContain('ui.fallbackNotice(getLocaleLabel(selectedLocale), getLocaleLabel(t.lang))');
+  });
+
+  it('FullGameTrainingRunner has no trainingBackBtn English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingBackBtn ?? '← Back'");
+  });
+
+  it('FullGameTrainingRunner has no trainingGuidedGame English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingGuidedGame ?? 'Guided Game'");
+  });
+
+  it('FullGameTrainingRunner has no trainingQuestion English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingQuestion ?? 'Question'");
+  });
+
+  it('FullGameTrainingRunner has no trainingTryAgain English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingTryAgain ?? 'Try again.'");
+  });
+
+  it('FullGameTrainingRunner has no trainingNextBtn English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingNextBtn ?? 'Next'");
+  });
+
+  it('FullGameTrainingRunner has no trainingCompleteLabel English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingCompleteLabel ?? 'Complete'");
+  });
+
+  it('FullGameTrainingRunner has no trainingFinishBtn English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingFinishBtn ?? 'Finish'");
+  });
+
+  it('FullGameTrainingRunner has no trainingIncorrectRetry English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingIncorrectRetry ?? 'Incorrect. Please try again.'");
+  });
+
+  it('FullGameTrainingRunner has no trainingShowHint English fallback', () => {
+    expect(fgRunnerSrc).not.toContain("t.trainingShowHint ?? 'Show Hint'");
+  });
+
+  it('TrainingView uses typed t.trainingT4Complete', () => {
+    expect(trainingViewSrc).toContain('t.trainingT4Complete');
+    expect(trainingViewSrc).not.toContain("'trainingT4Complete'");
+  });
+
+  it('TrainingView uses typed t.trainingT5Complete', () => {
+    expect(trainingViewSrc).toContain('t.trainingT5Complete');
+    expect(trainingViewSrc).not.toContain("'trainingT5Complete'");
+  });
+
+  it('TrainingView uses typed t.trainingT6Complete', () => {
+    expect(trainingViewSrc).toContain('t.trainingT6Complete');
+    expect(trainingViewSrc).not.toContain("'trainingT6Complete'");
+  });
+
+  it('TrainingView uses typed t.trainingT8Complete', () => {
+    expect(trainingViewSrc).toContain('t.trainingT8Complete');
+    expect(trainingViewSrc).not.toContain("'trainingT8Complete'");
+  });
+
+  it('TrainingView uses typed t.trainingT9Complete', () => {
+    expect(trainingViewSrc).toContain('t.trainingT9Complete');
+    expect(trainingViewSrc).not.toContain("'trainingT9Complete'");
+  });
+
+  it('TrainingView uses typed t.trainingT10Complete', () => {
+    expect(trainingViewSrc).toContain('t.trainingT10Complete');
+    expect(trainingViewSrc).not.toContain("'trainingT10Complete'");
+  });
+
+  it('10言語辭書構造が一致する (statusYourMove 存在)', () => {
+    for (const { code } of SUPPORTED_LOCALES) {
+      const t = resolveUiTranslations(code) as Record<string, unknown>;
+      expect(t['statusYourMove'], `statusYourMove missing in ${code}`).toBeDefined();
+      expect(t['statusThinking'], `statusThinking missing in ${code}`).toBeDefined();
+    }
   });
 });

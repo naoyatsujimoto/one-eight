@@ -74,6 +74,8 @@ export const JA_TRANSLATIONS = {
     moveHistory: '手順履歴',
     humanVsHuman: '人間 × 人間',
     humanVsCpu: '人間 × CPU',
+    statusYourMove: 'あなたの番',
+    statusThinking: '思考中',
     modeTraining: 'トレーニング',
     trainingTitle: 'TRAINING',
     trainingRecordeTitle: 'Recorde Training',

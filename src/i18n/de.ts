@@ -80,6 +80,8 @@ export const DE_TRANSLATIONS = {
     moveHistory: 'Zugverlauf',
     humanVsHuman: 'Spieler × Spieler',
     humanVsCpu: 'Spieler × CPU',
+    statusYourMove: 'DEIN ZUG',
+    statusThinking: 'DENKEN',
     modeTraining: 'Training',
     trainingTitle: 'TRAINING',
     trainingRecordeTitle: 'Recorde Training',

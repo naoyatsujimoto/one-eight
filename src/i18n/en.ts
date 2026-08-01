@@ -75,6 +75,8 @@ export const EN_TRANSLATIONS = {
     moveHistory: 'Move History',
     humanVsHuman: 'Human × Human',
     humanVsCpu: 'Human × CPU',
+    statusYourMove: 'YOUR MOVE',
+    statusThinking: 'THINKING',
     modeTraining: 'Training',
     trainingTitle: 'TRAINING',
     trainingRecordeTitle: 'Recorde Training',

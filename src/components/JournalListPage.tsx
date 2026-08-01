@@ -5,7 +5,7 @@ import { getJournalArticleImages } from '../lib/journalImages';
 import { getJournalUi } from '../lib/journalUi';
 import { useLang } from '../lib/lang';
 import { formatDate } from '../lib/localeFormat';
-import { SUPPORTED_LOCALES } from '../lib/locales';
+import { SUPPORTED_LOCALES, getLocaleLabel } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
 import './JournalListPage.css';
@@ -140,7 +140,7 @@ export function JournalListPage() {
                   {/* Fallback notice: 要求言語の翻訳が存在しない場合のみ表示 */}
                   {article.fallback && t && t.lang !== resolveJournalLang(selectedLocale) && (
                     <div className="jl-fallback-notice">
-                      {ui.fallbackNotice(selectedLocale, t.lang)}
+                      {ui.fallbackNotice(getLocaleLabel(selectedLocale), getLocaleLabel(t.lang))}
                     </div>
                   )}
 

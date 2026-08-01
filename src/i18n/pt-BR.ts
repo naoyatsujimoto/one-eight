@@ -80,6 +80,8 @@ export const PT_BR_TRANSLATIONS = {
     moveHistory: 'Histórico de jogadas',
     humanVsHuman: 'Jogador × Jogador',
     humanVsCpu: 'Jogador × CPU',
+    statusYourMove: 'SUA VEZ',
+    statusThinking: 'PENSANDO',
     modeTraining: 'Treinamento',
     trainingTitle: 'TREINAMENTO',
     trainingRecordeTitle: 'Treinamento com recorde',
