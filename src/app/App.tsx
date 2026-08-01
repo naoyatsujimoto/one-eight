@@ -1052,7 +1052,7 @@ export default function App() {
                 className="cpu-name-chip"
                 onClick={() => setCpuProfileOpen(true)}
               >
-                OPPONENT · {cpuDiffLabel}
+                {t.opponent} · {cpuDiffLabel}
               </button>
             ) : modeLabel}
           </div>
@@ -1123,6 +1123,12 @@ export default function App() {
             ghostProOnlyTitle={t.ghostProOnlyTitle}
             ghostProOnlyText={t.ghostProOnlyText}
             ghostProUpgradeCta={t.ghostProUpgradeCta}
+            labelsOn={t.labelsOn}
+            labelsOff={t.labelsOff}
+            ghostOn={t.ghostOn}
+            ghostOff={t.ghostOff}
+            ghostModePastMovesTooltip={t.ghostModePastMovesTooltip}
+            ghostProOnlyTooltip={t.ghostProOnlyTitle}
           />
         </div>
         </div>{/* end board-col */}
@@ -1148,11 +1154,11 @@ export default function App() {
 
       {/* Site footer */}
       <footer className="site-footer">
-        <a href="/pricing.html">Pricing</a>
-        <a href="/terms.html">Terms</a>
-        <a href="/privacy.html">Privacy</a>
-        <a href="/refund.html">Refund</a>
-        <a href="mailto:contact@oneeightgame.com">Contact</a>
+        <a href="/pricing.html">{t.pricing}</a>
+        <a href="/terms.html">{t.terms}</a>
+        <a href="/privacy.html">{t.privacy}</a>
+        <a href="/refund.html">{t.refund}</a>
+        <a href="mailto:contact@oneeightgame.com">{t.contact}</a>
       </footer>
 
       {/* Admin Inbox */}

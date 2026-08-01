@@ -103,7 +103,7 @@ export function TurnInfo({
           <div className="turn-guide-label-diagram">
             <img
               src={`/label_guide_${perspective === 'white' ? 'white' : 'black'}.svg`}
-              alt="label guide"
+              alt={t.labelGuideAlt}
             />
           </div>
         )}

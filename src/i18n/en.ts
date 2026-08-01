@@ -160,6 +160,7 @@ export const EN_TRANSLATIONS = {
     trainingIncorrectRetry: 'Incorrect. Please try again.',
     trainingTapToGoBack: 'Tap to go back',
     trainingTapToContinue: 'Tap to continue',
+    trainingGood: 'Good',
     trainingShowHint: 'Show Hint',
 
 
@@ -260,6 +261,8 @@ export const EN_TRANSLATIONS = {
     userSaveName: 'Save',
     userCancelEdit: 'Cancel',
     userBack: '← Back',
+    userPrevPage: '← Prev',
+    userNextPage: 'Next →',
     userBuildUsage: 'Build Usage',
     userFavPositions: 'Favorite Positions',
     userWeakPositions: 'Weak Positions',
@@ -336,6 +339,9 @@ export const EN_TRANSLATIONS = {
     omShowAllMatches: 'Show all matches',
     omToday: 'Today',
     omMatchesOn: (dateStr: string) => `Matches on ${dateStr}`,
+    omPreviousMonth: 'Previous month',
+    omNextMonth: 'Next month',
+    omMatchOnDate: (dateStr: string) => `${dateStr} (match)`,
     omLoading: 'Loading official matches...',
     omLoadFailed: 'Failed to load matches.',
     omRetry: 'Retry',
@@ -487,6 +493,8 @@ export const EN_TRANSLATIONS = {
     postmortemRetry: 'Retry',
     showCandidateMoves: 'Show candidate moves',
     computingCandidates: 'Computing candidates...',
+    postmortemMoveNumber: (n: number) => `Move #${n}`,
+    postmortemMoveHeader: 'No.',
 
     // ConfirmModal
     execute: 'Execute',
@@ -581,6 +589,7 @@ export const EN_TRANSLATIONS = {
     arenaRulesInfoLabel: 'Rules',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
+    labelGuideAlt: 'label guide',
     labelGuideBlackText: "Labels are shared canonical coordinates. From Black's view, Gates 1–4 are on the far side and Gates 7–10 are on the near side. Move records use these shared labels.",
     labelGuideWhiteText: "Labels are shared canonical coordinates. From White's view, Gates 7–10 are on the far side and Gates 1–4 are on the near side. Move records use these shared labels.",
 
@@ -591,17 +600,26 @@ export const EN_TRANSLATIONS = {
     terms: 'Terms',
     privacy: 'Privacy',
     refund: 'Refund',
+    contact: 'Contact',
+    opponent: 'OPPONENT',
     accessDenied: 'Access denied.',
 
     // SplashScreen
+    splashTagline: 'Imagine. Leave your mark.',
     tapToContinue: 'Tap to continue',
     continueToLogin: 'Continue to login',
 
     // Ghost
     ghostModeTitle: 'Ghost Mode',
+    labelsOn: 'LABELS ON',
+    labelsOff: 'LABELS OFF',
+    ghostOn: 'GHOST ON',
+    ghostOff: 'GHOST OFF',
+    ghostModePastMovesTooltip: 'Ghost Mode: show your past moves at this position',
 
     // AnalyticsPanel
     openingStats: 'Opening Stats',
+    topN: (n: number) => `top ${n}`,
     noDataCpu: 'No data yet. Play some CPU games!',
     totalCpuGames: 'Total CPU games',
     firstMove: 'First move',
@@ -635,6 +653,7 @@ export const EN_TRANSLATIONS = {
 
     // OnlineBoard
     connecting: 'Connecting',
+    errorPrefix: 'Error:',
 
     // PrizeClaimForm (isUpdate)
     updateTaxPaymentInfo: 'Update Tax & Payment Information',

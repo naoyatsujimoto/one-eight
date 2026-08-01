@@ -300,7 +300,12 @@ function MiniCalendar({
   const todayYear = now.getFullYear();
   const todayMonth = now.getMonth();
   const todayDate = now.getDate();
-  const DOW_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // 日曜始まりのDOW_LABELSをIntl.DateTimeFormatで選択localeから生成
+  // 基準: 2024-01-07(日) 〜 2024-01-13(土) の7日間を使用
+  const DOW_LABELS = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(2024, 0, 7 + i); // 2024-01-07 is Sunday
+    return d.toLocaleDateString(getIntlLocale(lang), { weekday: 'narrow' });
+  });
 
   // グリッド: 最大 6 週 × 7 = 42 セル
   const cells: (number | null)[] = [];
@@ -330,7 +335,7 @@ function MiniCalendar({
           type="button"
           className="om-mini-cal-nav-btn"
           onClick={onPrevMonth}
-          aria-label="Previous month"
+          aria-label={t.omPreviousMonth}
         >
           ‹
         </button>
@@ -339,7 +344,7 @@ function MiniCalendar({
           type="button"
           className="om-mini-cal-nav-btn"
           onClick={onNextMonth}
-          aria-label="Next month"
+          aria-label={t.omNextMonth}
         >
           ›
         </button>
@@ -374,7 +379,7 @@ function MiniCalendar({
               type="button"
               className={cls}
               onClick={() => handleClick(day)}
-              aria-label={`${monthLabel} ${day}${hasMatch ? ' (match)' : ''}`}
+              aria-label={hasMatch ? t.omMatchOnDate(`${monthLabel} ${day}`) : `${monthLabel} ${day}`}
             >
               {day}
               {hasMatch && <span className="om-mini-cal-dot" />}

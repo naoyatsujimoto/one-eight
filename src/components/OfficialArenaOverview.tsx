@@ -39,6 +39,11 @@ import {
 } from '../lib/arena';
 import { enterOfficialMatch } from '../lib/officialMatch';
 import { useLang } from '../lib/lang';
+import {
+  formatDate as locFmtDate,
+  formatTime as locFmtTime,
+  formatDateTime as locFmtDateTime,
+} from '../lib/localeFormat';
 
 // ─── Arena Reward constants (front-end fixed values; replace with DB/RPC in future) ──────────────
 
@@ -51,8 +56,7 @@ const ARENA_REWARDS_USD: Record<string, number> = {
 
 function formatDatetime(isoStr: string | null, lang: string): string {
   if (!isoStr) return '—';
-  const d = new Date(isoStr);
-  return d.toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+  return locFmtDateTime(isoStr, lang, {
     month: 'short',
     day: 'numeric',
     weekday: 'short',
@@ -63,8 +67,7 @@ function formatDatetime(isoStr: string | null, lang: string): string {
 
 function formatDate(isoStr: string | null, lang: string): string {
   if (!isoStr) return '—';
-  const d = new Date(isoStr);
-  return d.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+  return locFmtDate(isoStr, lang, {
     month: 'short',
     day: 'numeric',
     weekday: 'short',
@@ -73,8 +76,7 @@ function formatDate(isoStr: string | null, lang: string): string {
 
 function formatTime(isoStr: string | null, lang: string): string {
   if (!isoStr) return '—';
-  const d = new Date(isoStr);
-  return d.toLocaleTimeString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+  return locFmtTime(isoStr, lang, {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -921,7 +923,7 @@ function ArenaCard({
         {/* Frequency */}
         <div style={cardStyles.row}>
           <span style={cardStyles.label}>{t.arenaFrequency}</span>
-          <span style={cardStyles.value}>Weekly</span>
+          <span style={cardStyles.value}>{t.onlineWeeklyBadge}</span>
         </div>
 
         {/* Next Round */}
@@ -964,7 +966,7 @@ function ArenaCard({
         {/* Rules */}
         <div style={cardStyles.row}>
           <span style={cardStyles.label}>{t.arenaRulesInfoLabel}</span>
-          <span style={cardStyles.value}>Total Time, 10min</span>
+          <span style={cardStyles.value}>{t.timerModeTotal}, {t.timerMin10}</span>
         </div>
       </div>
 

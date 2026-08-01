@@ -1148,7 +1148,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
         {(phase === 'select_success' || phase === 'success') && (
           <>
             <div className="trn-instruction-card trn-instruction-card--success">
-              <span className="trn-instruction-good">Good</span>
+              <span className="trn-instruction-good">{t.trainingGood}</span>
             </div>
             <div className="trn-success-text" style={{ whiteSpace: 'pre-wrap', marginTop: '10px' }}>{visibleText}</div>
             {successSentences.length > 1 && (
@@ -1170,10 +1170,10 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
               onClick={canGoBack ? handleBack : undefined}
               aria-hidden="true"
             >
-              {canGoBack ? (t.trainingTapToGoBack ?? 'Tap to go back') : ''}
+              {canGoBack ? t.trainingTapToGoBack : ''}
             </span>
             <span className="trn-tap-forward" aria-hidden="true">
-              {t.trainingTapToContinue ?? 'Tap to continue'}
+              {t.trainingTapToContinue}
             </span>
           </div>
         )}

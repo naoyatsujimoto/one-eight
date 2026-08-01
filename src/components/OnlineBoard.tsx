@@ -414,7 +414,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
       )}
       {onlineStatus === 'error' && (
         <div style={{ ...styles.banner, background: '#ffebee', color: '#c62828' }}>
-          Error: {errorMsg}
+          {t.errorPrefix} {errorMsg}
         </div>
       )}
 

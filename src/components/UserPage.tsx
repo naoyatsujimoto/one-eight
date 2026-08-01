@@ -295,9 +295,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 ? formatDate(stats.joinedAt, lang)
                 : '—'
             } />
-            <ProfileItem label={t.userRating} value="— (Coming Soon)" muted />
-            <ProfileItem label={t.userDomesticRank} value="— (Coming Soon)" muted />
-            <ProfileItem label={t.userSeasonRank} value="— (Coming Soon)" muted />
+            <ProfileItem label={t.userRating} value={`— (${t.onlineComingSoon})`} muted />
+            <ProfileItem label={t.userDomesticRank} value={`— (${t.onlineComingSoon})`} muted />
+            <ProfileItem label={t.userSeasonRank} value={`— (${t.onlineComingSoon})`} muted />
           </div>
 
           {/* Pro ステータスバナー: 非Proユーザー向け Upgrade 導線のみ（自分のページのみ） */}
@@ -420,7 +420,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                         disabled={safePage === 0}
                         style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: 4, border: '1px solid #ccc', background: safePage === 0 ? '#f5f5f5' : '#fff', cursor: safePage === 0 ? 'default' : 'pointer', color: safePage === 0 ? '#aaa' : '#333' }}
                       >
-                        ← Prev
+                        {t.userPrevPage}
                       </button>
                       <span style={{ fontSize: '0.75rem', color: '#666' }}>
                         {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, allGames.length)} / {allGames.length}
@@ -431,7 +431,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                         disabled={safePage === totalPages - 1}
                         style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: 4, border: '1px solid #ccc', background: safePage === totalPages - 1 ? '#f5f5f5' : '#fff', cursor: safePage === totalPages - 1 ? 'default' : 'pointer', color: safePage === totalPages - 1 ? '#aaa' : '#333' }}
                       >
-                        Next →
+                        {t.userNextPage}
                       </button>
                     </div>
                   )}
@@ -1171,10 +1171,11 @@ function RecentGamesTable({
 // ── 共通部品 ──────────────────────────────────────────────────────────────────
 
 function SectionTitle({ title, soon }: { title: string; soon?: boolean }) {
+  const { t } = useLang();
   return (
     <div style={s.sectionTitleRow}>
       <span style={s.sectionTitle}>{title}</span>
-      {soon && <span style={s.soonBadge}>Coming Soon</span>}
+      {soon && <span style={s.soonBadge}>{t.onlineComingSoon}</span>}
     </div>
   );
 }

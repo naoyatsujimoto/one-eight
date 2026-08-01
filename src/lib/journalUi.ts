@@ -5,7 +5,10 @@
  * DB から取得する記事翻訳 (journal.ts) とは独立している。
  *
  * 選択言語 (selectedLocale / LocaleCode) をキーに文言を取得する。
- * journalLang (en/ja の2値) ではなく、LocaleCode 10言語で管理すること。
+ * LocaleCode 10言語で管理する。
+ *
+ * UI schema上の正本: English (en)。
+ * 所有翻訳は英語正本から派生する。
  */
 
 import type { LocaleCode } from './locales';
@@ -14,7 +17,8 @@ import type { LocaleCode } from './locales';
 
 /**
  * 編集指針本文の10言語翻訳。
- * canonical: 探究心と情熱に敬意をもって。（ja）
+ * UI schema canonical: English (en)。
+ * 参考: 日本語訳: 探究心と情熱に敬意をもって。
  */
 export const EDITORIAL_GUIDELINE: Record<LocaleCode, string> = {
   ja:        '探究心と情熱に敬意をもって。',

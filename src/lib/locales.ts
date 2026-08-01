@@ -25,3 +25,17 @@ export type LocaleCode = typeof SUPPORTED_LOCALES[number]['code'];
 
 // All 10 locales have dedicated FullGame Training text bundles.
 // Use resolveFullGameV1Text() from src/training/i18n/fullGameV1/ to obtain locale-specific text.
+
+/**
+ * getLocaleLabel — returns the human-readable label for a locale code.
+ *
+ * Looks up SUPPORTED_LOCALES. Unknown codes fall back to English ('English').
+ * Useful for displaying locale names in fallback notices and UI.
+ *
+ * @param code - a LocaleCode or arbitrary string
+ */
+export function getLocaleLabel(code: LocaleCode | string): string {
+  const found = (SUPPORTED_LOCALES as ReadonlyArray<{ code: string; label: string }>)
+    .find(l => l.code === code);
+  return found ? found.label : 'English';
+}

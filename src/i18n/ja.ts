@@ -159,6 +159,7 @@ export const JA_TRANSLATIONS = {
     trainingIncorrectRetry: '不正解です。もう一度試してください。',
     trainingTapToGoBack: 'Tapして戻る',
     trainingTapToContinue: 'Tapして進む',
+    trainingGood: '正解',
     trainingShowHint: 'ヒントを見る',
 
 
@@ -258,6 +259,8 @@ export const JA_TRANSLATIONS = {
     userSaveName: '保存',
     userCancelEdit: 'キャンセル',
     userBack: '← 戻る',
+    userPrevPage: '← 前',
+    userNextPage: '次 →',
     userBuildUsage: 'Build 使用率',
     userFavPositions: 'よく選ぶ Position',
     userWeakPositions: '苦手な Position',
@@ -334,6 +337,9 @@ export const JA_TRANSLATIONS = {
     omShowAllMatches: 'すべて表示',
     omToday: '今日',
     omMatchesOn: (dateStr: string) => `${dateStr} の公式戦`,
+    omPreviousMonth: '前の月',
+    omNextMonth: '次の月',
+    omMatchOnDate: (dateStr: string) => `${dateStr}（公式戦あり）`,
     omLoading: '公式戦を読み込み中…',
     omLoadFailed: '公式戦の読み込みに失敗しました',
     omRetry: '再試行',
@@ -485,6 +491,8 @@ export const JA_TRANSLATIONS = {
     postmortemRetry: '再試行',
     showCandidateMoves: '候補手を表示',
     computingCandidates: '候補手を計算中…',
+    postmortemMoveNumber: (n: number) => `手目 #${n}`,
+    postmortemMoveHeader: 'No.',
 
     // ConfirmModal
     execute: '実行',
@@ -579,6 +587,7 @@ export const JA_TRANSLATIONS = {
     arenaRulesInfoLabel: 'Rules',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
+    labelGuideAlt: '座標ガイド',
     labelGuideBlackText: 'GATE番号は左上から時計周りに1→12。POSITION番号は左から右、上から下の順でA→M。（棋譜には打ち手が番号で記載されます）',
     labelGuideWhiteText: 'GATE番号は右下から時計周りに1→12。POSITION番号は右から左、下から上の順でA→M。（棋譜には打ち手が番号で記載されます）',
 
@@ -587,10 +596,19 @@ export const JA_TRANSLATIONS = {
     terms: '利用規約',
     privacy: 'プライバシー',
     refund: '返金',
+    contact: 'お問い合わせ',
+    opponent: '対戦相手',
     accessDenied: 'アクセスが拒否されました。',
+    splashTagline: '想像し、痕跡を残せ。',
     tapToContinue: 'タップして続ける',
     continueToLogin: 'ログインへ進む',
     ghostModeTitle: 'Ghost Mode',
+    labelsOn: '座標表示 ON',
+    labelsOff: '座標表示 OFF',
+    ghostOn: 'Ghost ON',
+    ghostOff: 'Ghost OFF',
+    ghostModePastMovesTooltip: 'Ghost Mode: このPositionでの過去の手を表示',
+    topN: (n: number) => `上位 ${n}`,
     openingStats: '序盤統計',
     noDataCpu: 'データがありません。CPU戦をプレイしてください。',
     totalCpuGames: 'CPU対局数合計',
@@ -617,6 +635,7 @@ export const JA_TRANSLATIONS = {
     importRecordLabel: '棋譜を読み込む',
     importSuccessful: '読み込み成功',
     connecting: '接続中',
+    errorPrefix: 'エラー:',
     updateTaxPaymentInfo: '税務・支払情報を更新',
     existingSubmissionNotice: '情報はすでに提出済みです。',
     updatedInformationNotice: '情報が更新されました。',

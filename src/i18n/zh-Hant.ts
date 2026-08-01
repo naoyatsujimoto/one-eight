@@ -164,6 +164,7 @@ export const ZH_HANT_TRANSLATIONS = {
     trainingIncorrectRetry: '答案不正確，請再試一次。',
     trainingTapToGoBack: '點擊返回',
     trainingTapToContinue: '點擊繼續',
+    trainingGood: '正確',
     trainingShowHint: '顯示提示',
 
 
@@ -264,6 +265,8 @@ export const ZH_HANT_TRANSLATIONS = {
     userSaveName: '儲存',
     userCancelEdit: '取消',
     userBack: '← 返回',
+    userPrevPage: '← 上一頁',
+    userNextPage: '下一頁 →',
     userBuildUsage: 'Build 使用率',
     userFavPositions: '常用 Positions',
     userWeakPositions: '弱勢 Positions',
@@ -340,6 +343,9 @@ export const ZH_HANT_TRANSLATIONS = {
     omShowAllMatches: '顯示所有賽事',
     omToday: '今天',
     omMatchesOn: (dateStr: string) => `${dateStr}的賽事`,
+    omPreviousMonth: '上一月',
+    omNextMonth: '下一月',
+    omMatchOnDate: (dateStr: string) => `${dateStr}（有賽事）`,
     omLoading: '載入正式賽事中…',
     omLoadFailed: '載入賽事失敗。',
     omRetry: '重試',
@@ -491,6 +497,8 @@ export const ZH_HANT_TRANSLATIONS = {
     postmortemRetry: '重試',
     showCandidateMoves: '顯示候選手',
     computingCandidates: '計算候選手中…',
+    postmortemMoveNumber: (n: number) => `第 ${n} 手`,
+    postmortemMoveHeader: 'No.',
 
     // ConfirmModal
     execute: '執行',
@@ -585,6 +593,7 @@ export const ZH_HANT_TRANSLATIONS = {
     arenaRulesInfoLabel: '規則',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
+    labelGuideAlt: '座標導覽',
     labelGuideBlackText: '標籤為共用的座標。從 Black 視角，Gate 1–4 在遠側，Gate 7–10 在近側。棋譜使用這些共用標籤。',
     labelGuideWhiteText: '標籤為共用的座標。從 White 視角，Gate 7–10 在遠側，Gate 1–4 在近側。棋譜使用這些共用標籤。',
 
@@ -593,10 +602,19 @@ export const ZH_HANT_TRANSLATIONS = {
     terms: '準則',
     privacy: '隱私權',
     refund: '退款',
+    contact: '聯絡我們',
+    opponent: '對手',
     accessDenied: '存取被拒絕。',
+    splashTagline: '想像，留下你的足迹。',
     tapToContinue: '點擊繼續',
     continueToLogin: '前往登入',
     ghostModeTitle: 'Ghost Mode',
+    labelsOn: '標籤 ON',
+    labelsOff: '標籤 OFF',
+    ghostOn: 'Ghost 開啟',
+    ghostOff: 'Ghost 關閉',
+    ghostModePastMovesTooltip: 'Ghost Mode：顯示此 Position 的過去落子',
+    topN: (n: number) => `前 ${n}`,
     openingStats: '開局統計',
     noDataCpu: '尚無資料。請先進行 CPU 對局！',
     totalCpuGames: 'CPU 對局總數',
@@ -623,6 +641,7 @@ export const ZH_HANT_TRANSLATIONS = {
     importRecordLabel: '輸入棋譜',
     importSuccessful: '輸入成功',
     connecting: '連線中',
+    errorPrefix: '錯誤:',
     updateTaxPaymentInfo: '更新稅務及支付資訊',
     existingSubmissionNotice: '您已提交資訊。',
     updatedInformationNotice: '您的資訊已更新。',

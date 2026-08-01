@@ -191,7 +191,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
               <div style={styles.sectionTitle}>{t.decisiveMove}</div>
               {result.decisiveCrossing ? (
                 <div style={styles.decisiveBox}>
-                  <div style={styles.decisiveMoveNum}>Move #{result.decisiveCrossing.moveNum}</div>
+                  <div style={styles.decisiveMoveNum}>{t.postmortemMoveNumber(result.decisiveCrossing.moveNum)}</div>
                   <div style={styles.decisivePlayed}>{result.decisiveCrossing.played}</div>
                   <div style={styles.decisiveWP}>
                     WP {pct(result.decisiveCrossing.fromWP)} → {pct(result.decisiveCrossing.toWP)}
@@ -343,6 +343,7 @@ interface HistoryListProps {
 }
 
 function HistoryList({ rows, wpInitial, proActive = false, humanColor }: HistoryListProps) {
+  const { t } = useLang();
   const resolvedSeries = buildResolvedWPSeries(rows, wpInitial);
   const [expandedMoveNum, setExpandedMoveNum] = useState<number | null>(null);
 
@@ -355,7 +356,7 @@ function HistoryList({ rows, wpInitial, proActive = false, humanColor }: History
     <div style={styles.historyList}>
       {/* ヘッダー行 */}
       <div style={styles.historyHeader}>
-        <span style={styles.historyHeaderNum}>No.</span>
+        <span style={styles.historyHeaderNum}>{t.postmortemMoveHeader}</span>
         <span style={styles.historyHeaderMove}>Move</span>
         <span style={styles.historyHeaderWP}>WP(Black)</span>
       </div>

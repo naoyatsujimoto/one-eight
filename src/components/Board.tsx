@@ -583,6 +583,12 @@ export function Board({
   ghostProOnlyTitle,
   ghostProOnlyText,
   ghostProUpgradeCta,
+  labelsOn = 'LABELS ON',
+  labelsOff = 'LABELS OFF',
+  ghostOn = 'GHOST ON',
+  ghostOff = 'GHOST OFF',
+  ghostModePastMovesTooltip = 'Ghost Mode: show your past moves at this position',
+  ghostProOnlyTooltip = 'Ghost Mode (Pro only)',
 }: {
   state: GameState;
   buildState: BoardBuildState;
@@ -606,6 +612,12 @@ export function Board({
   ghostProOnlyTitle?: string;
   ghostProOnlyText?: string;
   ghostProUpgradeCta?: string;
+  labelsOn?: string;
+  labelsOff?: string;
+  ghostOn?: string;
+  ghostOff?: string;
+  ghostModePastMovesTooltip?: string;
+  ghostProOnlyTooltip?: string;
 }) {
   const selectedId = state.selectedPosition;
 
@@ -956,7 +968,7 @@ export function Board({
               aria-pressed={showLabels}
             >
               <span className="board-label-toggle-dot" />
-              {showLabels ? 'LABELS ON' : 'LABELS OFF'}
+              {showLabels ? labelsOn : labelsOff}
             </button>
           )}
           {showGhostToggle && (
@@ -966,10 +978,10 @@ export function Board({
                 className={['board-label-toggle', 'board-ghost-toggle', ghostModeActive ? 'ghost-on' : 'ghost-off'].filter(Boolean).join(' ')}
                 onClick={onGhostModeToggle}
                 aria-pressed={ghostModeActive}
-                title="Ghost Mode: show your past moves at this position"
+                title={ghostModePastMovesTooltip}
               >
                 <span className="board-label-toggle-dot" />
-                {ghostModeActive ? 'GHOST ON' : 'GHOST OFF'}
+                {ghostModeActive ? ghostOn : ghostOff}
               </button>
             ) : (
               <button
@@ -977,7 +989,7 @@ export function Board({
                 className="board-label-toggle board-ghost-toggle ghost-off ghost-pro-locked"
                 onClick={() => setShowGhostProNotice(v => !v)}
                 aria-pressed={false}
-                title="Ghost Mode (Pro only)"
+                title={ghostProOnlyTooltip}
               >
                 <span className="board-label-toggle-dot" />
                 GHOST
@@ -989,13 +1001,13 @@ export function Board({
         {/* Ghost Pro upgrade notice (non-Pro only) */}
         {showGhostToggle && !proGhostEnabled && showGhostProNotice && (
           <div className="ghost-pro-notice">
-            <div className="ghost-pro-notice-title">{ghostProOnlyTitle ?? 'Ghost (Pro Only)'}</div>
-            <div className="ghost-pro-notice-text">{ghostProOnlyText ?? 'Ghost is a Pro feature. Upgrade to Pro to view suggested moves based on past match data.'}</div>
+            <div className="ghost-pro-notice-title">{ghostProOnlyTitle}</div>
+            <div className="ghost-pro-notice-text">{ghostProOnlyText}</div>
             <a
               href="/pricing.html"
               className="ghost-pro-notice-cta"
             >
-              {ghostProUpgradeCta ?? 'View Pro features'}
+              {ghostProUpgradeCta}
             </a>
           </div>
         )}
@@ -1011,7 +1023,7 @@ export function Board({
             aria-pressed={showLabels}
           >
             <span className="board-label-toggle-dot" />
-            {showLabels ? 'LABELS ON' : 'LABELS OFF'}
+            {showLabels ? labelsOn : labelsOff}
           </button>
         </div>
       )}

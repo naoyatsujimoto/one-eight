@@ -5,7 +5,7 @@ import { getJournalArticleImages } from '../lib/journalImages';
 import { getJournalUi } from '../lib/journalUi';
 import { useLang } from '../lib/lang';
 import { formatDate } from '../lib/localeFormat';
-import { SUPPORTED_LOCALES } from '../lib/locales';
+import { SUPPORTED_LOCALES, getLocaleLabel } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
 import './JournalArticlePage.css';
@@ -94,7 +94,9 @@ export function JournalArticlePage() {
   // fallback notice 文言 (要求言語の翻訳が存在しない場合のみ)
   function buildFallbackNotice(articleLang: JournalLang): string {
     if (articleLang === journalLang) return '';
-    return ui.fallbackNotice(selectedLocale, articleLang);
+    const requestedLabel = getLocaleLabel(selectedLocale);
+    const displayedLabel = getLocaleLabel(articleLang);
+    return ui.fallbackNotice(requestedLabel, displayedLabel);
   }
 
   if (!slug) return null;
@@ -110,7 +112,7 @@ export function JournalArticlePage() {
               href={`/journal/${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
               className="ja-nav-link"
             >
-              ← Journal
+              ← {ui.backToJournal}
             </a>
           </nav>
           {/* Compact language selector */}

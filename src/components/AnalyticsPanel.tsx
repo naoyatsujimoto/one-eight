@@ -64,7 +64,7 @@ export function AnalyticsPanel() {
               <p className="analytics-total">{t.totalCpuGames}: {total}</p>
 
               {/* byPosition */}
-              <h4 className="analytics-section-title">{t.firstMove} — Position (top {TOP_N})</h4>
+              <h4 className="analytics-section-title">{t.firstMove} — Position ({t.topN(TOP_N)})</h4>
               <table className="analytics-table">
                 <thead>
                   <tr><th>Pos</th><th>{t.tries}</th><th>{t.winPercent}</th></tr>
@@ -98,7 +98,7 @@ export function AnalyticsPanel() {
               </table>
 
               {/* byPositionBuildType */}
-              <h4 className="analytics-section-title">{t.positionBuild} (top {TOP_N})</h4>
+              <h4 className="analytics-section-title">{t.positionBuild} ({t.topN(TOP_N)})</h4>
               <table className="analytics-table">
                 <thead>
                   <tr><th>Pos:Build</th><th>{t.tries}</th><th>{t.winPercent}</th></tr>

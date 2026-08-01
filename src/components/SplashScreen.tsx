@@ -52,7 +52,7 @@ export function SplashScreen({ onDismiss }: Props) {
 
       {/* Main copy */}
       <div className={`splash-copy${fading ? ' splash-copy-fading' : ''}`}>
-        <p className="splash-tagline">Imagine. Leave your mark.</p>
+        <p className="splash-tagline">{t.splashTagline}</p>
       </div>
 
       {/* Minimal hint */}

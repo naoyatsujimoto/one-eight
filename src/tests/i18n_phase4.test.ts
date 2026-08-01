@@ -11,10 +11,22 @@
  * 7. localeFormat — Invalid Date fallback
  * 8. Core UI — all 10 locale dictionaries have the new Phase 4 keys
  * 9. html[lang] sync — LangProvider exposes setLang
+ * 10. OfficialArenaOverview — no lang==='ja' hardcoded locale
+ * 11. Board — no hardcoded English tooltip/fallback in source
+ * 12. App — no hardcoded Pricing/Terms/Privacy/Refund/Contact in footer
+ * 13. Journal — fallbackNotice receives locale labels, not raw codes
+ * 14. JournalArticlePage — no '← Journal' hardcoded in source
+ * 15. OfficialMatchCalendar — no fixed DOW_LABELS array in source
+ * 16. FullGameTrainingRunner — no ?? 'Tap to fallback
+ * 17. getLocaleLabel — all 10 locales return display labels
+ * 18. getLocaleLabel — unknown code fallback
+ * 19. Phase 4補正 — 新規追keyが全に存在
  */
 
 import { describe, it, expect } from 'vitest';
-import { SUPPORTED_LOCALES } from '../lib/locales';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { SUPPORTED_LOCALES, getLocaleLabel } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
 import { getJournalUi, EDITORIAL_GUIDELINE } from '../lib/journalUi';
 import type { JournalUiTranslations } from '../lib/journalUi';
@@ -263,4 +275,230 @@ describe('getIntlLocale — locale mapping correctness', () => {
   it('de → de-DE', () => expect(getIntlLocale('de')).toBe('de-DE'));
   it('fr → fr-FR', () => expect(getIntlLocale('fr')).toBe('fr-FR'));
   it('it → it-IT', () => expect(getIntlLocale('it')).toBe('it-IT'));
+});
+
+// ─── 11. Source audit: OfficialArenaOverview has no hardcoded ja-JP/en-US ―――――
+
+describe('Source audit — OfficialArenaOverview', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../components/OfficialArenaOverview.tsx'), 'utf8'
+  );
+
+  it('no lang === ja hardcoded locale', () => {
+    expect(src).not.toContain("lang === 'ja'");
+  });
+
+  it('no fixed ja-JP or en-US in public helpers', () => {
+    // localeFormat helpers are used instead
+    expect(src).not.toMatch(/toLocaleString\(['"]ja-JP/);
+    expect(src).not.toMatch(/toLocaleString\(['"]en-US/);
+  });
+});
+
+// ─── 12. Source audit: Board has no hardcoded English tooltip/fallback ―――――――
+
+describe('Source audit — Board', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../components/Board.tsx'), 'utf8'
+  );
+
+  it('no hardcoded LABELS ON rendered in JSX (uses variable)', () => {
+    // Default prop values may contain 'LABELS ON' as fallback string,
+    // but the JSX render site must use the variable, not the literal.
+    // Check that the render site uses labelsOn/labelsOff variables.
+    expect(src).toContain('{showLabels ? labelsOn : labelsOff}');
+  });
+
+  it('no hardcoded GHOST ON rendered in JSX (uses variable)', () => {
+    expect(src).toContain('{ghostModeActive ? ghostOn : ghostOff}');
+  });
+
+  it('no hardcoded Ghost Mode: show tooltip in JSX', () => {
+    expect(src).not.toContain('Ghost Mode: show your past moves at this position"');
+  });
+
+  it('no ?? fallback English strings for ghost', () => {
+    expect(src).not.toContain("?? 'Ghost (Pro Only)'");
+    expect(src).not.toContain("?? 'View Pro features'");
+  });
+});
+
+// ─── 13. Source audit: App footer no hardcoded link text ――――――――――――――――
+
+describe('Source audit — App footer', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../app/App.tsx'), 'utf8'
+  );
+
+  it('no hardcoded >Pricing< in JSX', () => {
+    expect(src).not.toContain('>Pricing<');
+  });
+
+  it('no hardcoded >Terms< in JSX', () => {
+    expect(src).not.toContain('>Terms<');
+  });
+
+  it('no hardcoded >Privacy< in JSX', () => {
+    expect(src).not.toContain('>Privacy<');
+  });
+
+  it('no hardcoded >Refund< in JSX', () => {
+    expect(src).not.toContain('>Refund<');
+  });
+
+  it('no hardcoded >Contact< in JSX', () => {
+    expect(src).not.toContain('>Contact<');
+  });
+});
+
+// ─── 14. Source audit: JournalArticlePage no '\u2190 Journal' hardcoded ――――――――
+
+describe('Source audit — JournalArticlePage', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../components/JournalArticlePage.tsx'), 'utf8'
+  );
+
+  it('no hardcoded \u2190 Journal in JSX', () => {
+    // Allow arrow in back-link if it's adjacent to ui.backToJournal
+    // The raw string '\u2190 Journal' (without variable) should not appear
+    expect(src).not.toContain('\u2190 Journal\n');
+    // More precise: should use ui.backToJournal variable
+    expect(src).toContain('ui.backToJournal');
+  });
+});
+
+// ─── 15. Source audit: OfficialMatchCalendar no fixed DOW_LABELS ――――――――――
+
+describe('Source audit — OfficialMatchCalendar', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../components/OfficialMatchCalendar.tsx'), 'utf8'
+  );
+
+  it('no fixed DOW_LABELS array with S/M/T/W', () => {
+    expect(src).not.toContain("['S', 'M', 'T', 'W', 'T', 'F', 'S']");
+  });
+
+  it('no fixed aria-label Previous month', () => {
+    expect(src).not.toContain('aria-label="Previous month"');
+  });
+
+  it('no fixed aria-label Next month', () => {
+    expect(src).not.toContain('aria-label="Next month"');
+  });
+});
+
+// ─── 16. Source audit: FullGameTrainingRunner no ?? fallbacks ――――――――――――
+
+describe('Source audit — FullGameTrainingRunner', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../components/FullGameTrainingRunner.tsx'), 'utf8'
+  );
+
+  it("no ?? 'Tap to go back' fallback", () => {
+    expect(src).not.toContain("?? 'Tap to go back'");
+  });
+
+  it("no ?? 'Tap to continue' fallback", () => {
+    expect(src).not.toContain("?? 'Tap to continue'");
+  });
+});
+
+// ─── 17. getLocaleLabel — all 10 locales return display labels ―――――――――――
+
+describe('getLocaleLabel — 全10localeの表示ラベル', () => {
+  const EXPECTED_LABELS: Record<LocaleCode, string> = {
+    en: 'English',
+    ja: '日本語',
+    'zh-Hant': '繁體中文',
+    'zh-Hans': '简体中文',
+    ko: '한국어',
+    es: 'Español',
+    'pt-BR': 'Português (Brasil)',
+    de: 'Deutsch',
+    fr: 'Français',
+    it: 'Italiano',
+  };
+
+  for (const locale of ALL_LOCALES) {
+    it(`${locale}: returns correct label`, () => {
+      expect(getLocaleLabel(locale)).toBe(EXPECTED_LABELS[locale]);
+    });
+  }
+});
+
+// ─── 18. getLocaleLabel — unknown code fallback ―――――――――――――――――――――
+
+describe('getLocaleLabel — unknown codeはfallback', () => {
+  it('unknown code returns English', () => {
+    expect(getLocaleLabel('xx')).toBe('English');
+  });
+
+  it('empty string returns English', () => {
+    expect(getLocaleLabel('')).toBe('English');
+  });
+});
+
+// ─── 19. Phase 4補正 — 新規追keyが全に存在 ――――――――――――――――――――――――
+
+describe('Phase 4補正 — 新規追keyが全に存在', () => {
+  // New string keys added in Phase 4 correction
+  const PHASE4_FIX_STRING_KEYS = [
+    'labelsOn', 'labelsOff', 'ghostOn', 'ghostOff', 'ghostModePastMovesTooltip',
+    'contact', 'opponent',
+    'omPreviousMonth', 'omNextMonth',
+    'splashTagline',
+    'errorPrefix',
+    'labelGuideAlt',
+    'trainingGood',
+    'userPrevPage', 'userNextPage',
+    'postmortemMoveHeader',
+  ] as const;
+
+  // Keys that are functions
+  const PHASE4_FIX_FN_KEYS = [
+    'omMatchOnDate',
+    'postmortemMoveNumber',
+    'topN',
+  ] as const;
+
+  for (const locale of ALL_LOCALES) {
+    it(`${locale}: all Phase 4 fix string keys present and non-empty`, () => {
+      const t = resolveUiTranslations(locale) as Record<string, unknown>;
+      for (const key of PHASE4_FIX_STRING_KEYS) {
+        expect(t[key], `key ${key} in ${locale}`).toBeDefined();
+        expect(typeof t[key], `key ${key} in ${locale} should be string`).toBe('string');
+        expect((t[key] as string).length, `key ${key} in ${locale} should be non-empty`).toBeGreaterThan(0);
+      }
+    });
+
+    it(`${locale}: all Phase 4 fix function keys are callable`, () => {
+      const t = resolveUiTranslations(locale) as Record<string, unknown>;
+      for (const key of PHASE4_FIX_FN_KEYS) {
+        expect(t[key], `key ${key} in ${locale}`).toBeDefined();
+        expect(typeof t[key], `key ${key} in ${locale} should be function`).toBe('function');
+      }
+    });
+  }
+
+  // Arena datetime helper test
+  it('Arena datetime helpers use localeFormat for all 10 locales', () => {
+    const testDate = new Date('2025-06-15T10:30:00Z');
+    for (const locale of ALL_LOCALES) {
+      const result = formatDate(testDate, locale, { month: 'short', day: 'numeric' });
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+    }
+  });
+
+  // fallbackNotice uses locale labels
+  it('fallbackNotice receives locale labels not raw codes', () => {
+    const ui = getJournalUi('zh-Hant');
+    // Simulating JournalArticlePage: getLocaleLabel converts code to label
+    const requestedLabel = getLocaleLabel('zh-Hant');
+    const displayedLabel = getLocaleLabel('en');
+    const result = ui.fallbackNotice(requestedLabel, displayedLabel);
+    // Should contain locale labels, not raw codes
+    expect(result).toContain('繁體中文');
+    expect(result).toContain('English');
+  });
 });
