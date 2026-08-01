@@ -1029,7 +1029,7 @@ export default function App() {
     if (!user || !isAdmin) {
       // 非 admin が admin screen に到達した場合はタイトルに戻す
       goTo('title');
-      return <div style={{ padding: 32, textAlign: 'center', color: '#b71c1c' }}>Access denied.</div>;
+      return <div style={{ padding: 32, textAlign: 'center', color: '#b71c1c' }}>{t.accessDenied}</div>;
     }
     return <AdminPage onBack={() => goTo('main')} />;
   }

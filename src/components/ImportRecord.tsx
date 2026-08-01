@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { importRecord } from '../game/importRecord';
 import type { GameState } from '../game/types';
+import { useLang } from '../lib/lang';
 
 interface Props {
   onImport: (state: GameState) => void;
 }
 
 export function ImportRecord({ onImport }: Props) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function ImportRecord({ onImport }: Props) {
         aria-expanded={open}
       >
         <span className="collapsible-arrow">{open ? '▾' : '▸'}</span>
-        <span className="collapsible-label">Import record</span>
+        <span className="collapsible-label">{t.importRecordLabel}</span>
       </button>
 
       {open && (
@@ -68,7 +70,7 @@ export function ImportRecord({ onImport }: Props) {
           )}
           {success && (
             <p className="import-record-success" role="status">
-              Import successful
+              {t.importSuccessful}
             </p>
           )}
           <button
@@ -77,7 +79,7 @@ export function ImportRecord({ onImport }: Props) {
             onClick={handleImport}
             disabled={text.trim().length === 0}
           >
-            Import record
+            {t.importRecordLabel}
           </button>
         </div>
       )}

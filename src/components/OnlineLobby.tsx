@@ -322,7 +322,7 @@ function RandomMatch({
       ) : error ? (
         <>
           <p style={styles.error}>{error}</p>
-          <button type="button" style={styles.primaryBtn} onClick={handleSearch}>Retry</button>
+          <button type="button" style={styles.primaryBtn} onClick={handleSearch}>{t.omRetry}</button>
         </>
       ) : null}
     </div>

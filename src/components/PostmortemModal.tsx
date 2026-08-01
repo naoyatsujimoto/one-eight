@@ -78,7 +78,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
         .catch(() => {});
     }
     if (st.status === 'error') {
-      setAnalyzeError('分析に失敗しました。再試行してください。');
+      setAnalyzeError('failed');
       onAnalyzing?.(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,10 +149,10 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
               disabled={analyzing}
               style={styles.analyzeStartBtn}
             >
-              Analyze
+              {t.analyze}
             </button>
             {analyzeError && (
-              <p style={{ ...styles.muted, color: '#e53', marginTop: 8 }}>{analyzeError}</p>
+              <p style={{ ...styles.muted, color: '#e53', marginTop: 8 }}>{t.analysisFailedMessage}</p>
             )}
           </div>
         )}
@@ -160,7 +160,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
         {/* エラー表示 (autoStart モード): 再試行ボタンを表示 */}
         {autoStart && analyzeError && (
           <div style={styles.center}>
-            <p style={{ ...styles.muted, color: '#e53' }}>{analyzeError}</p>
+            <p style={{ ...styles.muted, color: '#e53' }}>{t.analysisFailedMessage}</p>
             <button
               type="button"
               onClick={handleAnalyze}
@@ -211,7 +211,7 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
 
             {/* 勝率グラフ */}
             <section style={styles.section}>
-              <div style={styles.sectionTitle}>Win Probability (Black)</div>
+              <div style={styles.sectionTitle}>{t.winProbability}</div>
               <WPChart rows={result.rows} wpInitial={result.wpInitial} decisiveMoveNum={result.decisiveCrossing?.moveNum ?? null} />
             </section>
 
@@ -410,17 +410,18 @@ interface CandidateMovePanelProps {
 }
 
 function CandidateMovePanel({ candidates, proActive }: CandidateMovePanelProps) {
+  const { t } = useLang();
   if (!proActive) {
     return (
       <div style={styles.candidatePanel}>
-        <span style={styles.candidateUpgrade}>Proプランで候補手を表示</span>
+        <span style={styles.candidateUpgrade}>{t.proUpgradePrompt}</span>
       </div>
     );
   }
 
   return (
     <div style={styles.candidatePanel}>
-      <div style={styles.candidateLabel}>Candidate Moves</div>
+      <div style={styles.candidateLabel}>{t.candidateMovesLabel}</div>
       {candidates.map(c => (
         <div key={c.rank} style={styles.candidateRow}>
           <span style={styles.candidateRank}>#{c.rank}</span>

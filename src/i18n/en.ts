@@ -1,5 +1,5 @@
 // src/i18n/en.ts
-// English — canonical source of truth
+// English - canonical source of truth
 // DO NOT modify content; modify only in English first, then other locales.
 
 export const EN_TRANSLATIONS = {
@@ -15,18 +15,18 @@ export const EN_TRANSLATIONS = {
       { caption: 'BUILD UP GATES', sub: 'Stack Assets onto Gates to increase your dominance over Positions. Gates are the battlefield.' },
       { caption: 'THE BOARD', sub: 'The board has 13 Positions and 12 Gates. Each Position is diagonally connected to 4 Gates.' },
       { caption: 'BLACK GOES FIRST', sub: 'Black always takes the first turn. Players then alternate turns throughout the game.' },
-      { caption: 'EACH TURN', sub: 'Select a Position, then Build up a Gate. Try it now — tap a Position on the board.' },
+      { caption: 'EACH TURN', sub: 'Select a Position, then Build up a Gate. Try it now - tap a Position on the board.' },
       { caption: 'SELECT A POSITION', sub: 'Selecting a Position lights up its 4 connected Gates. Those 4 Gates are your targets for that turn.' },
       { caption: 'MASSIVE', sub: 'Massive places 1 Large Asset into a Gate. A strong, focused investment.' },
       { caption: 'SELECTIVE', sub: 'Selective places 1 Middle Asset into each of 2 Gates. Split your build across two Gates.' },
-      { caption: 'QUAD', sub: 'Quad places up to 4 Small Assets — one per Gate. Spread wide across the board.' },
+      { caption: 'QUAD', sub: 'Quad places up to 4 Small Assets - one per Gate. Spread wide across the board.' },
       { caption: 'SIZE VALUES', sub: 'Small = 1 · Middle = 8 · Large = 64. Larger assets dominate a Gate more powerfully.' },
       { caption: 'SHARED GATES', sub: 'Both players can build in the same Gate. Gates become contested battlegrounds.' },
       { caption: 'PASS RULE', sub: 'You must build if a build is available. Passing is only allowed when no build option exists for your selected Position.' },
       { caption: 'NO BUILD AVAILABLE', sub: 'If all Gates connected to your Position are full, no build is possible. Select the Position to end your turn without building.' },
       { caption: 'CAPTURE', sub: "You can take your opponent's Position. The outcome depends on the Gates connected to it." },
-      { caption: 'EMPTY POSITIONS', sub: 'An empty Position can always be taken freely — no capture check needed. Only opponent-owned Positions require the Gate comparison.' },
-      { caption: 'MOST-BUILT GATE', sub: 'To capture, look at the most built-up Gate linked to that Position. Dominate it — and the Position is yours.' },
+      { caption: 'EMPTY POSITIONS', sub: 'An empty Position can always be taken freely - no capture check needed. Only opponent-owned Positions require the Gate comparison.' },
+      { caption: 'MOST-BUILT GATE', sub: 'To capture, look at the most built-up Gate linked to that Position. Dominate it - and the Position is yours.' },
       { caption: 'TIED GATES', sub: 'If multiple Gates are tied as most-built, compare all of them. You capture only if you dominate more of those tied Gates than your opponent.' },
       { caption: 'END OF GAME', sub: 'The game ends when all 12 Gates are full. The player with more Positions wins.' },
       { caption: 'START PLAYING', sub: 'Play a game. The fastest way to learn is to play.' },
@@ -42,26 +42,26 @@ export const EN_TRANSLATIONS = {
     phaseFinished: 'Finished',
     hintSelectPos: 'Select a position on the board',
     hintBuildMode: 'Massive → Large Asset · Selective → Middle Asset · Quad → Small Asset',
-    hintSelectiveFirst: 'Selective — pick first middle pocket',
-    hintSelectiveConfirm: (gate: number) => `Selective: Gate ${gate} — Confirm or pick 2nd`,
-    hintSelectiveSecond: (gate: number) => `Selective: Gate ${gate} selected — pick second`,
-    hintQuadPick: 'Quad — pick small pockets',
-    hintQuadConfirm: (n: number, max: number) => `Quad: ${n}/${max} — Confirm to commit`,
+    hintSelectiveFirst: 'Selective - pick first middle pocket',
+    hintSelectiveConfirm: (gate: number) => `Selective: Gate ${gate} - Confirm or pick 2nd`,
+    hintSelectiveSecond: (gate: number) => `Selective: Gate ${gate} selected - pick second`,
+    hintQuadPick: 'Quad - pick small pockets',
+    hintQuadConfirm: (n: number, max: number) => `Quad: ${n}/${max} - Confirm to commit`,
     confirm: 'Confirm',
     pass: 'Pass',
     clear: 'Clear',
-    buildAvailable: 'Build available — pass not allowed',
+    buildAvailable: 'Build available - pass not allowed',
     rulesTitle: 'Rules',
     rulesBody: [
       { heading: '1. Winning', body: 'The player who holds more of the 13 Positions at the end of the game wins. If both players hold the same number, the game is a draw.' },
-      { heading: '2. Position', body: 'The board has 13 Positions labeled A–M. A player holds a Position by placing their Symbol on it.' },
-      { heading: '3. Gate', body: 'The board has 12 Gates numbered 1–12 around the perimeter. Each Gate has Slots for Assets.\nLarge Slots: 2 · Middle Slots: 2 · Small Slots: 4' },
+      { heading: '2. Position', body: 'The board has 13 Positions labeled A-M. A player holds a Position by placing their Symbol on it.' },
+      { heading: '3. Gate', body: 'The board has 12 Gates numbered 1-12 around the perimeter. Each Gate has Slots for Assets.\nLarge Slots: 2 · Middle Slots: 2 · Small Slots: 4' },
       { heading: '4. Diagonal Gate', body: 'Each Position has 4 diagonally connected Gates called its Diagonal Gates. Build up is only performed on the Diagonal Gates of the specified Position.' },
       { heading: '5. Turn', body: 'On your turn, select one Position: an empty Position, a capturable opponent Position, or a Build-up-able own Position. If Build up is possible after selecting, it is mandatory. Passing at will is not allowed.' },
       { heading: '6. Taking an Empty Position', body: 'Select an empty Position to place your Symbol on it, then Build up on its Diagonal Gates.' },
       { heading: '7. Capturing an Opponent Position', body: 'You may capture an opponent Position when you are dominant in its Diagonal Gates.\n\nCompare the most built-up Gate among the Diagonal Gates. If your Build value there exceeds your opponent\'s, you capture the Position.\n\nIf multiple Gates are tied as most-built, compare all of them. You capture only if you dominate more of those tied Gates than your opponent.' },
       { heading: '8. Asset Values', body: 'Build values: Small = 1 · Middle = 8 · Large = 64' },
-      { heading: '9. Build Up', body: 'Massive — place 1 Large Asset into one Diagonal Gate.\nSelective — place 1 Middle Asset into each of 2 different Diagonal Gates.\nQuad — place 1 Small Asset into each of the 4 Diagonal Gates.' },
+      { heading: '9. Build Up', body: 'Massive - place 1 Large Asset into one Diagonal Gate.\nSelective - place 1 Middle Asset into each of 2 different Diagonal Gates.\nQuad - place 1 Small Asset into each of the 4 Diagonal Gates.' },
       { heading: '10. Slot Shortage', body: 'If a Slot is unavailable during Build up, skip that Slot. If at least one Slot is available, place as many Assets as possible.' },
       { heading: '11. Auto Pass', body: 'If no legal move exists at the start of your turn (no empty Position to take, no opponent Position to capture, no Build up possible), the turn ends automatically and P is recorded in the game record.' },
       { heading: '12. Game End', body: 'The game ends when no further Build up is possible. The winner is determined by rule 1.' },
@@ -71,7 +71,7 @@ export const EN_TRANSLATIONS = {
     history: 'History',
     stats: 'Stats',
     newGame: 'New Game',
-    cpuThinking: 'CPU is thinking…',
+    cpuThinking: 'CPU is thinking...',
     moveHistory: 'Move History',
     humanVsHuman: 'Human × Human',
     humanVsCpu: 'Human × CPU',
@@ -109,7 +109,7 @@ export const EN_TRANSLATIONS = {
     trainingT7Complete: 'Diagonal Gates Complete',
     trainingT7Desc: 'Learn which Gates are connected to each Position.',
     trainingT4Title: 'Partial Build',
-    trainingT4Step1: 'Select Position F. Apply Quad Build. Gate 8 is full — assets will only be placed in the remaining open slots.',
+    trainingT4Step1: 'Select Position F. Apply Quad Build. Gate 8 is full - assets will only be placed in the remaining open slots.',
     trainingT4Complete: 'Partial Build Complete',
     trainingT4Desc: 'Learn that Build fills only the available slots, even when some are already occupied.',
     trainingT6Title: 'Asset Values',
@@ -122,20 +122,20 @@ export const EN_TRANSLATIONS = {
     trainingT5Desc: 'Learn that a tie in most-built Gates blocks capture. Build to break the tie.',
     trainingT5TieExplanation: 'Tied Gates block capture. Build to gain dominance.',
     trainingT8Title: 'Prepare Capture',
-    trainingT8Step1: 'Step 1 / 2 — Prepare the Dominance\n\nWhite owns Position D. You cannot take D yet. White controls Gate 3 and Black controls Gate 7, so the dominance is tied 1 to 1.\n\nChoose Position F, then Massive Build on Gate 11 (F,m(11)). This expands the dominance around D and prepares a future capture.',
+    trainingT8Step1: 'Step 1 / 2 - Prepare the Dominance\n\nWhite owns Position D. You cannot take D yet. White controls Gate 3 and Black controls Gate 7, so the dominance is tied 1 to 1.\n\nChoose Position F, then Massive Build on Gate 11 (F,m(11)). This expands the dominance around D and prepares a future capture.',
     trainingT8CpuMsg: 'White played E,m(2) to take Position E. The dominance around Position D is unchanged.',
-    trainingT8Step2: 'Step 2 / 2 — Capture and Build\n\nNow you can take D. Choose Position D, then Massive Build on Gate 1 (D,m(1)).',
+    trainingT8Step2: 'Step 2 / 2 - Capture and Build\n\nNow you can take D. Choose Position D, then Massive Build on Gate 1 (D,m(1)).',
     trainingT8Complete: 'By creating Gate dominance first, you set up a capture for your next turn.',
     trainingT8Desc: 'Learn to prepare Gate dominance before capturing a Position.',
     trainingT9Title: 'No-build Endgame',
-    trainingT9Step1: 'Step 1 / 1 — Win with the final move\n\nYou are Black. The board is nearly full. Only Gate 1 has one large slot empty.\n\nPosition D is the only unowned position left. Black owns 6 positions and White owns 6.\n\nChoose Position D, then Massive Build on Gate 1 (D,m(1)).\n\nThis single move claims D, fills the last Gate slot, and ends the game with Black 7 to White 6.',
-    trainingT9Complete: 'Every slot on every Gate is filled. The game has ended.\n\nFinal Position count: Black 7 — White 6\n\nBlack wins by holding one more Position than White.',
+    trainingT9Step1: 'Step 1 / 1 - Win with the final move\n\nYou are Black. The board is nearly full. Only Gate 1 has one large slot empty.\n\nPosition D is the only unowned position left. Black owns 6 positions and White owns 6.\n\nChoose Position D, then Massive Build on Gate 1 (D,m(1)).\n\nThis single move claims D, fills the last Gate slot, and ends the game with Black 7 to White 6.',
+    trainingT9Complete: 'Every slot on every Gate is filled. The game has ended.\n\nFinal Position count: Black 7 - White 6\n\nBlack wins by holding one more Position than White.',
     trainingT9WhyEnded: 'A ONE EIGHT game ends when all twelve Gates have every slot filled. Your final Massive Build filled the last empty slot in Gate 1, so the endgame condition was met.',
     trainingT9WhyWinner: 'The winner is decided by the simple count of owned Positions. Asset value on Gates does not affect the winner. At endgame, Black has 7 and White has 6, so Black wins.',
     trainingT9Desc: 'Learn how ONE EIGHT ends and how the winner is determined.',
     trainingT10Title: 'Defensive Build',
-    trainingT10Step1: 'Step 1 / 1 — Defend your Position\n\nWarning. Position E is yours, but White has placed a Massive on Gate 2. If you do nothing, White will be able to capture E on the next turn.\n\nRe-select Position E, then Massive Build on Gate 4 (E,m(4)).\n\nBy placing your own Black Large on another Gate connected to E, the strongest-Gate dominance becomes tied 1 to 1, and White can no longer capture E.',
-    trainingT10Complete: 'Two Gates around E now share the maximum value. Gate 2 is controlled by White, and Gate 4 is controlled by Black.\n\nMost-built dominance count: White 1 — Black 1\n\nWith the count tied, White can no longer capture E. Your Position remains yours.',
+    trainingT10Step1: 'Step 1 / 1 - Defend your Position\n\nWarning. Position E is yours, but White has placed a Massive on Gate 2. If you do nothing, White will be able to capture E on the next turn.\n\nRe-select Position E, then Massive Build on Gate 4 (E,m(4)).\n\nBy placing your own Black Large on another Gate connected to E, the strongest-Gate dominance becomes tied 1 to 1, and White can no longer capture E.',
+    trainingT10Complete: 'Two Gates around E now share the maximum value. Gate 2 is controlled by White, and Gate 4 is controlled by Black.\n\nMost-built dominance count: White 1 - Black 1\n\nWith the count tied, White can no longer capture E. Your Position remains yours.',
     trainingT10WhyThreat: 'Capture checks only the highest-value Gates connected to the target Position.In the initial state, Gate 2 was the only highest-value Gate, and it was controlled by White. That made E capturable by White.',
     trainingT10WhyDefended: 'By placing a Black Massive on Gate 4, Gate 4 matches Gate 2 as a highest-value Gate. Gate 2 is won by White, and Gate 4 is won by Black, so the dominance count becomes tied 1 to 1. White can no longer capture E.',
     trainingT10Desc: 'Learn to defend your Position by building on a connected Gate.',
@@ -149,7 +149,7 @@ export const EN_TRANSLATIONS = {
     trainingTasksSection: 'Training Tasks',
     trainingTasksSectionDesc: 'Learn basic actions, capture, and endgame rules through short exercises.',
 
-    // Guided Game (FullGameTrainingRunner) UI strings — Training-specific
+    // Guided Game (FullGameTrainingRunner) UI strings - Training-specific
     trainingBackBtn: '← Back',
     trainingGuidedGame: 'Guided Game',
     trainingQuestion: 'Question',
@@ -179,13 +179,13 @@ export const EN_TRANSLATIONS = {
     gameHistory: 'Game History',
     analyze: 'Analyze',
     postmortem: 'Postmortem',
-    analyzing: 'Analyzing…',
+    analyzing: 'Analyzing...',
     analyzingEstimate: (sec: number) => sec < 60 ? `est. ~${sec}s` : `est. ~${Math.round(sec / 60)}min`,
     decisiveMove: 'Decisive Move',
     topLosses: 'Top Losses (Black)',
     historySection: 'History',
     refresh: 'Refresh',
-    refreshing: 'Refreshing…',
+    refreshing: 'Refreshing...',
     analysisDone: '✓ Analysis complete',
     refreshDone: '✓ Refresh complete',
     noAnalysis: 'Not enough data',
@@ -194,22 +194,22 @@ export const EN_TRANSLATIONS = {
     onlineJoin: 'Join',
     onlineCreateDesc: 'Create a room and share the code with your opponent.',
     onlineCreateBtn: 'Create Room',
-    onlineCreating: 'Creating…',
+    onlineCreating: 'Creating...',
     onlineJoinDesc: 'Enter the 6-character room code to join.',
     onlineJoinBtn: 'Join',
-    onlineJoining: 'Joining…',
+    onlineJoining: 'Joining...',
     onlineRoomCode: 'Room Code',
     onlineShareCode: 'Share this code with your opponent.',
-    onlineWaitingForOpponent: 'Waiting for opponent…',
+    onlineWaitingForOpponent: 'Waiting for opponent...',
     onlineYourTurn: 'Your turn',
-    onlineOpponentTurn: "Opponent's turn…",
-    onlineSending: 'Sending…',
+    onlineOpponentTurn: "Opponent's turn...",
+    onlineSending: 'Sending...',
     onlineYouWin: 'You win!',
     onlineYouLose: 'You lose.',
     onlineDraw: 'Draw.',
-    onlineTimeoutWin: 'Time out — You win!',
-    onlineTimeoutLose: 'Time out — You lose.',
-    onlineTimeoutDraw: 'Time out — Draw.',
+    onlineTimeoutWin: 'Time out - You win!',
+    onlineTimeoutLose: 'Time out - You lose.',
+    onlineTimeoutDraw: 'Time out - Draw.',
     onlineOpponentTimeout: "Opponent's time ran out!",
     onlineExit: 'Exit',
     onlineBackToMenu: 'Back to Menu',
@@ -229,7 +229,7 @@ export const EN_TRANSLATIONS = {
     officialMatchEnterFromOnlinePlay: 'Enter matches from Online Play → Official Arena / Competition.',
     onlineNoRankedMatches: 'No ranked matches scheduled.',
     onlineNoCompetitions: 'No competitions scheduled.',
-    onlineRandomSearching: 'Searching for opponent…',
+    onlineRandomSearching: 'Searching for opponent...',
     onlineRandomCancel: 'Cancel',
     // User Page
     userPage: 'User Page',
@@ -327,7 +327,7 @@ export const EN_TRANSLATIONS = {
     ghostProOnlyText: 'Ghost is a Pro feature. Upgrade to Pro to view suggested moves based on past match data.',
     ghostProUpgradeCta: 'View Pro features',
     omEnterMatch: 'Enter Match',
-    omEntering: 'Entering…',
+    omEntering: 'Entering...',
     omUpcomingMatches: 'Upcoming Matches',
     omRecentResults: 'Recent Results',
     omNoUpcomingOfficial: 'No upcoming official matches',
@@ -336,12 +336,12 @@ export const EN_TRANSLATIONS = {
     omShowAllMatches: 'Show all matches',
     omToday: 'Today',
     omMatchesOn: (dateStr: string) => `Matches on ${dateStr}`,
-    omLoading: 'Loading official matches…',
+    omLoading: 'Loading official matches...',
     omLoadFailed: 'Failed to load matches.',
     omRetry: 'Retry',
     omOfficialMatches: 'Official Matches',
     omWaitingForBlack: "Waiting for Black's first move. Black's clock is running.",
-    loading: 'Loading…',
+    loading: 'Loading...',
     // Official Arena (Phase E-1)
     arenaOfficialArena: 'Official Arena',
     arenaElephantArena: 'ELEPHANT Arena',
@@ -368,7 +368,7 @@ export const EN_TRANSLATIONS = {
     arenaDetailBtn: 'View details',
     arenaOpenDetail: 'Open details',
     arenaMasterHistory: 'Master History',
-    // Official Arena (Phase E-2) — Entry confirmation + execution
+    // Official Arena (Phase E-2) - Entry confirmation + execution
     arenaConfirmEntryTitle: 'Confirm Arena Entry',
     arenaEntryCannotCancel: 'This entry cannot be cancelled after confirmation.',
     arenaEventTime: 'Event time',
@@ -391,7 +391,7 @@ export const EN_TRANSLATIONS = {
     arenaEntryErrEventNotFound: 'Event not found.',
     arenaEntryErrEventNotOpen: 'Entry is not open for this event.',
     arenaEntryErrUnknown: 'Entry failed. Please try again.',
-    // Official Arena (Phase E-3) — My Arena Match
+    // Official Arena (Phase E-3) - My Arena Match
     arenaMyArenaMatch: 'Your Arena Match',
     arenaPairingAfterDeadline: 'Pairing will be decided after the entry deadline.',
     arenaMatchWillAppear: 'Your match will appear here after pairing is generated.',
@@ -420,7 +420,7 @@ export const EN_TRANSLATIONS = {
     arenaResultPendingBody: 'Arena result is pending.',
     arenaResultPendingNote: 'Arena Points and Master status will be updated after verification.',
     arenaResultProcessed: 'Arena result processed.',
-    arenaFinalizingResults: 'Finalizing results…',
+    arenaFinalizingResults: 'Finalizing results...',
     arenaFinalizingResultsHint: 'Arena points and titles will be updated shortly.',
     // Entry blocked: previous results not finalized
     arenaEntryBlockedPreviousResultsTitle: 'Previous results pending',
@@ -486,7 +486,7 @@ export const EN_TRANSLATIONS = {
     // Postmortem
     postmortemRetry: 'Retry',
     showCandidateMoves: 'Show candidate moves',
-    computingCandidates: 'Computing candidates…',
+    computingCandidates: 'Computing candidates...',
 
     // ConfirmModal
     execute: 'Execute',
@@ -499,7 +499,7 @@ export const EN_TRANSLATIONS = {
     prizeNoAwards: 'No prize awards.',
     prizeSubmitInfo: 'Submit payout / tax information',
     prizeSubmittedMsg: 'Your information has been submitted. Admin will process your Winner File.',
-    prizeStatusSubmitted: 'Submitted — awaiting processing',
+    prizeStatusSubmitted: 'Submitted - awaiting processing',
     prizeStatusProcessed: 'Processed',
     prizeStatusOnHold: 'This award is on hold.',
     prizeAwardId: 'Award ID',
@@ -516,7 +516,7 @@ export const EN_TRANSLATIONS = {
     prizeKindCash: 'Cash',
 
     // PrizeClaimForm
-    prizeClaimFormTitle: 'Reward / Prize — Payout Information',
+    prizeClaimFormTitle: 'Reward / Prize - Payout Information',
     prizeClaimNoticePayment: 'To process a Reward / Prize payout, we need identity confirmation, tax confirmation, and PayPal receiving information.',
     prizeClaimNoticeSecurity: 'Submitted tax and payment information is deleted by a scheduled process after the information required for payout preparation has been securely stored and at least 72 hours have passed since submission.',
     prizeClaimNoticePaypal: 'If the PayPal receiving email is incorrect, the payout may be delayed, placed on hold, or fail.',
@@ -548,7 +548,7 @@ export const EN_TRANSLATIONS = {
     prizeClaimConfirmTaxResponsibility: 'I understand that tax reporting is my own responsibility.',
     prizeClaimConfirmDataDeletion: 'I understand that my submitted tax and payment information will be deleted from the online database by a scheduled process after the required information has been securely stored for payout preparation and at least 72 hours have passed since submission.',
     prizeClaimSubmit: 'Submit',
-    prizeClaimSubmitting: 'Submitting…',
+    prizeClaimSubmitting: 'Submitting...',
     prizeClaimCancel: 'Cancel',
     prizeClaimSubmitFailed: 'Submission failed. Please try again or contact admin.',
     prizeClaimInvalidEmail: 'Please enter a valid email address.',
@@ -558,9 +558,9 @@ export const EN_TRANSLATIONS = {
     authOtpLogin: 'Email Code',
     authEmailSent: 'Email sent. Click the link in your inbox to log in.',
     authSendMagicLink: 'Send Magic Link',
-    authSending: 'Sending…',
+    authSending: 'Sending...',
     authLogIn: 'Log In',
-    authLoggingIn: 'Logging in…',
+    authLoggingIn: 'Logging in...',
     authTagline: 'A competitive abstract board game in the same genre as Go, chess, and shogi.\nPlay after logging in with a magic link or email verification code.',
     authSendLoginCode: 'Send login code',
     authEnterLoginCode: 'Enter the code from your email',
@@ -571,7 +571,7 @@ export const EN_TRANSLATIONS = {
     authResendCode: 'Resend code',
 
     // Arena (additional)
-    arenaProcessing: 'Processing…',
+    arenaProcessing: 'Processing...',
     arenaName: 'Name',
     arenaWin: 'W: ',
     arenaCurrent: '(current)',
@@ -581,6 +581,71 @@ export const EN_TRANSLATIONS = {
     arenaRulesInfoLabel: 'Rules',
 
     // Label guide captions (Option C: canonical labels, board rotates for white)
-    labelGuideBlackText: 'Labels are shared canonical coordinates. From Black’s view, Gates 1–4 are on the far side and Gates 7–10 are on the near side. Move records use these shared labels.',
-    labelGuideWhiteText: 'Labels are shared canonical coordinates. From White’s view, Gates 7–10 are on the far side and Gates 1–4 are on the near side. Move records use these shared labels.'
+    labelGuideBlackText: "Labels are shared canonical coordinates. From Black's view, Gates 1–4 are on the far side and Gates 7–10 are on the near side. Move records use these shared labels.",
+    labelGuideWhiteText: "Labels are shared canonical coordinates. From White's view, Gates 7–10 are on the far side and Gates 1–4 are on the near side. Move records use these shared labels.",
+
+    // Phase 4: i18n additions
+
+    // AuthGate / legal links
+    pricing: 'Pricing',
+    terms: 'Terms',
+    privacy: 'Privacy',
+    refund: 'Refund',
+    accessDenied: 'Access denied.',
+
+    // SplashScreen
+    tapToContinue: 'Tap to continue',
+    continueToLogin: 'Continue to login',
+
+    // Ghost
+    ghostModeTitle: 'Ghost Mode',
+
+    // AnalyticsPanel
+    openingStats: 'Opening Stats',
+    noDataCpu: 'No data yet. Play some CPU games!',
+    totalCpuGames: 'Total CPU games',
+    firstMove: 'First move',
+    buildType: 'Build type',
+    tries: 'Tries',
+    winPercent: 'Win%',
+    positionBuild: 'Position × Build',
+
+    // MyStats table headers / summary labels
+    total: 'Total',
+    wins: 'Wins',
+    losses: 'Losses',
+    draws: 'Draws',
+    modeLabel: 'Mode',
+    winnerLabel: 'Winner',
+    movesLabel: 'Moves',
+    dateLabel: 'Date',
+    noGameRecords: 'No game records',
+    vsComputer: 'vs CPU',
+    upgradeToPro: 'Upgrade to Pro to view all past games.',
+
+    // PostmortemModal
+    winProbability: 'Win Probability (Black)',
+    candidateMovesLabel: 'Candidate Moves',
+    analysisFailedMessage: 'Analysis could not be completed.',
+    proUpgradePrompt: 'Upgrade to Pro for full analysis.',
+
+    // ImportRecord
+    importRecordLabel: 'Import record',
+    importSuccessful: 'Import successful',
+
+    // OnlineBoard
+    connecting: 'Connecting',
+
+    // PrizeClaimForm (isUpdate)
+    updateTaxPaymentInfo: 'Update Tax & Payment Information',
+    existingSubmissionNotice: 'You have already submitted your information.',
+    updatedInformationNotice: 'Your information has been updated.',
+
+    // UserPage / PrizeSection
+    createdLabel: 'Created',
+    submissionId: 'Submission ID',
+    dataExpiration: 'Data expiration',
+    taxOnFile: 'Tax & Payment Info on File',
+    taxOnFileDesc: 'Previous submission found. Naoya will verify using your User ID in the WINNERS FILE.',
+    updateInfoIfChanged: 'Update Info (if changed)',
 } as const;

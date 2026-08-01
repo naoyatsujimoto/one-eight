@@ -117,7 +117,7 @@ export function PrizeClaimForm({ awardId, isUpdate = false, onClose, onSuccess }
       <div style={s.modal}>
         {/* ヘッダー */}
         <div style={s.header}>
-          <h2 style={s.title}>{isUpdate ? 'Update Tax & Payment Information' : t.prizeClaimFormTitle}</h2>
+          <h2 style={s.title}>{isUpdate ? t.updateTaxPaymentInfo : t.prizeClaimFormTitle}</h2>
           <button type="button" style={s.closeBtn} onClick={onClose} disabled={submitting}>
             ✕
           </button>
@@ -138,8 +138,7 @@ export function PrizeClaimForm({ awardId, isUpdate = false, onClose, onSuccess }
         {isUpdate && (
           <div style={{ ...s.notice, background: '#e3f2fd', borderColor: '#90caf9', marginTop: 8 }}>
             <p style={{ ...s.noticeText, color: '#1565c0' }}>
-              ℹ️ You have already submitted tax &amp; payment information for a previous award.<br />
-              Submit this form only if your information (name, address, PayPal email, etc.) has changed.
+              ℹ️ {t.existingSubmissionNotice}
             </p>
           </div>
         )}

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { getPublishedJournalArticleBySlug, resolveJournalLang } from '../lib/journal';
 import type { JournalArticleDetail, JournalLang } from '../lib/journal';
 import { getJournalArticleImages } from '../lib/journalImages';
+import { getJournalUi } from '../lib/journalUi';
 import { useLang } from '../lib/lang';
+import { formatDate } from '../lib/localeFormat';
 import { SUPPORTED_LOCALES } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
@@ -49,6 +51,7 @@ export function JournalArticlePage() {
 
   // journalLang: JournalLang への変換 (DB取得用)
   const journalLang: JournalLang = resolveJournalLang(selectedLocale);
+  const ui = getJournalUi(selectedLocale);
 
   // slug が空なら ListPage へ redirect
   useEffect(() => {
@@ -84,23 +87,14 @@ export function JournalArticlePage() {
     window.history.replaceState(null, '', url.toString());
   }
 
-  function formatDate(iso: string): string {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(journalLang === 'ja' ? 'ja-JP' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  function formatDateStr(iso: string): string {
+    return formatDate(iso, selectedLocale, { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
   // fallback notice 文言 (要求言語の翻訳が存在しない場合のみ)
   function buildFallbackNotice(articleLang: JournalLang): string {
     if (articleLang === journalLang) return '';
-    if (journalLang === 'ja') {
-      return `この記事は${selectedLocale}では利用できません。${articleLang === 'en' ? '英語' : articleLang}で表示しています。`;
-    }
-    return `This article is not available in ${selectedLocale}. Showing in ${articleLang}.`;
+    return ui.fallbackNotice(selectedLocale, articleLang);
   }
 
   if (!slug) return null;
@@ -131,7 +125,7 @@ export function JournalArticlePage() {
         {/* Loading */}
         {loading && (
           <div className="ja-state">
-            <span className="ja-state-text">{journalLang === 'ja' ? '読み込み中…' : 'Loading…'}</span>
+            <span className="ja-state-text">{ui.loading}</span>
           </div>
         )}
 
@@ -146,13 +140,13 @@ export function JournalArticlePage() {
         {!loading && !error && notFound && (
           <div className="ja-state">
             <p className="ja-state-text">
-              {journalLang === 'ja' ? '記事が見つかりません。' : 'Article not found.'}
+              {ui.articleNotFound}
             </p>
             <a
               href={`/journal/${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
               className="ja-back-link"
             >
-              {journalLang === 'ja' ? '← Journal 一覧に戻る' : '← Back to Journal'}
+              ← {ui.backToJournal}
             </a>
           </div>
         )}
@@ -188,12 +182,12 @@ export function JournalArticlePage() {
 
               {/* Header meta */}
               <div className="ja-article-meta">
-                <time className="ja-article-date">{formatDate(article.published_at)}</time>
+                <time className="ja-article-date">{formatDateStr(article.published_at)}</time>
               </div>
 
               {/* Title */}
               <h1 className="ja-article-title">
-                {t ? t.title : <span className="ja-no-translation">[No translation]</span>}
+                {t ? t.title : <span className="ja-no-translation">[{ui.noTranslation}]</span>}
               </h1>
 
               {/* Author */}
@@ -216,7 +210,7 @@ export function JournalArticlePage() {
               ) : (
                 <div className="ja-state">
                   <span className="ja-state-text">
-                    {journalLang === 'ja' ? '本文がありません。' : 'No content available.'}
+                    {ui.noContent}
                   </span>
                 </div>
               )}
@@ -225,7 +219,7 @@ export function JournalArticlePage() {
               {article.references.length > 0 && (
                 <section className="ja-references">
                   <h2 className="ja-references-title">
-                    {journalLang === 'ja' ? '参考文献' : 'References'}
+                    {ui.references}
                   </h2>
                   <ol className="ja-references-list">
                     {article.references
@@ -258,7 +252,7 @@ export function JournalArticlePage() {
                   href={`/journal/${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
                   className="ja-back-link"
                 >
-                  {journalLang === 'ja' ? '← Journal 一覧に戻る' : '← Back to Journal'}
+                  ← {ui.backToJournal}
                 </a>
               </div>
 
@@ -272,9 +266,7 @@ export function JournalArticlePage() {
       <footer className="ja-footer">
         <div className="ja-footer-play-wrap">
           <a href="/" className="ja-footer-play-link">
-            {journalLang === 'ja'
-              ? '競技性ボードゲーム ONE EIGHTをプレイする'
-              : 'Play ONE EIGHT, a competitive abstract board game'}
+            {ui.playOneEight}
           </a>
         </div>
       </footer>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Aggregates } from '../game/analytics';
+import { useLang } from '../lib/lang';
 
 const AGGREGATES_KEY = 'one_eight_aggregates';
 const RECORDS_KEY = 'one_eight_game_records';
@@ -38,6 +39,7 @@ function sortedTop<T extends string>(
 }
 
 export function AnalyticsPanel() {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
 
   const agg = open ? loadAggregates() : null;
@@ -50,22 +52,22 @@ export function AnalyticsPanel() {
         className="analytics-toggle"
         onClick={() => setOpen((v) => !v)}
       >
-        {open ? '▾' : '▸'} Opening Stats
+        {open ? '▾' : '▸'} {t.openingStats}
       </button>
 
       {open && (
         <div className="analytics-body">
           {agg === null ? (
-            <p className="analytics-empty">No data yet. Play some CPU games!</p>
+            <p className="analytics-empty">{t.noDataCpu}</p>
           ) : (
             <>
-              <p className="analytics-total">Total CPU games: {total}</p>
+              <p className="analytics-total">{t.totalCpuGames}: {total}</p>
 
               {/* byPosition */}
-              <h4 className="analytics-section-title">First move — Position (top {TOP_N})</h4>
+              <h4 className="analytics-section-title">{t.firstMove} — Position (top {TOP_N})</h4>
               <table className="analytics-table">
                 <thead>
-                  <tr><th>Pos</th><th>Tries</th><th>Win%</th></tr>
+                  <tr><th>Pos</th><th>{t.tries}</th><th>{t.winPercent}</th></tr>
                 </thead>
                 <tbody>
                   {sortedTop(agg.byPosition, TOP_N).map(([key, v]) => (
@@ -79,10 +81,10 @@ export function AnalyticsPanel() {
               </table>
 
               {/* byBuildType */}
-              <h4 className="analytics-section-title">First move — Build type</h4>
+              <h4 className="analytics-section-title">{t.firstMove} — {t.buildType}</h4>
               <table className="analytics-table">
                 <thead>
-                  <tr><th>Build</th><th>Tries</th><th>Win%</th></tr>
+                  <tr><th>Build</th><th>{t.tries}</th><th>{t.winPercent}</th></tr>
                 </thead>
                 <tbody>
                   {sortedTop(agg.byBuildType, 10).map(([key, v]) => (
@@ -96,10 +98,10 @@ export function AnalyticsPanel() {
               </table>
 
               {/* byPositionBuildType */}
-              <h4 className="analytics-section-title">Position × Build (top {TOP_N})</h4>
+              <h4 className="analytics-section-title">{t.positionBuild} (top {TOP_N})</h4>
               <table className="analytics-table">
                 <thead>
-                  <tr><th>Pos:Build</th><th>Tries</th><th>Win%</th></tr>
+                  <tr><th>Pos:Build</th><th>{t.tries}</th><th>{t.winPercent}</th></tr>
                 </thead>
                 <tbody>
                   {sortedTop(agg.byPositionBuildType, TOP_N).map(([key, v]) => (

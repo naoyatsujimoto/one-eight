@@ -63,12 +63,22 @@ function resolveTranslations(lang: Lang): Translations {
   return resolveUiTranslations(lang);
 }
 
+/** Sync document.documentElement.lang with the active locale. */
+function syncHtmlLang(l: Lang) {
+  try { document.documentElement.lang = l; } catch { /* noop (SSR / test env) */ }
+}
+
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(readLangFromStorage);
+  const [lang, setLangState] = useState<Lang>(() => {
+    const initial = readLangFromStorage();
+    syncHtmlLang(initial);
+    return initial;
+  });
   const [userId, setUserId] = useState<string | null>(null);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
+    syncHtmlLang(l);
     try { localStorage.setItem(LANG_LS_KEY, l); } catch { /* noop */ }
   }, []);
 

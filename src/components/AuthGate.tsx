@@ -209,10 +209,10 @@ export function AuthGate({ children }: Props) {
 
           {/* Legal links */}
           <div style={styles.legalLinks}>
-            <a href="/pricing.html" style={styles.legalLink}>Pricing</a>
-            <a href="/terms.html" style={styles.legalLink}>Terms</a>
-            <a href="/privacy.html" style={styles.legalLink}>Privacy</a>
-            <a href="/refund.html" style={styles.legalLink}>Refund</a>
+            <a href="/pricing.html" style={styles.legalLink}>{t.pricing}</a>
+            <a href="/terms.html" style={styles.legalLink}>{t.terms}</a>
+            <a href="/privacy.html" style={styles.legalLink}>{t.privacy}</a>
+            <a href="/refund.html" style={styles.legalLink}>{t.refund}</a>
           </div>
         </div>
       </div>
@@ -224,10 +224,10 @@ export function AuthGate({ children }: Props) {
       <div style={styles.signOutBar}>
         <span style={styles.emailLabel}>{user.email}</span>
         {proActive && (
-          <span style={styles.proBadge}>PRO</span>
+          <span style={styles.proBadge}>{t.proBadge}</span>
         )}
         <button type="button" onClick={signOut} style={styles.signOutBtn}>
-          Sign out
+          {t.signOut}
         </button>
       </div>
       {children}

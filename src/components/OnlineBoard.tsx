@@ -216,7 +216,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
   }, [localState?.selectedPosition]);
 
   if (!gameRow || !localState) {
-    return <div style={styles.center}><p style={styles.muted}>Connecting...</p></div>;
+    return <div style={styles.center}><p style={styles.muted}>{t.connecting}…</p></div>;
   }
 
   const state = localState;

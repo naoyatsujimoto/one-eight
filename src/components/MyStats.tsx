@@ -7,6 +7,7 @@ import { PostmortemModal } from './PostmortemModal';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { useLang } from '../lib/lang';
 import { getProfile, isProActive } from '../lib/profile';
+import { formatDate } from '../lib/localeFormat';
 
 interface Props {
   userId: string;
@@ -14,7 +15,7 @@ interface Props {
 }
 
 export function MyStats({ userId, onClose }: Props) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [stats, setStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [localMap, setLocalMap] = useState<Map<string, GameRecord>>(new Map());
@@ -151,19 +152,19 @@ export function MyStats({ userId, onClose }: Props) {
           <button type="button" onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
 
-        {loading && <p style={styles.muted}>Loading…</p>}
+        {loading && <p style={styles.muted}>{t.loading}</p>}
 
         {!loading && stats && (
           <>
             <div style={styles.summary}>
-              <StatItem label="Total" value={stats.total} />
-              <StatItem label="Wins" value={stats.wins} />
-              <StatItem label="Losses" value={stats.losses} />
-              <StatItem label="Draws" value={stats.draws} />
+              <StatItem label={t.total} value={stats.total} />
+              <StatItem label={t.wins} value={stats.wins} />
+              <StatItem label={t.losses} value={stats.losses} />
+              <StatItem label={t.draws} value={stats.draws} />
             </div>
 
             {stats.recent.length === 0 && localOnlyRecords.length === 0 && (
-              <p style={styles.muted}>対戦記録がありません</p>
+              <p style={styles.muted}>{t.noGameRecords}</p>
             )}
 
             {(stats.recent.length > 0 || localOnlyRecords.length > 0) && (
@@ -172,10 +173,10 @@ export function MyStats({ userId, onClose }: Props) {
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>Mode</th>
-                      <th style={styles.th}>Winner</th>
-                      <th style={styles.th}>Moves</th>
-                      <th style={styles.th}>Date</th>
+                      <th style={styles.th}>{t.modeLabel}</th>
+                      <th style={styles.th}>{t.winnerLabel}</th>
+                      <th style={styles.th}>{t.movesLabel}</th>
+                      <th style={styles.th}>{t.dateLabel}</th>
                       <th style={styles.th}></th>
                     </tr>
                   </thead>
@@ -185,10 +186,10 @@ export function MyStats({ userId, onClose }: Props) {
                       const local = localMap.get(r.game_id);
                       return (
                         <tr key={r.game_id}>
-                          <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
+                          <td style={styles.td}>{r.mode === 'human_vs_cpu' ? t.vsComputer : t.humanVsHuman}</td>
                           <td style={styles.td}>{r.winner ?? '—'}</td>
                           <td style={styles.td}>{r.move_count}</td>
-                          <td style={styles.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString('ja-JP') : '—'}</td>
+                          <td style={styles.td}>{r.created_at ? formatDate(r.created_at, lang) : '—'}</td>
                           <td style={styles.td}>
                             {local ? (
                               <div style={styles.btnGroup}>
@@ -235,10 +236,10 @@ export function MyStats({ userId, onClose }: Props) {
                     {/* ローカルのみの記録（Supabaseに未登録） */}
                     {localOnlyRecords.map((r) => (
                       <tr key={r.game_id}>
-                        <td style={styles.td}>{r.mode === 'human_vs_cpu' ? 'vs CPU' : 'H×H'}</td>
+                        <td style={styles.td}>{r.mode === 'human_vs_cpu' ? t.vsComputer : t.humanVsHuman}</td>
                         <td style={styles.td}>{r.winner ?? '—'}</td>
                         <td style={styles.td}>{r.move_count}</td>
-                        <td style={styles.td}>{new Date(r.ended_at).toLocaleDateString('ja-JP')}</td>
+                        <td style={styles.td}>{formatDate(r.ended_at, lang)}</td>
                         <td style={styles.td}>
                           <div style={styles.btnGroup}>
                             {(() => {
@@ -282,7 +283,7 @@ export function MyStats({ userId, onClose }: Props) {
                 {/* Upgrade 導線: 無料ユーザーのみ表示 */}
                 {!proActive && (
                   <div style={styles.upgradeBanner}>
-                    過去の全対局を見るには Pro プランへ
+                    {t.upgradeToPro}
                   </div>
                 )}
               </>

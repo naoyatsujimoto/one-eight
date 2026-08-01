@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { listPublishedJournalArticles, resolveJournalLang } from '../lib/journal';
 import type { JournalArticleSummary, JournalLang } from '../lib/journal';
 import { getJournalArticleImages } from '../lib/journalImages';
-import { getEditorialGuideline } from '../lib/journalUi';
+import { getJournalUi } from '../lib/journalUi';
 import { useLang } from '../lib/lang';
+import { formatDate } from '../lib/localeFormat';
 import { SUPPORTED_LOCALES } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
@@ -38,6 +39,7 @@ export function JournalListPage() {
 
   // journalLang: JournalLang への変換 (DB取得用)
   const journalLang: JournalLang = resolveJournalLang(selectedLocale);
+  const ui = getJournalUi(selectedLocale);
 
   useEffect(() => {
     setLoading(true);
@@ -61,14 +63,8 @@ export function JournalListPage() {
     window.history.replaceState(null, '', url.toString());
   }
 
-  function formatDate(iso: string): string {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(journalLang === 'ja' ? 'ja-JP' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  function formatDateStr(iso: string): string {
+    return formatDate(iso, selectedLocale, { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
   return (
@@ -78,7 +74,7 @@ export function JournalListPage() {
         <a href="/journal/" className="jl-wordmark jl-wordmark-journal">ONE EIGHT Journal</a>
         <div className="jl-header-right">
           <nav className="jl-nav">
-            <a href="/journal/" className="jl-nav-link">Archive</a>
+            <a href="/journal/" className="jl-nav-link">{ui.archive}</a>
           </nav>
           {/* Compact language selector */}
           <CompactLanguageSelector
@@ -91,10 +87,10 @@ export function JournalListPage() {
       {/* Hero */}
       <section className="jl-hero">
         <p className="jl-hero-eyebrow">
-          {journalLang === 'ja' ? '編集指針' : 'EDITORIAL POLICY'}
+          {ui.editorialPolicy.toUpperCase()}
         </p>
         <p className="jl-hero-body">
-          {getEditorialGuideline(selectedLocale)}
+          {ui.editorialGuideline}
         </p>
       </section>
 
@@ -102,7 +98,7 @@ export function JournalListPage() {
       <main className="jl-main">
         {loading && (
           <div className="jl-state">
-            <span className="jl-state-text">{journalLang === 'ja' ? '読み込み中…' : 'Loading…'}</span>
+            <span className="jl-state-text">{ui.loading}</span>
           </div>
         )}
         {!loading && error && (
@@ -113,7 +109,7 @@ export function JournalListPage() {
         {!loading && !error && articles !== null && articles.length === 0 && (
           <div className="jl-state">
             <span className="jl-state-text">
-              {journalLang === 'ja' ? '記事はまだありません。' : 'No articles yet.'}
+              {ui.noArticles}
             </span>
           </div>
         )}
@@ -144,20 +140,18 @@ export function JournalListPage() {
                   {/* Fallback notice: 要求言語の翻訳が存在しない場合のみ表示 */}
                   {article.fallback && t && t.lang !== resolveJournalLang(selectedLocale) && (
                     <div className="jl-fallback-notice">
-                      {journalLang === 'ja'
-                        ? `この記事は${selectedLocale}では利用できません。${t.lang === 'en' ? '英語' : '別言語'}で表示しています。`
-                        : `This article is not available in ${selectedLocale}. Showing in ${t.lang}.`}
+                      {ui.fallbackNotice(selectedLocale, t.lang)}
                     </div>
                   )}
 
                   {/* Meta row */}
                   <div className="jl-card-meta">
-                    <time className="jl-card-date">{formatDate(article.published_at)}</time>
+                    <time className="jl-card-date">{formatDateStr(article.published_at)}</time>
                   </div>
 
                   {/* Title */}
                   <h2 className="jl-card-title">
-                    {t ? t.title : <span className="jl-no-translation">[No translation]</span>}
+                    {t ? t.title : <span className="jl-no-translation">[{ui.noTranslation}]</span>}
                   </h2>
 
                   {/* Excerpt */}
@@ -174,7 +168,7 @@ export function JournalListPage() {
                       href={`/journal/${article.slug}${selectedLocale !== 'en' ? `?lang=${selectedLocale}` : ''}`}
                       className="jl-read-link"
                     >
-                      {journalLang === 'ja' ? '記事を読む →' : 'Read article →'}
+                      {ui.readArticle} →
                     </a>
                   </div>
                 </article>
@@ -188,9 +182,7 @@ export function JournalListPage() {
       <footer className="jl-footer">
         <div className="jl-footer-play-wrap">
           <a href="/" className="jl-footer-play-link">
-            {journalLang === 'ja'
-              ? '競技性ボードゲーム ONE EIGHTをプレイする'
-              : 'Play ONE EIGHT, a competitive abstract board game'}
+            {ui.playOneEight}
           </a>
         </div>
       </footer>

@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
+import { useLang } from '../lib/lang';
 
 interface Props {
   onDismiss: () => void;
 }
 
 export function SplashScreen({ onDismiss }: Props) {
+  const { t } = useLang();
   const [fading, setFading] = useState(false);
   const touchStartY = useRef<number | null>(null);
 
@@ -36,7 +38,7 @@ export function SplashScreen({ onDismiss }: Props) {
       onTouchEnd={handleTouchEnd}
       role="button"
       tabIndex={0}
-      aria-label="Continue to login"
+      aria-label={t.continueToLogin}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') dismiss(); }}
     >
       {/* Background image with slow zoom */}
@@ -54,7 +56,7 @@ export function SplashScreen({ onDismiss }: Props) {
       </div>
 
       {/* Minimal hint */}
-      <div className={`splash-hint${fading ? ' splash-hint-fading' : ''}`}>Tap to continue</div>
+      <div className={`splash-hint${fading ? ' splash-hint-fading' : ''}`}>{t.tapToContinue}</div>
     </div>
   );
 }

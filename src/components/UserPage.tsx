@@ -20,6 +20,7 @@ import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { LocaleCode } from '../lib/locales';
+import { formatDate, formatDateTime, getIntlLocale } from '../lib/localeFormat';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
 import { getProfile, upsertProfile, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
@@ -291,7 +292,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <div style={s.profileGrid}>
             <ProfileItem label={t.userJoined} value={
               stats?.joinedAt
-                ? new Date(stats.joinedAt).toLocaleDateString('ja-JP')
+                ? formatDate(stats.joinedAt, lang)
                 : '—'
             } />
             <ProfileItem label={t.userRating} value="— (Coming Soon)" muted />
@@ -514,7 +515,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                       color: '#b0860a',
                       fontWeight: 500,
                     }}>
-                      {new Date(title.started_at).toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+                      {new Date(title.started_at).toLocaleDateString(getIntlLocale(lang), {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
@@ -611,7 +612,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
 // ── Reward / Prize Section (RP-4) ─────────────────────────────────────────────
 
 function fmtPrizeAmount(cents: number, currency: string): string {
-  return `${currency} ${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  // lang is available via useLang in PrizeSection below; this helper is called from there
+return `${currency} ${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 }
 
 function PrizeSection({
@@ -627,7 +629,7 @@ function PrizeSection({
   userHasPriorSubmission: boolean;
   onClaim: (awardId: string, isUpdate?: boolean) => void;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   if (awards.length === 0) {
     return <Muted text={t.prizeNoAwards} />;
   }
@@ -667,9 +669,9 @@ function PrizeSection({
               <div style={sp.amount}>{fmtPrizeAmount(award.amount_cents, award.currency)}</div>
               <div style={sp.arenaLabel}>{arenaLabel}</div>
               <div style={sp.meta}>
-                {award.created_at && <span>Created: {new Date(award.created_at).toLocaleDateString()}</span>}
+                {award.created_at && <span>{t.createdLabel}: {formatDate(award.created_at, lang)}</span>}
                 {award.payout_status === 'prepared' && <span style={{ color: '#e65100', fontWeight: 600 }}>{t.prizePreparingPayout}</span>}
-                {award.paid_at && <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ {t.prizePaid}: {new Date(award.paid_at).toLocaleDateString()}</span>}
+                {award.paid_at && <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ {t.prizePaid}: {formatDate(award.paid_at, lang)}</span>}
               </div>
             </div>
 
@@ -683,13 +685,12 @@ function PrizeSection({
             {/* 提出不要: 同一ユーザーの過去提出済み */}
             {noResubmitRequired && !submitResult && (
               <div style={sp.onFileBlock}>
-                <div style={sp.onFileTitle}>✓ Tax &amp; Payment Info on File</div>
+                <div style={sp.onFileTitle}>✓ {t.taxOnFile}</div>
                 <div style={sp.onFileDesc}>
-                  Previous submission found. Naoya will verify using your User ID in the WINNERS FILE.<br />
-                  If your information has changed (name, address, PayPal email, etc.), use the button below.
+                  {t.taxOnFileDesc}
                 </div>
                 <button type="button" style={sp.updateBtn} onClick={() => onClaim(award.award_id, true)}>
-                  Update Info (if changed)
+                  {t.updateInfoIfChanged}
                 </button>
               </div>
             )}
@@ -699,11 +700,11 @@ function PrizeSection({
               <div style={sp.submitSuccess}>
                 <div style={sp.submitSuccessTitle}>✓ {t.prizeSubmittedMsg}</div>
                 <div style={sp.submitSuccessMeta}>
-                  Submission ID: {submitResult.submission_id.slice(0, 8)}…
+                  {t.submissionId}: {submitResult.submission_id.slice(0, 8)}…
                 </div>
                 {submitResult.delete_after && (
                   <div style={sp.submitSuccessMeta}>
-                    Data will be deleted by: {new Date(submitResult.delete_after).toLocaleString()}
+                    {t.dataExpiration}: {formatDateTime(submitResult.delete_after, lang)}
                   </div>
                 )}
               </div>
@@ -715,7 +716,7 @@ function PrizeSection({
                 {t.prizeStatusSubmitted}
                 {submission.delete_after && (
                   <span style={{ color: '#888', fontSize: 11, marginLeft: 8 }}>
-                    (data expires: {new Date(submission.delete_after).toLocaleString()})
+                    ({t.dataExpiration}: {formatDateTime(submission.delete_after, lang)})
                   </span>
                 )}
               </div>
@@ -1026,7 +1027,7 @@ function RecentGamesTable({
   refreshCompletedIds?: Set<string>;
   proActive?: boolean;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   return (
     <div style={{ overflowX: 'auto' }}>
       {!proActive && (
@@ -1111,7 +1112,7 @@ function RecentGamesTable({
 
             return (
               <tr key={r.game_id}>
-                <td style={s.td}>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+                <td style={s.td}>{r.created_at ? formatDate(r.created_at, lang) : '—'}</td>
                 <td style={{ ...s.td, fontWeight: 700, color: resultColor }}>{result}</td>
                 <td style={s.td}>{side}</td>
                 <td style={s.td}>{r.move_count}</td>

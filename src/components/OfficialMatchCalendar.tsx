@@ -18,6 +18,7 @@ import {
   type OfficialMatchStatus,
 } from '../lib/officialMatch';
 import { useLang, type Translations } from '../lib/lang';
+import { getIntlLocale } from '../lib/localeFormat';
 
 // ─── 型 ──────────────────────────────────────────────────────────────────────
 
@@ -108,12 +109,13 @@ function MatchCard({
   enterError: string | null;
   enableEntry: boolean;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const startsAt = new Date(match.starts_at);
-  const dateStr = startsAt.toLocaleDateString('ja-JP', {
+  const intlLocale = getIntlLocale(lang);
+  const dateStr = startsAt.toLocaleDateString(intlLocale, {
     month: 'short', day: 'numeric', weekday: 'short',
   });
-  const timeStr = startsAt.toLocaleTimeString('ja-JP', {
+  const timeStr = startsAt.toLocaleTimeString(intlLocale, {
     hour: '2-digit', minute: '2-digit',
   });
 
@@ -293,7 +295,7 @@ function MiniCalendar({
     }
   }
 
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const now = new Date();
   const todayYear = now.getFullYear();
   const todayMonth = now.getMonth();
@@ -306,7 +308,7 @@ function MiniCalendar({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString('en-US', {
+  const monthLabel = new Date(year, month, 1).toLocaleDateString(getIntlLocale(lang), {
     month: 'long', year: 'numeric',
   });
 
@@ -404,7 +406,7 @@ export function OfficialMatchCalendar({
   initialDay = null,
   includeArena = false,
 }: Props) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [matches, setMatches] = useState<OfficialMatchListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -605,7 +607,7 @@ export function OfficialMatchCalendar({
       {/* Upcoming Matches */}
       <div className="om-section-title">
         {selectedDay
-          ? t.omMatchesOn(new Date(visibleYear, visibleMonth, selectedDay).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }))
+          ? t.omMatchesOn(new Date(visibleYear, visibleMonth, selectedDay).toLocaleDateString(getIntlLocale(lang), { month: 'short', day: 'numeric' }))
           : t.omUpcomingMatches}
       </div>
 
