@@ -1,8 +1,8 @@
 import type { FGTrainingText } from './types';
 
 /**
- * Japanese — extracted verbatim from fullGameV1Text.ts (ja fields).
- * DO NOT modify text content here; fix the source in fullGameV1Text.ts first.
+ * Japanese locale bundle for FullGame V1 Training.
+ * Edit this file directly to update Japanese content.
  */
 export const FULL_GAME_V1_JA: FGTrainingText = {
   courseId: 'full-game-v1',

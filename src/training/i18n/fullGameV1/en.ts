@@ -1,8 +1,8 @@
 import type { FGTrainingText } from './types';
 
 /**
- * English canonical source — extracted verbatim from fullGameV1Text.ts (en fields).
- * DO NOT modify text content here; fix the source in fullGameV1Text.ts first.
+ * English locale bundle for FullGame V1 Training.
+ * This is the canonical English text; edit this file directly to update English content.
  */
 export const FULL_GAME_V1_EN: FGTrainingText = {
   courseId: 'full-game-v1',

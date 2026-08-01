@@ -12,6 +12,7 @@ import { resolveFullGameV1Text } from '../training/i18n/fullGameV1/index';
 import type { FGStepText, FGTrainingText } from '../training/i18n/fullGameV1/types';
 import { validateMove } from '../training/validateMove';
 import { applyScriptedMove, scriptedMoveToExpected, markFullGameCompleted } from '../training/fullGameUtils';
+import { splitIntoSentences } from '../training/splitIntoSentences';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -84,19 +85,6 @@ function getUserInstructionText(stepText: FGStepText): string {
   return instruction;
 }
 
-// ── Helper: split intro text into sentences ───────────────────────────────
-function splitIntoSentences(text: string): string[] {
-  // Split on sentence-ending punctuation for all 10 supported locales.
-  // Terminators: . ! ? (ASCII) and 。！？ (full-width)
-  // Preserve the delimiter; do not create empty sentences.
-  const raw = text
-    .split(/(?<=[.!?。！？])(?=\s|$|[^.!?。！？])/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  return raw.length > 0 ? raw : [text];
-}
-
-// ── Component ───────────────────────────────────────────────────────────────
 
 interface FullGameTrainingRunnerProps {
   onComplete: () => void;

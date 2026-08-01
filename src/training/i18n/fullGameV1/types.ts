@@ -1,9 +1,9 @@
 /**
  * Types for the per-locale FullGame V1 Training text bundles.
  *
- * These types mirror the structure of FullGameTrainingText from src/training/types.ts,
- * but with all LocalizedText { en, ja } pairs replaced by plain string.
- * Each locale file exports an object satisfying FullGameTrainingText.
+ * Each locale file exports a standalone FGTrainingText bundle.
+ * These types are independent locale bundle definitions;
+ * they are not derived from or mirroring any central bilingual type.
  */
 
 /** Text bundle for a USER step (situation context, interactive prompts). */

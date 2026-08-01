@@ -10,7 +10,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { FULL_GAME_V1 } from '../training/tasks/fullGameV1';
-import { FULL_GAME_V1_TEXT } from '../training/tasks/fullGameV1Text';
+import { FULL_GAME_V1_EN } from '../training/i18n/fullGameV1/en';
+import { FULL_GAME_V1_JA } from '../training/i18n/fullGameV1/ja';
 import { createInitialState } from '../game/initialState';
 import { applyScriptedMove } from '../training/fullGameUtils';
 import type { GameState } from '../game/types';
@@ -164,9 +165,14 @@ describe('FULL_GAME_V1 — intro/select_only do not change game state', () => {
 
 // ── 「ポケット」禁止チェック ────────────────────────────────────────────────
 
-describe('FULL_GAME_V1_TEXT — no "ポケット" in text', () => {
-  it('fullGameV1Text contains no "ポケット"', () => {
-    const allText = JSON.stringify(FULL_GAME_V1_TEXT);
+describe('FULL_GAME_V1 i18n bundles — no "ポケット" in text', () => {
+  it('en bundle contains no "ポケット"', () => {
+    const allText = JSON.stringify(FULL_GAME_V1_EN);
+    expect(allText).not.toContain('ポケット');
+  });
+
+  it('ja bundle contains no "ポケット"', () => {
+    const allText = JSON.stringify(FULL_GAME_V1_JA);
     expect(allText).not.toContain('ポケット');
   });
 });
