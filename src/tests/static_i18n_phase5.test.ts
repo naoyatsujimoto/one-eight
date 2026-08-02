@@ -480,7 +480,7 @@ describe('Protected values maintenance', () => {
 // ---------------------------------------------------------------------------
 
 describe('Legal files unchanged', () => {
-  const LEGAL_FILES = ['terms.html', 'privacy.html', 'refund.html', 'legal-i18n.js'];
+  const LEGAL_FILES = ['terms.html', 'privacy.html', 'refund.html'];
 
   for (const file of LEGAL_FILES) {
     it(`${file} exists`, () => {

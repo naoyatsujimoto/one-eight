@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Terms of Service — ONE EIGHT</title>
+  <title data-i18n="title">Terms of Service — ONE EIGHT</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -45,6 +45,7 @@
       text-decoration: none;
       color: var(--ink);
     }
+    nav { display: flex; align-items: center; flex-wrap: wrap; row-gap: 6px; }
     nav a {
       font-family: var(--mono);
       font-size: 11px;
@@ -54,6 +55,22 @@
       margin-left: 24px;
     }
     nav a:hover { color: var(--ink); }
+    .lang-select {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      background: transparent;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 3px 4px;
+      cursor: pointer;
+      outline: none;
+      margin-left: 20px;
+      max-width: 130px;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+    }
+    .lang-select:hover, .lang-select:focus { color: var(--ink); border-color: var(--rule-strong); }
     main {
       max-width: 680px;
       margin: 0 auto;
@@ -97,6 +114,7 @@
       line-height: 1.8;
       margin: 0 0 16px;
     }
+    p a { color: var(--ink-2); }
     footer {
       border-top: 1px solid var(--rule);
       padding: 24px 32px;
@@ -118,75 +136,75 @@
       main { padding: 40px 20px 60px; }
       h1 { font-size: 26px; }
     }
-    body[data-lang="ja"] .lang-en { display: none; }
-    body[data-lang="en"] .lang-ja { display: none; }
-    .lang-toggle { display:flex; gap:8px; align-items:center; margin-left:20px; }
-    .lang-toggle button {
-      font-family: var(--mono); font-size:11px; letter-spacing:0.1em;
-      background:none; border:1px solid var(--rule-strong); border-radius:3px;
-      padding:2px 8px; cursor:pointer; color:var(--ink-3);
-    }
-    .lang-toggle button.active { border-color:var(--ink); color:var(--ink); }
   </style>
 </head>
 <body>
   <header>
     <a class="wordmark" href="/">ONE EIGHT</a>
     <nav>
-      <a href="/pricing.html">Pricing</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/refund.html">Refund</a>
-
+      <a href="/pricing.html" data-i18n="navPricing">Pricing</a>
+      <a href="/terms.html" data-i18n="navTerms">Terms</a>
+      <a href="/privacy.html" data-i18n="navPrivacy">Privacy</a>
+      <a href="/refund.html" data-i18n="navRefund">Refund</a>
+      <select class="lang-select" data-lang-select data-i18n-aria-label="languageSelectorLabel" aria-label="Select language" onchange="window.ONE_EIGHT_STATIC_I18N&&window.ONE_EIGHT_STATIC_I18N.setLocale(this.value)">
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+        <option value="zh-Hant">繁體中文</option>
+        <option value="zh-Hans">简体中文</option>
+        <option value="ko">한국어</option>
+        <option value="es">Español</option>
+        <option value="pt-BR">Português (Brasil)</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+        <option value="it">Italiano</option>
+      </select>
     </nav>
   </header>
 
   <main>
-    <div class="eyebrow"><span class="lang-en">Legal</span><span class="lang-ja">法的事項</span></div>
-    <h1><span class="lang-en">Terms of Service</span><span class="lang-ja">利用規約</span></h1>
-    <p class="updated"><span class="lang-en">Last updated: May 23, 2025</span><span class="lang-ja">最終更新: 2025年5月23日</span></p>
+    <div class="eyebrow" data-i18n="t01">Legal</div>
+    <h1 data-i18n="t02">Terms of Service</h1>
+    <p class="updated" data-i18n="t03">Last updated: May 23, 2025</p>
 
-    <h2><span class="lang-en">1. Service Overview</span><span class="lang-ja">1. サービス概要</span></h2>
-    <p><span class="lang-en">ONE EIGHT is operated by TENTOMUSHI Inc. These Terms of Service govern your access to and use of ONE EIGHT and related digital services provided through oneeightgame.com. By accessing or using the service, you agree to these terms. If you do not agree, please do not use the service. We may update these terms from time to time. Continued use of the service after changes are posted constitutes acceptance of the updated terms.</span><span class="lang-ja">ONE EIGHT は TENTOMUSHI Inc. が運営しています。本利用規約は、oneeightgame.com を通じて提供される ONE EIGHT および関連デジタルサービスへのアクセスおよび利用に適用されます。サービスにアクセスまたは利用することにより、本規約に同意したものとみなします。同意しない場合は、サービスをご利用にならないでください。本規約は随時更新することがあります。変更後も続けてサービスを利用した場合、更新後の規約に同意したものとみなします。</span></p>
+    <h2 data-i18n="t04">1. Service Overview</h2>
+    <p data-i18n="t05">ONE EIGHT is operated by TENTOMUSHI Inc. These Terms of Service govern your access to and use of ONE EIGHT and related digital services provided through oneeightgame.com. By accessing or using the service, you agree to these terms. If you do not agree, please do not use the service. We may update these terms from time to time. Continued use of the service after changes are posted constitutes acceptance of the updated terms.</p>
 
-    <h2><span class="lang-en">2. Accounts</span><span class="lang-ja">2. アカウント</span></h2>
-    <p><span class="lang-en">To access certain features, you must create an account using a valid email address. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. You must be at least 13 years old to use this service. By creating an account, you confirm that you meet this requirement. We reserve the right to suspend or terminate accounts that violate these terms, engage in abusive behavior, or are used for fraudulent purposes.</span><span class="lang-ja">一部の機能を利用するには、有効なメールアドレスでアカウントを作成する必要があります。アカウントの認証情報の機密保持、およびアカウント上のすべての活動についてはお客様の責任となります。本サービスを利用するには13歳以上である必要があります。アカウントを作成することにより、この要件を満たしていることを確認したものとみなします。当社は、本規約に違反した場合、不正行為を行った場合、または不正目的に利用されたアカウントを停止・削除する権利を有します。</span></p>
+    <h2 data-i18n="t06">2. Accounts</h2>
+    <p data-i18n="t07">To access certain features, you must create an account using a valid email address. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. You must be at least 13 years old to use this service. By creating an account, you confirm that you meet this requirement. We reserve the right to suspend or terminate accounts that violate these terms, engage in abusive behavior, or are used for fraudulent purposes.</p>
 
-    <h2><span class="lang-en">3. Acceptable Use</span><span class="lang-ja">3. 許容される利用</span></h2>
-    <p><span class="lang-en">You agree not to use the service to harass other players, exploit technical vulnerabilities, manipulate match outcomes through external means, or impersonate other users. Automated clients, bots, or scripts that interact with the game outside of officially provided interfaces are prohibited. We may modify or remove content and restrict access to any user at our discretion, with or without notice, if we determine a violation has occurred.</span><span class="lang-ja">他のプレイヤーへの嫁がらせ、技術的な脆弱性の悪用、外部手段による対局結果の操作、または他のユーザーへのなりすましを目的としたサービスの利用はお断りします。公式インターフェース以外でゲームと連携する自動クライアント、ボット、スクリプトは禁止です。当社は、違反が発生したと判断した場合、通知の有無にかかわらず、コンテンツを変更・削除し、ユーザーのアクセスを制限する権利を有します。</span></p>
+    <h2 data-i18n="t08">3. Acceptable Use</h2>
+    <p data-i18n="t09">You agree not to use the service to harass other players, exploit technical vulnerabilities, manipulate match outcomes through external means, or impersonate other users. Automated clients, bots, or scripts that interact with the game outside of officially provided interfaces are prohibited. We may modify or remove content and restrict access to any user at our discretion, with or without notice, if we determine a violation has occurred.</p>
 
-    <h2><span class="lang-en">4. Subscriptions and Billing</span><span class="lang-ja">4. サブスクリプションと請求</span></h2>
-    <p><span class="lang-en">Certain features of ONE EIGHT require a paid membership. Subscriptions are billed monthly in advance. By subscribing, you authorize us to charge your payment method on a recurring basis until you cancel. Prices are displayed in USD. We use Paddle as our payment processor. Your subscription will automatically renew unless cancelled before the next billing date. You may cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period. Access to member features continues until that date.</span><span class="lang-ja">ONE EIGHT の一部機能には有料メンバーシップが必要です。サブスクリプションは月額前払い制です。登録することにより、キャンセルするまで定期的に決済が行われることに同意したものとみなします。価格は米ドル表示です。当サービスの決済処理には Paddle を使用しています。次の請求日前にキャンセルしない限り、サブスクリプションは自動更新されます。サブスクリプションはいつでもアカウント設定からキャンセルできます。キャンセルは現在の請求期間の終了時に有効となります。その日付までメンバー機能へのアクセスは続けられます。</span></p>
+    <h2 data-i18n="t10">4. Subscriptions and Billing</h2>
+    <p data-i18n="t11">Certain features of ONE EIGHT require a paid membership. Subscriptions are billed monthly in advance. By subscribing, you authorize us to charge your payment method on a recurring basis until you cancel. Prices are displayed in USD. We use Paddle as our payment processor. Your subscription will automatically renew unless cancelled before the next billing date. You may cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period. Access to member features continues until that date.</p>
 
-    <h2><span class="lang-en">5. Termination</span><span class="lang-ja">5. 解除</span></h2>
-    <p><span class="lang-en">You may stop using the service and delete your account at any time by contacting us at <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a>.</span><span class="lang-ja">サービスの利用停止およびアカウント削除をご希望の場合は、<a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a> までご連絡ください。</span></p>
-    <p><span class="lang-en">We may terminate or suspend your access to the service at our discretion, including for violations of these terms. Upon termination, your right to use the service ceases immediately.</span><span class="lang-ja">当社は、本規約違反を含む理由により、当社の裁量でサービスへのアクセスを終了または停止することができます。終了時点で、サービスを利用する権利は直ちに消滅します。</span></p>
+    <h2 data-i18n="t12">5. Termination</h2>
+    <p data-i18n-template="t13">You may stop using the service and delete your account at any time by contacting us at contact@oneeightgame.com.</p>
+    <p data-i18n="t14">We may terminate or suspend your access to the service at our discretion, including for violations of these terms. Upon termination, your right to use the service ceases immediately.</p>
 
-    <h2><span class="lang-en">6. Disclaimer and Limitation of Liability</span><span class="lang-ja">6. 免責事項および責任の制限</span></h2>
-    <p><span class="lang-en">The service is provided "as is" without warranties of any kind. We do not guarantee uninterrupted access, error-free operation, or that specific features will remain available indefinitely. To the extent permitted by law, we shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service.</span><span class="lang-ja">本サービスはいかなる保証もなく「現状のまま」提供されます。継続的なアクセス、エラーなしの動作、または特定機能の永続的な提供を保証するものではありません。法律が許容する範囲において、当社はお客様のサービス利用に起因する間接的、付随的、特別または結果的損害について責任を負いません。</span></p>
+    <h2 data-i18n="t15">6. Disclaimer and Limitation of Liability</h2>
+    <p data-i18n="t16">The service is provided &#x201C;as is&#x201D; without warranties of any kind. We do not guarantee uninterrupted access, error-free operation, or that specific features will remain available indefinitely. To the extent permitted by law, we shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service.</p>
 
-    <h2><span class="lang-en">7. Governing Law</span><span class="lang-ja">7. 準拠法</span></h2>
-    <p><span class="lang-en">These terms are governed by the laws of Japan. Any disputes shall be subject to the exclusive jurisdiction of the courts located in Osaka, Japan, unless otherwise required by applicable law.</span><span class="lang-ja">本規約は日本法に準拠します。紛争は、適用法が別途定める場合を除き、大阪市の裁判所の専属管轄に服するものとします。</span></p>
+    <h2 data-i18n="t17">7. Governing Law</h2>
+    <p data-i18n="t18">These terms are governed by the laws of Japan. Any disputes shall be subject to the exclusive jurisdiction of the courts located in Osaka, Japan, unless otherwise required by applicable law.</p>
 
-    <h2><span class="lang-en">8. Contact</span><span class="lang-ja">8. お問い合わせ</span></h2>
-    <p><span class="lang-en">Operator: TENTOMUSHI Inc.<br>
-    Service: ONE EIGHT<br>
-    Website: <a href="https://oneeightgame.com">https://oneeightgame.com</a><br>
-    Email: <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a></span><span class="lang-ja">運営者: TENTOMUSHI Inc.<br>
-    サービス: ONE EIGHT<br>
-    ウェブサイト: <a href="https://oneeightgame.com">https://oneeightgame.com</a><br>
-    メール: <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a></span></p>
-    <p><span class="lang-en">For questions about these terms, please contact us at <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a>.</span><span class="lang-ja">本規約に関するお問い合わせは <a href="mailto:contact@oneeightgame.com">contact@oneeightgame.com</a> までご連絡ください。</span></p>
+    <h2 data-i18n="t19">8. Contact</h2>
+    <p data-i18n-template="t20">Operator: TENTOMUSHI Inc.
+Service: ONE EIGHT
+Website: https://oneeightgame.com
+Email: contact@oneeightgame.com</p>
+    <p data-i18n-template="t21">For questions about these terms, please contact us at contact@oneeightgame.com.</p>
   </main>
 
   <footer>
-    <a href="/">Home</a>
-    <a href="/pricing.html">Pricing</a>
-    <a href="/terms.html"><span class="lang-en">Terms of Service</span><span class="lang-ja">利用規約</span></a>
-    <a href="/privacy.html"><span class="lang-en">Privacy Policy</span><span class="lang-ja">プライバシーポリシー</span></a>
-    <a href="/refund.html"><span class="lang-en">Refund Policy</span><span class="lang-ja">返金ポリシー</span></a>
-    <a href="mailto:contact@oneeightgame.com">Contact</a>
+    <a href="/" data-i18n="footerHome">Home</a>
+    <a href="/pricing.html" data-i18n="footerPricing">Pricing</a>
+    <a href="/terms.html" data-i18n="t22">Terms of Service</a>
+    <a href="/privacy.html" data-i18n="t23">Privacy Policy</a>
+    <a href="/refund.html" data-i18n="t24">Refund Policy</a>
+    <a href="mailto:contact@oneeightgame.com" data-i18n="footerContact">Contact</a>
   </footer>
-  <script src="/legal-i18n.js"></script>
+  <script src="/static-i18n.js"></script>
+  <script src="/terms-i18n.js"></script>
 </body>
 </html>

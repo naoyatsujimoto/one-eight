@@ -175,13 +175,68 @@
   }
 
   // ---------------------------------------------------------------------------
+  // renderTemplate — safe DOM construction for data-i18n-template elements
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Render a translated template string into a DOM element without using
+   * innerHTML, insertAdjacentHTML, or eval.  Only three token types are
+   * recognised:
+   *   {{EMAIL}}   → <a href="mailto:contact@oneeightgame.com">
+   *   {{WEBSITE}} → <a href="https://oneeightgame.com">
+   *   \n          → <br>
+   * All other characters become Text nodes.
+   *
+   * @param {Element} el   - Target DOM element.
+   * @param {string}  text - Translated string (may contain tokens).
+   */
+  function renderTemplate(el, text) {
+    var EMAIL_ADDR   = 'contact@oneeightgame.com';
+    var WEBSITE_URL  = 'https://oneeightgame.com';
+    var TOKEN_RE     = /(\{\{EMAIL\}\}|\{\{WEBSITE\}\}|\n)/g;
+    var frag         = document.createDocumentFragment();
+    var last         = 0;
+    var match;
+    TOKEN_RE.lastIndex = 0;
+    while ((match = TOKEN_RE.exec(text)) !== null) {
+      if (match.index > last) {
+        frag.appendChild(document.createTextNode(text.slice(last, match.index)));
+      }
+      if (match[0] === '\n') {
+        frag.appendChild(document.createElement('br'));
+      } else if (match[0] === '{{EMAIL}}') {
+        var ae = document.createElement('a');
+        ae.href        = 'mailto:' + EMAIL_ADDR;
+        ae.textContent = EMAIL_ADDR;
+        frag.appendChild(ae);
+      } else {
+        /* {{WEBSITE}} */
+        var aw = document.createElement('a');
+        aw.href        = WEBSITE_URL;
+        aw.textContent = WEBSITE_URL;
+        frag.appendChild(aw);
+      }
+      last = TOKEN_RE.lastIndex;
+    }
+    if (last < text.length) {
+      frag.appendChild(document.createTextNode(text.slice(last)));
+    }
+    if (typeof el.replaceChildren === 'function') {
+      el.replaceChildren(frag);
+    } else {
+      while (el.firstChild) { el.removeChild(el.firstChild); }
+      el.appendChild(frag);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // apply
   // ---------------------------------------------------------------------------
 
   /**
-   * Walk all [data-i18n] elements in the document and set textContent
-   * from the current locale dictionary. Also syncs lang attributes,
-   * aria-labels, and locale selector value.
+   * Walk all [data-i18n] and [data-i18n-template] elements in the document
+   * and update them from the current locale dictionary. Also syncs lang
+   * attributes, aria-labels, and locale selector value.
    */
   function apply() {
     var locale = getCurrentLocale();
@@ -220,6 +275,18 @@
       var selects = document.querySelectorAll('select[data-lang-select]');
       for (var s = 0; s < selects.length; s++) {
         selects[s].value = locale;
+      }
+
+      // Handle data-i18n-template elements (safe DOM construction, no innerHTML)
+      var tplEls = document.querySelectorAll('[data-i18n-template]');
+      for (var tp = 0; tp < tplEls.length; tp++) {
+        var tplEl  = tplEls[tp];
+        var tplKey = tplEl.getAttribute('data-i18n-template');
+        if (!tplKey) continue;
+        var tplText = translate(tplKey, locale);
+        if (tplText !== undefined) {
+          renderTemplate(tplEl, tplText);
+        }
       }
     }
   }
