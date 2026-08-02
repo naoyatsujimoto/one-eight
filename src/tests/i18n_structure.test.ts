@@ -13,7 +13,7 @@ import { FR_TRANSLATIONS } from '../i18n/fr';
 import { IT_TRANSLATIONS } from '../i18n/it';
 import { resolveUiTranslations } from '../i18n/index';
 
-const EXPECTED_LOCALES = ['en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
+const EXPECTED_LOCALES = ['zh-Hans', 'zh-Hant', 'es', 'en', 'pt-BR', 'ja', 'ko', 'de', 'fr', 'it'];
 
 // All 10 locales are fully translated
 const FULLY_TRANSLATED: Array<{ code: LocaleCode; dict: unknown }> = [

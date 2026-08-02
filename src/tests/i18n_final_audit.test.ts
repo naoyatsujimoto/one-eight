@@ -146,7 +146,7 @@ function compareShapes(canonical: unknown, other: unknown, path = ''): ShapeErro
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const EXPECTED_LOCALES: LocaleCode[] = ['en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
+const EXPECTED_LOCALES: LocaleCode[] = ['zh-Hans', 'zh-Hant', 'es', 'en', 'pt-BR', 'ja', 'ko', 'de', 'fr', 'it'];
 
 const STATIC_PAGES = ['pricing', 'pro', 'terms', 'privacy', 'refund'] as const;
 
@@ -297,6 +297,24 @@ describe('6. Static HTML — lang select has 10 options', () => {
       const html = readPublic(`${page}.html`);
       const opts = extractSelectOptions(html).sort();
       expect(opts).toEqual([...EXPECTED_LOCALES].sort());
+    });
+  }
+});
+
+// ── 6b. React SUPPORTED_LOCALES order matches static HTML option order ─────────
+
+describe('6b. locale display order — React SUPPORTED_LOCALES === static HTML options', () => {
+  const reactOrder = SUPPORTED_LOCALES.map(l => l.code);
+
+  it('React SUPPORTED_LOCALES order matches confirmed display order', () => {
+    expect(reactOrder).toEqual(EXPECTED_LOCALES);
+  });
+
+  for (const page of STATIC_PAGES) {
+    it(`${page}.html option order matches React SUPPORTED_LOCALES`, () => {
+      const html = readPublic(`${page}.html`);
+      const opts = extractSelectOptions(html);
+      expect(opts).toEqual(reactOrder);
     });
   }
 });

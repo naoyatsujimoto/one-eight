@@ -8,13 +8,13 @@ English (`en`) is the **sole canonical source**. All structural changes (adding 
 
 | Code    | Name                  | Status             |
 |---------|-----------------------|--------------------|
-| en      | English               | ✅ Full translation |
-| ja      | 日本語                | ✅ Full translation |
-| zh-Hant | 繁體中文              | ✅ Full translation |
 | zh-Hans | 简体中文              | ✅ Full translation |
-| ko      | 한국어                | ✅ Full translation |
+| zh-Hant | 繁體中文              | ✅ Full translation |
 | es      | Español               | ✅ Full translation |
+| en      | English               | ✅ Full translation |
 | pt-BR   | Português (Brasil)    | ✅ Full translation |
+| ja      | 日本語                | ✅ Full translation |
+| ko      | 한국어                | ✅ Full translation |
 | de      | Deutsch               | ✅ Full translation |
 | fr      | Français              | ✅ Full translation |
 | it      | Italiano              | ✅ Full translation |

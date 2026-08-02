@@ -8,7 +8,7 @@
 
   var STORAGE_KEY = 'one8_lang';
 
-  var SUPPORTED_LOCALES = ['en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
+  var SUPPORTED_LOCALES = ['zh-Hans', 'zh-Hant', 'es', 'en', 'pt-BR', 'ja', 'ko', 'de', 'fr', 'it'];
 
   /**
    * Intl locale tag → one8 locale mapping (BCP 47 region-specific overrides)

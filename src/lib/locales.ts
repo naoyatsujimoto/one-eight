@@ -9,13 +9,13 @@
  *       Do NOT annotate zh-Hans as "Mainland China".
  */
 export const SUPPORTED_LOCALES = [
-  { code: 'en',    label: 'English' },
-  { code: 'ja',    label: '日本語' },
-  { code: 'zh-Hant', label: '繁體中文' },
   { code: 'zh-Hans', label: '简体中文' },
-  { code: 'ko',    label: '한국어' },
+  { code: 'zh-Hant', label: '繁體中文' },
   { code: 'es',    label: 'Español' },
+  { code: 'en',    label: 'English' },
   { code: 'pt-BR', label: 'Português (Brasil)' },
+  { code: 'ja',    label: '日本語' },
+  { code: 'ko',    label: '한국어' },
   { code: 'de',    label: 'Deutsch' },
   { code: 'fr',    label: 'Français' },
   { code: 'it',    label: 'Italiano' },
