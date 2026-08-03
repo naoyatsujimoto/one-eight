@@ -14,9 +14,9 @@ All sounds are CC0 1.0 Public Domain.
 - **License**: CC0 1.0 Universal (Public Domain)
 - **Adopted**: 2026-08-03
 - **Processing**:
-  - 単発接触部分抽出、帯域整理、無音除去、短いfade、peak統一
-  - mono / 44100 Hz / 16-bit PCM / duration ~167.1 ms / peak -7.00 dBFS
-- **SHA-256**: 439c4785c8610ef0099ea130b31b3fb253ca13452615fa60839c9f46b1677c55
+  - 単発接触部分抽出（Position 5 加工版）、帯域整理、無音除去、短いfade、peak統一
+  - mono / 44100 Hz / 16-bit PCM / duration ~90.0 ms / peak -7.00 dBFS
+- **SHA-256**: 469696b3d6780ae8a448763dd37110e8eed91628d5de6bb21ff8ad1a213f72cd
 
 ---
 
@@ -38,9 +38,19 @@ All sounds are CC0 1.0 Public Domain.
 
 ## Previously Used Sources
 
-These sources are no longer in use as of 2026-08-03.
+These sources are no longer in use.
 
-### position-place.wav (until 2026-08-03)
+### position-place.wav — Position 3 加工版 (until 2026-08-03)
+
+- **Title**: Moving piece on a boardgame
+- **Author**: zachrau
+- **Freesound URL**: https://freesound.org/people/zachrau/sounds/556387/
+- **License**: CC0 1.0 Universal (Public Domain)
+- **Processing**: 単発接触部分抽出（Position 3 加工版）、帯域整理、無音除去、短いfade、peak統一
+- **Spec**: mono / 44100 Hz / 16-bit PCM / duration ~167.1 ms / peak -7.00 dBFS
+- **SHA-256**: 439c4785c8610ef0099ea130b31b3fb253ca13452615fa60839c9f46b1677c55
+
+### position-place.wav — el_boss 版 (until 2026-08-03)
 
 - **Title**: Piece Placement
 - **Author**: el_boss
@@ -48,7 +58,7 @@ These sources are no longer in use as of 2026-08-03.
 - **License**: CC0 1.0 Universal (Public Domain)
 - **SHA-256**: b9873d3813f107088c31129b962e0d1d11142c4e07bc32b4c900ffddcd12f696
 
-### asset-place.wav (until 2026-08-03)
+### asset-place.wav — mh2o 版 (until 2026-08-03)
 
 - **Title**: chess_move_on_alabaster
 - **Author**: mh2o
