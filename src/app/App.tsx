@@ -28,7 +28,7 @@ import { AdminPage } from '../components/AdminPage';
 import { CpuProfile } from '../components/CpuProfile';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useUnreadCount } from '../hooks/useUnreadCount';
-// import { useSound } from '../hooks/useSound'; // SOUND OFF
+import { useSound } from '../hooks/useSound';
 
 type Screen = 'title' | 'tutorial' | 'main' | 'profile' | 'training' | 'admin';
 import {
@@ -603,8 +603,14 @@ export default function App() {
 
   function handleSelectPosition(positionId: PositionId) {
     if (isCpuTurn) return;
-    playSymbol();
-    setState((prev) => selectPosition(prev, positionId));
+    setState((prev) => {
+      const next = selectPosition(prev, positionId);
+      // 有効選択が成立したとき（selectedPositionが変化し、かつnullでない）のみ音を鳴らす
+      if (next.selectedPosition !== null && next.selectedPosition !== prev.selectedPosition) {
+        playSymbol();
+      }
+      return next;
+    });
   }
 
   function handleLargePocketClick(gateId: GateId) {
@@ -763,8 +769,7 @@ export default function App() {
     setBuildState(EMPTY_BUILD_STATE);
   }
 
-  const playSymbol = () => {}; // SOUND OFF
-  const playAsset  = () => {}; // SOUND OFF
+  const { playSymbol, playAsset } = useSound();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [unreadCount, refreshUnread] = useUnreadCount(
     user?.id ?? null,

@@ -7,6 +7,7 @@ import { createInitialState } from '../game/initialState';
 import type { GateId, PositionId, GameState } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
+import { useSound } from '../hooks/useSound';
 import { FULL_GAME_V1 } from '../training/tasks/fullGameV1';
 import { resolveFullGameV1Text } from '../training/i18n/fullGameV1/index';
 import type { FGStepText, FGTrainingText } from '../training/i18n/fullGameV1/types';
@@ -94,6 +95,7 @@ interface FullGameTrainingRunnerProps {
 
 export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: FullGameTrainingRunnerProps) {
   const { lang, t } = useLang();
+  const { playSymbol, playAsset } = useSound();
   // Resolve per-locale text bundle for all 10 supported locales
   const fullGameText = resolveFullGameV1Text(lang);
 
@@ -373,6 +375,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
 
     const expected = scriptedMoveToExpected(currentStep.expectedMove);
     if (validateMove(lastRecord, expected)) {
+      playAsset();
       setGameState(newState);
       snapshot.current = newState;
       setBuildState(EMPTY_BUILD);
@@ -583,6 +586,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     if (currentStep?.kind === 'select_only') {
       setGameState((prev) => selectPosition(prev, positionId));
       if (positionId === currentStep.expectedPosition) {
+        playSymbol();
         setWrongAttempt(false);
         setSentenceIndex(0);
         setPhase('select_success');
@@ -595,6 +599,9 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     // 通常の user step
     setGameState((prev) => {
       const next = selectPosition(prev, positionId);
+      if (next.selectedPosition !== null && next.selectedPosition !== prev.selectedPosition) {
+        playSymbol();
+      }
       return next;
     });
     setBuildState(EMPTY_BUILD);
@@ -615,6 +622,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     const expected = scriptedMoveToExpected(currentStep.expectedMove);
     if (validateMove(lastRecord, expected)) {
       // Correct!
+      playAsset();
       setGameState(newState);
       snapshot.current = newState;
       setBuildState(EMPTY_BUILD);
@@ -649,6 +657,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       const expected = scriptedMoveToExpected(currentStep.expectedMove);
 
       if (validateMove(lastRecord, expected)) {
+        setTimeout(() => playAsset(), 0);
         snapshot.current = newState;
         setBuildState(EMPTY_BUILD);
         setSelectiveFirst(null);
@@ -699,6 +708,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
         if (!lastRecord) return prev;
 
         if (validateMove(lastRecord, expected)) {
+          setTimeout(() => playAsset(), 0);
           snapshot.current = newState;
           setBuildState(EMPTY_BUILD);
           setSelectiveFirst(null);
@@ -723,6 +733,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       if (!lastRecord) return prev;
 
       if (validateMove(lastRecord, expected)) {
+        setTimeout(() => playAsset(), 0);
         snapshot.current = newState;
         setBuildState(EMPTY_BUILD);
         setSelectiveFirst(null);

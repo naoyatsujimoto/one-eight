@@ -14,6 +14,7 @@ import { useOnlineGame } from '../hooks/useOnlineGame';
 import { OnlineTimerDisplay } from './OnlineTimerDisplay';
 import { GameBoardHeader } from './GameBoardHeader';
 import { useLang } from '../lib/lang';
+import { useSound } from '../hooks/useSound';
 import { getPublicProfile, getProfile, isProActive } from '../lib/profile';
 import { fetchGhostMoves } from '../lib/matchLog';
 import type { GhostMove } from '../lib/matchLog';
@@ -65,6 +66,7 @@ interface Props {
 
 export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatch, officialStartsAt }: Props) {
   const { t } = useLang();
+  const { playSymbol, playAsset } = useSound();
   const {
     gameRow,
     myColor,
@@ -236,12 +238,21 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
 
   function handleSelectPosition(positionId: PositionId) {
     if (blocked) return;
-    setLocalState((prev) => prev ? selectPosition(prev, positionId) : prev);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      const next = selectPosition(prev, positionId);
+      if (next.selectedPosition !== null && next.selectedPosition !== prev.selectedPosition) {
+        playSymbol();
+      }
+      return next;
+    });
   }
 
   function handleLargePocketClick(gateId: GateId) {
     if (blocked) return;
     const next = applyMassiveBuild(state, gateId);
+    const lastRecord = next.history[next.history.length - 1];
+    if (lastRecord?.build && lastRecord.build.type !== 'skip' && lastRecord.build.type !== 'no-build' && lastRecord.build.placed > 0) playAsset();
     finalize(next);
   }
 
@@ -258,7 +269,10 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
             open: true,
             label: `Selective Build: ${gateId}`,
             action: () => {
-              finalize(applySelectiveBuildSingle(state, gateId));
+              const _r1 = applySelectiveBuildSingle(state, gateId);
+              const _rec1 = _r1.history[_r1.history.length - 1];
+              if (_rec1?.build && _rec1.build.type !== 'skip' && _rec1.build.type !== 'no-build' && _rec1.build.placed > 0) playAsset();
+              finalize(_r1);
               setBuildState(EMPTY_BUILD_STATE);
             },
           });
@@ -273,7 +287,10 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
         open: true,
         label: `Selective Build: ${first} + ${gateId}`,
         action: () => {
-          finalize(applySelectiveBuild(state, gates));
+          const _r2 = applySelectiveBuild(state, gates);
+          const _rec2 = _r2.history[_r2.history.length - 1];
+          if (_rec2?.build && _rec2.build.type !== 'skip' && _rec2.build.type !== 'no-build' && _rec2.build.placed > 0) playAsset();
+          finalize(_r2);
           setBuildState(EMPTY_BUILD_STATE);
         },
       });
@@ -297,7 +314,10 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
           open: true,
           label: `Quad Build: ${next.join(', ')} (${next.length}/${currentMax})`,
           action: () => {
-            finalize(applyQuadBuildForGates(state, next as GateId[]));
+            const _r3 = applyQuadBuildForGates(state, next as GateId[]);
+            const _rec3 = _r3.history[_r3.history.length - 1];
+            if (_rec3?.build && _rec3.build.type !== 'skip' && _rec3.build.type !== 'no-build' && _rec3.build.placed > 0) playAsset();
+            finalize(_r3);
             setBuildState(EMPTY_BUILD_STATE);
           },
         });

@@ -8,6 +8,7 @@ import { POSITION_TO_GATES } from '../game/constants';
 import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
+import { useSound } from '../hooks/useSound';
 import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE, T8_PREPARE_CAPTURE, T9_NO_BUILD_ENDGAME, TRAINING_TASK_META } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
@@ -49,6 +50,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   const userIdRef = useRef<string | null>(userId);
   useEffect(() => { userIdRef.current = userId ?? null; }, [userId]);
   const { t, lang } = useLang();
+  const { playSymbol, playAsset } = useSound();
   const [mode, setMode] = useState<ViewMode>('intro');
   // 一局指南の一時中断状態（同一セッション内でのresume用、リロード後は消える）
   const [fullGameResumeState, setFullGameResumeState] = useState<FullGameResumeState | null>(null);
@@ -140,10 +142,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const step = prev.task.steps[prev.stepIndex];
       if (!step || step.kind !== 'user_move') return prev;
       const nextState = selectPosition(prev.gameState, positionId);
+      if (nextState.selectedPosition !== null && nextState.selectedPosition !== prev.gameState.selectedPosition) {
+        setTimeout(() => playSymbol(), 0);
+      }
       return { ...prev, gameState: nextState, feedback: null };
     });
     setBuildState(EMPTY_BUILD);
-  }, []);
+  }, [playSymbol]);
 
   const handleMiddlePocketClick = useCallback((gateId: GateId) => {
     setSession((prev) => {
@@ -173,6 +178,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
+        setTimeout(() => playAsset(), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
@@ -197,6 +203,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
+        setTimeout(() => playAsset(), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
@@ -223,6 +230,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
+        setTimeout(() => playAsset(), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
@@ -265,6 +273,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
         const expected = step.expected;
         if (validateMove(lastRecord, expected)) {
+          setTimeout(() => playAsset(), 0);
           const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
           setBuildState(EMPTY_BUILD);
           return advanced;
@@ -297,6 +306,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         if (!lastRecord) return prev;
         const expected = step.expected;
         if (validateMove(lastRecord, expected)) {
+          setTimeout(() => playAsset(), 0);
           const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
           setBuildState(EMPTY_BUILD);
           return advanced;
@@ -316,6 +326,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       if (!lastRecord) return prev;
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
+        setTimeout(() => playAsset(), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
