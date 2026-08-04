@@ -528,10 +528,12 @@ export function OfficialMatchCalendar({
   const upcomingMatches = filteredMatches.filter(
     (m) => m.status === 'scheduled' || m.status === 'joinable' || m.status === 'live'
   );
-  const pastMatches = filteredMatches.filter(
-    (m) => m.status === 'completed' || m.status === 'cancelled' ||
-           m.status === 'forfeited' || m.status === 'no_contest'
-  );
+  const pastMatches = filteredMatches
+    .filter(
+      (m) => m.status === 'completed' || m.status === 'cancelled' ||
+             m.status === 'forfeited' || m.status === 'no_contest'
+    )
+    .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
 
   // OM-1d: stale な scheduled/joinable match を no_contest チェック（副作用のみ・非同期）
   // 無限ループ防止:

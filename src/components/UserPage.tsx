@@ -116,7 +116,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
       from.setHours(0, 0, 0, 0);
       const to = new Date();
       to.setMonth(to.getMonth() + 3);
-      listMyOfficialMatches({ from: from.toISOString(), to: to.toISOString() }).then((res) => {
+      listMyOfficialMatches({ from: from.toISOString(), to: to.toISOString(), includeArena: true }).then((res) => {
         if ('error' in res) return;
         const omMap = new Map<string, OfficialMatchListItem>();
         for (const om of res) {
@@ -453,6 +453,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               enableEntry={false}
               filter="all"
               initialDay={new Date().getDate()}
+              includeArena={true}
             />
           </section>
         )}
