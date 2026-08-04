@@ -70,10 +70,18 @@
 }
 
 /* On wider screens show 5 columns */
-@media (min-width: 480px) {
+@media (min-width: 768px) {
   .cls-panel {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, max-content);
+    width: max-content;
+    max-width: calc(100vw - 32px);
     min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .cls-root--profile .cls-panel {
+    width: max-content;
+    max-width: calc(100vw - 32px);
   }
 }
 
