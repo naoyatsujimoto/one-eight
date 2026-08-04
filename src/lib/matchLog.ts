@@ -129,6 +129,10 @@ export async function fetchUserPageStats(_userId: string): Promise<UserPageStats
   const { data, error } = await supabase
     .rpc('get_user_match_history');
 
+  if (error) {
+    console.error('[matchLog] get_user_match_history RPC error:', error.message, { code: error.code, details: error.details });
+  }
+
   const rows: MatchLogRow[] = (!error && data) ? (data as MatchLogRow[]) : [];
 
   // 参加開始日: 最古レコードの created_at
@@ -222,6 +226,10 @@ export async function fetchUserPageStats(_userId: string): Promise<UserPageStats
 export async function fetchPublicUserPageStats(userId: string): Promise<UserPageStats> {
   const { data, error } = await supabase
     .rpc('get_public_match_logs', { target_user_id: userId });
+
+  if (error) {
+    console.error('[matchLog] get_public_match_logs RPC error:', error.message, { code: error.code, details: error.details });
+  }
 
   const rows: MatchLogRow[] = (!error && data) ? (data as MatchLogRow[]) : [];
 
@@ -357,7 +365,11 @@ export async function fetchMyStats(_userId: string): Promise<MyStats> {
   const { data, error } = await supabase
     .rpc('get_user_match_history');
 
-  if (error || !data) {
+  if (error) {
+    console.error('[matchLog] get_user_match_history RPC error (fetchMyStats):', error.message, { code: error.code, details: error.details });
+    return { total: 0, wins: 0, losses: 0, draws: 0, recent: [] };
+  }
+  if (!data) {
     return { total: 0, wins: 0, losses: 0, draws: 0, recent: [] };
   }
 
