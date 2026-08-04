@@ -395,6 +395,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     games={pageGames}
                     localMap={localMap}
                     officialGameMap={officialGameMap}
+                    currentUserId={userId}
                     onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
                     onRefresh={(record) => {
                       dismissWorker(record.game_id);
@@ -1001,12 +1002,68 @@ function TrendSection({ agg }: { agg: Aggregates }) {
   );
 }
 
+// ── resolveRecentGameDisplay: 勝敗・先後判定純粋関数 ───────────────────────────
+
+export type RecentGameDisplay = {
+  result: 'win' | 'loss' | 'draw' | 'neutral' | 'unknown';
+  side: 'black' | 'white' | null;
+};
+
+export function resolveRecentGameDisplay(
+  matchLog: MatchLogRow,
+  officialMatch: OfficialMatchListItem | undefined,
+  userId: string
+): RecentGameDisplay {
+  // official matchがある場合はofficial側を優先
+  if (officialMatch) {
+    // my_color: list_my_official_matches RPCが返すフィールド
+    // フォールバック: black_user_id === userId の場合 'black'
+    const myColorFromRpc = officialMatch.my_color;
+    const myColorFallback: 'black' | 'white' =
+      (officialMatch as unknown as { black_user_id?: string }).black_user_id === userId ? 'black' : 'white';
+    const myColor: 'black' | 'white' = myColorFromRpc ?? myColorFallback;
+    const side: 'black' | 'white' = myColor;
+
+    if (
+      officialMatch.status === 'cancelled' ||
+      officialMatch.status === 'forfeited' ||
+      officialMatch.status === 'no_contest'
+    ) {
+      return { result: 'neutral', side };
+    }
+
+    const winner = officialMatch.winner;
+    if (!winner) return { result: 'unknown', side };
+    if (winner === 'draw') return { result: 'draw', side };
+
+    const iWon =
+      (winner === 'black_user' && myColor === 'black') ||
+      (winner === 'white_user' && myColor === 'white');
+    return { result: iWon ? 'win' : 'loss', side };
+  }
+
+  // 通常対局: match_logsから判定
+  const color = matchLog.human_color;
+  if (!color) return { result: 'unknown', side: null };
+
+  const side: 'black' | 'white' = color as 'black' | 'white';
+  const winner = matchLog.winner;
+  if (!winner) return { result: 'unknown', side };
+  if (winner === 'draw') return { result: 'draw', side };
+
+  // match_logs.winner は 'black' / 'white'（コマ色）
+  // human_colorと一致すれば勝ち
+  const iWon = winner === color;
+  return { result: iWon ? 'win' : 'loss', side };
+}
+
 // ── 最近の対局テーブル ────────────────────────────────────────────────────────
 
 function RecentGamesTable({
   games,
   localMap,
   officialGameMap = new Map(),
+  currentUserId = '',
   onPostmortem,
   refreshingIds = new Set(),
   onRefresh,
@@ -1019,6 +1076,8 @@ function RecentGamesTable({
   games: MatchLogRow[];
   localMap: Map<string, GameRecord>;
   officialGameMap?: Map<string, OfficialMatchListItem>;
+  /** ログイン中のユーザー ID（公式戦先後判定に使用） */
+  currentUserId?: string;
   onPostmortem: (r: GameRecord) => void;
   refreshingIds?: Set<string>;
   onRefresh?: (r: GameRecord) => void;
@@ -1050,38 +1109,25 @@ function RecentGamesTable({
         </thead>
         <tbody>
           {games.map((r) => {
-            // ── 勝敗判定 ──────────────────────────────────────────────────────────
-            // 1) 通常ゲーム: human_color があればそちらで判定
-            const isDraw = r.winner === 'draw';
-            const isWin = !isDraw && r.human_color !== null && r.winner === r.human_color;
-            const isLoss = !isDraw && r.human_color !== null && r.winner !== null && r.winner !== r.human_color;
-
-            // 2) online_pvp 且つ human_color=null の場合: 公式戦マップでクロス参照
-            //    game_id = online_games.id = official_matches.online_game_id
-            const om = (r.mode === 'online_pvp' && r.human_color === null)
+            // ── 勝敗・先後判定: resolveRecentGameDisplay を使用 ──────────────────
+            // online_pvp で human_color=null の場合は officialGameMap を参照
+            const om = (r.mode === 'online_pvp')
               ? officialGameMap.get(r.game_id)
               : undefined;
-            const omIsWin = om !== undefined &&
-              ((om.winner === 'black_user' && om.my_color === 'black') ||
-               (om.winner === 'white_user' && om.my_color === 'white'));
-            const omIsLoss = om !== undefined &&
-              ((om.winner === 'black_user' && om.my_color === 'white') ||
-               (om.winner === 'white_user' && om.my_color === 'black'));
-            const omIsDraw = om !== undefined && om.winner === 'draw';
-            const omIsNeutral = om !== undefined &&
-              (om.status === 'no_contest' || om.status === 'cancelled' || om.status === 'forfeited');
+            // currentUserId を使用（propsで渡されたログイン中ユーザー ID）
+            const display = resolveRecentGameDisplay(r, om, currentUserId);
 
-            // 3) 結果結合
-            const effectiveWin  = isWin  || omIsWin;
-            const effectiveLoss = isLoss || omIsLoss;
-            const effectiveDraw = isDraw || omIsDraw;
-            // human_color=null 且つ公式戦データなし → 勝敗不明
-            const isUnknown = !effectiveWin && !effectiveLoss && !effectiveDraw && !omIsNeutral;
-
-            const result = effectiveDraw ? '△' : effectiveWin ? '○' : effectiveLoss ? '×' : '—';
-            const resultColor = effectiveDraw ? '#888' : effectiveWin ? '#2e7d32' : effectiveLoss ? '#c62828' : '#999';
-            void isUnknown; // lint抑制
-            const side = r.human_color === 'black' ? t.userSideBlack : r.human_color === 'white' ? t.userSideWhite : '—';
+            const result = display.result === 'draw' ? '△'
+              : display.result === 'win'  ? '○'
+              : display.result === 'loss' ? '×'
+              : '—';
+            const resultColor = display.result === 'draw'    ? '#888'
+              : display.result === 'win'  ? '#2e7d32'
+              : display.result === 'loss' ? '#c62828'
+              : '#999';
+            const side = display.side === 'black' ? t.userSideBlack
+              : display.side === 'white' ? t.userSideWhite
+              : '—';
             const modeLabel = r.mode === 'human_vs_cpu' ? t.userTypeCpu : r.mode === 'online_pvp' ? t.userTypeOnline : t.userTypeHuman;
 
             // ローカルキャッシュを優先。なければ Supabase の full_record からフォールバック
