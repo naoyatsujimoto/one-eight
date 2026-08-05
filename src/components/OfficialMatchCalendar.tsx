@@ -55,6 +55,11 @@ interface Props {
    *  Arenaモードの ranked カレンダーでは true を渡す。
    */
   includeArena?: boolean;
+  /** レイアウトバリアント。
+   *  'default' = 既存レイアウト（デフォルト・既存互換）
+   *  'profile' = UserPage v2 プロフィール用スタイル（om-root--profile クラス付与）
+   */
+  variant?: 'default' | 'profile';
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -271,6 +276,7 @@ function MiniCalendar({
   onPrevMonth,
   onNextMonth,
   onToday,
+  variant = 'default',
 }: {
   matches: OfficialMatchListItem[];
   selectedDate: number | null;
@@ -280,6 +286,7 @@ function MiniCalendar({
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
+  variant?: 'default' | 'profile';
 }) {
   // 月初の曜日（0=Sun）
   const firstDay = new Date(year, month, 1).getDay();
@@ -329,7 +336,7 @@ function MiniCalendar({
   const isCurrentMonth = year === todayYear && month === todayMonth;
 
   return (
-    <div className="om-mini-cal">
+    <div className={variant === 'profile' ? 'om-mini-cal om-mini-cal--profile' : 'om-mini-cal'}>
       <div className="om-mini-cal-nav">
         <button
           type="button"
@@ -410,6 +417,7 @@ export function OfficialMatchCalendar({
   showRecentResults = true,
   initialDay = null,
   includeArena = false,
+  variant = 'default',
 }: Props) {
   const { t, lang } = useLang();
   const [matches, setMatches] = useState<OfficialMatchListItem[]>([]);
@@ -598,7 +606,7 @@ export function OfficialMatchCalendar({
   }
 
   return (
-    <div className="om-root">
+    <div className={variant === 'profile' ? 'om-root om-root--profile' : 'om-root'}>
       {/* Mini Calendar */}
       <MiniCalendar
         matches={matches}
@@ -609,6 +617,7 @@ export function OfficialMatchCalendar({
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         onToday={handleToday}
+        variant={variant}
       />
 
       {/* Upcoming Matches */}

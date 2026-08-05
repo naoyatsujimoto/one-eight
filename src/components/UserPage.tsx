@@ -29,6 +29,7 @@ import { getMyArenaTitles, type ArenaTitle } from '../lib/arena';
 import { getUserAwards, getUserAwardSubmissions, getUserHasPriorSubmission, type UserPrizeAwardRow } from '../lib/prizeUser';
 import { PrizeClaimForm } from './PrizeClaimForm';
 import type { SubmitTaxResult } from '../lib/prizeUser';
+import './UserPage.css';
 
 
 const USER_NAME_KEY_PREFIX = 'one8_username_';
@@ -252,7 +253,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const shortId = displayUserId.slice(0, 8).toUpperCase();
 
   return (
-    <div style={s.page}>
+    <div className="up-page">
       {/* トップバー */}
       <header style={s.topbar}>
         <button type="button" onClick={onBack} style={s.backBtn}>{t.userBack}</button>
@@ -260,77 +261,81 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         <span style={{ width: 64 }} />
       </header>
 
-      <div style={s.scrollArea}>
+      <div className="up-scroll">
 
         {/* ── Section 1: プロフィールヘッダー ── */}
-        <section style={s.section}>
-          <div style={s.profileHeader}>
-            <div style={s.avatar}>{(playerName ?? 'P').slice(0, 1).toUpperCase()}</div>
-            <div style={s.profileInfo}>
-              {!viewOnly && editingName ? (
-                <div style={s.nameEditRow}>
-                  <input
-                    style={s.nameInput}
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') handleCancelEdit(); }}
-                    maxLength={30}
-                    autoFocus
-                  />
-                  <button type="button" style={s.nameBtn} onClick={handleSaveName}>{t.userSaveName}</button>
-                  <button type="button" style={{ ...s.nameBtn, ...s.nameBtnCancel }} onClick={handleCancelEdit}>{t.userCancelEdit}</button>
+        <section className="up-section">
+          <div className="up-identity">
+            <div className="up-avatar-row">
+              <div className="up-avatar">{(playerName ?? 'P').slice(0, 1).toUpperCase()}</div>
+              <div className="up-profile-info">
+                {!viewOnly && editingName ? (
+                  <div className="up-name-edit-row">
+                    <input
+                      className="up-name-input"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') handleCancelEdit(); }}
+                      maxLength={30}
+                      autoFocus
+                    />
+                    <button type="button" className="up-name-save-btn" onClick={handleSaveName}>{t.userSaveName}</button>
+                    <button type="button" className="up-name-cancel-btn" onClick={handleCancelEdit}>{t.userCancelEdit}</button>
+                  </div>
+                ) : (
+                  <div className="up-name-row">
+                    <span className="up-player-name">{playerName}</span>
+                    {!viewOnly && <button type="button" className="up-edit-name-btn" onClick={handleEditName}>{t.userEditName}</button>}
+                  </div>
+                )}
+                <div className="up-meta-row">
+                  <span>ID {shortId}</span>
+                  {!viewOnly && (
+                    <>
+                      <span>·</span>
+                      <CompactLanguageSelector
+                        selectedLocale={lang as LocaleCode}
+                        onSelect={code => setLangWithSync(code)}
+                        className="cls-root--profile"
+                      />
+                    </>
+                  )}
                 </div>
-              ) : (
-                <div style={s.nameRow}>
-                  <span style={s.playerName}>{playerName}</span>
-                  {!viewOnly && <button type="button" style={s.editNameBtn} onClick={handleEditName}>{t.userEditName}</button>}
+              </div>
+            </div>
+
+            <div className="up-facts-grid">
+              <ProfileItem label={t.userJoined} value={
+                stats?.joinedAt
+                  ? formatDate(stats.joinedAt, lang)
+                  : '—'
+              } />
+              <ProfileItem label={t.userRating} value={`— (${t.onlineComingSoon})`} muted />
+              <ProfileItem label={t.userDomesticRank} value={`— (${t.onlineComingSoon})`} muted />
+              <ProfileItem label={t.userSeasonRank} value={`— (${t.onlineComingSoon})`} muted />
+            </div>
+
+            {/* Pro ステータスバナー: 非Proユーザー向け Upgrade 導線のみ（自分のページのみ） */}
+            {!viewOnly && !proActive && (
+              <div className="up-pro-banner">
+                <div>
+                  <div className="up-pro-banner-title">{t.proUpgradeBannerTitle}</div>
+                  <div className="up-pro-banner-desc">{t.proUpgradeBannerDesc}</div>
                 </div>
-              )}
-              <div style={s.playerId}>ID: {shortId}</div>
-            </div>
-          </div>
-          <div style={s.profileGrid}>
-            <ProfileItem label={t.userJoined} value={
-              stats?.joinedAt
-                ? formatDate(stats.joinedAt, lang)
-                : '—'
-            } />
-            <ProfileItem label={t.userRating} value={`— (${t.onlineComingSoon})`} muted />
-            <ProfileItem label={t.userDomesticRank} value={`— (${t.onlineComingSoon})`} muted />
-            <ProfileItem label={t.userSeasonRank} value={`— (${t.onlineComingSoon})`} muted />
-          </div>
-
-          {/* Pro ステータスバナー: 非Proユーザー向け Upgrade 導線のみ（自分のページのみ） */}
-          {!viewOnly && !proActive && (
-            <div style={s.proUpgradeBanner}>
-              <div>
-                <div style={s.proUpgradeTitle}>{t.proUpgradeBannerTitle}</div>
-                <div style={s.proUpgradeDesc}>{t.proUpgradeBannerDesc}</div>
+                <a href="/pro.html" className="up-pro-banner-btn">{t.proUpgradeBtn}</a>
               </div>
-              <a href="/pro.html" style={s.proUpgradeBtn}>{t.proUpgradeBtn}</a>
-            </div>
-          )}
+            )}
 
-          {/* 言語設定・公開設定（自分のページのみ） */}
-          {!viewOnly && (
-            <>
-              <div style={s.langSettingRow}>
-                <span style={s.langSettingLabel}>{t.langLabel}</span>
-                {/* Compact language selector — single pill, expands on tap */}
-                <CompactLanguageSelector
-                  selectedLocale={lang as LocaleCode}
-                  onSelect={code => setLangWithSync(code)}
-                  className="cls-root--profile"
-                />
-              </div>
-              <div style={s.langSettingRow}>
-                <span style={s.langSettingLabel}>{t.statsVisibility}</span>
-                <div style={s.langBtnGroup}>
+            {/* 公開設定（自分のページのみ）*/}
+            {!viewOnly && (
+              <div className="up-visibility-row">
+                <span className="up-visibility-label">{t.statsVisibility}</span>
+                <div className="up-segment">
                   {([true, false] as const).map((val) => (
                     <button
                       key={String(val)}
                       type="button"
-                      style={{ ...s.langBtn, ...(statsPublic === val ? s.langBtnActive : {}) }}
+                      className={`up-segment-btn${statsPublic === val ? ' up-segment-btn--active' : ''}`}
                       onClick={() => handleStatsPublicChange(val)}
                     >
                       {val ? t.statsPublic : t.statsPrivate}
@@ -338,14 +343,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                   ))}
                 </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </section>
 
         {/* viewOnly + 非公開: プライベートメッセージを表示して以降のセクションを非表示 */}
         {viewOnly && !statsPublic && (
-          <section style={s.section}>
-            <p style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'center', padding: '2rem 0' }}>
+          <section className="up-section">
+            <p className="up-private-msg">
               {t.statsPrivateMsg}
             </p>
           </section>
@@ -354,11 +359,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
         {/* ── Section 2: 成績サマリー ── */}
         {(!viewOnly || statsPublic) && (
         <>
-        <section style={s.section}>
+        <section className="up-section">
           <SectionTitle title={t.userProfile} />
           {loading ? <Muted text={t.loading} /> : stats && (
             <>
-              <div style={s.statGrid}>
+              <div className="up-stat-grid">
                 <StatCard label={t.userTotalGames} value={stats.total} />
                 <StatCard label={t.userWinRate} value={pct(stats.winRate)} />
                 <StatCard label={t.userBlackWinRate} value={pct(stats.blackWinRate)} />
@@ -366,32 +371,33 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                 <StatCard label={t.userCpuWinRate} value={pct(stats.cpuWinRate)} />
                 <StatCard label={t.userPvpWinRate} value={pct(stats.pvpWinRate)} />
               </div>
-
             </>
           )}
         </section>
 
-        {/* ── Section 3: レーティング推移（Coming Soon）── */}
+        {/* ── Section 3: レーティング推移 ── */}
         {!viewOnly && (
-          <section style={s.section}>
-            <SectionTitle title={t.userRatingHistory} soon />
-            <Muted text={t.onlineComingSoon} />
+          <section className="up-section">
+            <SectionTitle title={t.userRatingHistory} />
+            <div className="up-rating-placeholder">
+              <span className="up-rating-placeholder-text">rating chart</span>
+            </div>
           </section>
         )}
 
         {/* ── Section 5: 最近の対局（viewOnly時は非表示）── */}
         {!viewOnly && (
-          <section style={s.section}>
+          <section className="up-section">
             <SectionTitle title={t.userRecentGames} />
             {loading ? <Muted text={t.loading} /> : stats && stats.recentGames.length > 0 ? (() => {
-              const PAGE_SIZE = 20;
+              const PAGE_SIZE = 8;
               const allGames = stats.recentGames;
               const totalPages = Math.ceil(allGames.length / PAGE_SIZE);
               const safePage = Math.min(recentGamesPage, totalPages - 1);
               const pageGames = allGames.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
               return (
                 <>
-                  <RecentGamesTable
+                  <RecentGamesCard
                     games={pageGames}
                     localMap={localMap}
                     officialGameMap={officialGameMap}
@@ -414,23 +420,23 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     proActive={proActive}
                   />
                   {totalPages > 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
+                    <div className="up-pagination">
                       <button
                         type="button"
+                        className="up-pagination-prev"
                         onClick={() => setRecentGamesPage((p) => Math.max(0, p - 1))}
                         disabled={safePage === 0}
-                        style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: 4, border: '1px solid #ccc', background: safePage === 0 ? '#f5f5f5' : '#fff', cursor: safePage === 0 ? 'default' : 'pointer', color: safePage === 0 ? '#aaa' : '#333' }}
                       >
                         {t.userPrevPage}
                       </button>
-                      <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                      <span className="up-pagination-label">
                         {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, allGames.length)} / {allGames.length}
                       </span>
                       <button
                         type="button"
+                        className="up-pagination-next"
                         onClick={() => setRecentGamesPage((p) => Math.min(totalPages - 1, p + 1))}
                         disabled={safePage === totalPages - 1}
-                        style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: 4, border: '1px solid #ccc', background: safePage === totalPages - 1 ? '#f5f5f5' : '#fff', cursor: safePage === totalPages - 1 ? 'default' : 'pointer', color: safePage === totalPages - 1 ? '#aaa' : '#333' }}
                       >
                         {t.userNextPage}
                       </button>
@@ -444,86 +450,58 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
 
         {/* ── Section 6: Official Match Calendar (OM-1b) ── */}
         {!viewOnly && (
-          <section style={s.section}>
+          <section className="up-section">
             <SectionTitle title={t.omOfficialMatches} />
             {/* STATS / UserPage からは入室不可。Online Play 誘導のみ表示。 */}
             <p style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.5rem' }}>
               {t.officialMatchEnterFromOnlinePlay}
             </p>
             <OfficialMatchCalendar
+              variant="profile"
               enableEntry={false}
-              filter="all"
-              initialDay={new Date().getDate()}
               includeArena={true}
+              onEnterOnlineGame={onEnterOnlineGame}
+              initialDay={new Date().getDate()}
+              showRecentResults={true}
             />
           </section>
         )}
 
         {/* ── Section 6.5: Arena Titles (E-6) ── */}
         {!viewOnly && (
-          <section style={s.section}>
+          <section className="up-section">
             <SectionTitle title={t.arenaArenaTitles} />
             {arenaTitles.length === 0 ? (
               <Muted text={t.arenaNoArenaTitles} />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div className="up-arena-section">
                 {arenaTitles.map((title) => {
                   const code = title.arena_code?.toUpperCase();
                   const badgeSrc = code === 'ELEPHANT' ? '/badges/elephant_art.png'
                                  : code === 'JAGUAR'   ? '/badges/jaguar_art.png'
                                  : null;
                   return (
-                  <div
-                    key={title.arena_id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.5rem 0.75rem',
-                      background: '#fdf8f0',
-                      borderRadius: 8,
-                      border: '1px solid #e8d9b0',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div key={title.arena_id} className="up-arena-card">
                       {badgeSrc && (
                         <img
                           src={badgeSrc}
                           alt={code}
-                          width={40}
-                          height={40}
-                          style={{
-                            flexShrink: 0,
-                            objectFit: 'cover',
-                            borderRadius: '50%',
-                            border: '2px solid rgb(28,34,70)',
-                            outline: '1px solid rgb(28,34,70)',
-                            outlineOffset: '2px',
-                          }}
+                          className="up-arena-img"
                           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                         />
                       )}
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#7a5c1e' }}>
-                          {title.title_name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#999', marginTop: 2 }}>
-                          {t.arenaTitleCurrentHolder}
-                        </div>
+                      <div className="up-arena-body">
+                        <div className="up-arena-title-name">{title.title_name}</div>
+                        <div className="up-arena-holder">{t.arenaTitleCurrentHolder}</div>
+                      </div>
+                      <div className="up-arena-date">
+                        {new Date(title.started_at).toLocaleDateString(getIntlLocale(lang), {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </div>
                     </div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: '#b0860a',
-                      fontWeight: 500,
-                    }}>
-                      {new Date(title.started_at).toLocaleDateString(getIntlLocale(lang), {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </div>
-                  </div>
                   );
                 })}
               </div>
@@ -533,7 +511,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
 
         {/* ── Section 6.8: Reward / Prize (RP-4) ── */}
         {!viewOnly && (
-          <section style={s.section}>
+          <section className="up-section">
             <SectionTitle title={t.prizeSectionTitle} />
             <PrizeSection
               awards={prizeAwards}
@@ -548,17 +526,22 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           </section>
         )}
 
-        {/* ── Section 7: 大会実績（Coming Soon）── */}
-        <section style={s.section}>
-          <SectionTitle title={t.userTournamentHistory} soon />
-          <Muted text={t.onlineComingSoon} />
+        {/* ── Section 7 & 8: Coming Soon ── */}
+        <section className="up-section">
+          <SectionTitle title={t.userTournamentHistory} />
+          <div className="up-coming-soon-list">
+            <div className="up-coming-soon-item">
+              <span className="up-coming-soon-label">{t.userTournamentHistory}</span>
+              <span className="up-coming-soon-badge">COMING SOON</span>
+            </div>
+            <div className="up-coming-soon-item">
+              <span className="up-coming-soon-label">{t.userBadges}</span>
+              <span className="up-coming-soon-badge">COMING SOON</span>
+            </div>
+          </div>
         </section>
 
-        {/* ── Section 8: 称号 / バッジ（Coming Soon）── */}
-        <section style={s.section}>
-          <SectionTitle title={t.userBadges} soon />
-          <Muted text={t.onlineComingSoon} />
-        </section>
+        {/* 旧Section 8 は上記のup-coming-soon-listに統合済み */}
 
         </>
         )}
@@ -915,18 +898,18 @@ const sp: Record<string, React.CSSProperties> = {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div style={s.statCard}>
-      <div style={s.statValue}>{value}</div>
-      <div style={s.statLabel}>{label}</div>
+    <div className="up-stat-card">
+      <div className="up-stat-value">{value}</div>
+      <div className="up-stat-label">{label}</div>
     </div>
   );
 }
 
 function ProfileItem({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div style={s.profileItem}>
-      <div style={{ ...s.profileItemLabel }}>{label}</div>
-      <div style={{ ...s.profileItemValue, ...(muted ? { color: '#aaa' } : {}) }}>{value}</div>
+    <div className="up-fact-item">
+      <div className="up-fact-label">{label}</div>
+      <div className={`up-fact-value${muted ? ' up-fact-value--muted' : ''}`}>{value}</div>
     </div>
   );
 }
@@ -1215,14 +1198,165 @@ function RecentGamesTable({
   );
 }
 
+// ── RecentGamesCard (v2 カードリスト形式) ─────────────────────────────────────────────
+
+function RecentGamesCard({
+  games,
+  localMap,
+  officialGameMap = new Map(),
+  currentUserId = '',
+  onPostmortem,
+  refreshingIds = new Set(),
+  onRefresh,
+  getStatus,
+  onAnalyzeClick,
+  analyzeCompletedIds = new Set(),
+  refreshCompletedIds = new Set(),
+  proActive = false,
+}: {
+  games: MatchLogRow[];
+  localMap: Map<string, GameRecord>;
+  officialGameMap?: Map<string, OfficialMatchListItem>;
+  currentUserId?: string;
+  onPostmortem: (r: GameRecord) => void;
+  refreshingIds?: Set<string>;
+  onRefresh?: (r: GameRecord) => void;
+  getStatus?: (gameId: string) => import('../hooks/usePostmortemWorker').AnalysisJobStatus;
+  onAnalyzeClick?: (r: GameRecord) => void;
+  analyzeCompletedIds?: Set<string>;
+  refreshCompletedIds?: Set<string>;
+  proActive?: boolean;
+}) {
+  const { t, lang } = useLang();
+  return (
+    <div className="up-games-card">
+      {!proActive && (
+        <div style={s.upgradeBanner}>
+          <span>{t.proUpgradeGames}</span>
+          <a href="/pro.html" style={s.upgradeBannerLink}>{t.proUpgradeBtn} →</a>
+        </div>
+      )}
+      {games.map((r) => {
+        const om = (r.mode === 'online_pvp')
+          ? officialGameMap.get(r.game_id)
+          : undefined;
+        const display = resolveRecentGameDisplay(r, om, currentUserId);
+
+        const resultSymbol = display.result === 'win'  ? '○'
+          : display.result === 'loss' ? '×'
+          : display.result === 'draw' ? '△'
+          : '—';
+        const badgeClass = display.result === 'win'  ? 'up-game-result-badge up-game-result-badge--win'
+          : display.result === 'loss' ? 'up-game-result-badge up-game-result-badge--loss'
+          : display.result === 'draw' ? 'up-game-result-badge up-game-result-badge--draw'
+          : 'up-game-result-badge up-game-result-badge--neutral';
+
+        const side = display.side === 'black' ? t.userSideBlack
+          : display.side === 'white' ? t.userSideWhite
+          : null;
+        const modeLabel = r.mode === 'human_vs_cpu' ? t.userTypeCpu
+          : r.mode === 'online_pvp' ? t.userTypeOnline
+          : t.userTypeHuman;
+        const detailParts = [
+          side,
+          r.move_count != null ? `${r.move_count}手` : null,
+          modeLabel,
+        ].filter(Boolean).join(' · ');
+
+        const local = localMap.get(r.game_id);
+        const remoteRecord: GameRecord | null =
+          !local && r.full_record && r.full_record.length > 0
+            ? {
+                game_id: r.game_id,
+                started_at: r.started_at,
+                ended_at: r.ended_at,
+                mode: r.mode as GameRecord['mode'],
+                human_color: r.human_color as GameRecord['human_color'],
+                winner: r.winner as GameRecord['winner'],
+                move_count: r.move_count,
+                first_3_plies: [],
+                full_record: r.full_record,
+              }
+            : null;
+        const gameRecord = local ?? remoteRecord;
+
+        function handleAnalyze() {
+          if (!gameRecord) return;
+          if (!local && remoteRecord) { cacheGameRecord(remoteRecord); }
+          onPostmortem(gameRecord);
+        }
+
+        return (
+          <div key={r.game_id} className="up-game-row">
+            <div className={badgeClass}>{resultSymbol}</div>
+            <div className="up-game-info">
+              <span className="up-game-date">{r.created_at ? formatDate(r.created_at, lang) : '—'}</span>
+              <span className="up-game-detail">{detailParts || '—'}</span>
+            </div>
+            <div className="up-game-actions">
+              {gameRecord ? (
+                <>
+                  {(() => {
+                    const st = getStatus ? getStatus(r.game_id) : { status: 'idle' as const };
+                    const busy = st.status === 'queued' || st.status === 'running';
+                    const isDone = analyzeCompletedIds.has(r.game_id);
+                    const isError = st.status === 'error';
+                    const label = busy
+                      ? (st.status === 'queued' ? (t.analyzing + '…') : t.analyzing)
+                      : isDone
+                      ? t.analysisDone
+                      : isError
+                      ? (t.analyze + ' ↩')
+                      : t.analyze;
+                    const btnClass = busy
+                      ? 'up-pill-btn up-pill-btn--disabled'
+                      : isDone
+                      ? 'up-pill-btn up-pill-btn--done'
+                      : isError
+                      ? 'up-pill-btn up-pill-btn--error'
+                      : 'up-pill-btn';
+                    return (
+                      <button
+                        type="button"
+                        className={btnClass}
+                        disabled={busy}
+                        onClick={() => onAnalyzeClick ? onAnalyzeClick(gameRecord) : handleAnalyze()}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })()}
+                  {onRefresh && (
+                    <button
+                      type="button"
+                      className={refreshingIds.has(r.game_id) ? 'up-pill-btn up-pill-btn--disabled' : refreshCompletedIds.has(r.game_id) ? 'up-pill-btn up-pill-btn--done' : 'up-pill-btn'}
+                      disabled={refreshingIds.has(r.game_id)}
+                      onClick={() => onRefresh(gameRecord)}
+                    >
+                      {refreshingIds.has(r.game_id)
+                        ? t.refreshing
+                        : refreshCompletedIds.has(r.game_id)
+                        ? t.refreshDone
+                        : t.refresh}
+                    </button>
+                  )}
+                </>
+              ) : <span className="up-game-dash">—</span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── 共通部品 ──────────────────────────────────────────────────────────────────
 
 function SectionTitle({ title, soon }: { title: string; soon?: boolean }) {
-  const { t } = useLang();
   return (
-    <div style={s.sectionTitleRow}>
-      <span style={s.sectionTitle}>{title}</span>
-      {soon && <span style={s.soonBadge}>{t.onlineComingSoon}</span>}
+    <div className="up-section-header">
+      <h2 className="up-section-title">{title}</h2>
+      {soon && <span className="up-section-soon">COMING SOON</span>}
     </div>
   );
 }
