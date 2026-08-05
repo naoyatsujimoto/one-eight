@@ -634,4 +634,15 @@ export const KO_TRANSLATIONS = {
     taxOnFileDesc: '이전 제출 자료가 확인되었습니다. 사용자 ID로 확인됩니다.',
     updateInfoIfChanged: '정보 업데이트 (변경 사항 있을 시)',
 
+    // AdminInbox (MAIL 10개 언어 지원)
+    inboxTitle: '메일',
+    inboxLoading: '불러오는 중…',
+    inboxNoMessages: '메시지가 없습니다',
+    inboxLoadFailed: '메시지를 불러오지 못했습니다',
+    inboxCloseLabel: '닫기',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `알림：${arenaLabel} Master 보상` : '알림：Master 보상',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `축하합니다.\n\n${arenaLabel} Arena Master 관련 대국 결과를 바탕으로 Reward / Prize 수령 자격이 부여되었습니다.\n\nReward / Prize를 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Reward / Prize 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`
+      : `축하합니다.\n\nArena Master 관련 대국 결과를 바탕으로 Reward / Prize 수령 자격이 부여되었습니다.\n\nReward / Prize를 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Reward / Prize 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`,
+
 } satisfies Translations;

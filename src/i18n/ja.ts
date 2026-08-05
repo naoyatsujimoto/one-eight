@@ -651,4 +651,15 @@ export const JA_TRANSLATIONS = {
     taxOnFileDesc: '過去の提出が見つかりました。User ID で WINNERS FILE から照合されます。',
     updateInfoIfChanged: '情報を更新する（変更がある場合）',
 
+    // AdminInbox (MAIL 10言語対応)
+    inboxTitle: 'MAIL',
+    inboxLoading: '読み込み中…',
+    inboxNoMessages: 'メッセージはありません',
+    inboxLoadFailed: 'メッセージの読み込みに失敗しました',
+    inboxCloseLabel: '閉じる',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `お知らせ：${arenaLabel} Master 報酬` : 'お知らせ：Master 報酬',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `おめでとうございます。\n\n${arenaLabel} Arena Master に関連する対局結果に基づき、Reward / Prize の受給資格があります。\n\nReward / Prize を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Reward / Prize セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`
+      : `おめでとうございます。\n\nArena Master に関連する対局結果に基づき、Reward / Prize の受給資格があります。\n\nReward / Prize を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Reward / Prize セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`,
+
 } satisfies Translations;

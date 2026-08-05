@@ -634,4 +634,15 @@ export const ES_TRANSLATIONS = {
     taxOnFileDesc: 'Envio previo encontrado. Se verificará con tu ID de usuario.',
     updateInfoIfChanged: 'Actualizar información (si ha cambiado)',
 
+    // AdminInbox (MAIL soporte 10 idiomas)
+    inboxTitle: 'CORREO',
+    inboxLoading: 'Cargando…',
+    inboxNoMessages: 'Sin mensajes',
+    inboxLoadFailed: 'Error al cargar los mensajes',
+    inboxCloseLabel: 'Cerrar',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Aviso: Recompensa Master ${arenaLabel}` : 'Aviso: Recompensa Master',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `Felicitaciones.\n\nBasado en tu resultado en una partida relacionada con el Arena Master de ${arenaLabel}, eres elegible para un Reward / Prize.\n\nPara recibir el Reward / Prize, debes enviar la información de pago, la confirmación fiscal y un correo electrónico de recepción de PayPal.\n\nEnvía la información requerida desde la sección Reward / Prize en tu User Page.\n\nUna vez que la información sensible enviada se guarde como Winner File, generalmente será eliminada de la base de datos en línea en un plazo de 72 horas como medida de seguridad de la información.`
+      : `Felicitaciones.\n\nBasado en tu resultado en una partida relacionada con el Arena Master, eres elegible para un Reward / Prize.\n\nPara recibir el Reward / Prize, debes enviar la información de pago, la confirmación fiscal y un correo electrónico de recepción de PayPal.\n\nEnvía la información requerida desde la sección Reward / Prize en tu User Page.\n\nUna vez que la información sensible enviada se guarde como Winner File, generalmente será eliminada de la base de datos en línea en un plazo de 72 horas como medida de seguridad de la información.`,
+
 } satisfies Translations;

@@ -4,17 +4,15 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLang } from '../lib/lang';
-import type { Lang } from '../lib/lang';
+import type { AdminMessageRow } from '../lib/adminMessageI18n';
+import { resolveAdminMessageContent } from '../lib/adminMessageI18n';
 
-interface AdminMessage {
+type AdminMessage = AdminMessageRow & {
   id: string;
-  title: string;
-  body: string;
   target: string;
   read_by: string[];
   created_at: string;
-  translations?: Record<Lang, { title: string; body: string }> | null;
-}
+};
 
 interface Props {
   userId: string;
@@ -24,15 +22,16 @@ interface Props {
 }
 
 export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }: Props) {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   async function load() {
     let query = supabase
       .from('admin_messages')
-      .select('id, title, body, target, read_by, created_at, translations')
+      .select('id, title, body, target, read_by, created_at, translations, message_key, message_params')
       .order('created_at', { ascending: false });
 
     // Only show messages created after the user confirmed their email
@@ -44,6 +43,8 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
     if (!error && data) {
       setMessages(data as AdminMessage[]);
       onUnreadChange?.();
+    } else if (error) {
+      setLoadError(true);
     }
     setLoading(false);
   }
@@ -64,23 +65,24 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
   }
 
   function getLocalizedTitle(msg: AdminMessage): string {
-    return msg.translations?.[lang]?.title ?? msg.title;
+    return resolveAdminMessageContent(msg, lang, t).title;
   }
   function getLocalizedBody(msg: AdminMessage): string {
-    return msg.translations?.[lang]?.body ?? msg.body;
+    return resolveAdminMessageContent(msg, lang, t).body;
   }
 
   return (
     <div style={s.overlay} onClick={onClose}>
       <div style={s.card} onClick={(e) => e.stopPropagation()}>
         <div style={s.header}>
-          <span style={s.title}>INBOX</span>
-          <button type="button" onClick={onClose} style={s.closeBtn}>✕</button>
+          <span style={s.title}>{t.inboxTitle}</span>
+          <button type="button" onClick={onClose} style={s.closeBtn} aria-label={t.inboxCloseLabel}>✕</button>
         </div>
 
-        {loading && <p style={s.muted}>Loading…</p>}
-        {!loading && messages.length === 0 && (
-          <p style={s.muted}>No messages</p>
+        {loading && <p style={s.muted}>{t.inboxLoading}</p>}
+        {!loading && loadError && <p style={s.muted}>{t.inboxLoadFailed}</p>}
+        {!loading && !loadError && messages.length === 0 && (
+          <p style={s.muted}>{t.inboxNoMessages}</p>
         )}
 
         <div style={s.list}>
@@ -99,7 +101,7 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
                     {getLocalizedTitle(msg)}
                   </span>
                   <span style={s.itemDate}>
-                    {new Date(msg.created_at).toLocaleDateString('ja-JP')}
+                    {new Date(msg.created_at).toLocaleDateString(lang === 'ja' ? 'ja-JP' : lang === 'zh-Hans' || lang === 'zh-Hant' ? 'zh' : lang === 'ko' ? 'ko-KR' : 'en-US')}
                   </span>
                 </div>
                 {isOpen && (

@@ -627,4 +627,15 @@ export const IT_TRANSLATIONS = {
     taxOnFileDesc: 'Invio precedente trovato. Verifica tramite il tuo ID utente.',
     updateInfoIfChanged: 'Aggiorna informazioni (se modificate)',
 
+    // AdminInbox (MAIL supporto 10 lingue)
+    inboxTitle: 'POSTA',
+    inboxLoading: 'Caricamento…',
+    inboxNoMessages: 'Nessun messaggio',
+    inboxLoadFailed: 'Caricamento messaggi non riuscito',
+    inboxCloseLabel: 'Chiudi',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Avviso: Ricompensa Master ${arenaLabel}` : 'Avviso: Ricompensa Master',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `Congratulazioni.\n\nIn base al tuo risultato in una partita relativa all'Arena Master di ${arenaLabel}, sei idoneo/a a ricevere una Reward / Prize.\n\nPer ricevere la Reward / Prize, devi inviare le informazioni di pagamento, la conferma fiscale e un indirizzo email di ricezione PayPal.\n\nInvia le informazioni richieste dalla sezione Reward / Prize nella tua User Page.\n\nDopo che le informazioni sensibili inviate vengono salvate come Winner File, verranno generalmente eliminate dal database online entro 72 ore come misura di sicurezza delle informazioni.`
+      : `Congratulazioni.\n\nIn base al tuo risultato in una partita relativa all'Arena Master, sei idoneo/a a ricevere una Reward / Prize.\n\nPer ricevere la Reward / Prize, devi inviare le informazioni di pagamento, la conferma fiscale e un indirizzo email di ricezione PayPal.\n\nInvia le informazioni richieste dalla sezione Reward / Prize nella tua User Page.\n\nDopo che le informazioni sensibili inviate vengono salvate come Winner File, verranno generalmente eliminate dal database online entro 72 ore come misura di sicurezza delle informazioni.`,
+
 } satisfies Translations;

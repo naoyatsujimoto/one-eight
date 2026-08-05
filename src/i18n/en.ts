@@ -672,4 +672,15 @@ export const EN_TRANSLATIONS = {
     taxOnFile: 'Tax & Payment Info on File',
     taxOnFileDesc: 'Previous submission found. Naoya will verify using your User ID in the WINNERS FILE.',
     updateInfoIfChanged: 'Update Info (if changed)',
+
+    // AdminInbox (MAIL 10-language support)
+    inboxTitle: 'MAIL',
+    inboxLoading: 'Loading\u2026',
+    inboxNoMessages: 'No messages',
+    inboxLoadFailed: 'Failed to load messages',
+    inboxCloseLabel: 'Close',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Notice: ${arenaLabel} Master Reward` : 'Notice: Master Reward',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `Congratulations.\n\nBased on your result in an Arena Master-related match for ${arenaLabel}, you are eligible for a Reward / Prize.\n\nTo receive the Reward / Prize, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Reward / Prize section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`
+      : `Congratulations.\n\nBased on your result in an Arena Master-related match, you are eligible for a Reward / Prize.\n\nTo receive the Reward / Prize, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Reward / Prize section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`,
 } as const;

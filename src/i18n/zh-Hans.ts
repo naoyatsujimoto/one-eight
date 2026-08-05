@@ -634,4 +634,15 @@ export const ZH_HANS_TRANSLATIONS = {
     taxOnFileDesc: '找到先前提交的资料，将通过您的用户 ID 进行核对。',
     updateInfoIfChanged: '更新信息（如已变更）',
 
+    // AdminInbox (MAIL 十语言支持)
+    inboxTitle: '邮件',
+    inboxLoading: '加载中…',
+    inboxNoMessages: '暂无消息',
+    inboxLoadFailed: '消息加载失败',
+    inboxCloseLabel: '关闭',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `通知：${arenaLabel} Master 奖励` : '通知：Master 奖励',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `恭喜您。\n\n根据您在 ${arenaLabel} Arena Master 相关对局中的成绩，您有资格领取 Reward / Prize。\n\n领取 Reward / Prize 需提交收款信息、税务确认及 PayPal 收款邮符1。\n\n请从 User Page 的 Reward / Prize 栏目提交所需信息。\n\n提交的敏感信息保存为 Winner File 后，作为信息安全措施，将在 72 小时内从在线数据库中删除。`
+      : `恭喜您。\n\n根据您在 Arena Master 相关对局中的成绩，您有资格领取 Reward / Prize。\n\n领取 Reward / Prize 需提交收款信息、税务确认及 PayPal 收款邮符1。\n\n请从 User Page 的 Reward / Prize 栏目提交所需信息。\n\n提交的敏感信息保存为 Winner File 后，作为信息安全措施，将在 72 小时内从在线数据库中删除。`,
+
 } satisfies Translations;

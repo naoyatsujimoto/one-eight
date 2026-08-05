@@ -627,4 +627,15 @@ export const FR_TRANSLATIONS = {
     taxOnFileDesc: 'Soumission précédente trouvée. Vérification via votre ID utilisateur.',
     updateInfoIfChanged: 'Mettre à jour les informations (si modifiées)',
 
+    // AdminInbox (MAIL prise en charge de 10 langues)
+    inboxTitle: 'COURRIER',
+    inboxLoading: 'Chargement…',
+    inboxNoMessages: 'Aucun message',
+    inboxLoadFailed: 'Échec du chargement des messages',
+    inboxCloseLabel: 'Fermer',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Avis : Récompense Master ${arenaLabel}` : 'Avis : Récompense Master',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `Félicitations.\n\nEn fonction de votre résultat lors d'un match lié à l'Arena Master de ${arenaLabel}, vous êtes éligible à une Reward / Prize.\n\nPour recevoir la Reward / Prize, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Reward / Prize de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`
+      : `Félicitations.\n\nEn fonction de votre résultat lors d'un match lié à l'Arena Master, vous êtes éligible à une Reward / Prize.\n\nPour recevoir la Reward / Prize, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Reward / Prize de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`,
+
 } satisfies Translations;

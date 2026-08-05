@@ -657,4 +657,15 @@ export const ZH_HANT_TRANSLATIONS = {
     taxOnFileDesc: '找到先前的提交資料。將透過您的用戶 ID 認證。',
     updateInfoIfChanged: '更新資訊（若已變更）',
 
+    // AdminInbox (MAIL 十語言支援)
+    inboxTitle: '郵件',
+    inboxLoading: '載入中…',
+    inboxNoMessages: '沒有訊息',
+    inboxLoadFailed: '訊息載入失敗',
+    inboxCloseLabel: '關閉',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `通知：${arenaLabel} Master 獎勵` : '通知：Master 獎勵',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `恭喜您。\n\n根據您在 ${arenaLabel} Arena Master 相關對局中的成績，您有資格領取 Reward / Prize。\n\n領取 Reward / Prize 需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Reward / Prize 區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`
+      : `恭喜您。\n\n根據您在 Arena Master 相關對局中的成績，您有資格領取 Reward / Prize。\n\n領取 Reward / Prize 需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Reward / Prize 區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`,
+
 } satisfies Translations;

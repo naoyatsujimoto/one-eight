@@ -627,4 +627,15 @@ export const DE_TRANSLATIONS = {
     taxOnFileDesc: 'Frühere Einreichung gefunden. Verifizierung über Ihre Benutzer-ID.',
     updateInfoIfChanged: 'Informationen aktualisieren (bei Änderungen)',
 
+    // AdminInbox (MAIL 10-Sprachen-Unterstützung)
+    inboxTitle: 'POST',
+    inboxLoading: 'Wird geladen…',
+    inboxNoMessages: 'Keine Nachrichten',
+    inboxLoadFailed: 'Nachrichten konnten nicht geladen werden',
+    inboxCloseLabel: 'Schließen',
+    arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Hinweis: ${arenaLabel} Master-Belohnung` : 'Hinweis: Master-Belohnung',
+    arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
+      ? `Herzlichen Glückwunsch.\n\nAufgrund deines Ergebnisses in einem Arena-Master-bezogenen Spiel für ${arenaLabel} bist du berechtigt, eine Reward / Prize zu erhalten.\n\nUm die Reward / Prize zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Reward / Prize auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`
+      : `Herzlichen Glückwunsch.\n\nAufgrund deines Ergebnisses in einem Arena-Master-bezogenen Spiel bist du berechtigt, eine Reward / Prize zu erhalten.\n\nUm die Reward / Prize zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Reward / Prize auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`,
+
 } satisfies Translations;

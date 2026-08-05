@@ -617,3 +617,100 @@ describe('Phase 4最終補正 — 構造テスト', () => {
     }
   });
 });
+
+// ─── 21. MAIL 10言語対応 — AdminInbox キーテスト ───────────────────────────────
+
+describe('MAIL 10言語対応 — AdminInbox keys', () => {
+  const INBOX_STRING_KEYS = [
+    'inboxTitle',
+    'inboxLoading',
+    'inboxNoMessages',
+    'inboxLoadFailed',
+    'inboxCloseLabel',
+  ] as const;
+
+  const INBOX_FN_KEYS = [
+    'arenaMasterRewardTitle',
+    'arenaMasterRewardBody',
+  ] as const;
+
+  for (const locale of ALL_LOCALES) {
+    it(`${locale}: all inbox string keys present and non-empty`, () => {
+      const t = resolveUiTranslations(locale) as Record<string, unknown>;
+      for (const key of INBOX_STRING_KEYS) {
+        expect(t[key], `key ${key} in ${locale}`).toBeDefined();
+        expect(typeof t[key], `key ${key} in ${locale} should be string`).toBe('string');
+        expect((t[key] as string).length, `key ${key} in ${locale} should be non-empty`).toBeGreaterThan(0);
+      }
+    });
+
+    it(`${locale}: arenaMasterRewardTitle / Body are functions`, () => {
+      const t = resolveUiTranslations(locale) as Record<string, unknown>;
+      for (const key of INBOX_FN_KEYS) {
+        expect(t[key], `key ${key} in ${locale}`).toBeDefined();
+        expect(typeof t[key], `key ${key} in ${locale} should be function`).toBe('function');
+      }
+    });
+
+    it(`${locale}: arenaMasterRewardTitle with arenaLabel returns non-empty string`, () => {
+      const t = resolveUiTranslations(locale);
+      const result = t.arenaMasterRewardTitle('ELEPHANT Arena');
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).toContain('ELEPHANT Arena');
+    });
+
+    it(`${locale}: arenaMasterRewardTitle with empty arenaLabel returns non-empty string`, () => {
+      const t = resolveUiTranslations(locale);
+      const result = t.arenaMasterRewardTitle('');
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it(`${locale}: arenaMasterRewardBody with arenaLabel returns non-empty string`, () => {
+      const t = resolveUiTranslations(locale);
+      const result = t.arenaMasterRewardBody('JAGUAR Arena');
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).toContain('JAGUAR Arena');
+    });
+
+    it(`${locale}: arenaMasterRewardBody with empty arenaLabel returns non-empty string`, () => {
+      const t = resolveUiTranslations(locale);
+      const result = t.arenaMasterRewardBody('');
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+    });
+  }
+
+  // Character contamination: MAIL keys
+  it('JA_TRANSLATIONS inbox keys contain no European characters mixing', () => {
+    const t = resolveUiTranslations('ja');
+    // inboxTitle is 'MAIL' — allowed ASCII
+    expect(t.inboxTitle).toBe('MAIL');
+    // inboxLoading should contain Japanese
+    expect(/[\u3040-\u30FF\u4E00-\u9FFF]/.test(t.inboxLoading)).toBe(true);
+  });
+
+  it('KO_TRANSLATIONS inbox keys contain no CJK ideographs (only Hangul + ASCII)', () => {
+    const t = resolveUiTranslations('ko');
+    // inboxTitle: 메일
+    expect(t.inboxTitle).toBe('메일');
+    // Should have no Hiragana/Katakana
+    expect(/[\u3040-\u30FF]/.test(t.inboxNoMessages)).toBe(false);
+  });
+
+  it('ES_TRANSLATIONS inbox keys contain no CJK characters', () => {
+    const t = resolveUiTranslations('es');
+    const CJK_RE = /[\u3000-\u9FFF\uF900-\uFAFF]/;
+    expect(CJK_RE.test(t.inboxTitle)).toBe(false);
+    expect(CJK_RE.test(t.inboxNoMessages)).toBe(false);
+  });
+
+  it('DE_TRANSLATIONS inbox keys contain no CJK characters', () => {
+    const t = resolveUiTranslations('de');
+    const CJK_RE = /[\u3000-\u9FFF\uF900-\uFAFF]/;
+    expect(CJK_RE.test(t.inboxTitle)).toBe(false);
+    expect(CJK_RE.test(t.inboxNoMessages)).toBe(false);
+  });
+});
