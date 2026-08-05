@@ -620,7 +620,7 @@ function PrizeSection({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+    <div className="up-prize-section">
       {awards.map((award) => {
         const submission = submissions[award.award_id];
         const submitResult = submitResults[award.award_id];
@@ -635,90 +635,107 @@ function PrizeSection({
           ? `${award.arena_code} ${t.prizeMasterReward}`
           : t.prizeOfficialArena;
 
+        // status pill の修飾クラスを既知の状態へ明示的にマッピング
+        const statusPillModifier: Record<string, string> = {
+          eligible: 'up-prize-status-pill--eligible',
+          pending: 'up-prize-status-pill--pending',
+          submitted: 'up-prize-status-pill--submitted',
+          processed: 'up-prize-status-pill--processed',
+          prepared: 'up-prize-status-pill--prepared',
+          paid: 'up-prize-status-pill--paid',
+          on_hold: 'up-prize-status-pill--warning',
+          canceled: 'up-prize-status-pill--inactive',
+          expired: 'up-prize-status-pill--inactive',
+        };
+        const pillModifier = statusPillModifier[award.status] ?? '';
+
+        // 表示するstatus文字列
+        const statusLabel =
+          award.status === 'eligible' ? t.prizeStatusEligible
+          : award.status === 'pending' ? t.prizeStatusPending
+          : award.status === 'submitted' ? t.prizeStatusSubmitted
+          : award.status === 'processed' ? t.prizeStatusProcessed
+          : award.status === 'prepared' ? t.prizePreparingPayout
+          : award.status === 'paid' ? t.prizePaid
+          : award.status.toUpperCase();
+
         return (
-          <div key={award.award_id} style={sp.card}>
-            <div style={sp.cardHeader}>
-              <span style={{ ...sp.statusBadge, color: prizeStatusColor(award.status) }}>
-                {award.status === 'eligible' ? t.prizeStatusEligible
-                  : award.status === 'pending' ? t.prizeStatusPending
-                  : award.status.toUpperCase()}
+          <div key={award.award_id} className="up-prize-row">
+            {/* 1行目: 金額 + status pill */}
+            <div className="up-prize-top">
+              <div className="up-prize-amount">{fmtPrizeAmount(award.amount_cents, award.currency)}</div>
+              <span className={`up-prize-status-pill${pillModifier ? ' ' + pillModifier : ''}`}>
+                {statusLabel}
               </span>
-              <span style={sp.cardKind}>{award.prize_kind ? award.prize_kind : t.prizeKindCash}</span>
             </div>
 
-            <div style={sp.cardBody}>
-              <div style={sp.awardIdRow}>
-                <span style={sp.awardIdLabel}>{t.prizeAwardId}:</span>
-                <span style={sp.awardIdValue}>{award.award_id}</span>
-              </div>
-              <div style={sp.amount}>{fmtPrizeAmount(award.amount_cents, award.currency)}</div>
-              <div style={sp.arenaLabel}>{arenaLabel}</div>
-              <div style={sp.meta}>
-                {award.created_at && <span>{t.createdLabel}: {formatDate(award.created_at, lang)}</span>}
-                {award.payout_status === 'prepared' && <span style={{ color: '#e65100', fontWeight: 600 }}>{t.prizePreparingPayout}</span>}
-                {award.paid_at && <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ {t.prizePaid}: {formatDate(award.paid_at, lang)}</span>}
-              </div>
+            {/* 2行目: Arena報酬名 + prize kind */}
+            <div className="up-prize-title">
+              {arenaLabel}　・　{award.prize_kind ? award.prize_kind : t.prizeKindCash}
             </div>
 
-            {/* フォーム導線 */}
-            {canClaim && (
-              <button type="button" style={sp.claimBtn} onClick={() => onClaim(award.award_id)}>
-                {t.prizeSubmitInfo}
-              </button>
-            )}
+            {/* 3行目: Award ID */}
+            <div className="up-prize-id">
+              {t.prizeAwardId}: {award.award_id}
+            </div>
 
-            {/* 提出不要: 同一ユーザーの過去提出済み */}
-            {noResubmitRequired && !submitResult && (
-              <div style={sp.onFileBlock}>
-                <div style={sp.onFileTitle}>✓ {t.taxOnFile}</div>
-                <div style={sp.onFileDesc}>
-                  {t.taxOnFileDesc}
-                </div>
-                <button type="button" style={sp.updateBtn} onClick={() => onClaim(award.award_id, true)}>
-                  {t.updateInfoIfChanged}
-                </button>
-              </div>
-            )}
+            {/* meta: 作成日 / 支払準備中 / 支払済み / submit直後 / DB済み状態 / データ消去済み */}
+            <div className="up-prize-meta">
+              {award.created_at && (
+                <span>{t.createdLabel}: {formatDate(award.created_at, lang)}</span>
+              )}
+              {award.payout_status === 'prepared' && !submitResult && (
+                <span>{t.prizePreparingPayout}</span>
+              )}
+              {award.paid_at && (
+                <span>✓ {t.prizePaid}: {formatDate(award.paid_at, lang)}</span>
+              )}
+              {/* Tax on file */}
+              {noResubmitRequired && !submitResult && (
+                <span>✓ {t.taxOnFile} — {t.taxOnFileDesc}</span>
+              )}
+              {/* submit直後のレスポンス */}
+              {submitResult && (
+                <>
+                  <span>✓ {t.prizeSubmittedMsg}</span>
+                  <span>{t.submissionId}: {submitResult.submission_id.slice(0, 8)}…</span>
+                  {submitResult.delete_after && (
+                    <span>{t.dataExpiration}: {formatDateTime(submitResult.delete_after, lang)}</span>
+                  )}
+                </>
+              )}
+              {/* DBから読み込んだ提出済み状態 */}
+              {!submitResult && isSubmitted && (
+                <>
+                  <span>{t.prizeStatusSubmitted}</span>
+                  {submission.delete_after && (
+                    <span>{t.dataExpiration}: {formatDateTime(submission.delete_after, lang)}</span>
+                  )}
+                </>
+              )}
+              {/* データ消去済み */}
+              {!submitResult && isDataCleared && (
+                <span>{t.prizeStatusProcessed}</span>
+              )}
+              {/* on_hold / canceled / expired */}
+              {award.status === 'on_hold' && <span>{t.prizeStatusOnHold}</span>}
+              {award.status === 'canceled' && <span>{t.prizeStatusCanceled}</span>}
+              {award.status === 'expired' && <span>{t.prizeStatusExpired}</span>}
+            </div>
 
-            {/* 提出済み: submit直後のレスポンス */}
-            {submitResult && (
-              <div style={sp.submitSuccess}>
-                <div style={sp.submitSuccessTitle}>✓ {t.prizeSubmittedMsg}</div>
-                <div style={sp.submitSuccessMeta}>
-                  {t.submissionId}: {submitResult.submission_id.slice(0, 8)}…
-                </div>
-                {submitResult.delete_after && (
-                  <div style={sp.submitSuccessMeta}>
-                    {t.dataExpiration}: {formatDateTime(submitResult.delete_after, lang)}
-                  </div>
+            {/* actions */}
+            {(canClaim || (noResubmitRequired && !submitResult)) && (
+              <div className="up-prize-actions">
+                {canClaim && (
+                  <button type="button" className="up-prize-action-btn" onClick={() => onClaim(award.award_id)}>
+                    {t.prizeSubmitInfo}
+                  </button>
                 )}
-              </div>
-            )}
-
-            {/* DBから読み込んだ済み状態 */}
-            {!submitResult && isSubmitted && (
-              <div style={sp.submittedBadge}>
-                {t.prizeStatusSubmitted}
-                {submission.delete_after && (
-                  <span style={{ color: '#888', fontSize: 11, marginLeft: 8 }}>
-                    ({t.dataExpiration}: {formatDateTime(submission.delete_after, lang)})
-                  </span>
+                {noResubmitRequired && !submitResult && (
+                  <button type="button" className="up-prize-action-btn" onClick={() => onClaim(award.award_id, true)}>
+                    {t.updateInfoIfChanged}
+                  </button>
                 )}
-              </div>
-            )}
-
-            {!submitResult && isDataCleared && (
-              <div style={sp.processedBadge}>
-                {t.prizeStatusProcessed}
-              </div>
-            )}
-
-            {/* on_hold / canceled / expired */}
-            {['on_hold', 'canceled', 'expired'].includes(award.status) && !submission && (
-              <div style={sp.ineligibleNote}>
-                {award.status === 'on_hold' && t.prizeStatusOnHold}
-                {award.status === 'canceled' && t.prizeStatusCanceled}
-                {award.status === 'expired' && t.prizeStatusExpired}
               </div>
             )}
           </div>
@@ -728,171 +745,7 @@ function PrizeSection({
   );
 }
 
-function prizeStatusColor(status: string): string {
-  switch (status) {
-    case 'eligible': return '#2e7d32';
-    case 'pending':  return '#1565c0';
-    case 'on_hold':  return '#e65100';
-    case 'canceled': return '#b71c1c';
-    case 'expired':  return '#757575';
-    default:         return '#333';
-  }
-}
-
-const sp: Record<string, React.CSSProperties> = {
-  card: {
-    border: '1px solid #e0e0e0',
-    borderRadius: 8,
-    padding: '12px 14px',
-    background: '#fafafa',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-  },
-  cardHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusBadge: {
-    fontWeight: 700,
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  } as React.CSSProperties,
-  cardId: {
-    fontSize: 11,
-    color: '#aaa',
-    fontFamily: 'monospace',
-  },
-  cardKind: {
-    fontSize: 11,
-    color: '#888',
-    marginLeft: 'auto',
-  },
-  cardBody: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-  },
-  amount: {
-    fontWeight: 700,
-    fontSize: '1.05rem',
-    color: '#111',
-  },
-  meta: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '4px 12px',
-    fontSize: 12,
-    color: '#777',
-  } as React.CSSProperties,
-  claimBtn: {
-    background: '#1a237e',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 5,
-    padding: '9px 18px',
-    cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 600,
-    alignSelf: 'flex-start',
-    minHeight: 40,
-  },
-  submittedBadge: {
-    background: '#e3f2fd',
-    border: '1px solid #90caf9',
-    borderRadius: 5,
-    padding: '8px 12px',
-    fontSize: 13,
-    color: '#1565c0',
-    fontWeight: 600,
-  },
-  processedBadge: {
-    background: '#e8f5e9',
-    border: '1px solid #a5d6a7',
-    borderRadius: 5,
-    padding: '8px 12px',
-    fontSize: 13,
-    color: '#2e7d32',
-    fontWeight: 600,
-  },
-  ineligibleNote: {
-    fontSize: 12,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  submitSuccess: {
-    background: '#e8f5e9',
-    border: '1px solid #a5d6a7',
-    borderRadius: 5,
-    padding: '10px 14px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-  },
-  submitSuccessTitle: {
-    fontSize: 13,
-    color: '#2e7d32',
-    fontWeight: 700,
-  },
-  submitSuccessMeta: {
-    fontSize: 12,
-    color: '#555',
-  },
-  awardIdRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 6,
-    flexWrap: 'wrap',
-  } as React.CSSProperties,
-  awardIdLabel: {
-    fontSize: 11,
-    color: '#999',
-    whiteSpace: 'nowrap',
-  } as React.CSSProperties,
-  awardIdValue: {
-    fontSize: 11,
-    color: '#888',
-    fontFamily: 'monospace',
-    wordBreak: 'break-all',
-  } as React.CSSProperties,
-  arenaLabel: {
-    fontSize: 13,
-    color: '#555',
-    fontWeight: 600,
-  },
-  onFileBlock: {
-    background: '#e8f5e9',
-    border: '1px solid #a5d6a7',
-    borderRadius: 6,
-    padding: '12px 14px',
-    marginTop: 8,
-  } as React.CSSProperties,
-  onFileTitle: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: '#2e7d32',
-    marginBottom: 4,
-  } as React.CSSProperties,
-  onFileDesc: {
-    fontSize: 12,
-    color: '#388e3c',
-    lineHeight: 1.6,
-    marginBottom: 8,
-  } as React.CSSProperties,
-  updateBtn: {
-    background: '#fff',
-    border: '1px solid #4caf50',
-    borderRadius: 5,
-    padding: '7px 16px',
-    cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 600,
-    color: '#2e7d32',
-    minHeight: 36,
-  } as React.CSSProperties,
-};
+// sp および prizeStatusColor は PrizeSection className 方式移行により削除
 
 // ── 成績サマリー ──────────────────────────────────────────────────────────────
 

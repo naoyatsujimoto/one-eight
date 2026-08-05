@@ -184,3 +184,106 @@ describe('UserPage — hardcoded strings audit', () => {
     expect(upTsx).toContain('t.userMoveCount(r.move_count)');
   });
 });
+
+// ── PrizeSection リデザイン 回帰テスト ───────────────────────────────────────
+describe('PrizeSection — className redesign', () => {
+  const upTsxPath = resolve(__dirname, '../components/UserPage.tsx');
+  const upTsx = readFileSync(upTsxPath, 'utf-8');
+  const upCssPath = resolve(__dirname, '../components/UserPage.css');
+  const upCss = readFileSync(upCssPath, 'utf-8');
+
+  // 1. クラス使用確認
+  it('PrizeSection uses up-prize-section className', () => {
+    expect(upTsx).toContain('className="up-prize-section"');
+  });
+
+  it('award rows use up-prize-row className', () => {
+    expect(upTsx).toContain('className="up-prize-row"');
+  });
+
+  it('amount uses up-prize-amount className', () => {
+    expect(upTsx).toContain('className="up-prize-amount"');
+  });
+
+  it('status pill uses up-prize-status-pill className', () => {
+    expect(upTsx).toContain('up-prize-status-pill');
+  });
+
+  it('title uses up-prize-title className', () => {
+    expect(upTsx).toContain('className="up-prize-title"');
+  });
+
+  it('ID uses up-prize-id className', () => {
+    expect(upTsx).toContain('className="up-prize-id"');
+  });
+
+  it('actions container uses up-prize-actions className', () => {
+    expect(upTsx).toContain('className="up-prize-actions"');
+  });
+
+  // 2. 旧インラインスタイル削除確認
+  it('no style={sp. remains in UserPage.tsx', () => {
+    expect(upTsx).not.toMatch(/style=\{sp\./);
+  });
+
+  it('const sp is removed from UserPage.tsx', () => {
+    expect(upTsx).not.toMatch(/^const sp:/m);
+    expect(upTsx).not.toMatch(/const sp: Record/);
+  });
+
+  // 3. Prizeロジックの維持確認
+  it('canClaim logic is preserved', () => {
+    expect(upTsx).toContain('canClaim');
+  });
+
+  it('noResubmitRequired logic is preserved', () => {
+    expect(upTsx).toContain('noResubmitRequired');
+  });
+
+  it('isSubmitted logic is preserved', () => {
+    expect(upTsx).toContain('isSubmitted');
+  });
+
+  it('isDataCleared logic is preserved', () => {
+    expect(upTsx).toContain('isDataCleared');
+  });
+
+  it('submitResult is preserved', () => {
+    expect(upTsx).toContain('submitResult');
+  });
+
+  it('payout_status is preserved', () => {
+    expect(upTsx).toContain('payout_status');
+  });
+
+  it('paid_at is preserved', () => {
+    expect(upTsx).toContain('paid_at');
+  });
+
+  it('PrizeClaimForm and onClaim are preserved', () => {
+    expect(upTsx).toContain('PrizeClaimForm');
+    expect(upTsx).toContain('onClaim');
+  });
+
+  // 4. CSS構造確認
+  it('CSS has word-break for UUID', () => {
+    expect(upCss).toContain('word-break: break-all');
+  });
+
+  it('CSS has flex-wrap for actions', () => {
+    const actionsBlock = upCss.match(/\.up-prize-actions\s*\{([^}]+)\}/)?.[1] ?? '';
+    expect(actionsBlock).toContain('flex-wrap: wrap');
+  });
+
+  it('CSS has status pill modifier classes', () => {
+    expect(upCss).toContain('up-prize-status-pill--eligible');
+    expect(upCss).toContain('up-prize-status-pill--pending');
+    expect(upCss).toContain('up-prize-status-pill--paid');
+    expect(upCss).toContain('up-prize-status-pill--inactive');
+  });
+
+  // 5. 10言語辞書構造維持確認
+  it('10 locales are still supported', () => {
+    expect(SUPPORTED_LOCALES).toHaveLength(10);
+  });
+});

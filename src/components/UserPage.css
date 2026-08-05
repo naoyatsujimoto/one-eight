@@ -101,15 +101,26 @@
 .up-arena-date { font-family: var(--mono); font-size: 11px; color: #a3a39d; white-space: nowrap; }
 
 /* ── Prize / Awards ── */
-.up-prize-section { background: #fff; border: 1px solid #e8e8e4; border-radius: 16px; overflow: hidden; }
+.up-prize-section { background: #fff; border: 1px solid #ecece8; border-radius: 16px; overflow: hidden; }
 .up-prize-row { padding: 20px 22px; border-bottom: 1px solid #f4f4f1; display: flex; flex-direction: column; gap: 10px; }
 .up-prize-row:last-child { border-bottom: none; }
 .up-prize-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.up-prize-amount { font-family: var(--mono); font-size: 20px; font-weight: 600; color: #141413; }
-.up-prize-status-pill { font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid #e2e2dd; color: #71716c; white-space: nowrap; }
-.up-prize-title { font-size: 13px; color: #141413; }
-.up-prize-id { font-family: var(--mono); font-size: 10px; color: #b5b5af; word-break: break-all; }
-.up-prize-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.up-prize-amount { font-family: var(--mono); font-size: 20px; font-weight: 600; color: #141413; letter-spacing: -0.01em; }
+.up-prize-status-pill { font-size: 10px; font-weight: 600; padding: 4px 11px; border-radius: 999px; border: 1px solid #e2e2dd; color: #71716c; white-space: nowrap; letter-spacing: 0.04em; }
+.up-prize-status-pill--eligible { color: #2e7d32; border-color: #a5d6a7; }
+.up-prize-status-pill--pending { color: #1565c0; border-color: #90caf9; }
+.up-prize-status-pill--submitted { color: #1565c0; border-color: #90caf9; }
+.up-prize-status-pill--processed { color: #2e7d32; border-color: #a5d6a7; }
+.up-prize-status-pill--prepared { color: #e65100; border-color: #ffcc80; }
+.up-prize-status-pill--paid { color: #2e7d32; border-color: #a5d6a7; }
+.up-prize-status-pill--warning { color: #e65100; border-color: #ffcc80; }
+.up-prize-status-pill--inactive { color: #9e9e9e; border-color: #e0e0e0; }
+.up-prize-title { font-size: 12px; color: #454540; }
+.up-prize-id { font-family: var(--mono); font-size: 9px; color: #c0c0ba; word-break: break-all; letter-spacing: 0.02em; }
+.up-prize-meta { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #8a8a84; }
+.up-prize-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 6px; }
+.up-prize-action-btn { display: inline-block; font-size: 11px; font-weight: 600; border: 1px solid #141413; border-radius: 999px; padding: 7px 16px; background: transparent; color: #141413; cursor: pointer; transition: background 0.15s, color 0.15s; max-width: 100%; box-sizing: border-box; }
+.up-prize-action-btn:hover { background: #141413; color: #fff; }
 
 /* ── Coming Soon sections ── */
 .up-coming-soon-list { background: #fff; border: 1px solid #e8e8e4; border-radius: 12px; overflow: hidden; }
