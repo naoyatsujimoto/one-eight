@@ -618,6 +618,8 @@ export const KO_TRANSLATIONS = {
     candidateMovesLabel: '후보 수',
     analysisFailedMessage: '분석을 완료할 수 없습니다.',
     proUpgradePrompt: '전체 분석을 위해 Pro로 업그레이드하세요.',
+    postmortemShowAllMoves: (n: number) => `전체 보기 (${n}수)`,
+    postmortemCloseLabel: '닫기',
     importRecordLabel: '기보 가져오기',
     importSuccessful: '가져오기 성공',
     connecting: '연결 중',

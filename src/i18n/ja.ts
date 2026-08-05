@@ -635,6 +635,8 @@ export const JA_TRANSLATIONS = {
     candidateMovesLabel: '候補手',
     analysisFailedMessage: '分析を完了できませんでした。',
     proUpgradePrompt: '完全な分析は Pro プランへアップグレードしてください。',
+    postmortemShowAllMoves: (n: number) => `すべて表示（${n}手）`,
+    postmortemCloseLabel: '閉じる',
     importRecordLabel: '棋譜を読み込む',
     importSuccessful: '読み込み成功',
     connecting: '接続中',

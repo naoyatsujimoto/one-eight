@@ -649,6 +649,8 @@ export const EN_TRANSLATIONS = {
     candidateMovesLabel: 'Candidate Moves',
     analysisFailedMessage: 'Analysis could not be completed.',
     proUpgradePrompt: 'Upgrade to Pro for full analysis.',
+    postmortemShowAllMoves: (n: number) => n === 1 ? `Show all (${n} move)` : `Show all (${n} moves)`,
+    postmortemCloseLabel: 'Close',
 
     // ImportRecord
     importRecordLabel: 'Import record',

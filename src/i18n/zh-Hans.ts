@@ -618,6 +618,8 @@ export const ZH_HANS_TRANSLATIONS = {
     candidateMovesLabel: '候选步',
     analysisFailedMessage: '分析无法完成。',
     proUpgradePrompt: '升级 Pro 以获得完整分析。',
+    postmortemShowAllMoves: (n: number) => `显示全部（${n}手）`,
+    postmortemCloseLabel: '关闭',
     importRecordLabel: '导入棋谱',
     importSuccessful: '导入成功',
     connecting: '连接中',

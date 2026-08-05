@@ -17,7 +17,7 @@ import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
-import { PostmortemModal } from './PostmortemModal';
+import { PostmortemModal, type PostmortemGameMeta } from './PostmortemModal';
 import { useLang } from '../lib/lang';
 import type { LocaleCode } from '../lib/locales';
 import { formatDate, formatDateTime, getIntlLocale } from '../lib/localeFormat';
@@ -189,12 +189,14 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   }
   // 候補手表示用: 現在分析中の対局の human_color
   const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
+  const [pendingModalGameRecord, setPendingModalGameRecord] = useState<GameRecord | null>(null);
   // 分析ボタンのハンドラ: シングルトン Worker に委譲
   const handleAnalyzeClick = useCallback((record: GameRecord) => {
     const st = getStatus(record.game_id);
     if (st.status === 'queued' || st.status === 'running') return;
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
+    setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
   }, [getStatus, runWorker]);
@@ -402,7 +404,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     localMap={localMap}
                     officialGameMap={officialGameMap}
                     currentUserId={userId}
-                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
+                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameRecord(r); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
                     onRefresh={(record) => {
                       dismissWorker(record.game_id);
                       clearPostmortemCache(record.game_id);
@@ -584,10 +586,20 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
             }
             setPendingModalGameId(null);
             setCurrentHumanColor(null);
+            setPendingModalGameRecord(null);
           }}
           autoStart
           proActive={proActive}
           humanColor={currentHumanColor}
+          gameMeta={pendingModalGameRecord ? {
+            playedAt: pendingModalGameRecord.ended_at ?? pendingModalGameRecord.started_at,
+            moveCount: pendingModalGameRecord.move_count,
+            mode: pendingModalGameRecord.mode === 'human_vs_cpu'
+              ? t.userTypeCpu
+              : pendingModalGameRecord.mode === 'human_vs_human'
+              ? t.userTypeHuman
+              : undefined,
+          } : undefined}
         />
       )}
     </div>

@@ -618,6 +618,8 @@ export const ES_TRANSLATIONS = {
     candidateMovesLabel: 'Movimientos candidatos',
     analysisFailedMessage: 'El análisis no pudo completarse.',
     proUpgradePrompt: 'Actualiza a Pro para el análisis completo.',
+    postmortemShowAllMoves: (n: number) => n === 1 ? `Ver todo (${n} jugada)` : `Ver todo (${n} jugadas)`,
+    postmortemCloseLabel: 'Cerrar',
     importRecordLabel: 'Importar registro',
     importSuccessful: 'Importación exitosa',
     connecting: 'Conectando',

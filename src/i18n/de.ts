@@ -611,6 +611,8 @@ export const DE_TRANSLATIONS = {
     candidateMovesLabel: 'Kandidatenzüge',
     analysisFailedMessage: 'Die Analyse konnte nicht abgeschlossen werden.',
     proUpgradePrompt: 'Upgrade auf Pro für vollständige Analyse.',
+    postmortemShowAllMoves: (n: number) => n === 1 ? `Alle anzeigen (${n} Zug)` : `Alle anzeigen (${n} Züge)`,
+    postmortemCloseLabel: 'Schließen',
     importRecordLabel: 'Aufzeichnung importieren',
     importSuccessful: 'Import erfolgreich',
     connecting: 'Verbinde',

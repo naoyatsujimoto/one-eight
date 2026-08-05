@@ -3,7 +3,7 @@ import type { MyStats as MyStatsData, MatchLogRow } from '../lib/matchLog';
 import { fetchMyStats } from '../lib/matchLog';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
-import { PostmortemModal } from './PostmortemModal';
+import { PostmortemModal, type PostmortemGameMeta } from './PostmortemModal';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { useLang } from '../lib/lang';
 import { getProfile, isProActive } from '../lib/profile';
@@ -52,12 +52,14 @@ export function MyStats({ userId, onClose }: Props) {
   // 分析ボタンのハンドラ: シングルトン Worker に委譲
   // 候補手表示用: 現在分析中の対局の human_color
   const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
+  const [pendingModalGameRecord, setPendingModalGameRecord] = useState<GameRecord | null>(null);
 
   function handleAnalyzeClick(record: GameRecord) {
     const st = getStatus(record.game_id);
     if (st.status === 'queued' || st.status === 'running') return;
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
+    setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
   }
@@ -122,6 +124,7 @@ export function MyStats({ userId, onClose }: Props) {
     setRefreshingIds(prev => new Set([...prev, record.game_id]));
     const hc = (record.human_color as 'black' | 'white' | null) ?? null;
     setCurrentHumanColor(hc);
+    setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
     runWorker(record.game_id, record.full_record, hc);
   }
@@ -297,9 +300,21 @@ export function MyStats({ userId, onClose }: Props) {
         <PostmortemModal
           history={pendingStatus.history}
           gameId={pendingModalGameId}
-          onClose={handlePostmortemClose}
+          onClose={() => {
+            setPendingModalGameRecord(null);
+            handlePostmortemClose();
+          }}
           autoStart
           humanColor={currentHumanColor}
+          gameMeta={pendingModalGameRecord ? {
+            playedAt: pendingModalGameRecord.ended_at ?? pendingModalGameRecord.started_at,
+            moveCount: pendingModalGameRecord.move_count,
+            mode: pendingModalGameRecord.mode === 'human_vs_cpu'
+              ? t.userTypeCpu
+              : pendingModalGameRecord.mode === 'human_vs_human'
+              ? t.userTypeHuman
+              : undefined,
+          } : undefined}
         />
       )}
     </div>

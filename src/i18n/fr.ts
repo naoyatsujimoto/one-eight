@@ -611,6 +611,8 @@ export const FR_TRANSLATIONS = {
     candidateMovesLabel: 'Coups candidats',
     analysisFailedMessage: 'L’analyse n’a pas pu être complétée.',
     proUpgradePrompt: 'Passez à Pro pour une analyse complète.',
+    postmortemShowAllMoves: (n: number) => n === 1 ? `Tout afficher (${n} coup)` : `Tout afficher (${n} coups)`,
+    postmortemCloseLabel: 'Fermer',
     importRecordLabel: 'Importer un enregistrement',
     importSuccessful: 'Importation réussie',
     connecting: 'Connexion en cours',

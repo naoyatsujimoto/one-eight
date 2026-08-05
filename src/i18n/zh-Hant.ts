@@ -641,6 +641,8 @@ export const ZH_HANT_TRANSLATIONS = {
     candidateMovesLabel: '候選步',
     analysisFailedMessage: '分析無法完成。',
     proUpgradePrompt: '升級 Pro 以獲得完整分析。',
+    postmortemShowAllMoves: (n: number) => `顯示全部（${n}手）`,
+    postmortemCloseLabel: '關閉',
     importRecordLabel: '輸入棋譜',
     importSuccessful: '輸入成功',
     connecting: '連線中',

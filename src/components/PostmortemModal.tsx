@@ -7,13 +7,30 @@
  *   - 分析完了後に結果モーダルを表示する
  *   - onAnalyzing(true/false) で分析中状態を呼び出し元に通知する
  */
+import './PostmortemModal.css';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { enrichPostmortemWithStats, enrichWithCandidateMoves, buildResolvedWPSeries, type PostmortemResult, type CandidateMove } from '../game/postmortem';
+import {
+  enrichPostmortemWithStats,
+  enrichWithCandidateMoves,
+  buildResolvedWPSeries,
+  type PostmortemResult,
+  type CandidateMove,
+} from '../game/postmortem';
 import { STRATEGY_FLAG_LABEL, type StrategyFlag } from '../game/strategyPatterns';
-
 import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
+import { formatDate } from '../lib/localeFormat';
+
+// ─── GameMeta ─────────────────────────────────────────────────────────────────
+
+export type PostmortemGameMeta = {
+  playedAt?: string | null;
+  moveCount?: number | null;
+  mode?: string | null;
+};
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   history: MoveRecord[];
@@ -27,6 +44,8 @@ interface Props {
   proActive?: boolean;
   /** 人間プレイヤーの手番色。候補手表示対象手番の制御用 */
   humanColor?: 'black' | 'white' | null;
+  /** 対局メタ情報（ヘッダー表示用） */
+  gameMeta?: PostmortemGameMeta;
 }
 
 /** 手数ベースの所要時間推定（秒） depth=3 minimax: 1手あたり約0.15秒 */
@@ -34,8 +53,19 @@ function estimateSec(moveCount: number): number {
   return Math.max(5, Math.round(moveCount * 0.15));
 }
 
-export function PostmortemModal({ history, gameId, onClose, autoStart = false, onAnalyzing, proActive = false, humanColor }: Props) {
-  const { t } = useLang();
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export function PostmortemModal({
+  history,
+  gameId,
+  onClose,
+  autoStart = false,
+  onAnalyzing,
+  proActive = false,
+  humanColor,
+  gameMeta,
+}: Props) {
+  const { t, lang } = useLang();
   const [result, setResult] = useState<PostmortemResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [computingCandidates, setComputingCandidates] = useState(false);
@@ -48,31 +78,23 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
 
   const handleAnalyze = useCallback(() => {
     const st = getStatus(gameId);
-    // 既にこの gameId で queued / running → 何もしない
     if (st.status === 'queued' || st.status === 'running') return;
-
-    // 既に done → result を直接表示（Worker 再起動不要）
     if (st.status === 'done') {
       setResult(st.result);
       return;
     }
-
-    // 新規分析開始
     setAnalyzeError(null);
     setResult(null);
     onAnalyzing?.(true);
     runWorker(gameId, history);
   }, [getStatus, gameId, history, onAnalyzing, runWorker]);
 
-  // jobStatus が done / error になったら処理
   useEffect(() => {
     const st = getStatus(gameId);
     if (st.status === 'done') {
       const base = st.result;
       setResult(base);
       onAnalyzing?.(false);
-
-      // enrichment は既存の非同期処理を維持
       enrichPostmortemWithStats(base, history)
         .then(enriched => setResult(enriched))
         .catch(() => {});
@@ -84,15 +106,11 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobStatus.status]);
 
-  // autoStart: マウント直後に Worker 起動
   useEffect(() => {
-    if (autoStart) {
-      handleAnalyze();
-    }
+    if (autoStart) handleAnalyze();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 候補手を計算するハンドラ
   const handleShowCandidates = useCallback(async () => {
     if (!result || !humanColor || computingCandidates || candidatesComputed) return;
     candidateCancelRef.current = false;
@@ -113,90 +131,116 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
     }
   }, [result, history, humanColor, computingCandidates, candidatesComputed]);
 
-  // unmount 時に候補手計算をキャンセル
   useEffect(() => {
-    return () => {
-      candidateCancelRef.current = true;
-    };
+    return () => { candidateCancelRef.current = true; };
   }, []);
 
-  // シングルトン Worker は unmount 時に停止しない（継続動作させる）
+  // autoStart モード: 分析中・分析前はモーダルを表示しない
+  if (autoStart && analyzing) return null;
+  if (autoStart && !result && !analyzeError) return null;
 
-  // autoStart モード: 分析中はモーダルを表示しない（ボタン側のみで状態を示す）
-  if (autoStart && analyzing) {
-    return null;
+  // ── Header meta string ──────────────────────────────────────────────────────
+  const metaParts: string[] = [];
+  if (gameMeta?.playedAt) {
+    metaParts.push(formatDate(gameMeta.playedAt, lang));
   }
-
-  // autoStart モード: 分析前（まだ result がない、エラーもない）はモーダルを表示しない
-  if (autoStart && !result && !analyzeError) {
-    return null;
+  if (gameMeta?.moveCount != null && gameMeta.moveCount > 0) {
+    metaParts.push(t.userMoveCount(gameMeta.moveCount));
   }
+  if (gameMeta?.mode) {
+    metaParts.push(gameMeta.mode);
+  }
+  const metaLine = metaParts.join(' ・ ');
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.card} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <span style={styles.title}>{t.postmortem}</span>
-          <button type="button" onClick={onClose} style={styles.closeBtn}>✕</button>
+    <div className="pm-overlay" onClick={onClose}>
+      <div className="pm-card" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="pm-header">
+          <div className="pm-header-left">
+            <span className="pm-title">{t.postmortem}</span>
+            {metaLine && <span className="pm-meta">{metaLine}</span>}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="pm-close-btn"
+            aria-label={t.postmortemCloseLabel}
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Analyze ボタン: autoStart でない場合かつ未分析時・エラー時に表示 */}
+        {/* Analyze button (autoStart=false, 未分析時) */}
         {!autoStart && !analyzing && !result && (
-          <div style={styles.center}>
+          <div className="pm-center">
             <button
               type="button"
               onClick={handleAnalyze}
               disabled={analyzing}
-              style={styles.analyzeStartBtn}
+              className="pm-action-btn"
             >
               {t.analyze}
             </button>
             {analyzeError && (
-              <p style={{ ...styles.muted, color: '#e53', marginTop: 8 }}>{t.analysisFailedMessage}</p>
+              <p className="pm-error-text">{t.analysisFailedMessage}</p>
             )}
           </div>
         )}
 
-        {/* エラー表示 (autoStart モード): 再試行ボタンを表示 */}
+        {/* Error (autoStart モード) */}
         {autoStart && analyzeError && (
-          <div style={styles.center}>
-            <p style={{ ...styles.muted, color: '#e53' }}>{t.analysisFailedMessage}</p>
+          <div className="pm-center">
+            <p className="pm-error-text">{t.analysisFailedMessage}</p>
             <button
               type="button"
               onClick={handleAnalyze}
-              style={styles.analyzeStartBtn}
+              className="pm-action-btn"
             >
               {t.postmortemRetry}
             </button>
           </div>
         )}
 
-        {/* 分析中スピナー: autoStart でない場合のみ表示（autoStart は呼び出し元ボタンで示す） */}
+        {/* Spinner (autoStart=false, 分析中) */}
         {!autoStart && analyzing && (
-          <div style={styles.center}>
-            <div style={styles.spinner} />
-            <p style={styles.muted}>{t.analyzing}</p>
-            <p style={styles.estimateText}>{t.analyzingEstimate(estimateSec(history.length))}</p>
+          <div className="pm-center">
+            <div className="pm-spinner" />
+            <p className="pm-muted">{t.analyzing}</p>
+            <p className="pm-estimate">{t.analyzingEstimate(estimateSec(history.length))}</p>
           </div>
         )}
 
+        {/* データ不足 */}
         {!analyzing && result && result.rows.length < 3 && (
-          <p style={styles.muted}>{t.noAnalysis}</p>
+          <p className="pm-muted">{t.noAnalysis}</p>
         )}
 
+        {/* 分析結果 */}
         {!analyzing && result && result.rows.length >= 3 && (
           <>
             {/* 決定的な一手 */}
-            <section style={styles.section}>
-              <div style={styles.sectionTitle}>{t.decisiveMove}</div>
+            <section>
+              <h2 className="pm-section-heading">{t.decisiveMove}</h2>
               {result.decisiveCrossing ? (
-                <div style={styles.decisiveBox}>
-                  <div style={styles.decisiveMoveNum}>{t.postmortemMoveNumber(result.decisiveCrossing.moveNum)}</div>
-                  <div style={styles.decisivePlayed}>{result.decisiveCrossing.played}</div>
-                  <div style={styles.decisiveWP}>
-                    WP {pct(result.decisiveCrossing.fromWP)} → {pct(result.decisiveCrossing.toWP)}
-                    {' '}{result.decisiveCrossing.direction === 'down' ? '↓' : '↑'}
-                    <span style={{ marginLeft: 6, color: '#888', fontSize: '0.75rem' }}>
+                <div className="pm-decisive-card">
+                  <div className="pm-decisive-move-num">
+                    {t.postmortemMoveNumber(result.decisiveCrossing.moveNum)}
+                  </div>
+                  <div className="pm-decisive-played">
+                    {result.decisiveCrossing.played}
+                  </div>
+                  <div className="pm-decisive-wp">
+                    <span className="pm-decisive-wp-from">
+                      WP {pct(result.decisiveCrossing.fromWP)}
+                    </span>
+                    <span className="pm-decisive-wp-arrow">→</span>
+                    <span className="pm-decisive-wp-to">
+                      {pct(result.decisiveCrossing.toWP)}
+                      {' '}{result.decisiveCrossing.direction === 'down' ? '↓' : '↑'}
+                    </span>
+                    <span className="pm-decisive-wp-player">
                       ({result.decisiveCrossing.player === 'black' ? 'Black' : 'White'})
                     </span>
                   </div>
@@ -205,35 +249,48 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
                   />
                 </div>
               ) : (
-                <p style={styles.muted}>—</p>
+                <p className="pm-muted">—</p>
               )}
             </section>
 
             {/* 勝率グラフ */}
-            <section style={styles.section}>
-              <div style={styles.sectionTitle}>{t.winProbability}</div>
-              <WPChart rows={result.rows} wpInitial={result.wpInitial} decisiveMoveNum={result.decisiveCrossing?.moveNum ?? null} />
+            <section>
+              <div className="pm-chart-section-header">
+                <h2 className="pm-section-heading" style={{ margin: 0 }}>{t.winProbability}</h2>
+                <span className="pm-chart-black-label">BLACK</span>
+              </div>
+              <div className="pm-chart-card">
+                <WPChart
+                  rows={result.rows}
+                  wpInitial={result.wpInitial}
+                  decisiveMoveNum={result.decisiveCrossing?.moveNum ?? null}
+                />
+              </div>
+              {/* 候補手ボタン: チャートの下・カード外 */}
+              {proActive && humanColor && !candidatesComputed && (
+                <div className="pm-candidate-btn-row">
+                  <button
+                    type="button"
+                    onClick={handleShowCandidates}
+                    disabled={computingCandidates}
+                    className="pm-candidate-btn"
+                  >
+                    {computingCandidates ? t.computingCandidates : t.showCandidateMoves}
+                  </button>
+                </div>
+              )}
             </section>
 
-            {/* 候補手を表示ボタン: Pro かつ humanColor あり かつ 未計算の場合のみ表示 */}
-            {proActive && humanColor && !candidatesComputed && (
-              <div style={styles.candidateBtnRow}>
-                <button
-                  type="button"
-                  onClick={handleShowCandidates}
-                  disabled={computingCandidates}
-                  style={computingCandidates ? styles.candidateBtnDisabled : styles.candidateBtn}
-                >
-                  {computingCandidates ? t.computingCandidates : t.showCandidateMoves}
-                </button>
-              </div>
-            )}
-
-            {/* 棋譟一覧 */}
+            {/* 棋譜一覧 */}
             {result.rows.length > 0 && (
-              <section style={styles.section}>
-                <div style={styles.sectionTitle}>{t.historySection}</div>
-                <HistoryList rows={result.rows} wpInitial={result.wpInitial} proActive={proActive} humanColor={humanColor} />
+              <section>
+                <h2 className="pm-section-heading">{t.historySection}</h2>
+                <HistoryList
+                  rows={result.rows}
+                  wpInitial={result.wpInitial}
+                  proActive={proActive}
+                  humanColor={humanColor}
+                />
               </section>
             )}
           </>
@@ -243,20 +300,20 @@ export function PostmortemModal({ history, gameId, onClose, autoStart = false, o
   );
 }
 
-// ─── 戦略フラグバッジ ────────────────────────────────────────────────────────
+// ─── StrategicFlagBadges ─────────────────────────────────────────────────────
 
 function StrategicFlagBadges({ flags }: { flags?: StrategyFlag[] }) {
   if (!flags || flags.length === 0) return null;
   return (
-    <div style={styles.flagRow}>
+    <div className="pm-flag-row">
       {flags.map(flag => (
-        <span key={flag} style={styles.flagBadge}>{STRATEGY_FLAG_LABEL[flag]}</span>
+        <span key={flag} className="pm-flag-badge">{STRATEGY_FLAG_LABEL[flag]}</span>
       ))}
     </div>
   );
 }
 
-// ─── WPチャート（SVG） ────────────────────────────────────────────────────────
+// ─── WPChart ──────────────────────────────────────────────────────────────────
 
 interface WPChartProps {
   rows: PostmortemResult['rows'];
@@ -265,75 +322,104 @@ interface WPChartProps {
 }
 
 function WPChart({ rows, wpInitial, decisiveMoveNum }: WPChartProps) {
-  const W = 320;
-  const H = 100;
-  const PAD = { top: 8, bottom: 8, left: 28, right: 8 };
-  const plotW = W - PAD.left - PAD.right;
-  const plotH = H - PAD.top - PAD.bottom;
+  const W = 520;
+  const H = 160;
 
+  // buildResolvedWPSeries を使用（変更禁止の既存ロジック）
   const wps = [wpInitial, ...rows.map(r => r.resolvedWP ?? r.wpAfter)];
   const n = wps.length;
 
-  function xOf(i: number) {
-    return PAD.left + (n <= 1 ? 0 : (i / (n - 1)) * plotW);
+  function xOf(i: number): number {
+    return n <= 1 ? 0 : (i / (n - 1)) * W;
   }
-  function yOf(wp: number) {
-    return PAD.top + (1 - wp) * plotH;
+  function yOf(wp: number): number {
+    // clamp 0-1, top=0, bottom=H
+    const clamped = Math.max(0, Math.min(1, wp));
+    return H - clamped * (H - 4) - 2;
   }
 
-  const polyline = wps.map((wp, i) => `${xOf(i)},${yOf(wp)}`).join(' ');
+  const polylinePoints = wps
+    .map((wp, i) => `${xOf(i).toFixed(1)},${yOf(wp).toFixed(1)}`)
+    .join(' ');
 
-  // 決定的一手のX座標
-  const decisiveX = decisiveMoveNum !== null
-    ? (() => {
-        const idx = rows.findIndex(r => r.moveNum === decisiveMoveNum);
-        return idx >= 0 ? xOf(idx + 1) : null;
-      })()
+  // 決定的一手
+  const decisiveIdx = decisiveMoveNum !== null
+    ? rows.findIndex(r => r.moveNum === decisiveMoveNum)
+    : -1;
+  const decisiveX = decisiveIdx >= 0 ? xOf(decisiveIdx + 1) : null;
+  const decisiveY = decisiveIdx >= 0
+    ? yOf(rows[decisiveIdx]!.resolvedWP ?? rows[decisiveIdx]!.wpAfter)
     : null;
+
+  // X軸ラベル: 先頭・中央・最終。重複・NaN排除
+  const totalMoves = rows.length;
+  const firstLabel = 1;
+  const lastLabel = totalMoves > 0 ? totalMoves : 1;
+  const midLabel = totalMoves >= 3 ? Math.round((firstLabel + lastLabel) / 2) : null;
+  // 重複チェック
+  const xLabels: number[] = [firstLabel];
+  if (midLabel !== null && midLabel !== firstLabel && midLabel !== lastLabel) xLabels.push(midLabel);
+  if (lastLabel !== firstLabel) xLabels.push(lastLabel);
 
   const y50 = yOf(0.5);
 
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-      {/* 背景 */}
-      <rect x={PAD.left} y={PAD.top} width={plotW} height={plotH} fill="#f9f9f9" rx={3} />
-
-      {/* 50%ライン */}
-      <line x1={PAD.left} y1={y50} x2={PAD.left + plotW} y2={y50}
-        stroke="#ccc" strokeWidth={1} strokeDasharray="4 3" />
-
-      {/* Y軸ラベル */}
-      <text x={PAD.left - 4} y={PAD.top + 4} textAnchor="end" fontSize={9} fill="#aaa">100%</text>
-      <text x={PAD.left - 4} y={y50 + 4} textAnchor="end" fontSize={9} fill="#aaa">50%</text>
-      <text x={PAD.left - 4} y={PAD.top + plotH + 2} textAnchor="end" fontSize={9} fill="#aaa">0%</text>
-
-      {/* WP折れ線 */}
-      <polyline points={polyline} fill="none" stroke="#222" strokeWidth={1.5} strokeLinejoin="round" />
-
-      {/* 決定的一手マーカー */}
-      {decisiveX !== null && (() => {
-        const r = rows.find(r => r.moveNum === decisiveMoveNum);
-        if (!r) return null;
-        const cy = yOf(r.wpAfter);
-        return (
-          <g>
-            <line x1={decisiveX} y1={PAD.top} x2={decisiveX} y2={PAD.top + plotH}
-              stroke="#e53" strokeWidth={1} strokeDasharray="3 2" />
-            <circle cx={decisiveX} cy={cy} r={4} fill="#e53" />
-          </g>
-        );
-      })()}
-    </svg>
+    <div>
+      <div className="pm-chart-inner">
+        <div className="pm-chart-yaxis">
+          <span>100</span>
+          <span>50</span>
+          <span>0</span>
+        </div>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="pm-chart-svg"
+          preserveAspectRatio="none"
+        >
+          {/* Grid */}
+          <line x1="0" y1={y50} x2={W} y2={y50} stroke="#e8e8e4" strokeWidth="1" strokeDasharray="4 4" />
+          <line x1="0" y1="1" x2={W} y2="1" stroke="#f0f0ed" strokeWidth="1" />
+          <line x1="0" y1={H - 1} x2={W} y2={H - 1} stroke="#f0f0ed" strokeWidth="1" />
+          {/* WP折れ線 */}
+          <polyline
+            points={polylinePoints}
+            fill="none"
+            stroke="#141413"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          {/* 決定的一手マーカー */}
+          {decisiveX !== null && decisiveY !== null && (
+            <g>
+              <line
+                x1={decisiveX} y1="0" x2={decisiveX} y2={H}
+                stroke="#141413" strokeWidth="1" strokeDasharray="3 3" opacity="0.4"
+              />
+              <circle cx={decisiveX} cy={decisiveY} r="5" fill="#141413" />
+            </g>
+          )}
+        </svg>
+      </div>
+      {/* X軸ラベル */}
+      <div className="pm-chart-xaxis">
+        {xLabels.map(num => (
+          <span key={num}>#{num}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 
-// ─── ヘルパー ──────────────────────────────────────────────────────────────────
+// ─── ヘルパー ─────────────────────────────────────────────────────────────────
 
 function pct(wp: number): string {
   return `${(wp * 100).toFixed(1)}%`;
 }
 
-// ─── HISTORY リスト ──────────────────────────────────────────────────────────
+// ─── HistoryList ──────────────────────────────────────────────────────────────
+
+const INITIAL_ROWS = 9;
 
 interface HistoryListProps {
   rows: PostmortemResult['rows'];
@@ -346,67 +432,80 @@ function HistoryList({ rows, wpInitial, proActive = false, humanColor }: History
   const { t } = useLang();
   const resolvedSeries = buildResolvedWPSeries(rows, wpInitial);
   const [expandedMoveNum, setExpandedMoveNum] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
-  const handleRowTap = (moveNum: number, hasCandidates: boolean) => {
-    if (!hasCandidates) return;
-    setExpandedMoveNum(prev => prev === moveNum ? null : moveNum);
-  };
+  const visibleRows = showAll ? rows : rows.slice(0, INITIAL_ROWS);
+  const hiddenCount = rows.length - INITIAL_ROWS;
 
   return (
-    <div style={styles.historyList}>
+    <div className="pm-history-card">
       {/* ヘッダー行 */}
-      <div style={styles.historyHeader}>
-        <span style={styles.historyHeaderNum}>{t.postmortemMoveHeader}</span>
-        <span style={styles.historyHeaderMove}>Move</span>
-        <span style={styles.historyHeaderWP}>WP(Black)</span>
+      <div className="pm-history-header-row">
+        <span className="pm-history-header-cell">NO.</span>
+        <span className="pm-history-header-cell">MOVE</span>
+        <span className="pm-history-header-cell right">WP(BLACK)</span>
+        <span className="pm-history-header-cell" />
       </div>
-      {rows.map((r, i) => {
-        const curWP = resolvedSeries[i + 1]!;
-        // humanColor と一致する手番のみ候補手を表示する
-        // humanColor が未指定または null の場合は候補手を表示しない（安全側）
+
+      {visibleRows.map((r, i) => {
+        const curWP = resolvedSeries[i + 1] ?? 0;
         const isHumanMove = humanColor != null && r.player === humanColor;
         const hasCandidates = isHumanMove && !!r.candidateMoves && r.candidateMoves.length > 0;
         const isExpanded = expandedMoveNum === r.moveNum;
-        const tappable = hasCandidates; // Pro判定は展開内容側で制御
+        const tappable = hasCandidates;
+        // bar width: clamp 0–100%
+        const barPct = Math.max(0, Math.min(100, curWP * 100)).toFixed(1) + '%';
 
         return (
           <div key={r.moveNum}>
             <div
-              style={{
-                ...styles.historyRow,
-                cursor: tappable ? 'pointer' : 'default',
-                background: isExpanded ? '#f5f5f5' : 'transparent',
-              }}
-              onClick={() => tappable && handleRowTap(r.moveNum, hasCandidates)}
+              className={`pm-history-row${tappable ? ' tappable' : ''}${isExpanded ? ' expanded' : ''}`}
+              onClick={() => tappable && setExpandedMoveNum(prev => prev === r.moveNum ? null : r.moveNum)}
             >
-              <span style={styles.historyNum}>#{r.moveNum}</span>
-              <span style={styles.historyMove}>{r.played}</span>
-              <span style={styles.historyWPCell}>
-                <span style={styles.historyWPNum}>{pct(curWP)}</span>
-                <span style={styles.historyExpandIcon}>
-                  {tappable ? (isExpanded ? '▲' : '▼') : ''}
-                </span>
+              <span className="pm-history-num">#{r.moveNum}</span>
+              <span className="pm-history-move">{r.played}</span>
+              <span className="pm-history-wp">
+                {pct(curWP)}
+                {tappable && (
+                  <span className="pm-history-chevron">{isExpanded ? '▲' : '▼'}</span>
+                )}
               </span>
+              <div className="pm-history-bar-cell">
+                <div className="pm-history-bar-bg">
+                  <div className="pm-history-bar-fill" style={{ width: barPct }} />
+                </div>
+              </div>
             </div>
             {isExpanded && hasCandidates && (
               <CandidateMovePanel
                 candidates={r.candidateMoves!}
-                playedWP={curWP}
                 proActive={proActive}
               />
             )}
           </div>
         );
       })}
+
+      {/* Show-all ボタン */}
+      {!showAll && hiddenCount > 0 && (
+        <div className="pm-show-all-row">
+          <button
+            type="button"
+            className="pm-show-all-btn"
+            onClick={() => setShowAll(true)}
+          >
+            {t.postmortemShowAllMoves(rows.length)}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── 候補手展開パネル ────────────────────────────────────────────────────────────
+// ─── CandidateMovePanel ───────────────────────────────────────────────────────
 
 interface CandidateMovePanelProps {
   candidates: CandidateMove[];
-  playedWP: number;
   proActive: boolean;
 }
 
@@ -414,315 +513,21 @@ function CandidateMovePanel({ candidates, proActive }: CandidateMovePanelProps) 
   const { t } = useLang();
   if (!proActive) {
     return (
-      <div style={styles.candidatePanel}>
-        <span style={styles.candidateUpgrade}>{t.proUpgradePrompt}</span>
+      <div className="pm-candidate-panel">
+        <span className="pm-candidate-upgrade">{t.proUpgradePrompt}</span>
       </div>
     );
   }
-
   return (
-    <div style={styles.candidatePanel}>
-      <div style={styles.candidateLabel}>{t.candidateMovesLabel}</div>
+    <div className="pm-candidate-panel">
+      <div className="pm-candidate-panel-label">{t.candidateMovesLabel}</div>
       {candidates.map(c => (
-        <div key={c.rank} style={styles.candidateRow}>
-          <span style={styles.candidateRank}>#{c.rank}</span>
-          <span style={styles.candidateMove}>{c.move}</span>
-          <span style={styles.candidateWP}>{pct(c.wp)}</span>
+        <div key={c.rank} className="pm-candidate-row">
+          <span className="pm-candidate-rank">#{c.rank}</span>
+          <span className="pm-candidate-move">{c.move}</span>
+          <span className="pm-candidate-wp">{pct(c.wp)}</span>
         </div>
       ))}
     </div>
   );
-}
-
-// ─── スタイル ─────────────────────────────────────────────────────────────────
-
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.55)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 300,
-  },
-  card: {
-    background: '#fff',
-    borderRadius: 10,
-    padding: '1.25rem',
-    width: '92%',
-    maxWidth: 400,
-    maxHeight: '85vh',
-    overflowY: 'auto',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1rem',
-  },
-  title: {
-    fontWeight: 700,
-    fontSize: '1rem',
-    letterSpacing: '0.05em',
-  },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    color: '#555',
-  },
-  analyzeStartBtn: {
-    background: '#222',
-    border: 'none',
-    borderRadius: 8,
-    fontSize: '0.9rem',
-    fontWeight: 700,
-    letterSpacing: '0.05em',
-    color: '#fff',
-    cursor: 'pointer',
-    padding: '0.55rem 1.75rem',
-  },
-  center: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '2rem 0',
-    gap: 12,
-  },
-  spinner: {
-    width: 28,
-    height: 28,
-    borderRadius: '50%',
-    border: '3px solid #eee',
-    borderTopColor: '#222',
-    animation: 'spin 0.8s linear infinite',
-  },
-  muted: {
-    color: '#999',
-    textAlign: 'center',
-    fontSize: '0.85rem',
-  },
-  estimateText: {
-    color: '#bbb',
-    textAlign: 'center',
-    fontSize: '0.75rem',
-    marginTop: -6,
-  },
-  section: {
-    marginBottom: '1.2rem',
-  },
-  sectionTitle: {
-    fontSize: '0.72rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    color: '#888',
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  decisiveBox: {
-    background: '#fff8f6',
-    border: '1px solid #fbb',
-    borderRadius: 8,
-    padding: '0.7rem 0.9rem',
-  },
-  decisiveMoveNum: {
-    fontSize: '0.72rem',
-    color: '#e53',
-    fontWeight: 700,
-    marginBottom: 2,
-  },
-  decisivePlayed: {
-    fontSize: '1rem',
-    fontWeight: 700,
-    color: '#222',
-    marginBottom: 4,
-  },
-  decisiveWP: {
-    fontSize: '0.82rem',
-    color: '#555',
-  },
-  historyList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 0,
-  },
-  historyHeader: {
-    display: 'flex',
-    alignItems: 'baseline',
-    gap: 6,
-    padding: '0.2rem 0 0.3rem',
-    borderBottom: '2px solid #ddd',
-    fontSize: '0.68rem',
-    fontWeight: 700,
-    color: '#aaa',
-    letterSpacing: '0.03em',
-  },
-  historyHeaderNum: {
-    minWidth: 32,
-    flexShrink: 0,
-    fontSize: '0.68rem',
-    color: '#aaa',
-  },
-  historyHeaderMove: {
-    flex: 1,
-    color: '#aaa',
-  },
-  historyHeaderWP: {
-    flexShrink: 0,
-    minWidth: 66,
-    textAlign: 'right' as const,
-    color: '#aaa',
-    paddingRight: 14,
-  },
-  historyRow: {
-    display: 'flex',
-    alignItems: 'baseline',
-    gap: 6,
-    padding: '0.28rem 0',
-    borderBottom: '1px solid #f3f3f3',
-    fontSize: '0.78rem',
-  },
-  historyNum: {
-    color: '#bbb',
-    fontVariantNumeric: 'tabular-nums',
-    minWidth: 32,
-    flexShrink: 0,
-    fontSize: '0.72rem',
-  },
-  historyMove: {
-    flex: 1,
-    color: '#333',
-    wordBreak: 'break-all' as const,
-  },
-  historyWP: {
-    color: '#555',
-    fontVariantNumeric: 'tabular-nums',
-    flexShrink: 0,
-    minWidth: 60,
-    textAlign: 'right' as const,
-  },
-  historyWPCell: {
-    display: 'flex',
-    flexDirection: 'row' as const,
-    alignItems: 'baseline',
-    flexShrink: 0,
-  },
-  historyWPNum: {
-    color: '#555',
-    fontVariantNumeric: 'tabular-nums',
-    minWidth: 52,
-    textAlign: 'right' as const,
-  },
-  historyDelta: {
-    fontVariantNumeric: 'tabular-nums',
-    flexShrink: 0,
-    minWidth: 52,
-    textAlign: 'right' as const,
-    fontSize: '0.72rem',
-  },
-  flagRow: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: 4,
-    marginTop: 8,
-  },
-  flagBadge: {
-    fontSize: '0.65rem',
-    fontWeight: 600,
-    letterSpacing: '0.03em',
-    color: '#7a5c1e',
-    background: '#fdf0d0',
-    border: '1px solid #e8c97a',
-    borderRadius: 4,
-    padding: '1px 6px',
-    whiteSpace: 'nowrap' as const,
-  },
-  historyExpandIcon: {
-    color: '#bbb',
-    fontSize: '0.6rem',
-    flexShrink: 0,
-    width: 14,
-    textAlign: 'center' as const,
-    display: 'inline-block',
-  },
-  candidatePanel: {
-    background: '#f8f8f8',
-    borderLeft: '3px solid #ddd',
-    padding: '0.45rem 0.6rem 0.45rem 0.8rem',
-    marginBottom: '0.1rem',
-    fontSize: '0.75rem',
-  },
-  candidateLabel: {
-    fontSize: '0.65rem',
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    color: '#999',
-    textTransform: 'uppercase' as const,
-    marginBottom: 5,
-  },
-  candidateRow: {
-    display: 'flex',
-    alignItems: 'baseline',
-    gap: 5,
-    padding: '0.15rem 0',
-  },
-  candidateRank: {
-    color: '#bbb',
-    fontVariantNumeric: 'tabular-nums' as const,
-    minWidth: 20,
-    flexShrink: 0,
-    fontSize: '0.68rem',
-  },
-  candidateMove: {
-    flex: 1,
-    color: '#444',
-    wordBreak: 'break-all' as const,
-  },
-  candidateWP: {
-    color: '#555',
-    fontVariantNumeric: 'tabular-nums' as const,
-    flexShrink: 0,
-    minWidth: 60,
-    textAlign: 'right' as const,
-    fontSize: '0.7rem',
-  },
-  candidateUpgrade: {
-    fontSize: '0.72rem',
-    color: '#b8860b',
-  },
-  candidateBtnRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: '1rem',
-  },
-  candidateBtn: {
-    background: '#f0f0f0',
-    border: '1px solid #ccc',
-    borderRadius: 8,
-    fontSize: '0.85rem',
-    fontWeight: 600,
-    color: '#333',
-    cursor: 'pointer',
-    padding: '0.45rem 1.4rem',
-  },
-  candidateBtnDisabled: {
-    background: '#f0f0f0',
-    border: '1px solid #ccc',
-    borderRadius: 8,
-    fontSize: '0.85rem',
-    fontWeight: 600,
-    color: '#999',
-    cursor: 'not-allowed',
-    padding: '0.45rem 1.4rem',
-  },
-};
-
-// CSS animation for spinner (global injection)
-if (typeof document !== 'undefined' && !document.getElementById('pm-spinner-style')) {
-  const style = document.createElement('style');
-  style.id = 'pm-spinner-style';
-  style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-  document.head.appendChild(style);
 }

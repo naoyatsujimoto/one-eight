@@ -611,6 +611,8 @@ export const IT_TRANSLATIONS = {
     candidateMovesLabel: 'Mosse candidate',
     analysisFailedMessage: 'L’analisi non è stata completata.',
     proUpgradePrompt: 'Passa a Pro per l’analisi completa.',
+    postmortemShowAllMoves: (n: number) => n === 1 ? `Mostra tutto (${n} mossa)` : `Mostra tutto (${n} mosse)`,
+    postmortemCloseLabel: 'Chiudi',
     importRecordLabel: 'Importa registrazione',
     importSuccessful: 'Importazione riuscita',
     connecting: 'Connessione in corso',
