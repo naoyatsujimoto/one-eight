@@ -277,6 +277,7 @@ export const ZH_HANS_TRANSLATIONS = {
     userColResult: '结果',
     userColSide: '阵营',
     userColMoves: '步数',
+    userMoveCount: (n: number) => `${n}手`,
     userColType: '类型',
     userSideBlack: 'Black',
     userSideWhite: 'White',

@@ -277,6 +277,7 @@ export const DE_TRANSLATIONS = {
     userColResult: 'Ergebnis',
     userColSide: 'Seite',
     userColMoves: 'Züge',
+    userMoveCount: (n: number) => n === 1 ? `${n} Zug` : `${n} Züge`,
     userColType: 'Typ',
     userSideBlack: 'Black',
     userSideWhite: 'White',

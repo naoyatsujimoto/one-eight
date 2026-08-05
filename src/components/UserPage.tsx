@@ -380,7 +380,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <section className="up-section">
             <SectionTitle title={t.userRatingHistory} />
             <div className="up-rating-placeholder">
-              <span className="up-rating-placeholder-text">rating chart</span>
+              <span className="up-rating-placeholder-text">{t.onlineComingSoon}</span>
             </div>
           </section>
         )}
@@ -532,11 +532,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           <div className="up-coming-soon-list">
             <div className="up-coming-soon-item">
               <span className="up-coming-soon-label">{t.userTournamentHistory}</span>
-              <span className="up-coming-soon-badge">COMING SOON</span>
+              <span className="up-coming-soon-badge">{t.onlineComingSoon}</span>
             </div>
             <div className="up-coming-soon-item">
               <span className="up-coming-soon-label">{t.userBadges}</span>
-              <span className="up-coming-soon-badge">COMING SOON</span>
+              <span className="up-coming-soon-badge">{t.onlineComingSoon}</span>
             </div>
           </div>
         </section>
@@ -1259,7 +1259,7 @@ function RecentGamesCard({
           : t.userTypeHuman;
         const detailParts = [
           side,
-          r.move_count != null ? `${r.move_count}手` : null,
+          r.move_count != null ? t.userMoveCount(r.move_count) : null,
           modeLabel,
         ].filter(Boolean).join(' · ');
 
@@ -1353,10 +1353,11 @@ function RecentGamesCard({
 // ── 共通部品 ──────────────────────────────────────────────────────────────────
 
 function SectionTitle({ title, soon }: { title: string; soon?: boolean }) {
+  const { t } = useLang();
   return (
     <div className="up-section-header">
       <h2 className="up-section-title">{title}</h2>
-      {soon && <span className="up-section-soon">COMING SOON</span>}
+      {soon && <span className="up-section-soon">{t.onlineComingSoon}</span>}
     </div>
   );
 }

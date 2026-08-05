@@ -93,3 +93,94 @@ describe('UserPage CSS — up-meta-row panel anchor', () => {
     expect(block).toContain('position: static');
   });
 });
+
+// ── userMoveCount i18n テスト ──────────────────────────────────────────────
+import { EN_TRANSLATIONS } from '../i18n/en';
+import { resolveUiTranslations } from '../i18n/index';
+
+describe('userMoveCount — 全10言語', () => {
+  const locales = ['en','ja','zh-Hans','zh-Hant','ko','es','pt-BR','de','fr','it'] as const;
+
+  for (const locale of locales) {
+    it(`${locale}: userMoveCount is a function`, () => {
+      const t = resolveUiTranslations(locale);
+      expect(typeof t.userMoveCount).toBe('function');
+    });
+
+    it(`${locale}: userMoveCount(1) contains "1"`, () => {
+      const t = resolveUiTranslations(locale);
+      expect(t.userMoveCount(1)).toContain('1');
+    });
+
+    it(`${locale}: userMoveCount(5) contains "5"`, () => {
+      const t = resolveUiTranslations(locale);
+      expect(t.userMoveCount(5)).toContain('5');
+    });
+  }
+
+  // 単数・複数形の検証
+  it('en: singular "1 move"', () => {
+    expect(resolveUiTranslations('en').userMoveCount(1)).toBe('1 move');
+  });
+  it('en: plural "2 moves"', () => {
+    expect(resolveUiTranslations('en').userMoveCount(2)).toBe('2 moves');
+  });
+  it('es: singular "1 jugada"', () => {
+    expect(resolveUiTranslations('es').userMoveCount(1)).toBe('1 jugada');
+  });
+  it('es: plural "3 jugadas"', () => {
+    expect(resolveUiTranslations('es').userMoveCount(3)).toBe('3 jugadas');
+  });
+  it('pt-BR: singular "1 jogada"', () => {
+    expect(resolveUiTranslations('pt-BR').userMoveCount(1)).toBe('1 jogada');
+  });
+  it('pt-BR: plural "2 jogadas"', () => {
+    expect(resolveUiTranslations('pt-BR').userMoveCount(2)).toBe('2 jogadas');
+  });
+  it('de: singular "1 Zug"', () => {
+    expect(resolveUiTranslations('de').userMoveCount(1)).toBe('1 Zug');
+  });
+  it('de: plural "2 Züge"', () => {
+    expect(resolveUiTranslations('de').userMoveCount(2)).toBe('2 Züge');
+  });
+  it('fr: singular "1 coup"', () => {
+    expect(resolveUiTranslations('fr').userMoveCount(1)).toBe('1 coup');
+  });
+  it('fr: plural "3 coups"', () => {
+    expect(resolveUiTranslations('fr').userMoveCount(3)).toBe('3 coups');
+  });
+  it('it: singular "1 mossa"', () => {
+    expect(resolveUiTranslations('it').userMoveCount(1)).toBe('1 mossa');
+  });
+  it('it: plural "2 mosse"', () => {
+    expect(resolveUiTranslations('it').userMoveCount(2)).toBe('2 mosse');
+  });
+  it('ja: "3手"', () => {
+    expect(resolveUiTranslations('ja').userMoveCount(3)).toBe('3手');
+  });
+  it('ko: "5수"', () => {
+    expect(resolveUiTranslations('ko').userMoveCount(5)).toBe('5수');
+  });
+});
+
+// ── UserPage直書き不在テスト ─────────────────────────────────────────────────
+describe('UserPage — hardcoded strings audit', () => {
+  const upTsxPath = resolve(__dirname, '../components/UserPage.tsx');
+  const upTsx = readFileSync(upTsxPath, 'utf-8');
+
+  it('no hardcoded 手 in move_count context', () => {
+    expect(upTsx).not.toMatch(/move_count[^)]*手/);
+  });
+
+  it('no hardcoded "rating chart"', () => {
+    expect(upTsx).not.toContain('rating chart');
+  });
+
+  it('no hardcoded "COMING SOON"', () => {
+    expect(upTsx).not.toContain('COMING SOON');
+  });
+
+  it('uses t.userMoveCount for move display', () => {
+    expect(upTsx).toContain('t.userMoveCount(r.move_count)');
+  });
+});

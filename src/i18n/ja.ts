@@ -273,6 +273,7 @@ export const JA_TRANSLATIONS = {
     userColResult: '勝敗',
     userColSide: '先後',
     userColMoves: '手数',
+    userMoveCount: (n: number) => `${n}手`,
     userColType: '種別',
     userSideBlack: '先手',
     userSideWhite: '後手',

@@ -277,6 +277,7 @@ export const KO_TRANSLATIONS = {
     userColResult: '결과',
     userColSide: '진영',
     userColMoves: '수',
+    userMoveCount: (n: number) => `${n}수`,
     userColType: '유형',
     userSideBlack: 'Black',
     userSideWhite: 'White',

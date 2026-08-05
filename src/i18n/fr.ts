@@ -277,6 +277,7 @@ export const FR_TRANSLATIONS = {
     userColResult: 'Résultat',
     userColSide: 'Côté',
     userColMoves: 'Coups',
+    userMoveCount: (n: number) => n === 1 ? `${n} coup` : `${n} coups`,
     userColType: 'Type',
     userSideBlack: 'Black',
     userSideWhite: 'White',

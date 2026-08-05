@@ -277,6 +277,7 @@ export const PT_BR_TRANSLATIONS = {
     userColResult: 'Resultado',
     userColSide: 'Lado',
     userColMoves: 'Jogadas',
+    userMoveCount: (n: number) => n === 1 ? `${n} jogada` : `${n} jogadas`,
     userColType: 'Tipo',
     userSideBlack: 'Black',
     userSideWhite: 'White',

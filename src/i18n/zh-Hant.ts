@@ -279,6 +279,7 @@ export const ZH_HANT_TRANSLATIONS = {
     userColResult: '結果',
     userColSide: '陣營',
     userColMoves: '步數',
+    userMoveCount: (n: number) => `${n}手`,
     userColType: '類型',
     userSideBlack: 'Black',
     userSideWhite: 'White',

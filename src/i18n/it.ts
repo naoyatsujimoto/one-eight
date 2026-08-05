@@ -277,6 +277,7 @@ export const IT_TRANSLATIONS = {
     userColResult: 'Risultato',
     userColSide: 'Lato',
     userColMoves: 'Mosse',
+    userMoveCount: (n: number) => n === 1 ? `${n} mossa` : `${n} mosse`,
     userColType: 'Tipo',
     userSideBlack: 'Black',
     userSideWhite: 'White',
