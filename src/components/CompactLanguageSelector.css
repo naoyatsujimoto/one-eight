@@ -127,13 +127,14 @@
 }
 
 /* ── UserPage (profile) variant ────────────────────────── */
-/* In UserPage the trigger is left-aligned (flex row: label + trigger).
-   Open the panel rightward from the trigger's left edge so it stays
-   within the viewport on narrow screens (iPhone 375px etc.).         */
+/* In UserPage the trigger sits at the right end of the meta row.
+   Align the panel to the trigger's right edge (right:0) so it expands
+   leftward — prevents overflow on narrow screens (iPhone 375px etc.).  */
 .cls-root--profile .cls-panel {
-  left: 0;
-  right: auto;
+  left: auto;
+  right: 0;
   transform: none;
   width: min(320px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
+  box-sizing: border-box;
 }

@@ -36,3 +36,43 @@ describe('OfficialMatchCalendar variant prop', () => {
     expect(typeof mod.OfficialMatchCalendar).toBe('function');
   });
 });
+
+// ── CompactLanguageSelector CSS 回帰テスト ────────────────────────────────
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+describe('CompactLanguageSelector CSS — profile panel position', () => {
+  const cssPath = resolve(__dirname, '../components/CompactLanguageSelector.css');
+  const css = readFileSync(cssPath, 'utf-8');
+
+  // @media内にも同名ブロックがあるため、最後のマッチ（グローバル指定）を取得
+  function lastProfilePanelBlock(cssText: string): string {
+    const all = [...cssText.matchAll(/\.cls-root--profile \.cls-panel\s*\{([^}]+)\}/g)];
+    return all[all.length - 1]?.[1] ?? '';
+  }
+
+  it('profile variant uses right:0 (panel expands leftward)', () => {
+    const profileBlock = lastProfilePanelBlock(css);
+    expect(profileBlock).toContain('right: 0');
+  });
+
+  it('profile variant has left:auto (not fixed left)', () => {
+    const profileBlock = lastProfilePanelBlock(css);
+    expect(profileBlock).toContain('left: auto');
+  });
+
+  it('profile variant limits max-width to avoid viewport overflow', () => {
+    const profileBlock = lastProfilePanelBlock(css);
+    expect(profileBlock).toContain('calc(100vw - 32px)');
+  });
+
+  it('title variant still uses transform:translateX(-50%) for centering', () => {
+    const titleBlock = css.match(/\.cls-root--title \.cls-panel\s*\{([^}]+)\}/)?.[1] ?? '';
+    expect(titleBlock).toContain('translateX(-50%)');
+  });
+
+  it('profile variant has box-sizing:border-box', () => {
+    const profileBlock = lastProfilePanelBlock(css);
+    expect(profileBlock).toContain('box-sizing: border-box');
+  });
+});
