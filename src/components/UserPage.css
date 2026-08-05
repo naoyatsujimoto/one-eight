@@ -17,7 +17,9 @@
 .up-player-name { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .up-edit-name-btn { font-size: 11px; color: #8a8a84; border: none; border-bottom: 1px solid #d9d9d4; background: none; padding: 0 0 1px; cursor: pointer; }
 .up-edit-name-btn:hover { color: #141413; border-color: #141413; }
-.up-meta-row { font-family: var(--mono); font-size: 11px; color: #a3a39d; letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.up-meta-row { font-family: var(--mono); font-size: 11px; color: #a3a39d; letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; position: relative; }
+/* パネルの位置基準を .cls-root 単体ではなく .up-meta-row 全体にする */
+.up-meta-row .cls-root--profile { position: static; }
 .up-name-edit-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .up-name-input { font-family: inherit; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; padding: 4px 10px; outline: none; }
 .up-name-input:focus { border-color: #141413; }

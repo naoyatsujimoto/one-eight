@@ -37,7 +37,7 @@ describe('OfficialMatchCalendar variant prop', () => {
   });
 });
 
-// ── CompactLanguageSelector CSS 回帰テスト ────────────────────────────────
+// ── CSS 回帰テスト ────────────────────────────────────────────────────────
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -74,5 +74,22 @@ describe('CompactLanguageSelector CSS — profile panel position', () => {
   it('profile variant has box-sizing:border-box', () => {
     const profileBlock = lastProfilePanelBlock(css);
     expect(profileBlock).toContain('box-sizing: border-box');
+  });
+});
+
+// ── UserPage.css — up-meta-row 配置基準テスト ─────────────────────────────
+describe('UserPage CSS — up-meta-row panel anchor', () => {
+  const upCssPath = resolve(__dirname, '../components/UserPage.css');
+  const upCss = readFileSync(upCssPath, 'utf-8');
+
+  it('up-meta-row has position:relative (panel anchor)', () => {
+    const block = upCss.match(/\.up-meta-row\s*\{([^}]+)\}/)?.[1] ?? '';
+    expect(block).toContain('position: relative');
+  });
+
+  it('up-meta-row .cls-root--profile has position:static (delegates anchor to meta row)', () => {
+    expect(upCss).toContain('.up-meta-row .cls-root--profile');
+    const block = upCss.match(/\.up-meta-row \.cls-root--profile\s*\{([^}]+)\}/)?.[1] ?? '';
+    expect(block).toContain('position: static');
   });
 });
