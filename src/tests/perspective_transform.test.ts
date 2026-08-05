@@ -1,161 +1,103 @@
 /**
  * perspective_transform.test.ts
  *
- * Option C 仕様の単体テスト。
+ * resolveLocalPerspective の単体テスト（8ケース）。
  *
- * 設計原則 (Option C):
- *   - 内部状態 / DB / 棋譜: 常に canonical 座標 (A〜M / Gate 1〜12)
- *   - ラベル文字: 視点に関係なく常に canonical のまま (変換しない)
- *   - 後手視点: 盤面全体を物理的に 180° 回転して表示 (CSS rotate)
- *   - ラベルテキスト要素: counter-rotate(180deg) で読める向きにする
- *   - クリックハンドラ: 常に canonical ID を engine に渡す
- *
- * 確認事項:
- *   1. ラベル文字列は perspective によって変わらない
- *   2. white 視点では盤面全体が 180° 回転する (CSS クラス付与で実現)
- *   3. クリック時に渡される ID は canonical のまま
- *   4. MoveHistory 表示は perspective に依存しない
+ * 設計方針:
+ *   - オフラインPvP (cpuPlayer===null): 端末共有・盤面回転なし → 常時 'black' 基準
+ *   - CPU戦 (cpuPlayer!==null): 人間プレイヤーの選択色を基準にする
+ *   - OnlineBoard / TrainingView は本関数を使用しない（現状維持を確認）
  */
 
 import { describe, it, expect } from 'vitest';
-import type { PositionId } from '../game/types';
+import { resolveLocalPerspective } from '../app/App';
+import fs from 'fs';
+import path from 'path';
 
-// ── Option C: ラベル変換なし ──────────────────────────────────────────────────
-// Board.tsx では perspective に関わらずラベルは常に canonical を表示する
+// ── resolveLocalPerspective の基本ケース ──────────────────────────────────────
 
-function getDisplayPositionLabel(id: PositionId): PositionId {
-  return id; // canonical のまま
-}
-
-function getDisplayGateLabel(gateId: number): number {
-  return gateId; // canonical のまま
-}
-
-// ── Position ラベルは perspective で変わらない ─────────────────────────────────
-describe('Option C: Position label is always canonical', () => {
-  it('black perspective: returns canonical id unchanged', () => {
-    expect(getDisplayPositionLabel('A')).toBe('A');
-    expect(getDisplayPositionLabel('M')).toBe('M');
-    expect(getDisplayPositionLabel('G')).toBe('G');
+describe('resolveLocalPerspective', () => {
+  // ケース1: オフラインPvP・Black手番相当
+  it('case1: offline PvP (cpuPlayer=null, black turn) → always black', () => {
+    expect(resolveLocalPerspective(null, null)).toBe('black');
   });
 
-  it('white perspective: canonical A is still A (NOT remapped to M)', () => {
-    // Option C: ラベルは変換しない。後手視点でも A は A
-    expect(getDisplayPositionLabel('A')).toBe('A');
-    expect(getDisplayPositionLabel('M')).toBe('M');
+  // ケース2: オフラインPvP・White手番相当
+  it('case2: offline PvP (cpuPlayer=null, white turn) → always black (no flip)', () => {
+    // White手番でも端末共有のため常時 'black' を返す
+    expect(resolveLocalPerspective(null, null)).toBe('black');
   });
 
-  it('all positions: label equals canonical id regardless of perspective', () => {
-    const positions: PositionId[] = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
-    for (const id of positions) {
-      // ラベルは視点によって変わらない
-      expect(getDisplayPositionLabel(id)).toBe(id);
-    }
+  // ケース3: CPU戦・人間がBlack
+  it('case3: CPU=white, humanColor=black → black', () => {
+    expect(resolveLocalPerspective('white', 'black')).toBe('black');
   });
 
-  it('canonical A is white-perspective far-left, but label stays A', () => {
-    // 後手視点では盤面が 180° 回転するため、物理的に canonical A の位置は
-    // 画面の右下になる。しかしラベル文字は A のまま (counter-rotate で読める向きに表示)
-    expect(getDisplayPositionLabel('A')).toBe('A');
+  // ケース4: CPU戦・人間がWhite
+  it('case4: CPU=black, humanColor=white → white', () => {
+    expect(resolveLocalPerspective('black', 'white')).toBe('white');
+  });
+
+  // ケース5: humanColor未確定時（null）
+  it('case5: CPU=white, humanColor=null → fallback to black', () => {
+    expect(resolveLocalPerspective('white', null)).toBe('black');
   });
 });
 
-// ── Gate ラベルは perspective で変わらない ────────────────────────────────────
-describe('Option C: Gate label is always canonical', () => {
-  it('black perspective: returns canonical gateId unchanged', () => {
-    for (let g = 1; g <= 12; g++) {
-      expect(getDisplayGateLabel(g)).toBe(g);
-    }
-  });
+// ── App.tsx: Board と TurnInfo が同じ localPerspective を使用しているか確認 ──
 
-  it('white perspective: canonical Gate 1 is still 1 (NOT remapped to 7)', () => {
-    // Option C: ラベルは変換しない。後手視点でも Gate 1 は 1
-    expect(getDisplayGateLabel(1)).toBe(1);
-    expect(getDisplayGateLabel(7)).toBe(7);
-  });
+describe('App.tsx source: Board and TurnInfo use the same localPerspective', () => {
+  // ケース6: ソース確認テスト
+  it('case6: App.tsx passes localPerspective to both Board and TurnInfo', () => {
+    const appSrc = fs.readFileSync(
+      path.resolve(__dirname, '../app/App.tsx'),
+      'utf-8',
+    );
 
-  it('white perspective: canonical Gate 6 is still 6 (NOT remapped to 12)', () => {
-    expect(getDisplayGateLabel(6)).toBe(6);
-    expect(getDisplayGateLabel(12)).toBe(12);
-  });
+    // resolveLocalPerspective 関数の定義が存在する
+    expect(appSrc).toContain('export function resolveLocalPerspective(');
 
-  it('all gates 1-12: label equals canonical gateId regardless of perspective', () => {
-    for (let g = 1; g <= 12; g++) {
-      expect(getDisplayGateLabel(g)).toBe(g);
-    }
+    // localPerspective の計算が存在する
+    expect(appSrc).toContain('const localPerspective = resolveLocalPerspective(');
+
+    // Board に labelPerspective={localPerspective} が渡されている
+    expect(appSrc).toContain('labelPerspective={localPerspective}');
+
+    // TurnInfo に perspective={localPerspective} が渡されている
+    expect(appSrc).toContain('perspective={localPerspective}');
   });
 });
 
-// ── 盤面回転は CSS クラスで実現 ────────────────────────────────────────────────
-describe('Option C: Board rotation is via CSS class, not label remapping', () => {
-  it('white perspective applies board-inner-rotated CSS class', () => {
-    // Board.tsx では labelPerspective === 'white' のとき
-    // className に 'board-inner-rotated' が追加される
-    // → CSS で rotate(180deg) が適用される
-    const perspective: 'black' | 'white' = 'white';
-    const classNames = [
-      'board-inner',
-      perspective === 'white' ? 'board-inner-rotated' : '',
-    ].filter(Boolean);
-    expect(classNames).toContain('board-inner-rotated');
-  });
+// ── OnlineBoard: 独自の視点切替を維持している（変更なし確認） ────────────────
 
-  it('black perspective does NOT apply board-inner-rotated CSS class', () => {
-    const perspective = 'black' as 'black' | 'white';
-    const classNames = [
-      'board-inner',
-      perspective === 'white' ? 'board-inner-rotated' : '',
-    ].filter(Boolean);
-    expect(classNames).not.toContain('board-inner-rotated');
+describe('OnlineBoard source: myColor-based perspective unchanged', () => {
+  // ケース7: OnlineBoard は resolveLocalPerspective を使用しない
+  it('case7: OnlineBoard uses myColor for perspective, not resolveLocalPerspective', () => {
+    const onlineBoardSrc = fs.readFileSync(
+      path.resolve(__dirname, '../components/OnlineBoard.tsx'),
+      'utf-8',
+    );
+
+    // OnlineBoard は resolveLocalPerspective を import していない
+    expect(onlineBoardSrc).not.toContain('resolveLocalPerspective');
+
+    // myColor ベースの視点参照が存在する（Black視点が使われている）
+    // OnlineBoard は myColor を使って labelPerspective を制御している
+    expect(onlineBoardSrc).toContain('myColor');
   });
 });
 
-// ── クリックハンドラは常に canonical 座標を渡す ──────────────────────────────
-describe('Option C: Click handler always passes canonical coordinates', () => {
-  /**
-   * Board.tsx の position-btn.onClick は:
-   *   onClick={() => onSelectPosition(id)}
-   * id は BOARD_POSITIONS の canonical PositionId。
-   *
-   * 後手視点で盤面が 180° 回転しても、id は canonical のまま。
-   * ユーザーが物理的に右下のボタンをクリックしても、
-   * canonical A (= 物理的に右下にある要素) の id = 'A' が engine に渡る。
-   */
-  it('canonical id is passed to onSelectPosition regardless of perspective', () => {
-    const positions: PositionId[] = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
-    for (const canonical of positions) {
-      // クリック時に渡るのは canonical のまま
-      const passedToEngine = canonical; // Board.tsx: onClick={() => onSelectPosition(id)}
-      expect(passedToEngine).toBe(canonical);
-      // ラベルも canonical と同一
-      expect(getDisplayPositionLabel(canonical)).toBe(canonical);
-    }
-  });
+// ── TrainingView: Black固定を維持（変更なし確認） ────────────────────────────
 
-  it('canonical gate id is passed to handler regardless of perspective', () => {
-    for (let g = 1; g <= 12; g++) {
-      const passedToEngine = g; // Board.tsx: onLarge={() => onLargePocketClick(gateId)}
-      expect(passedToEngine).toBe(g);
-      expect(getDisplayGateLabel(g)).toBe(g);
-    }
-  });
-});
+describe('TrainingView source: black perspective fixed, unchanged', () => {
+  // ケース8: TrainingView は 'black' 固定で resolveLocalPerspective を使用しない
+  it('case8: TrainingView does not use resolveLocalPerspective (black fixed)', () => {
+    const trainingViewSrc = fs.readFileSync(
+      path.resolve(__dirname, '../components/TrainingView.tsx'),
+      'utf-8',
+    );
 
-// ── MoveHistory 表示は perspective に依存しない ──────────────────────────────
-describe('Option C: MoveHistory notation is perspective-independent', () => {
-  it('move notation uses canonical coordinates, not display labels', () => {
-    // 棋譜は canonical 座標で記録される
-    // 後手画面でも先手画面でも同じ棋譜が表示される
-    const canonicalMove = 'A,m(1)'; // canonical: Position A, Massive build at Gate 1
-    // 後手視点でも棋譜は変わらない
-    expect(canonicalMove).toBe('A,m(1)');
-  });
-
-  it('displayed position label equals canonical (no notation mismatch)', () => {
-    // Option C では表示ラベル = canonical のため、
-    // 棋譜表示と盤面ラベルが一致する
-    const canonical: PositionId = 'M';
-    const displayedInWhitePerspective = getDisplayPositionLabel(canonical);
-    expect(displayedInWhitePerspective).toBe('M'); // NOT 'A'
+    // TrainingView は resolveLocalPerspective を使用しない
+    expect(trainingViewSrc).not.toContain('resolveLocalPerspective');
   });
 });

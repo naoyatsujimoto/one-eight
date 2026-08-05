@@ -54,6 +54,20 @@ import { DEFAULT_TIMER_CONFIG } from '../game/timerTypes';
 
 export type BuildMode = 'none' | 'massive' | 'selective' | 'quad';
 
+/**
+ * オフラインPvP（cpuPlayer===null）は端末を共有するため常時Black基準。
+ * CPU戦は人間プレイヤーの選択色を基準にする。
+ */
+export function resolveLocalPerspective(
+  cpuPlayer: 'black' | 'white' | null,
+  humanColor: 'black' | 'white' | null,
+): 'black' | 'white' {
+  // オフラインPvPは端末を共有し、盤面を回転させないため常時Black基準
+  if (cpuPlayer === null) return 'black';
+  // CPU戦は人間プレイヤーの選択色を基準にする
+  return humanColor ?? 'black';
+}
+
 export interface BoardBuildState {
   mode: BuildMode;
   selectiveFirst: GateId | null;
@@ -832,6 +846,7 @@ export default function App() {
 
   // Ghost Mode: 自分の手番になったときに fetchGhostMoves
   const humanColor: 'black' | 'white' | null = state.cpuPlayer !== null
+
     ? (state.cpuPlayer === 'black' ? 'white' : 'black')  // PvC: cpuが blackなら humanは white
     : null;
 
@@ -840,6 +855,11 @@ export default function App() {
     && state.currentPlayer !== state.cpuPlayer;
 
   const gameMode: string = state.cpuPlayer !== null ? 'human_vs_cpu' : 'human_vs_human';
+
+  const localPerspective = resolveLocalPerspective(
+    state.cpuPlayer,
+    humanColor,
+  );
 
   // showGhostToggle: PvP 以外のモードで表示（Pro・非Pro問わず）
   // proGhostEnabled: ProユーザーのみGhostの実際の機能を有効化
@@ -1114,11 +1134,7 @@ export default function App() {
             onLargePocketClick={handleLargePocketClick}
             onMiddlePocketClick={handleMiddlePocketClick}
             onSmallPocketClick={handleSmallPocketClick}
-            labelPerspective={
-              state.cpuPlayer !== null
-                ? (humanColor ?? 'black')
-                : 'black'
-            }
+            labelPerspective={localPerspective}
             ghostMoves={ghostMoves}
             ghostModeActive={ghostModeActive}
             showGhostToggle={showGhostToggle}
@@ -1146,11 +1162,7 @@ export default function App() {
             timerConfig={state.timerConfig}
             playerTimers={playerTimers}
             currentMoveRemainingMs={currentMoveRemainingMs}
-            perspective={
-              state.cpuPlayer !== null
-                ? (humanColor ?? state.currentPlayer)
-                : state.currentPlayer
-            }
+            perspective={localPerspective}
           />
           <HowToPlay />
           <ImportRecord onImport={handleImport} />
