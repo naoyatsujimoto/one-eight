@@ -91,7 +91,7 @@ describe('i18n: profileSaveSuccess / profileSaveError', () => {
   it('8. 全10言語に profileSaveSuccess が存在すること', async () => {
     for (const locale of LOCALE_FILES) {
       const mod = await import(`../i18n/${locale}.ts`);
-      const translations = mod.default ?? mod[Object.keys(mod)[0]];
+      const translations = mod.default ?? mod[Object.keys(mod)[0]!];
       expect(
         translations.profileSaveSuccess,
         `${locale}: profileSaveSuccess が未定義`,
@@ -110,7 +110,7 @@ describe('i18n: profileSaveSuccess / profileSaveError', () => {
   it('9. 全10言語に profileSaveError が存在すること', async () => {
     for (const locale of LOCALE_FILES) {
       const mod = await import(`../i18n/${locale}.ts`);
-      const translations = mod.default ?? mod[Object.keys(mod)[0]];
+      const translations = mod.default ?? mod[Object.keys(mod)[0]!];
       expect(
         translations.profileSaveError,
         `${locale}: profileSaveError が未定義`,
