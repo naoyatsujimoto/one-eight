@@ -667,6 +667,9 @@ export interface UnprocessedArenaEventRow {
   end_reason:          string;
   processed_at:        string | null;
   existing_award_count: number;
+  /** Phase 1 補欹4: arena側の master_reward 設定値（未設定の場合は null） */
+  master_reward_amount_cents: number | null;
+  master_reward_currency: string | null;
 }
 
 /**

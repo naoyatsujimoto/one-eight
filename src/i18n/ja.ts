@@ -451,15 +451,18 @@ export const JA_TRANSLATIONS = {
     arenaRulesOrderTitle: '先手 / 後手',
     arenaRulesOrderBody: 'Master戦では、Masterが先手になります。\nMasterがいない場合やポイント戦では、ポイント上位のプレイヤーが先手になります。\n同点の場合は既定のタイブレークにより決定します。',
     arenaRulesEntryTitle: '参加条件',
-    arenaRulesEntryBody: 'Official Arenaへの参加にはProが必要です。',
+    arenaRulesEntryBody: 'Pro会員はOfficial Arenaの初期運営期間中からEntryできます。Official Arenaは、運営体制の安定後、Free会員にも段階的に解放する予定です。解放時期はArenaの運営状況により決定します。',
+    arenaRulesEntryMasterRewardNote: 'Entryにより、Masterの遷移およびMaster報酬を含むArena規則が適用されます。',
+    arenaRulesMasterRewardAmount: (amount: string) => `Master報酬：${amount}`,
+    arenaRulesMasterRewardUnset: 'Master報酬：未定',
     arenaRulesPointTitle: 'ポイント',
     arenaRulesPointBody: '各Arenaのポイントは、Arenaごとに別々に管理されます。\n\n勝利：+3\n敗北：+1\n不戦敗：-3\n不成立：0\n\nポイントは負の値になることがあります。',
     arenaRulesMasterTitle: 'Master称号',
     arenaRulesMasterBody: '各ArenaにはMasterが存在します。\n\nMasterがMatch 1で敗れた場合、勝者が新しいMasterになります。\nMasterが勝利した場合、その称号を維持します。\n\nMasterが不在の場合、Match 1の勝者はInterim Masterになります。\nInterim Masterが次回以降のMaster関連Matchに勝利すると、正式なMasterになります。',
     arenaRulesNoShowTitle: 'no-show',
     arenaRulesNoShowBody: '対局に入室しなかった場合はno-showとなります。\n\n片方のみが入室しなかった場合、入室したプレイヤーの勝利となります。\n両者が入室しなかった場合、その対局は不成立となります。',
-    arenaRulesRewardTitle: 'Reward / Prize',
-    arenaRulesRewardBody: 'ArenaのMaster称号に関わる結果に対して、Reward / Prizeが設定される場合があります。\n\n受け取りには、受取情報・税務確認・PayPal受取メールの提出が必要です。\n支払はPayPalを通じて行われます。',
+    arenaRulesRewardTitle: 'Master報酬',
+    arenaRulesRewardBody: '公式Arenaの結果によりMasterに就任し、またはMasterの地位を維持したユーザーは、次回のMaster戦に出場できるよう、自身の予定を最大限調整する義務を負います。Master報酬は、この義務を引き受けることへの固定報酬であり、対局の勝敗そのものに対して支払われるものではありません。\n\nMaster報酬の金額はArenaごとにあらかじめ定められ、個々の対局の勝敗、参加者数または会費収入によって変動しません。報酬額を変更する場合は一定期間前に告知し、変更後に開催されるArenaから適用します。\n\n受け取りには、受取情報・税務確認・PayPal受取メールの提出が必要です。\n支払はPayPalを通じて行われます。',
 
     // Timer
     timerClock: 'タイムクロック',
@@ -527,6 +530,8 @@ export const JA_TRANSLATIONS = {
     // PrizeClaimForm
     prizeClaimFormTitle: 'Reward / Prize — 受取情報',
     prizeClaimNoticePayment: 'Reward / Prize の支払には、本人確認・税務確認・PayPal受取情報が必要です。',
+    prizeClaimFormTitleMaster: 'Master報酬 - 支払情報',
+    prizeClaimNoticePaymentMaster: 'Master報酬のお支払処理のために、本人確認・税務確認・PayPal受取情報が必要です。',
     prizeClaimNoticeSecurity: '提出された税務・支払情報は、支払い準備に必要な情報が安全に保存され、かつ提出から72時間が経過した後、定期処理によりオンラインデータベースから削除されます。',
     prizeClaimNoticePaypal: 'PayPal受取メールが誤っている場合、支払が保留または失敗する可能性があります。',
     prizeClaimNoticeTax: '税務申告・居住国情報の正確性は受賞者本人の責任です。',
@@ -659,7 +664,7 @@ export const JA_TRANSLATIONS = {
     inboxCloseLabel: '閉じる',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `お知らせ：${arenaLabel} Master 報酬` : 'お知らせ：Master 報酬',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `おめでとうございます。\n\n${arenaLabel} Arena Master に関連する対局結果に基づき、Reward / Prize の受給資格があります。\n\nReward / Prize を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Reward / Prize セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`
-      : `おめでとうございます。\n\nArena Master に関連する対局結果に基づき、Reward / Prize の受給資格があります。\n\nReward / Prize を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Reward / Prize セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`,
+      ? `おめでとうございます。\n\n${arenaLabel} の Master報酬の受給資格が付与されました。Master報酬は、次回のMaster戦に出場できるよう、自身の予定を最大限調整する義務を引き受けることへの固定報酬です。\n\nMaster報酬を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Master報酬 セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`
+      : `おめでとうございます。\n\nMaster報酬の受給資格が付与されました。Master報酬は、次回のMaster戦に出場できるよう、自身の予定を最大限調整する義務を引き受けることへの固定報酬です。\n\nMaster報酬を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Master報酬 セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`,
 
 } satisfies Translations;

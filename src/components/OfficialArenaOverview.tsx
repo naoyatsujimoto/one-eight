@@ -45,12 +45,24 @@ import {
   formatDateTime as locFmtDateTime,
 } from '../lib/localeFormat';
 
-// ─── Arena Reward constants (front-end fixed values; replace with DB/RPC in future) ──────────────
+// ─── Master Reward helper ───────────────────────────────────────────────────────
 
-const ARENA_REWARDS_USD: Record<string, number> = {
-  ELEPHANT: 65,
-  JAGUAR: 65,
-};
+/**
+ * formatMasterReward — Phase 2 (補正済み)
+ * cents: null/undefined → return null
+ * currency: null/undefined → return null (USD fallbackを廃止)
+ * cents が負数・NaN・非整数 → return null
+ * Example: (6500, 'USD') → 'USD 65.00'
+ */
+export function formatMasterReward(
+  cents: number | null | undefined,
+  currency: string | null | undefined,
+): string | null {
+  if (cents == null || currency == null) return null;
+  if (!Number.isFinite(cents) || !Number.isInteger(cents) || cents < 0) return null;
+  const amount = (cents / 100).toFixed(2);
+  return `${currency} ${amount}`;
+}
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -189,6 +201,7 @@ interface EntryConfirmModalProps {
   eventTime: string;
   entryDeadline: string;
   lang: string;
+  masterRewardStr: string | null;
   onConfirm: () => void;
   onBack: () => void;
   isSubmitting: boolean;
@@ -199,6 +212,7 @@ function EntryConfirmModal({
   eventTime,
   entryDeadline,
   lang,
+  masterRewardStr,
   onConfirm,
   onBack,
   isSubmitting,
@@ -233,8 +247,13 @@ function EntryConfirmModal({
           <p style={confirmModalStyles.noShowText}>{t.arenaNoShowWarning}</p>
           <p style={confirmModalStyles.noShowPenalty}>{t.arenaNoShowPenalty}</p>
 
-          {/* Pro only note */}
-          <p style={confirmModalStyles.proNote}>{t.arenaProOnlyEntry}</p>
+          {/* Master Reward amount (if set) */}
+          {masterRewardStr !== null && (
+            <p style={confirmModalStyles.proNote}>{t.arenaRulesMasterRewardAmount(masterRewardStr)}</p>
+          )}
+
+          {/* Entry rules apply note */}
+          <p style={confirmModalStyles.proNote}>{t.arenaRulesEntryMasterRewardNote}</p>
         </div>
 
         {/* Buttons */}
@@ -412,6 +431,7 @@ function ArenaDetailModal({
           eventTime={formatDatetime(detail.next_event.event_datetime, lang)}
           entryDeadline={formatDatetime(detail.next_event.entry_deadline, lang)}
           lang={lang}
+          masterRewardStr={formatMasterReward(detail.master_reward_amount_cents, detail.master_reward_currency)}
           onConfirm={handleConfirmEntry}
           onBack={() => setShowEntryConfirm(false)}
           isSubmitting={isSubmitting}
@@ -465,9 +485,19 @@ function DetailContent({
   // my_match from RPC (typed cast)
   const myMatch = detail.my_match as MyArenaMatch | null;
 
+  // Master Reward amount display
+  const rewardStr = formatMasterReward(detail.master_reward_amount_cents, detail.master_reward_currency);
+
   return (
     <div>
       <h2 style={modalStyles.title}>{detail.display_name}</h2>
+
+      {/* Master Reward amount */}
+      {rewardStr !== null && (
+        <div style={modalStyles.section}>
+          <div style={modalStyles.sectionLabel}>{t.arenaRulesMasterRewardAmount(rewardStr)}</div>
+        </div>
+      )}
 
       {/* Entry status (E-3) */}
       {entryState === 'already_entered' && (
@@ -910,15 +940,16 @@ function ArenaCard({
 
       {/* Info block */}
       <div style={cardStyles.infoBlock}>
-        {/* Reward */}
-        <div style={cardStyles.row}>
-          <span style={cardStyles.label}>{t.arenaReward}</span>
-          <span style={cardStyles.value}>
-            {ARENA_REWARDS_USD[arena.code] != null
-              ? `$${ARENA_REWARDS_USD[arena.code]}`
-              : '—'}
-          </span>
-        </div>
+        {/* Master Reward */}
+        {(() => {
+          const rewardStr = formatMasterReward(arena.master_reward_amount_cents, arena.master_reward_currency);
+          if (rewardStr === null) return null;
+          return (
+            <div style={cardStyles.row}>
+              <span style={cardStyles.label}>{t.arenaRulesMasterRewardAmount(rewardStr)}</span>
+            </div>
+          );
+        })()}
 
         {/* Frequency */}
         <div style={cardStyles.row}>
@@ -1052,7 +1083,7 @@ export function OfficialArenaOverview({
       <div style={overviewStyles.sectionTitle}>{t.arenaOfficialArena}</div>
 
       {/* Arena Rules accordion */}
-      <ArenaRulesAccordion />
+      <ArenaRulesAccordion arenas={arenas} />
 
       {/* Arena cards */}
       <div style={overviewStyles.cards}>
@@ -1084,8 +1115,17 @@ export function OfficialArenaOverview({
 
 // ─── Arena Rules Accordion ──────────────────────────────────────────────────
 
-function ArenaRulesAccordion() {
+interface ArenaRulesAccordionProps {
+  arenas: ArenaOverviewItem[];
+}
+
+function ArenaRulesAccordion({ arenas }: ArenaRulesAccordionProps) {
   const { t } = useLang();
+
+  // DB由来のArena別報酬額一覧（null未設定Arenaは表示しない）
+  const rewardAmounts = arenas
+    .map((a) => ({ name: a.display_name, str: formatMasterReward(a.master_reward_amount_cents, a.master_reward_currency) }))
+    .filter((r): r is { name: string; str: string } => r.str !== null);
 
   const items: Array<{ title: string; body: string }> = [
     { title: t.arenaRulesEntryTitle,    body: t.arenaRulesEntryBody },
@@ -1109,6 +1149,16 @@ function ArenaRulesAccordion() {
               <div style={rulesStyles.itemBody}>
                 {item.body.split('\n').map((line, i) =>
                   line === '' ? <br key={i} /> : <span key={i} style={{ display: 'block' }}>{line}</span>
+                )}
+                {/* Master報酬セクション: DB由来のArena別報酬額を表示 */}
+                {item.title === t.arenaRulesRewardTitle && rewardAmounts.length > 0 && (
+                  <div style={rulesStyles.rewardAmountList}>
+                    {rewardAmounts.map((r) => (
+                      <div key={r.name} style={rulesStyles.rewardAmountRow}>
+                        <span>{r.name}：{r.str}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </details>
@@ -1164,6 +1214,17 @@ const rulesStyles: Record<string, React.CSSProperties> = {
     color: '#555',
     lineHeight: 1.65,
     padding: '0.3rem 0.75rem 0.5rem',
+  },
+  rewardAmountList: {
+    marginTop: '0.5rem',
+    paddingTop: '0.4rem',
+    borderTop: '1px solid #e8e3de',
+  },
+  rewardAmountRow: {
+    fontSize: '0.78rem',
+    color: '#444',
+    fontWeight: 500,
+    lineHeight: 1.8,
   },
 };
 

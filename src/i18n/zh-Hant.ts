@@ -457,15 +457,18 @@ export const ZH_HANT_TRANSLATIONS = {
     arenaRulesOrderTitle: '先後手',
     arenaRulesOrderBody: 'Master 賽中，Master 先手。\n若無 Master，或在積分賽中，Arena 積分較高的玩家先手。\n若積分相同，則依預定的平局打破規則決定。',
     arenaRulesEntryTitle: '報名要求',
-    arenaRulesEntryBody: '報名 Official Arena 需要 Pro 帳號。',
+    arenaRulesEntryBody: 'Pro 會員可在初期運營期間報名 Official Arena。Official Arena 將在運營穩定後逐步對 Free 會員開放。開放時間將根據 Arena 運營狀況决定。',
+    arenaRulesEntryMasterRewardNote: '報名即表示同意適用 Arena 規則，包括 Master 轉換和 Master 獎勵。',
+    arenaRulesMasterRewardAmount: (amount: string) => `Master 獎勵：${amount}`,
+    arenaRulesMasterRewardUnset: 'Master 獎勵：待確定',
     arenaRulesPointTitle: '積分',
     arenaRulesPointBody: '每個 Arena 分別管理 Arena 積分。\n\n勝：+3\n敗：+1\n棄賽敗：-3\n無配對：0\n\n積分可能為負數。',
     arenaRulesMasterTitle: 'Master',
     arenaRulesMasterBody: '每個 Arena 有一位 Master。\n\n若 Master 在第 1 場賽事中落敗，勝者成為新 Master。\n若 Master 獲勝，則保留稱號。\n\n若無 Master，第 1 場賽事的勝者成為代理 Master。\n若代理 Master 在後來的 Master 相關賽事中獲勝，則成為正式 Master。',
     arenaRulesNoShowTitle: '棄賽',
     arenaRulesNoShowBody: '未進入賽事的玩家視為棄賽。\n\n若只有一方進入，該方獲勝。\n若雙方都未進入，則視為無效賽。',
-    arenaRulesRewardTitle: '獎勵 / 獎品',
-    arenaRulesRewardBody: '與 Arena Master 稱號相關的結果可能設有獎勵 / 獎品。\n\n領取時需提供收款資訊、稅務確認及 PayPal 收款電子郵件。\n透過 PayPal 付款。',
+    arenaRulesRewardTitle: 'Master 獎勵',
+    arenaRulesRewardBody: '根據公式 Arena 結果被任命為 Master 或保持 Master 地位的用戶，有義務盡一切努力調整自身行程以參加下一場Master對局。\n\nMaster 獎勵是承擔該義務的固定報酬，並非根據對局勝負支付。\n\nMaster 獎勵金額對每個 Arena 預先確定，不隨個人對局結果、參加人數或會費收入變動。金額變更將提前公告，並從變更後举辦的 Arena 起適用。\n\n領取時需提供收款資訊、稅務確認及 PayPal 收款電子郵件。\n透過 PayPal 付款。',
 
     // Timer
     timerClock: '計時器',
@@ -533,6 +536,8 @@ export const ZH_HANT_TRANSLATIONS = {
     // PrizeClaimForm
     prizeClaimFormTitle: '獎勵 / 獎品 — 收款資訊',
     prizeClaimNoticePayment: '為處理獎勵 / 獎品付款，我們需要身份確認、稅務確認及 PayPal 收款資訊。',
+    prizeClaimFormTitleMaster: 'Master報酬 - 收款資訊',
+    prizeClaimNoticePaymentMaster: '為處理您的Master報酬付款，我們需要身份確認、稅務確認及PayPal收款資訊。',
     prizeClaimNoticeSecurity: '提交的稅務和付款資訊在所需資訊安全儲存以備付款準備，且自提交起至少 72 小時後，將由排程程序從線上資料庫中刪除。',
     prizeClaimNoticePaypal: '若 PayPal 收款電子郵件不正確，付款可能延遲、暫停或失敗。',
     prizeClaimNoticeTax: '稅務申報及居住地國資訊的準確性由收款人自行負責。',
@@ -665,7 +670,7 @@ export const ZH_HANT_TRANSLATIONS = {
     inboxCloseLabel: '關閉',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `通知：${arenaLabel} Master 獎勵` : '通知：Master 獎勵',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `恭喜您。\n\n根據您在 ${arenaLabel} Arena Master 相關對局中的成績，您有資格領取 Reward / Prize。\n\n領取 Reward / Prize 需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Reward / Prize 區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`
-      : `恭喜您。\n\n根據您在 Arena Master 相關對局中的成績，您有資格領取 Reward / Prize。\n\n領取 Reward / Prize 需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Reward / Prize 區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`,
+      ? `恭喜您。\n\n您已獲得 ${arenaLabel} 的 Master 獎勵資格。Master 獎勵是承擔盡一切努力調整自身行程以參加下一場Master對局的義務的固定報酬。\n\n領取 Master 獎勵需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Master 獎勵區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`
+      : `恭喜您。\n\n您已獲得 Master 獎勵資格。Master 獎勵是承擔盡一切努力調整自身行程以參加下一場Master對局的義務的固定報酬。\n\n領取 Master 獎勵需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Master 獎勵區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`,
 
 } satisfies Translations;

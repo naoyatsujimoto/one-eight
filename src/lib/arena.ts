@@ -20,6 +20,9 @@ export interface ArenaOverviewItem {
   entry_deadline_hours: number;
   timer_config: Record<string, unknown> | null;
   display_order: number;
+  // Master reward (Phase 1)
+  master_reward_amount_cents: number | null;
+  master_reward_currency: string | null;
   // Master
   current_master_user_id: string | null;
   current_master_display_name: string | null;
@@ -82,6 +85,9 @@ export interface ArenaDetailData {
   start_time_jst: string;
   entry_deadline_hours: number;
   timer_config: Record<string, unknown> | null;
+  // Master reward (Phase 1)
+  master_reward_amount_cents: number | null;
+  master_reward_currency: string | null;
   // Master
   current_master_user_id: string | null;
   current_master_display_name: string | null;

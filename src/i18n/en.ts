@@ -453,15 +453,18 @@ export const EN_TRANSLATIONS = {
     arenaRulesOrderTitle: 'First / Second Player',
     arenaRulesOrderBody: 'In a Master match, the Master plays first.\nIf there is no Master, or in point matches, the player with higher Arena points plays first.\nIf players are tied, the order is decided by the defined tiebreakers.',
     arenaRulesEntryTitle: 'Entry Requirement',
-    arenaRulesEntryBody: 'A Pro account is required to enter Official Arena.',
+    arenaRulesEntryBody: 'Pro members can enter Official Arenas during the initial launch period. Official Arenas will be progressively opened to Free members after operations have stabilized. The timing of this expansion will be determined based on arena conditions.',
+    arenaRulesEntryMasterRewardNote: 'By entering, you agree that the Arena rules, including Master transitions and Master Reward, apply.',
+    arenaRulesMasterRewardAmount: (amount: string) => `Master Reward: ${amount}`,
+    arenaRulesMasterRewardUnset: 'Master Reward: TBD',
     arenaRulesPointTitle: 'Points',
     arenaRulesPointBody: 'Arena points are managed separately for each Arena.\n\nWin: +3\nLoss: +1\nNo-show loss: -3\nNo match: 0\n\nPoints can become negative.',
     arenaRulesMasterTitle: 'Master',
     arenaRulesMasterBody: 'Each Arena has a Master.\n\nIf the Master loses Match 1, the winner becomes the new Master.\nIf the Master wins, the title is retained.\n\nIf there is no Master, the winner of Match 1 becomes the Interim Master.\nIf the Interim Master wins a later Master-related match, they become the official Master.',
     arenaRulesNoShowTitle: 'no-show',
     arenaRulesNoShowBody: 'A player who does not enter the match is treated as a no-show.\n\nIf only one player enters, that player wins.\nIf neither player enters, the match is treated as no contest.',
-    arenaRulesRewardTitle: 'Reward / Prize',
-    arenaRulesRewardBody: 'A Reward / Prize may be assigned for results related to an Arena Master title.\n\nTo receive it, payout information, tax confirmation, and a PayPal receiving email are required.\nPayouts are made through PayPal.',
+    arenaRulesRewardTitle: 'Master Reward',
+    arenaRulesRewardBody: 'Users who are appointed as Master or retain the Master title based on the results of an Official Arena are obligated to make every effort to adjust their schedule so they can participate in the next Master match.\n\nThe Master Reward is a fixed compensation for accepting this obligation, and is not paid based on match outcomes.\n\nThe amount of the Master Reward is determined in advance for each Arena and does not vary based on individual match results, the number of participants, or membership fee revenue. If the amount is changed, it will be announced in advance and will apply from the Arena held after the change.\n\nTo receive the Master Reward, payout information, tax confirmation, and a PayPal receiving email are required.\nPayouts are made through PayPal.',
 
     // Timer
     timerClock: 'Time Clock',
@@ -529,6 +532,9 @@ export const EN_TRANSLATIONS = {
     // PrizeClaimForm
     prizeClaimFormTitle: 'Reward / Prize - Payout Information',
     prizeClaimNoticePayment: 'To process a Reward / Prize payout, we need identity confirmation, tax confirmation, and PayPal receiving information.',
+    // PrizeClaimForm — Arena Master専用
+    prizeClaimFormTitleMaster: 'Master Reward - Payout Information',
+    prizeClaimNoticePaymentMaster: 'To process your Master Reward payout, we need identity confirmation, tax confirmation, and PayPal receiving information.',
     prizeClaimNoticeSecurity: 'Submitted tax and payment information is deleted by a scheduled process after the information required for payout preparation has been securely stored and at least 72 hours have passed since submission.',
     prizeClaimNoticePaypal: 'If the PayPal receiving email is incorrect, the payout may be delayed, placed on hold, or fail.',
     prizeClaimNoticeTax: 'The accuracy of tax reporting and residence country information is the recipient\'s responsibility.',
@@ -681,6 +687,6 @@ export const EN_TRANSLATIONS = {
     inboxCloseLabel: 'Close',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Notice: ${arenaLabel} Master Reward` : 'Notice: Master Reward',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `Congratulations.\n\nBased on your result in an Arena Master-related match for ${arenaLabel}, you are eligible for a Reward / Prize.\n\nTo receive the Reward / Prize, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Reward / Prize section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`
-      : `Congratulations.\n\nBased on your result in an Arena Master-related match, you are eligible for a Reward / Prize.\n\nTo receive the Reward / Prize, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Reward / Prize section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`,
+      ? `Congratulations.\n\nYou are eligible for the Master Reward for ${arenaLabel}. The Master Reward is a fixed compensation for the obligation to make every effort to adjust their schedule so they can participate in the next Master match.\n\nTo receive the Master Reward, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Master Reward section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`
+      : `Congratulations.\n\nYou are eligible for the Master Reward. The Master Reward is a fixed compensation for the obligation to make every effort to adjust their schedule so they can participate in the next Master match.\n\nTo receive the Master Reward, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Master Reward section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`,
 } as const;

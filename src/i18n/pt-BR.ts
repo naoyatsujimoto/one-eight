@@ -446,15 +446,18 @@ export const PT_BR_TRANSLATIONS = {
     arenaRulesOrderTitle: 'Primeiro / Segundo jogador',
     arenaRulesOrderBody: 'Em uma partida de Master, o Master joga primeiro.\nSe não houver Master, ou em partidas de pontos, o jogador com mais pontos de Arena joga primeiro.\nSe os jogadores estiverem empatados, a ordem é decidida pelos critérios de desempate definidos.',
     arenaRulesEntryTitle: 'Requisito de inscrição',
-    arenaRulesEntryBody: 'Uma conta Pro é necessária para se inscrever na Official Arena.',
+    arenaRulesEntryBody: 'Membros Pro podem participar de Official Arenas durante o período inicial de lançamento. As Official Arenas serão abertas progressivamente para membros Free após a estabilização das operações. O momento desta abertura será determinado com base nas condições da arena.',
+    arenaRulesEntryMasterRewardNote: 'Ao se inscrever, você concorda que as regras da Arena, incluindo transições de Master e a Recompensa Master, se aplicam.',
+    arenaRulesMasterRewardAmount: (amount: string) => `Recompensa Master: ${amount}`,
+    arenaRulesMasterRewardUnset: 'Recompensa Master: A definir',
     arenaRulesPointTitle: 'Pontos',
     arenaRulesPointBody: 'Os pontos de Arena são gerenciados separadamente para cada Arena.\n\nVitória: +3\nDerrota: +1\nDerrota por não comparecimento: -3\nSem partida: 0\n\nOs pontos podem se tornar negativos.',
     arenaRulesMasterTitle: 'Master',
     arenaRulesMasterBody: 'Cada Arena tem um Master.\n\nSe o Master perder a Partida 1, o vencedor se torna o novo Master.\nSe o Master vencer, o título é mantido.\n\nSe não houver Master, o vencedor da Partida 1 se torna Master interino.\nSe o Master interino vencer uma partida relacionada ao Master posteriormente, torna-se o Master oficial.',
     arenaRulesNoShowTitle: 'Não comparecimento',
     arenaRulesNoShowBody: 'Um jogador que não entra na partida é tratado como não comparecimento.\n\nSe apenas um jogador entrar, esse jogador vence.\nSe nenhum jogador entrar, a partida é tratada como sem contest.',
-    arenaRulesRewardTitle: 'Recompensa / Prêmio',
-    arenaRulesRewardBody: 'Uma Recompensa / Prêmio pode ser atribuída por resultados relacionados a um título de Arena Master.\n\nPara recebê-la, são necessárias informações de pagamento, confirmação fiscal e um e-mail de recebimento do PayPal.\nOs pagamentos são feitos pelo PayPal.',
+    arenaRulesRewardTitle: 'Recompensa Master',
+    arenaRulesRewardBody: 'Usuários nomeados como Master ou que mantêm o título de Master com base nos resultados de uma Official Arena têm a obrigação de fazer todos os esforços para ajustar sua agenda de modo a participar da próxima partida Master.\n\nA Recompensa Master é uma compensação fixa por aceitar esta obrigação e não é paga com base nos resultados das partidas.\n\nO valor da Recompensa Master é determinado antecipadamente para cada Arena e não varia com base nos resultados individuais, no número de participantes ou na receita das mensalidades. Alterações serão anunciadas com antecedência e se aplicarão a partir da Arena realizada após a alteração.\n\nPara receber a Recompensa Master, são necessárias informações de pagamento, confirmação fiscal e um e-mail de recebimento do PayPal.\nOs pagamentos são feitos pelo PayPal.',
 
     timerClock: 'Relógio',
     timerByoyomi: 'Byoyomi',
@@ -513,6 +516,8 @@ export const PT_BR_TRANSLATIONS = {
 
     prizeClaimFormTitle: 'Recompensa / Prêmio — Informações de pagamento',
     prizeClaimNoticePayment: 'Para processar um pagamento de Recompensa / Prêmio, precisamos de confirmação de identidade, confirmação fiscal e informações de recebimento do PayPal.',
+    prizeClaimFormTitleMaster: 'Master Reward - Informações de pagamento',
+    prizeClaimNoticePaymentMaster: 'Para processar o pagamento da sua Master Reward, precisamos de confirmação de identidade, confirmação fiscal e informações de recebimento do PayPal.',
     prizeClaimNoticeSecurity: 'As informações fiscais e de pagamento enviadas são excluídas por um processo agendado após as informações necessárias para a preparação do pagamento terem sido armazenadas de forma segura e pelo menos 72 horas terem passado desde o envio.',
     prizeClaimNoticePaypal: 'Se o e-mail de recebimento do PayPal estiver incorreto, o pagamento pode ser atrasado, suspenso ou falhar.',
     prizeClaimNoticeTax: 'A precisão das informações de declaração fiscal e país de residência é responsabilidade do destinatário.',
@@ -642,7 +647,7 @@ export const PT_BR_TRANSLATIONS = {
     inboxCloseLabel: 'Fechar',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Aviso: Recompensa Master ${arenaLabel}` : 'Aviso: Recompensa Master',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `Parabéns.\n\nCom base no seu resultado em uma partida relacionada ao Arena Master de ${arenaLabel}, você é elegível para um Reward / Prize.\n\nPara receber o Reward / Prize, você precisa enviar informações de pagamento, confirmação fiscal e um e-mail de recebimento do PayPal.\n\nEnvie as informações necessárias na seção Reward / Prize da sua User Page.\n\nApós as informações confidenciais enviadas serem salvas como Winner File, elas geralmente serão excluídas do banco de dados online em até 72 horas como medida de segurança da informação.`
-      : `Parabéns.\n\nCom base no seu resultado em uma partida relacionada ao Arena Master, você é elegível para um Reward / Prize.\n\nPara receber o Reward / Prize, você precisa enviar informações de pagamento, confirmação fiscal e um e-mail de recebimento do PayPal.\n\nEnvie as informações necessárias na seção Reward / Prize da sua User Page.\n\nApós as informações confidenciais enviadas serem salvas como Winner File, elas geralmente serão excluídas do banco de dados online em até 72 horas como medida de segurança da informação.`,
+      ? `Parabéns.\n\nVocê é elegível para a Recompensa Master de ${arenaLabel}. A Recompensa Master é uma compensação fixa pela obrigação de fazer todos os esforços para ajustar sua agenda de modo a participar da próxima partida Master.\n\nPara receber a Recompensa Master, você precisa enviar informações de pagamento, confirmação fiscal e um e-mail de recebimento do PayPal.\n\nEnvie as informações necessárias na seção Recompensa Master da sua User Page.\n\nApós as informações confidenciais enviadas serem salvas como Winner File, elas geralmente serão excluídas do banco de dados online em até 72 horas como medida de segurança da informação.`
+      : `Parabéns.\n\nVocê é elegível para a Recompensa Master. A Recompensa Master é uma compensação fixa pela obrigação de fazer todos os esforços para ajustar sua agenda de modo a participar da próxima partida Master.\n\nPara receber a Recompensa Master, você precisa enviar informações de pagamento, confirmação fiscal e um e-mail de recebimento do PayPal.\n\nEnvie as informações necessárias na seção Recompensa Master da sua User Page.\n\nApós as informações confidenciais enviadas serem salvas como Winner File, elas geralmente serão excluídas do banco de dados online em até 72 horas como medida de segurança da informação.`,
 
 } satisfies Translations;

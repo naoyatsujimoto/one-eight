@@ -14,6 +14,7 @@ import { useLang } from '../lib/lang';
 
 interface Props {
   awardId: string;
+  sourceKind?: string | null;
   isUpdate?: boolean;  // 情報変更フロー（再提出ではなく更新）
   /** フォームを閉じる（親コンポーネントに委譲） */
   onClose: () => void;
@@ -23,8 +24,11 @@ interface Props {
 
 // ── コンポーネント ────────────────────────────────────────────────────────────
 
-export function PrizeClaimForm({ awardId, isUpdate = false, onClose, onSuccess }: Props) {
+export function PrizeClaimForm({ awardId, sourceKind, isUpdate = false, onClose, onSuccess }: Props) {
   const { t } = useLang();
+  const isArenaMaster = sourceKind === 'arena_master';
+  const formTitle = isArenaMaster ? t.prizeClaimFormTitleMaster : t.prizeClaimFormTitle;
+  const paymentNotice = isArenaMaster ? t.prizeClaimNoticePaymentMaster : t.prizeClaimNoticePayment;
 
   // フォーム値（機微情報 — Console log 禁止）
   const [legalName,               setLegalName]               = useState('');
@@ -117,7 +121,7 @@ export function PrizeClaimForm({ awardId, isUpdate = false, onClose, onSuccess }
       <div style={s.modal}>
         {/* ヘッダー */}
         <div style={s.header}>
-          <h2 style={s.title}>{isUpdate ? t.updateTaxPaymentInfo : t.prizeClaimFormTitle}</h2>
+          <h2 style={s.title}>{isUpdate ? t.updateTaxPaymentInfo : formTitle}</h2>
           <button type="button" style={s.closeBtn} onClick={onClose} disabled={submitting}>
             ✕
           </button>
@@ -126,7 +130,7 @@ export function PrizeClaimForm({ awardId, isUpdate = false, onClose, onSuccess }
         {/* 注意書き */}
         <div style={s.notice}>
           <p style={s.noticeText}>
-            {t.prizeClaimNoticePayment}<br />
+            {paymentNotice}<br />
             {t.prizeClaimNoticeSecurity}
           </p>
           <p style={s.noticeText}>

@@ -265,13 +265,13 @@ describe('pricing-i18n.js — Pricing dictionary', () => {
     }
   });
 
-  it('EN dict has exactly 35 keys', () => {
-    expect(Object.keys(pricingDict['en'] as object)).toHaveLength(35);
+  it('EN dict has exactly 37 keys', () => { // Phase 3: +2 (arenaEntryNote, proFeeNote)
+    expect(Object.keys(pricingDict['en'] as object)).toHaveLength(37);
   });
 
-  it('each locale has exactly 35 keys', () => {
+  it('each locale has exactly 37 keys', () => { // Phase 3: +2 (arenaEntryNote, proFeeNote)
     for (const loc of EXPECTED_LOCALES) {
-      expect(Object.keys(pricingDict[loc] as object), `${loc} key count`).toHaveLength(35);
+      expect(Object.keys(pricingDict[loc] as object), `${loc} key count`).toHaveLength(37);
     }
   });
 
@@ -368,13 +368,13 @@ describe('pro-i18n.js — Pro dictionary', () => {
     }
   });
 
-  it('EN dict has exactly 29 keys', () => {
-    expect(Object.keys(proDict['en'] as object)).toHaveLength(29);
+  it('EN dict has exactly 31 keys', () => { // Phase 3: +2 (arenaEntryNote, proFeeNote)
+    expect(Object.keys(proDict['en'] as object)).toHaveLength(31);
   });
 
-  it('each locale has exactly 29 keys', () => {
+  it('each locale has exactly 31 keys', () => { // Phase 3: +2 (arenaEntryNote, proFeeNote)
     for (const loc of EXPECTED_LOCALES) {
-      expect(Object.keys(proDict[loc] as object), `${loc} key count`).toHaveLength(29);
+      expect(Object.keys(proDict[loc] as object), `${loc} key count`).toHaveLength(31);
     }
   });
 

@@ -36,7 +36,8 @@ function loadDict(filename: string): Record<string, Record<string, string | unde
 }
 
 const LOCALES = ['en', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'es', 'pt-BR', 'de', 'fr', 'it'];
-const TERMS_KEYS   = Array.from({ length: 24 }, (_, i) => `t${String(i + 1).padStart(2, '0')}`);
+// Phase 3: extended to t34 (added t25-t34 for Official Arena, Master Reward, Pro fee sections)
+const TERMS_KEYS   = Array.from({ length: 34 }, (_, i) => `t${String(i + 1).padStart(2, '0')}`);
 const PRIVACY_KEYS = Array.from({ length: 36 }, (_, i) => `p${String(i + 1).padStart(2, '0')}`);
 const REFUND_KEYS  = Array.from({ length: 15 }, (_, i) => `r${String(i + 1).padStart(2, '0')}`);
 
@@ -55,7 +56,7 @@ describe('terms-i18n.js — key coverage', () => {
   });
 
   for (const loc of LOCALES) {
-    it(`${loc}: has all 24 keys (t01–t24)`, () => {
+    it(`${loc}: has all 34 keys (t01–t34)`, () => { // Phase 3: extended to t34
       const entry = dict[loc]!;
       for (const k of TERMS_KEYS) {
         expect(entry, `missing ${k} in ${loc}`).toHaveProperty(k);
@@ -471,22 +472,36 @@ describe('legal-i18n.js — deleted', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 12. Pricing / Pro not modified (diff against git HEAD)
+// 12. Pricing / Pro — Phase 3 allows intentional changes for Master Reward
 // ---------------------------------------------------------------------------
 
-describe('Pricing / Pro unchanged', () => {
-  it('pricing.html: does not contain new legal dict keys', () => {
+describe('Pricing / Pro — legal key guard (Phase 3 aware)', () => {
+  it('pricing.html: does not contain terms/privacy/refund dict keys (t01-t24, p/r keys)', () => {
     const html = readPublic('pricing.html');
     // terms/privacy/refund dict keys should not appear as data-i18n targets
+    // Phase 3 adds arenaEntryNote, proFeeNote — which are pricing-specific keys, not terms keys
     expect(html).not.toMatch(/data-i18n="t0[12]"/);
     expect(html).not.toMatch(/data-i18n="p0[12]"/);
     expect(html).not.toMatch(/data-i18n="r0[12]"/);
   });
 
-  it('pro.html: does not contain new legal dict keys', () => {
+  it('pro.html: does not contain terms/privacy/refund dict keys (t01-t24, p/r keys)', () => {
     const html = readPublic('pro.html');
     expect(html).not.toMatch(/data-i18n="t0[12]"/);
     expect(html).not.toMatch(/data-i18n="p0[12]"/);
     expect(html).not.toMatch(/data-i18n="r0[12]"/);
+  });
+
+  it('pricing-i18n.js: payment-critical values unchanged ($14.99, Paddle, priceId)', () => {
+    const src = readPublic('pricing-i18n.js');
+    expect(src).toContain('$14.99');
+    expect(src).toContain('Paddle');
+    expect(src).not.toContain('pri_01kt39z89k9qbv3egaacsppz2r');
+    // priceId is in pricing.html script, not in i18n dict — this is correct
+  });
+
+  it('pricing.html: payment priceId unchanged', () => {
+    const html = readPublic('pricing.html');
+    expect(html).toContain('pri_01kt39z89k9qbv3egaacsppz2r');
   });
 });

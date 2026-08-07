@@ -445,15 +445,18 @@ export const DE_TRANSLATIONS = {
     arenaRulesOrderTitle: 'Erster / Zweiter Spieler',
     arenaRulesOrderBody: 'In einem Master-Match spielt der Master zuerst.\nWenn kein Master vorhanden ist oder in Punkte-Matches, spielt der Spieler mit mehr Arena-Punkten zuerst.\nBei Gleichstand wird die Reihenfolge durch definierte Tiebreaker bestimmt.',
     arenaRulesEntryTitle: 'Anmeldevoraussetzung',
-    arenaRulesEntryBody: 'Ein Pro-Konto ist erforderlich, um an der Official Arena teilzunehmen.',
+    arenaRulesEntryBody: 'Pro-Mitglieder können Official Arenas während der Anfangsphase betreten. Official Arenas werden nach Stabilisierung des Betriebs schrittweise auch für Free-Mitglieder geöffnet. Der Zeitpunkt wird anhand der Arena-Bedingungen festgelegt.',
+    arenaRulesEntryMasterRewardNote: 'Durch die Anmeldung erklärst du dich mit den Arena-Regeln einverstanden, einschließlich Master-Übergängen und Master-Belohnung.',
+    arenaRulesMasterRewardAmount: (amount: string) => `Master-Belohnung: ${amount}`,
+    arenaRulesMasterRewardUnset: 'Master-Belohnung: Noch nicht festgelegt',
     arenaRulesPointTitle: 'Punkte',
     arenaRulesPointBody: 'Arena-Punkte werden für jede Arena separat verwaltet.\n\nSieg: +3\nNiederlage: +1\nNichterscheinen-Niederlage: -3\nKein Match: 0\n\nPunkte können negativ werden.',
     arenaRulesMasterTitle: 'Master',
     arenaRulesMasterBody: 'Jede Arena hat einen Master.\n\nWenn der Master Match 1 verliert, wird der Gewinner der neue Master.\nWenn der Master gewinnt, bleibt der Titel erhalten.\n\nWenn kein Master vorhanden ist, wird der Gewinner von Match 1 Interim Master.\nWenn der Interim Master ein späteres Master-Match gewinnt, wird er offizieller Master.',
     arenaRulesNoShowTitle: 'Nichterscheinen',
     arenaRulesNoShowBody: 'Ein Spieler, der das Match nicht betritt, gilt als nicht erschienen.\n\nWenn nur ein Spieler beitritt, gewinnt dieser.\nWenn keiner beitritt, gilt das Match als kein Wettkampf.',
-    arenaRulesRewardTitle: 'Belohnung / Preis',
-    arenaRulesRewardBody: 'Eine Belohnung / ein Preis kann für Ergebnisse vergeben werden, die mit einem Arena-Master-Titel zusammenhängen.\n\nZum Empfang werden Auszahlungsinformationen, Steuerbestätigung und eine PayPal-Empfänger-E-Mail benötigt.\nAuszahlungen erfolgen über PayPal.',
+    arenaRulesRewardTitle: 'Master-Belohnung',
+    arenaRulesRewardBody: 'Nutzer, die aufgrund der Ergebnisse einer offiziellen Arena als Master ernannt werden oder ihren Master-Titel behalten, sind verpflichtet, alle Anstrengungen zu unternehmen, um den eigenen Zeitplan anzupassen, damit eine Teilnahme am nächsten Master-Spiel möglich ist.\n\nDie Master-Belohnung ist eine feste Vergütung für die Übernahme dieser Verpflichtung und wird nicht basierend auf Spielergebnissen ausgezahlt.\n\nDer Betrag der Master-Belohnung wird für jede Arena im Voraus festgelegt und ändert sich nicht basierend auf einzelnen Spielergebnissen, der Teilnehmerzahl oder Mitgliedsbeiträgen. Änderungen werden im Voraus angekündigt und gelten ab der nach der Änderung stattfindenden Arena.\n\nZum Empfang werden Auszahlungsinformationen, Steuerbestätigung und eine PayPal-Empfänger-E-Mail benötigt.\nAuszahlungen erfolgen über PayPal.',
     timerClock: 'Zeitschaltuhr',
     timerByoyomi: 'Byoyomi',
     timerModeNone: 'Keine',
@@ -503,6 +506,8 @@ export const DE_TRANSLATIONS = {
     prizeKindCash: 'Bargeld',
     prizeClaimFormTitle: 'Belohnung / Preis — Auszahlungsinformationen',
     prizeClaimNoticePayment: 'Zur Bearbeitung einer Auszahlung benötigen wir Identitätsbestätigung, Steuerbestätigung und PayPal-Empfängerinformationen.',
+    prizeClaimFormTitleMaster: 'Master Reward - Auszahlungsinformationen',
+    prizeClaimNoticePaymentMaster: 'Zur Bearbeitung Ihrer Master Reward-Auszahlung benötigen wir Identitätsbestätigung, Steuerbestätigung und PayPal-Empfängerinformationen.',
     prizeClaimNoticeSecurity: 'Eingereichte Steuer- und Zahlungsinformationen werden durch einen geplanten Prozess gelöscht, nachdem die für die Auszahlungsvorbereitung erforderlichen Informationen sicher gespeichert wurden und seit der Einreichung mindestens 72 Stunden vergangen sind.',
     prizeClaimNoticePaypal: 'Wenn die PayPal-Empfänger-E-Mail falsch ist, kann die Auszahlung verzögert, eingefroren oder fehlgeschlagen sein.',
     prizeClaimNoticeTax: 'Die Richtigkeit der Steuererklärung und der Informationen zum Wohnsitzland liegt in der Verantwortung des Empfängers.',
@@ -635,7 +640,7 @@ export const DE_TRANSLATIONS = {
     inboxCloseLabel: 'Schließen',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Hinweis: ${arenaLabel} Master-Belohnung` : 'Hinweis: Master-Belohnung',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `Herzlichen Glückwunsch.\n\nAufgrund deines Ergebnisses in einem Arena-Master-bezogenen Spiel für ${arenaLabel} bist du berechtigt, eine Reward / Prize zu erhalten.\n\nUm die Reward / Prize zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Reward / Prize auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`
-      : `Herzlichen Glückwunsch.\n\nAufgrund deines Ergebnisses in einem Arena-Master-bezogenen Spiel bist du berechtigt, eine Reward / Prize zu erhalten.\n\nUm die Reward / Prize zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Reward / Prize auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`,
+      ? `Herzlichen Glückwunsch.\n\nDu bist berechtigt, die Master-Belohnung für ${arenaLabel} zu erhalten. Die Master-Belohnung ist eine feste Vergütung für die Verpflichtung, alle Anstrengungen zu unternehmen, um den eigenen Zeitplan anzupassen, damit eine Teilnahme am nächsten Master-Spiel möglich ist.\n\nUm die Master-Belohnung zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Master-Belohnung auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`
+      : `Herzlichen Glückwunsch.\n\nDu bist berechtigt, die Master-Belohnung zu erhalten. Die Master-Belohnung ist eine feste Vergütung für die Verpflichtung, alle Anstrengungen zu unternehmen, um den eigenen Zeitplan anzupassen, damit eine Teilnahme am nächsten Master-Spiel möglich ist.\n\nUm die Master-Belohnung zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Master-Belohnung auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`,
 
 } satisfies Translations;

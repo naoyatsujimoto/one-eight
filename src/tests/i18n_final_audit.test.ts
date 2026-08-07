@@ -151,9 +151,9 @@ const EXPECTED_LOCALES: LocaleCode[] = ['zh-Hans', 'zh-Hant', 'es', 'en', 'pt-BR
 const STATIC_PAGES = ['pricing', 'pro', 'terms', 'privacy', 'refund'] as const;
 
 const STATIC_CONTENT_KEY_COUNTS: Record<string, number> = {
-  pricing: 35,
-  pro:     29,
-  terms:   24,
+  pricing: 37, // Phase 3: +2 (arenaEntryNote, proFeeNote)
+  pro:     31, // Phase 3: +2 (arenaEntryNote, proFeeNote)
+  terms:   34, // Phase 3: +10 (t25–t34)
   privacy: 36,
   refund:  15,
 };

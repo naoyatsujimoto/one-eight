@@ -445,15 +445,18 @@ export const FR_TRANSLATIONS = {
     arenaRulesOrderTitle: 'Premier / Second joueur',
     arenaRulesOrderBody: 'Dans un match Master, le Master joue en premier.\nS\'il n\'y a pas de Master, ou dans les matchs de points, le joueur avec plus de points Arena joue en premier.\nEn cas d\'égalité, l\'ordre est décidé par les critères de départage définis.',
     arenaRulesEntryTitle: 'Condition d\'inscription',
-    arenaRulesEntryBody: 'Un compte Pro est requis pour s\'inscrire à l\'Official Arena.',
+    arenaRulesEntryBody: 'Les membres Pro peuvent participer aux Official Arenas pendant la période de lancement initiale. Les Official Arenas seront progressivement ouvertes aux membres Free après stabilisation des opérations. Le calendrier de cette ouverture sera déterminé en fonction des conditions de l\'arène.',
+    arenaRulesEntryMasterRewardNote: 'En vous inscrivant, vous acceptez que les règles de l\'Arena, y compris les transitions Master et la Récompense Master, s\'appliquent.',
+    arenaRulesMasterRewardAmount: (amount: string) => `Récompense Master : ${amount}`,
+    arenaRulesMasterRewardUnset: 'Récompense Master : à définir',
     arenaRulesPointTitle: 'Points',
     arenaRulesPointBody: 'Les points Arena sont gérés séparément pour chaque Arena.\n\nVictoire : +3\nDéfaite : +1\nDéfaite par forfait : -3\nAucun match : 0\n\nLes points peuvent devenir négatifs.',
     arenaRulesMasterTitle: 'Master',
     arenaRulesMasterBody: 'Chaque Arena a un Master.\n\nSi le Master perd le Match 1, le gagnant devient le nouveau Master.\nSi le Master gagne, le titre est conservé.\n\nS\'il n\'y a pas de Master, le gagnant du Match 1 devient Master intérimaire.\nSi le Master intérimaire gagne un match Master ultérieur, il devient Master officiel.',
     arenaRulesNoShowTitle: 'Forfait',
     arenaRulesNoShowBody: 'Un joueur qui n\'entre pas dans le match est considéré comme forfait.\n\nSi un seul joueur entre, ce joueur gagne.\nSi aucun des deux joueurs n\'entre, le match est considéré sans résultat.',
-    arenaRulesRewardTitle: 'Récompense / Prix',
-    arenaRulesRewardBody: 'Une récompense / un prix peut être attribué pour les résultats liés à un titre d\'Arena Master.\n\nPour le recevoir, des informations de paiement, une confirmation fiscale et une adresse PayPal réceptrice sont requises.\nLes paiements sont effectués via PayPal.',
+    arenaRulesRewardTitle: 'Récompense Master',
+    arenaRulesRewardBody: 'Les utilisateurs nommés Master ou maintenant leur titre de Master selon les résultats d\'une Official Arena sont tenus de faire tout leur possible pour adapter leur emploi du temps afin de participer au prochain match Master.\n\nLa Récompense Master est une compensation fixe pour l\'acceptation de cette obligation, et n\'est pas versée en fonction des résultats des matchs.\n\nLe montant de la Récompense Master est déterminé à l\'avance pour chaque Arena et ne varie pas selon les résultats individuels, le nombre de participants ou les revenus des frais d\'adhésion. Toute modification sera annoncée à l\'avance et s\'appliquera à partir de l\'Arena tenue après le changement.\n\nPour recevoir la Récompense Master, des informations de paiement, une confirmation fiscale et une adresse e-mail PayPal réceptrice sont requises.\nLes paiements sont effectués via PayPal.',
     timerClock: 'Horloge',
     timerByoyomi: 'Byoyomi',
     timerModeNone: 'Aucune',
@@ -503,6 +506,8 @@ export const FR_TRANSLATIONS = {
     prizeKindCash: 'Espèces',
     prizeClaimFormTitle: 'Récompense / Prix — Informations de paiement',
     prizeClaimNoticePayment: 'Pour traiter un paiement de récompense, nous avons besoin d\'une confirmation d\'identité, d\'une confirmation fiscale et des informations PayPal réceptrices.',
+    prizeClaimFormTitleMaster: 'Master Reward - Informations de paiement',
+    prizeClaimNoticePaymentMaster: 'Pour traiter le versement de votre Master Reward, nous avons besoin d\'une confirmation d\'identité, d\'une confirmation fiscale et des informations PayPal réceptrices.',
     prizeClaimNoticeSecurity: 'Les informations fiscales et de paiement soumises sont supprimées par un processus planifié après que les informations requises pour la préparation du paiement ont été stockées en toute sécurité et qu\'au moins 72 heures se sont écoulées depuis la soumission.',
     prizeClaimNoticePaypal: 'Si l\'adresse PayPal réceptrice est incorrecte, le paiement peut être retardé, suspendu ou échouer.',
     prizeClaimNoticeTax: 'L\'exactitude des déclarations fiscales et des informations sur le pays de résidence est de la responsabilité du destinataire.',
@@ -635,7 +640,7 @@ export const FR_TRANSLATIONS = {
     inboxCloseLabel: 'Fermer',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Avis : Récompense Master ${arenaLabel}` : 'Avis : Récompense Master',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `Félicitations.\n\nEn fonction de votre résultat lors d'un match lié à l'Arena Master de ${arenaLabel}, vous êtes éligible à une Reward / Prize.\n\nPour recevoir la Reward / Prize, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Reward / Prize de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`
-      : `Félicitations.\n\nEn fonction de votre résultat lors d'un match lié à l'Arena Master, vous êtes éligible à une Reward / Prize.\n\nPour recevoir la Reward / Prize, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Reward / Prize de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`,
+      ? `Félicitations.\n\nVous êtes éligible à la Récompense Master pour ${arenaLabel}. La Récompense Master est une compensation fixe pour l'obligation de faire tout son possible pour adapter son emploi du temps afin de participer au prochain match Master.\n\nPour recevoir la Récompense Master, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Récompense Master de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`
+      : `Félicitations.\n\nVous êtes éligible à la Récompense Master. La Récompense Master est une compensation fixe pour l'obligation de faire tout son possible pour adapter son emploi du temps afin de participer au prochain match Master.\n\nPour recevoir la Récompense Master, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Récompense Master de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`,
 
 } satisfies Translations;

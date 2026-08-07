@@ -446,15 +446,18 @@ export const KO_TRANSLATIONS = {
     arenaRulesOrderTitle: '선후공',
     arenaRulesOrderBody: 'Master 경기에서는 Master가 선공입니다.\nMaster가 없거나 포인트 경기에서는 Arena 포인트가 높은 플레이어가 선공입니다.\n포인트가 동점이면 정해진 타이브레이커로 결정됩니다.',
     arenaRulesEntryTitle: '참가 요건',
-    arenaRulesEntryBody: 'Official Arena에 참가하려면 Pro 계정이 필요합니다.',
+    arenaRulesEntryBody: 'Pro 회원은 초기 운영 기간 중 Official Arena에 참가할 수 있습니다. Official Arena는 운영이 안정된 후 Free 회원에게도 단계적으로 개방될 예정입니다. 개방 시기는 아레나 운영 상황에 따라 결정됩니다.',
+    arenaRulesEntryMasterRewardNote: 'Entry시 Master 전환 및 Master 보상을 포함한 Arena 규칙이 적용됩니다.',
+    arenaRulesMasterRewardAmount: (amount: string) => `Master 보상: ${amount}`,
+    arenaRulesMasterRewardUnset: 'Master 보상: 미정',
     arenaRulesPointTitle: '포인트',
     arenaRulesPointBody: 'Arena 포인트는 각 Arena별로 관리됩니다.\n\n승: +3\n패: +1\n부전패: -3\n경기 없음: 0\n\n포인트는 음수가 될 수 있습니다.',
     arenaRulesMasterTitle: 'Master',
     arenaRulesMasterBody: '각 Arena에는 Master가 있습니다.\n\nMaster가 경기 1에서 패하면 승자가 새 Master가 됩니다.\nMaster가 이기면 타이틀이 유지됩니다.\n\nMaster가 없으면 경기 1의 승자가 임시 Master가 됩니다.\n임시 Master가 이후 Master 관련 경기에서 이기면 공식 Master가 됩니다.',
     arenaRulesNoShowTitle: '부전패',
     arenaRulesNoShowBody: '경기에 참가하지 않은 플레이어는 부전패 처리됩니다.\n\n한 명만 참가한 경우 해당 플레이어가 승리합니다.\n양쪽 모두 참가하지 않으면 무효 경기로 처리됩니다.',
-    arenaRulesRewardTitle: '보상 / 상금',
-    arenaRulesRewardBody: 'Arena Master 타이틀 관련 결과에 대해 보상 / 상금이 지급될 수 있습니다.\n\n수령을 위해 지급 정보, 세금 확인서, PayPal 수취 이메일이 필요합니다.\n지급은 PayPal을 통해 이루어집니다.',
+    arenaRulesRewardTitle: 'Master 보상',
+    arenaRulesRewardBody: 'Official Arena 결과에 의해 Master로 임명되거나 Master 지위를 유지한 회원는 다음 Arena에 Master로 참가할 수 있도록 일정을 최대한 조정할 의무를 집니다.\n\nMaster 보상은 이 의무를 수락하는 것에 대한 고정 보상이며, 대국 결과에 따라 지급되는 것이 아닙니다.\n\nMaster 보상 금액은 Arena별로 사전에 결정되며, 개별 대국 결과, 참가자 수 또는 회비 수입에 따라 변동되지 않습니다. 금액 변경 시 사전 공지하며 변경 후 개열되는 Arena부터 적용합니다.\n\n수령을 위해 지급 정보, 세금 확인서, PayPal 수취 이메일이 필요합니다.\n지급은 PayPal을 통해 이루어집니다.',
 
     timerClock: '시간 시계',
     timerByoyomi: '초읽기',
@@ -513,6 +516,8 @@ export const KO_TRANSLATIONS = {
 
     prizeClaimFormTitle: '보상 / 상금 — 지급 정보',
     prizeClaimNoticePayment: '보상 / 상금 지급 처리를 위해 신원 확인, 세금 확인, PayPal 수취 정보가 필요합니다.',
+    prizeClaimFormTitleMaster: 'Master 보상 - 지급 정보',
+    prizeClaimNoticePaymentMaster: 'Master 보상 지급 처리를 위해 신원 확인, 세금 확인, PayPal 수취 정보가 필요합니다.',
     prizeClaimNoticeSecurity: '제출된 세금 및 지급 정보는 지급 준비에 필요한 정보가 안전하게 저장되고 제출 후 72시간 이상 경과하면 예약 프로세스에 의해 온라인 데이터베이스에서 삭제됩니다.',
     prizeClaimNoticePaypal: 'PayPal 수취 이메일이 올바르지 않으면 지급이 지연되거나 보류 또는 실패할 수 있습니다.',
     prizeClaimNoticeTax: '세금 신고 및 거주 국가 정보의 정확성은 수취인의 책임입니다.',
@@ -642,7 +647,7 @@ export const KO_TRANSLATIONS = {
     inboxCloseLabel: '닫기',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `알림：${arenaLabel} Master 보상` : '알림：Master 보상',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
-      ? `축하합니다.\n\n${arenaLabel} Arena Master 관련 대국 결과를 바탕으로 Reward / Prize 수령 자격이 부여되었습니다.\n\nReward / Prize를 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Reward / Prize 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`
-      : `축하합니다.\n\nArena Master 관련 대국 결과를 바탕으로 Reward / Prize 수령 자격이 부여되었습니다.\n\nReward / Prize를 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Reward / Prize 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`,
+      ? `축하합니다.\n\n${arenaLabel} Master 보상 수령 자격이 부여되었습니다. Master 보상은 다음 Master 경기에 참가할 수 있도록 최대한 일정을 조정해야 하는 의무를 수락하는 것에 대한 고정 보상입니다.\n\nMaster 보상을 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Master 보상 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`
+      : `축하합니다.\n\nMaster 보상 수령 자격이 부여되었습니다. Master 보상은 다음 Master 경기에 참가할 수 있도록 최대한 일정을 조정해야 하는 의무를 수락하는 것에 대한 고정 보상입니다.\n\nMaster 보상을 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Master 보상 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`,
 
 } satisfies Translations;

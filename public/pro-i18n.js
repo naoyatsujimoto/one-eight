@@ -2,6 +2,8 @@
  * pro-i18n.js
  * ONE EIGHT — Pro page i18n dictionary
  * Phase 5-1F1: EN/JA/zh-Hant/zh-Hans. English is the canonical source.
+ * Phase 3 (Master Reward): arenaDesc updated (EN/JA canonical); arenaEntryNote, proFeeNote added.
+ *   Remaining 8 locales use EN fallback with TODO comments.
  */
 (function () {
   'use strict';
@@ -27,7 +29,9 @@
 
       iconMore:       'More',
       arenaName:      'Official Arena',
-      arenaDesc:      'Join the official arena, exclusive to Pro members. Compete and earn your ranking.',
+      arenaDesc:      'Join Official Arena during the initial launch period — currently open to Pro members. Official Arenas are planned to be progressively opened to Free members after operations have stabilized.',
+      arenaEntryNote: 'Pro members can enter Official Arenas during the initial launch period. Official Arenas will be progressively opened to Free members after operations have stabilized. The timing of this expansion will be determined based on arena conditions.',
+      proFeeNote:     'The Pro membership fee is a service usage fee and does not guarantee Master Reward eligibility.',
 
       perMo:          '/mo',
       ctaNote:        'Billed monthly · Cancel anytime',
@@ -65,8 +69,10 @@
       historyDesc:    '過去の全対局を閲覧できます。無料アカウントでは直近の対局のみ表示されます。',
 
       iconMore:       'その他',
-      arenaName:      '公式アリーナ',
-      arenaDesc:      'Proユーザー限定の公式アリーナに参加できます。ランキングに挑戦しましょう。',
+      arenaName:      '公式Arena',
+      arenaDesc:      'Official Arenaの初期運営期間中に参加できます（現在Pro会員限定）。運営体制の安定後、Free会員にも段階的に解放予定。',
+      arenaEntryNote: 'Pro会員はOfficial Arenaの初期運営期間中からEntryできます。Official Arenaは、運営体制の安定後、Free会員にも段階的に解放する予定です。解放時期はArenaの運営状況により決定します。',
+      proFeeNote:     'Pro会費はサービス利用料です。Master報酬の受給を保証するものではありません。',
 
       perMo:          '/ 月',
       ctaNote:        '月額払い・いつでもキャンセル可',
@@ -107,6 +113,9 @@
       arenaName:      'Official Arena',
       arenaDesc:      '加入 Pro 會員專屬的 Official Arena。參賽並獲得您的排名。',
 
+      arenaEntryNote: 'Pro會員可在初期運營期間報名參加Official Arena。Official Arena計劃在運營穩定後，逐步向Free會員開放。開放時機將依Arena的運營狀況而定。',
+      proFeeNote:     'Pro會費為服務使用費，不保證Master報酬的受領資格。',
+
       perMo:          '/月',
       ctaNote:        '按月計費·隨時可取消',
       ctaBtn:         '查看方案與訂閱 →',
@@ -145,6 +154,9 @@
       iconMore:       '더 보기',
       arenaName:      'Official Arena',
       arenaDesc:      'Pro 회원 전용 Official Arena에 참가하세요. 경쟁을 통해 랭킹을 획득하세요.',
+
+      arenaEntryNote: 'Pro 회원은 초기 운영 기간 중 Official Arena에 참가 신청할 수 있습니다. Official Arena는 운영이 안정된 후 Free 회원에게도 단계적으로 개방될 예정입니다. 개방 시기는 Arena 운영 상황에 따라 결정됩니다.',
+      proFeeNote:     'Pro 회비는 서비스 이용료이며, Master 보상 수령 자격을 보장하지 않습니다.',
 
       perMo:          '/월',
       ctaNote:        '월별 청구 · 언제든지 취소 가능',
@@ -185,6 +197,9 @@
       arenaName:      'Official Arena',
       arenaDesc:      'Únete al Official Arena exclusivo para miembros Pro. Compite y consigue tu clasificación.',
 
+      arenaEntryNote: 'Los miembros Pro pueden inscribirse en Official Arenas durante el período de lanzamiento inicial. Las Official Arenas se abrirán progresivamente a los miembros Free una vez que las operaciones se hayan estabilizado. El momento de esta apertura se determinará en función de las condiciones de la Arena.',
+      proFeeNote:     'La cuota de membresía Pro es una tarifa por uso del servicio y no garantiza la elegibilidad para la Master Reward.',
+
       perMo:          '/mes',
       ctaNote:        'Facturación mensual · Cancela cuando quieras',
       ctaBtn:         'Ver precios y suscribirse →',
@@ -223,6 +238,9 @@
       iconMore:       'Mais',
       arenaName:      'Official Arena',
       arenaDesc:      'Participe do Official Arena exclusivo para membros Pro. Compita e conquiste sua classificação.',
+
+      arenaEntryNote: 'Os membros Pro podem se inscrever em Official Arenas durante o período inicial de lançamento. As Official Arenas serão progressivamente abertas aos membros Free após a estabilização das operações. O momento dessa abertura será determinado com base nas condições da Arena.',
+      proFeeNote:     'A taxa de assinatura Pro é uma taxa de uso do serviço e não garante elegibilidade para a Master Reward.',
 
       perMo:          '/mês',
       ctaNote:        'Cobrado mensalmente · Cancele quando quiser',
@@ -263,6 +281,9 @@
       arenaName:      'Official Arena',
       arenaDesc:      'Nimm an der offiziellen Arena teil, exklusiv für Pro-Mitglieder. Tritt an und erarbeite dir dein Ranking.',
 
+      arenaEntryNote: 'Pro-Mitglieder können sich während des anfänglichen Einführungszeitraums für Official Arenas anmelden. Official Arenas sind geplant, nach der Stabilisierung des Betriebs schrittweise für Free-Mitglieder geöffnet zu werden. Der Zeitpunkt dieser Erweiterung wird anhand der Arena-Bedingungen festgelegt.',
+      proFeeNote:     'Der Pro-Mitgliedsbeitrag ist eine Servicegebühr und garantiert keine Berechtigung zur Master Reward.',
+
       perMo:          '/Monat',
       ctaNote:        'Monatliche Abrechnung · Jederzeit kündbar',
       ctaBtn:         'Preise ansehen & abonnieren →',
@@ -301,6 +322,9 @@
       iconMore:       'Plus',
       arenaName:      'Official Arena',
       arenaDesc:      'Rejoignez l’Official Arena, réservée aux membres Pro. Participez et obtenez votre classement.',
+
+      arenaEntryNote: 'Les membres Pro peuvent s’inscrire aux Official Arenas pendant la période de lancement initiale. Les Official Arenas sont prévues pour être progressivement ouvertes aux membres Free une fois les opérations stabilisées. Le calendrier de cette ouverture sera déterminé en fonction des conditions de l’Arena.',
+      proFeeNote:     'La cotisation Pro est une redevance d’utilisation du service et ne garantit pas l’éligibilité à la Master Reward.',
 
       perMo:          '/mois',
       ctaNote:        'Facturation mensuelle · Annulez à tout moment',
@@ -341,6 +365,9 @@
       arenaName:      'Official Arena',
       arenaDesc:      'Unisciti all’Official Arena, esclusiva per i membri Pro. Gareggia e ottieni il tuo ranking.',
 
+      arenaEntryNote: 'I membri Pro possono iscriversi alle Official Arenas durante il periodo di lancio iniziale. Le Official Arenas sono pianificate per essere progressivamente aperte ai membri Free dopo la stabilizzazione delle operazioni. I tempi di questa apertura saranno determinati in base alle condizioni dell’Arena.',
+      proFeeNote:     'La quota di abbonamento Pro è una commissione per l’utilizzo del servizio e non garantisce l’idoneità alla Master Reward.',
+
       perMo:          '/mese',
       ctaNote:        'Fatturazione mensile · Disdici quando vuoi',
       ctaBtn:         'Vedi i prezzi e abbonati →',
@@ -379,6 +406,9 @@
       iconMore:       '更多',
       arenaName:      'Official Arena',
       arenaDesc:      '加入 Pro 会员专属的 Official Arena。参赛并获得您的排名。',
+
+      arenaEntryNote: 'Pro会员可在初期运营期间报名參加Official Arena。Official Arena计划在运营稳定后，逐步向Free会员开放。开放时机将根据Arena的运营状况决定。',
+      proFeeNote:     'Pro会费为服务使用费，不保证Master报酬的受领资格。',
 
       perMo:          '/月',
       ctaNote:        '按月计费·随时可取消',

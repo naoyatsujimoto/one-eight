@@ -35,6 +35,9 @@
 
       note:         'Prices are in USD. Competitive features are under active development and may be expanded or adjusted as the service evolves. Any changes to paid plan pricing will be communicated in advance.',
 
+      arenaEntryNote: 'Pro members can enter Official Arenas during the initial launch period. Official Arenas will be progressively opened to Free members after operations have stabilized. The timing of this expansion will be determined based on arena conditions.',
+      proFeeNote:   'The Pro membership fee is a service usage fee and does not guarantee Master Reward eligibility.',
+
       navPricing:    'Pricing',
       navTerms:      'Terms',
       navPrivacy:    'Privacy',
@@ -81,6 +84,9 @@
       cancelLink:   'Paddle でサブスクリプションを管理',
 
       note:         '価格は米ドル表示です。競技機能は開発中のため、今後追加・変更される場合があります。有料プランの価格変更は事前にお知らせします。',
+
+      arenaEntryNote: 'Pro会員はOfficial Arenaの初期運営期間中からEntryできます。Official Arenaは、運営体制の安定後、Free会員にも段階的に解放する予定です。解放時期はArenaの運営状況により決定します。',
+      proFeeNote:   'Pro会費はサービス利用料です。Master報酬の受給を保証するものではありません。',
 
       navPricing:    '料金',
       navTerms:      '利用規約',
@@ -129,6 +135,9 @@
 
       note:         '價格以 USD 計算。競技功能仍在積極開發中，服務演進過程中可能新增或調整。付費方案價格如有變動，將提前告知。',
 
+      arenaEntryNote: 'Pro會員可在初期運營期間報名參加Official Arena。Official Arena計劃在運營穩定後，逐步向Free會員開放。開放時機將依Arena的運營狀況而定。',
+      proFeeNote:   'Pro會費為服務使用費，不保證Master報酬的受領資格。',
+
       navPricing:    '定價',
       navTerms:      '服務條款',
       navPrivacy:    '隱私權',
@@ -175,6 +184,9 @@
       cancelLink:   '前往 Paddle 管理订阅',
 
       note:         '价格以 USD 计算。竞技功能仍在积极开发中，服务演进过程中可能新增或调整。付费方案价格如有变动，将提前告知。',
+
+      arenaEntryNote: 'Pro会员可在初期运营期间报名参加Official Arena。Official Arena计划在运营稳定后，逐步向Free会员开放。开放时机将根据Arena的运营状况决定。',
+      proFeeNote:   'Pro会费为服务使用费，不保证Master报酬的受领资格。',
 
       navPricing:    '定价',
       navTerms:      '服务条款',
@@ -223,6 +235,9 @@
 
       note:         '가격은 USD 기준입니다. 경쟁 기능은 현재 개발 중이며, 서비스가 성장함에 따라 추가되거나 변경될 수 있습니다. 유료 플랜 가격 변경 시 사전에 안내드립니다.',
 
+      arenaEntryNote: 'Pro 회원은 초기 운영 기간 중 Official Arena에 참가 신청할 수 있습니다. Official Arena는 운영이 안정된 후 Free 회원에게도 단계적으로 개방될 예정입니다. 개방 시기는 Arena 운영 상황에 따라 결정됩니다.',
+      proFeeNote:   'Pro 회비는 서비스 이용료이며, Master 보상 수령 자격을 보장하지 않습니다.',
+
       navPricing:    '요금제',
       navTerms:      '이용약관',
       navPrivacy:    '개인정보',
@@ -269,6 +284,9 @@
       cancelLink:   'Gestionar suscripción en Paddle',
 
       note:         'Los precios están en USD. Las funciones competitivas están en desarrollo activo y pueden ampliarse o ajustarse a medida que el servicio evoluciona. Cualquier cambio en los precios de los planes de pago se comunicará con antelación.',
+
+      arenaEntryNote: 'Los miembros Pro pueden inscribirse en Official Arenas durante el período de lanzamiento inicial. Las Official Arenas se abrirán progresivamente a los miembros Free una vez que las operaciones se hayan estabilizado. El momento de esta apertura se determinará en función de las condiciones de la Arena.',
+      proFeeNote:   'La cuota de membresía Pro es una tarifa por uso del servicio y no garantiza la elegibilidad para la Master Reward.',
 
       navPricing:    'Precios',
       navTerms:      'Términos',
@@ -317,6 +335,9 @@
 
       note:         'Preços em USD. Os recursos competitivos estão em desenvolvimento ativo e podem ser expandidos ou ajustados conforme o serviço evolui. Qualquer alteração nos preços dos planos pagos será comunicada com antecedência.',
 
+      arenaEntryNote: 'Os membros Pro podem se inscrever em Official Arenas durante o período inicial de lançamento. As Official Arenas serão progressivamente abertas aos membros Free após a estabilização das operações. O momento dessa abertura será determinado com base nas condições da Arena.',
+      proFeeNote:   'A taxa de assinatura Pro é uma taxa de uso do serviço e não garante elegibilidade para a Master Reward.',
+
       navPricing:    'Preços',
       navTerms:      'Termos',
       navPrivacy:    'Privacidade',
@@ -363,6 +384,9 @@
       cancelLink:   'Abonnement bei Paddle verwalten',
 
       note:         'Preise in USD. Wettbewerbsfunktionen befinden sich in aktiver Entwicklung und können im Laufe der Zeit erweitert oder angepasst werden. Änderungen an den Preisen kostenpflichtiger Pläne werden im Voraus kommuniziert.',
+
+      arenaEntryNote: 'Pro-Mitglieder können sich während des anfänglichen Einführungszeitraums für Official Arenas anmelden. Official Arenas sind geplant, nach der Stabilisierung des Betriebs schrittweise für Free-Mitglieder geöffnet zu werden. Der Zeitpunkt dieser Erweiterung wird anhand der Arena-Bedingungen festgelegt.',
+      proFeeNote:   'Der Pro-Mitgliedsbeitrag ist eine Servicegebühr und garantiert keine Berechtigung zur Master Reward.',
 
       navPricing:    'Preise',
       navTerms:      'Nutzungsbedingungen',
@@ -411,6 +435,10 @@
 
       note:         'Les prix sont en USD. Les fonctionnalités compétitives sont en cours de développement et peuvent être étendues ou ajustées au fil de l’évolution du service. Toute modification des tarifs des formules payantes sera communiquée à l’avance.',
 
+
+      arenaEntryNote: 'Les membres Pro peuvent s\'inscrire aux Official Arenas pendant la période de lancement initiale. Les Official Arenas sont prévues pour être progressivement ouvertes aux membres Free une fois les opérations stabilisées. Le calendrier de cette ouverture sera déterminé en fonction des conditions de l\'Arena.',
+      proFeeNote:   'La cotisation Pro est une redevance d\'utilisation du service et ne garantit pas l\'éligibilité à la Master Reward.',
+
       navPricing:    'Tarifs',
       navTerms:      'Conditions',
       navPrivacy:    'Confidentialité',
@@ -457,6 +485,10 @@
       cancelLink:   'Gestisci abbonamento su Paddle',
 
       note:         'I prezzi sono in USD. Le funzionalità competitive sono in fase di sviluppo attivo e potrebbero essere ampliate o modificate con l’evolversi del servizio. Eventuali variazioni ai prezzi dei piani a pagamento saranno comunicate in anticipo.',
+
+
+      arenaEntryNote: 'I membri Pro possono iscriversi alle Official Arenas durante il periodo di lancio iniziale. Le Official Arenas sono pianificate per essere progressivamente aperte ai membri Free dopo la stabilizzazione delle operazioni. I tempi di questa apertura saranno determinati in base alle condizioni dell\'Arena.',
+      proFeeNote:   'La quota di abbonamento Pro è una commissione per l\'utilizzo del servizio e non garantisce l\'idoneità alla Master Reward.',
 
       navPricing:    'Prezzi',
       navTerms:      'Termini',

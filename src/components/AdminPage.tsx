@@ -184,12 +184,22 @@ export function AdminPage({ onBack }: Props) {
   async function handleCandidateGenerate(row: UnprocessedArenaEventRow) {
     const input = candidateInputs[row.arena_match_id];
     if (!input) return;
-    const amountNum = parseFloat(input.amount);
-    if (isNaN(amountNum) || amountNum < 0) {
-      setCandidateResults(prev => ({ ...prev, [row.arena_match_id]: 'Amount must be a non-negative number.' }));
+
+    // Phase 1 補欹4: arena設定値が存在する場合はそれを使用（手動入力値で上書きしない）
+    const arenaRewardConfigured =
+      row.master_reward_amount_cents != null && row.master_reward_currency != null;
+
+    if (!arenaRewardConfigured) {
+      setCandidateResults(prev => ({
+        ...prev,
+        [row.arena_match_id]: 'Master報酬が未設定です。arena_definitionsを設定してください。',
+      }));
       return;
     }
-    const amountCents = Math.round(amountNum * 100);
+
+    const amountCents = row.master_reward_amount_cents as number;
+    const currency = row.master_reward_currency as string;
+
     setCandidateGenerating(prev => ({ ...prev, [row.arena_match_id]: true }));
     setCandidateResults(prev => {
       const next = { ...prev };
@@ -199,7 +209,7 @@ export function AdminPage({ onBack }: Props) {
     const { data, error } = await adminGenerateArenaAwards(
       row.arena_event_id,
       amountCents,
-      input.currency.trim().toUpperCase(),
+      currency,
       input.prizeKind,
     );
     if (error) {
@@ -399,6 +409,12 @@ export function AdminPage({ onBack }: Props) {
             const inp = candidateInputs[row.arena_match_id] ?? { amount: '', currency: 'USD', prizeKind: 'cash' as PrizeKind };
             const res = candidateResults[row.arena_match_id];
             const isGen = candidateGenerating[row.arena_match_id] ?? false;
+            // Phase 1 補欹4: arena側の master_reward 設定状態を判定
+            const arenaRewardConfigured =
+              row.master_reward_amount_cents != null && row.master_reward_currency != null;
+            const arenaAmountDisplay = arenaRewardConfigured
+              ? `${row.master_reward_currency} ${((row.master_reward_amount_cents as number) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+              : null;
             return (
               <div key={row.arena_match_id} style={s.candidateCard}>
                 <div style={s.candidateHeader}>
@@ -411,34 +427,48 @@ export function AdminPage({ onBack }: Props) {
                   <span><b>End:</b> {row.end_reason}</span>
                   <span><b>Effect:</b> {row.master_effect ?? '—'}</span>
                   <span><b>Processed:</b> {row.processed_at ? new Date(row.processed_at).toLocaleString() : '—'}</span>
+                  {arenaRewardConfigured ? (
+                    <span style={{ color: '#2e7d32', fontWeight: 600 }}>
+                      <b>Master Reward:</b> {arenaAmountDisplay}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#b71c1c', fontWeight: 600 }}>
+                      <b>Master Reward:</b> 未設定
+                    </span>
+                  )}
                 </div>
+
+                {/* 未設定 Arena は報酬生成ボタンを無効化 */}
+                {!arenaRewardConfigured ? (
+                  <div style={{
+                    marginTop: 12,
+                    padding: '10px 14px',
+                    background: '#fff8f8',
+                    border: '1px solid #ffcdd2',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    color: '#b71c1c',
+                  }}>
+                    ⚠️ Master報酬が設定されていません。arena_definitionsを設定してください。
+                  </div>
+                ) : (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' as const, marginTop: 10 }}>
                   <label style={{ ...s.label, flex: '2 1 100px' }}>
                     <span style={s.labelText}>Amount <span style={s.required}>*</span></span>
                     <input
-                      style={s.input}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={inp.amount}
-                      placeholder="e.g. 65"
-                      onChange={e => setCandidateInputs(prev => ({
-                        ...prev,
-                        [row.arena_match_id]: { ...inp, amount: e.target.value },
-                      }))}
+                      style={{ ...s.input, background: '#f5f5f5', color: '#555' }}
+                      type="text"
+                      value={arenaAmountDisplay ?? ''}
+                      readOnly
                     />
                   </label>
                   <label style={{ ...s.label, flex: '1 1 60px' }}>
                     <span style={s.labelText}>Currency</span>
                     <input
-                      style={s.input}
+                      style={{ ...s.input, background: '#f5f5f5', color: '#555' }}
                       type="text"
-                      maxLength={3}
-                      value={inp.currency}
-                      onChange={e => setCandidateInputs(prev => ({
-                        ...prev,
-                        [row.arena_match_id]: { ...inp, currency: e.target.value.toUpperCase() },
-                      }))}
+                      value={row.master_reward_currency ?? ''}
+                      readOnly
                     />
                   </label>
                   <label style={{ ...s.label, flex: '2 1 100px' }}>
@@ -465,6 +495,7 @@ export function AdminPage({ onBack }: Props) {
                     {isGen ? 'Generating…' : '⚡ Generate Award'}
                   </button>
                 </div>
+                )}
                 {res !== undefined && typeof res === 'string' && (
                   <div style={{ color: '#b71c1c', fontSize: 12, marginTop: 6 }}>⚠ {res}</div>
                 )}

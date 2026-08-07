@@ -83,7 +83,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   // RP-4: Reward / Prize
   const [prizeAwards, setPrizeAwards] = useState<UserPrizeAwardRow[]>([]);
   const [prizeSubmissions, setPrizeSubmissions] = useState<Record<string, { submission_id: string; status: string; delete_after: string | null; data_cleared_at: string | null }>>({});
-  const [prizeClaimTarget, setPrizeClaimTarget] = useState<string | null>(null);
+  const [prizeClaimTarget, setPrizeClaimTarget] = useState<{ awardId: string; sourceKind: string | null } | null>(null);
   const [prizeClaimIsUpdate, setPrizeClaimIsUpdate] = useState(false);
   const [prizeSubmitResults, setPrizeSubmitResults] = useState<Record<string, SubmitTaxResult>>({});
   const [userHasPriorSubmission, setUserHasPriorSubmission] = useState(false);
@@ -522,7 +522,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
               userHasPriorSubmission={userHasPriorSubmission}
               onClaim={(awardId, isUpdate) => {
                 setPrizeClaimIsUpdate(isUpdate ?? false);
-                setPrizeClaimTarget(awardId);
+                const award = prizeAwards.find(a => a.award_id === awardId);
+                setPrizeClaimTarget({ awardId, sourceKind: award?.source_kind ?? null });
               }}
             />
           </section>
@@ -551,9 +552,10 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
       </div>
 
       {/* PrizeClaimForm モーダル */}
-      {prizeClaimTarget && (
+      {prizeClaimTarget !== null && (
         <PrizeClaimForm
-          awardId={prizeClaimTarget}
+          awardId={prizeClaimTarget.awardId}
+          sourceKind={prizeClaimTarget.sourceKind}
           isUpdate={prizeClaimIsUpdate}
           onClose={() => { setPrizeClaimTarget(null); setPrizeClaimIsUpdate(false); }}
           onSuccess={(result) => {
