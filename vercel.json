@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/ai-check-login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ai-check-login/",
+      "destination": "/index.html"
+    },
+    {
       "source": "/journal-db",
       "destination": "/index.html"
     },
