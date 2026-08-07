@@ -206,63 +206,86 @@ describe('pricing/pro — initial launch period (JA/EN)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. 未翻訳keyが残り8言語にEN fallbackとして存在する
+// 7. 最終仕様: 8言語 翻訳済み確認
 // ---------------------------------------------------------------------------
 
-describe('terms — 8 locales have EN fallback for new keys (t25–t34)', () => {
-  const NEW_KEYS = ['t25', 't26', 't27', 't28', 't29', 't30', 't31', 't32', 't33', 't34'];
-  const EN_VALUES = NEW_KEYS.reduce((acc, k) => {
-    acc[k] = TERMS_DICT['en']?.[k] ?? '';
-    return acc;
-  }, {} as Record<string, string>);
+// ── 最終仕様: terms 8言語 t25〜t34 翻訳済み確認 ──────────────────────────────
+
+describe('terms — 8 locales t25〜t34 are translated', () => {
+  const EN = TERMS_DICT['en'] ?? {};
+  // 本文キー（説明文）は必ずEN!=locale
+  const BODY_KEYS = ['t26', 't28', 't30', 't32', 't34'];
+  // 見出しキー（Proper noun含む）はENと同じでも許容
+  const HEADING_KEYS = ['t25', 't27', 't29', 't31', 't33'];
 
   for (const locale of ALL_8_LOCALES) {
-    for (const key of NEW_KEYS) {
-      it(`${locale}: ${key} exists as EN fallback`, () => {
-        const val = TERMS_DICT[locale]?.[key];
-        expect(val, `${locale}.${key} should not be undefined`).toBeDefined();
-        expect((val ?? '').length, `${locale}.${key} should not be empty`).toBeGreaterThan(0);
-        // Fallback: value matches EN (since we're using EN fallback for these locales)
-        expect(val, `${locale}.${key} should equal EN fallback`).toBe(EN_VALUES[key]);
-      });
-    }
+    const d = TERMS_DICT[locale] ?? {};
+
+    it(`${locale}: all t25-t34 keys exist and are non-empty`, () => {
+      for (const k of [...BODY_KEYS, ...HEADING_KEYS]) {
+        expect(d[k], `${locale} ${k} missing`).toBeDefined();
+        expect(d[k], `${locale} ${k} must not be empty`).not.toBe('');
+      }
+    });
+
+    it(`${locale}: body keys t26/t28/t30/t32/t34 are not EN fallback`, () => {
+      for (const k of BODY_KEYS) {
+        expect(d[k], `${locale} ${k} must not be EN fallback`).not.toBe(EN[k]);
+      }
+    });
   }
 });
 
-describe('pricing — 8 locales have EN fallback for arenaEntryNote, proFeeNote', () => {
+// ── 最終仕様: pricing 8言語 arenaEntryNote/proFeeNote 翻訳済み確認 ──────────
+
+describe('pricing — 8 locales arenaEntryNote/proFeeNote are translated (not EN fallback)', () => {
   const EN_ARENA = PRICING_DICT['en']?.['arenaEntryNote'] ?? '';
   const EN_PROFEE = PRICING_DICT['en']?.['proFeeNote'] ?? '';
 
   for (const locale of ALL_8_LOCALES) {
-    it(`${locale}: arenaEntryNote exists as EN fallback`, () => {
+    it(`${locale}: arenaEntryNote exists and is not EN fallback`, () => {
       const val = PRICING_DICT[locale]?.['arenaEntryNote'];
-      expect(val).toBeDefined();
-      expect(val).toBe(EN_ARENA);
+      expect(val, `${locale} arenaEntryNote missing`).toBeDefined();
+      expect(val, `${locale} arenaEntryNote must not be empty`).not.toBe('');
+      expect(val, `${locale} arenaEntryNote must not be EN fallback`).not.toBe(EN_ARENA);
     });
 
-    it(`${locale}: proFeeNote exists as EN fallback`, () => {
+    it(`${locale}: proFeeNote exists and is not EN fallback`, () => {
       const val = PRICING_DICT[locale]?.['proFeeNote'];
-      expect(val).toBeDefined();
-      expect(val).toBe(EN_PROFEE);
+      expect(val, `${locale} proFeeNote missing`).toBeDefined();
+      expect(val, `${locale} proFeeNote must not be empty`).not.toBe('');
+      expect(val, `${locale} proFeeNote must not be EN fallback`).not.toBe(EN_PROFEE);
     });
   }
 });
 
-describe('pro — 8 locales have EN fallback for arenaEntryNote, proFeeNote', () => {
-  const EN_ARENA = PRO_DICT['en']?.['arenaEntryNote'] ?? '';
-  const EN_PROFEE = PRO_DICT['en']?.['proFeeNote'] ?? '';
+// ── 最終仕様: pro 8言語 arenaDesc/arenaEntryNote/proFeeNote 翻訳済み確認 ────
+
+describe('pro — 8 locales arenaDesc/arenaEntryNote/proFeeNote are translated (not EN fallback)', () => {
+  const EN_DESC   = PRO_DICT['en']?.['arenaDesc']      ?? '';
+  const EN_ARENA  = PRO_DICT['en']?.['arenaEntryNote'] ?? '';
+  const EN_PROFEE = PRO_DICT['en']?.['proFeeNote']     ?? '';
 
   for (const locale of ALL_8_LOCALES) {
-    it(`${locale}: arenaEntryNote exists as EN fallback`, () => {
-      const val = PRO_DICT[locale]?.['arenaEntryNote'];
-      expect(val).toBeDefined();
-      expect(val).toBe(EN_ARENA);
+    it(`${locale}: arenaDesc exists and is not EN fallback`, () => {
+      const val = PRO_DICT[locale]?.['arenaDesc'];
+      expect(val, `${locale} arenaDesc missing`).toBeDefined();
+      expect(val, `${locale} arenaDesc must not be empty`).not.toBe('');
+      expect(val, `${locale} arenaDesc must not be EN fallback`).not.toBe(EN_DESC);
     });
 
-    it(`${locale}: proFeeNote exists as EN fallback`, () => {
+    it(`${locale}: arenaEntryNote exists and is not EN fallback`, () => {
+      const val = PRO_DICT[locale]?.['arenaEntryNote'];
+      expect(val, `${locale} arenaEntryNote missing`).toBeDefined();
+      expect(val, `${locale} arenaEntryNote must not be empty`).not.toBe('');
+      expect(val, `${locale} arenaEntryNote must not be EN fallback`).not.toBe(EN_ARENA);
+    });
+
+    it(`${locale}: proFeeNote exists and is not EN fallback`, () => {
       const val = PRO_DICT[locale]?.['proFeeNote'];
-      expect(val).toBeDefined();
-      expect(val).toBe(EN_PROFEE);
+      expect(val, `${locale} proFeeNote missing`).toBeDefined();
+      expect(val, `${locale} proFeeNote must not be empty`).not.toBe('');
+      expect(val, `${locale} proFeeNote must not be EN fallback`).not.toBe(EN_PROFEE);
     });
   }
 });
@@ -319,29 +342,5 @@ describe('pro.html — Phase 3 notes are referenced', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// 9. TODO comments exist in source for 8 untranslated locales
-// ---------------------------------------------------------------------------
-
-describe('i18n source files — TODO comments for untranslated locales', () => {
-  it('terms-i18n.js: contains TODO translate comments for all 8 locales', () => {
-    const src = readPublic('terms-i18n.js');
-    for (const locale of ALL_8_LOCALES) {
-      expect(src, `terms-i18n.js missing TODO for ${locale}`).toContain(`TODO: translate to ${locale}`);
-    }
-  });
-
-  it('pricing-i18n.js: contains TODO translate comments for all 8 locales', () => {
-    const src = readPublic('pricing-i18n.js');
-    for (const locale of ALL_8_LOCALES) {
-      expect(src, `pricing-i18n.js missing TODO for ${locale}`).toContain(`TODO: translate to ${locale}`);
-    }
-  });
-
-  it('pro-i18n.js: contains TODO translate comments for all 8 locales', () => {
-    const src = readPublic('pro-i18n.js');
-    for (const locale of ALL_8_LOCALES) {
-      expect(src, `pro-i18n.js missing TODO for ${locale}`).toContain(`TODO: translate`);
-    }
-  });
-});
+// NOTE: Phase 3東封テスト「TODO comments for untranslated locales」はPhase 4翻訳完了により削除済み。
+// i18n source files のTODOコメントは不要であり、最終仕様では上記の翻訳済み確認テストを以て代替する。
