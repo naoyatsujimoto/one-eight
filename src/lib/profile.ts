@@ -19,13 +19,24 @@ export interface Profile {
   current_period_end: string | null;
   /** UI表示補助のみ。権限判定は必ず SECURITY DEFINER RPC 内で再検証すること */
   is_admin: boolean;
+  /** true: AI inspection test account. Plan override is via internal_plan_override. */
+  is_internal_test_account: boolean;
+  /** Internal Pro override for is_internal_test_account=true accounts only. */
+  internal_plan_override: 'free' | 'pro' | null;
 }
 
 export function isProActive(profile: {
   plan: SubscriptionPlan;
   subscription_status: SubscriptionStatus;
   current_period_end: string | null;
+  is_internal_test_account?: boolean;
+  internal_plan_override?: 'free' | 'pro' | null;
 }): boolean {
+  // 内部テストアカウントの plan override
+  if (profile.is_internal_test_account) {
+    return profile.internal_plan_override === 'pro';
+  }
+
   if (profile.plan !== 'pro') return false;
 
   const now = new Date();
@@ -54,7 +65,7 @@ export function isProActive(profile: {
 export async function getProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, lang, stats_public, created_at, plan, subscription_status, current_period_end, is_admin')
+    .select('id, display_name, lang, stats_public, created_at, plan, subscription_status, current_period_end, is_admin, is_internal_test_account, internal_plan_override')
     .eq('id', userId)
     .single();
   if (error || !data) return null;
@@ -66,6 +77,8 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     subscription_status: (row.subscription_status as SubscriptionStatus) ?? 'inactive',
     current_period_end: (row.current_period_end as string | null) ?? null,
     is_admin: (row.is_admin as boolean) ?? false,
+    is_internal_test_account: (row.is_internal_test_account as boolean) ?? false,
+    internal_plan_override: (row.internal_plan_override as 'free' | 'pro' | null) ?? null,
   } as Profile;
 }
 

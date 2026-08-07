@@ -5,6 +5,7 @@ import { AuthGate } from '../components/AuthGate';
 import { LangProvider } from '../lib/lang';
 import { JournalListPage } from '../components/JournalListPage';
 import { JournalArticlePage } from '../components/JournalArticlePage';
+import { AiCheckLogin } from '../components/AiCheckLogin';
 import '../styles/app.css';
 
 // /journal 系・/journal-db 系は AuthGate 外で直接レンダリング（ログイン不要）
@@ -15,6 +16,10 @@ let rootElement: React.ReactNode;
 // /journal または /journal/ → DB版一覧
 // /journal/:slug → DB版記事詳細 (ただし .html 拡張子付きは静的ファイルとして優先される)
 // /journal-db / /journal-db/:slug → 互換ルート（従来通り）
+const isAiCheckLogin =
+  pathname === '/ai-check-login' ||
+  pathname === '/ai-check-login/';
+
 const isJournalList =
   pathname === '/journal' ||
   pathname === '/journal/' ||
@@ -25,7 +30,9 @@ const isJournalArticle =
   (pathname.startsWith('/journal/') && !pathname.endsWith('.html')) ||
   pathname.startsWith('/journal-db/');
 
-if (isJournalList) {
+if (isAiCheckLogin) {
+  rootElement = <AiCheckLogin />;
+} else if (isJournalList) {
   rootElement = (
     <LangProvider>
       <JournalListPage />
