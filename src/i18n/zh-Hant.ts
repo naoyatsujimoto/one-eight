@@ -266,6 +266,8 @@ export const ZH_HANT_TRANSLATIONS = {
     userEditName: '編輯',
     userSaveName: '儲存',
     userCancelEdit: '取消',
+    profileSaveSuccess: '名稱已儲存。',
+    profileSaveError: '儲存名稱失敗，請重試。',
     userBack: '← 返回',
     userPrevPage: '← 上一頁',
     userNextPage: '下一頁 →',

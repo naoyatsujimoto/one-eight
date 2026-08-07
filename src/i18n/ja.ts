@@ -260,6 +260,8 @@ export const JA_TRANSLATIONS = {
     userEditName: '編集',
     userSaveName: '保存',
     userCancelEdit: 'キャンセル',
+    profileSaveSuccess: '名前を保存しました。',
+    profileSaveError: '名前の保存に失敗しました。もう一度お試しください。',
     userBack: '← 戻る',
     userPrevPage: '← 前',
     userNextPage: '次 →',

@@ -262,6 +262,8 @@ export const EN_TRANSLATIONS = {
     userEditName: 'Edit',
     userSaveName: 'Save',
     userCancelEdit: 'Cancel',
+    profileSaveSuccess: 'Name saved.',
+    profileSaveError: 'Failed to save name. Please try again.',
     userBack: '← Back',
     userPrevPage: '← Prev',
     userNextPage: 'Next →',

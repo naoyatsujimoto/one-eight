@@ -16,7 +16,7 @@ import { saveMatchLog, fetchGhostMoves } from '../lib/matchLog';
 import type { GhostMove } from '../lib/matchLog';
 import { computeCanonicalHashString } from '../game/zobrist';
 import { useLang } from '../lib/lang';
-import { getProfile, upsertProfile, isProActive } from '../lib/profile';
+import { getProfile, upsertProfile, updateDisplayName, isProActive } from '../lib/profile';
 import { syncTrainingProgressOnLogin } from '../training/trainingProgress';
 import type { Lang } from '../lib/lang';
 import { OnlineLobby } from '../components/OnlineLobby';
@@ -806,8 +806,11 @@ export default function App() {
         const localName =
           (() => { try { return localStorage.getItem(`one8_username_${user.id}`); } catch { return null; } })();
         const fallback = user.email ? user.email.split('@')[0] : 'Player';
-        const nameToSync = localName || fallback;
-        upsertProfile(user.id, { display_name: nameToSync }).catch(() => {/* silent */});
+        const nameToSync: string = localName || fallback || 'Player';
+        // updateDisplayName（UPDATEのみ）を使用。失敗してもサイレント（初期化のみのベストエフォート）
+        updateDisplayName(user.id, nameToSync).catch((err) => {
+          console.error('[App] initial display_name sync failed:', err instanceof Error ? err.message : String(err));
+        });
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

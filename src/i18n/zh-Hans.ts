@@ -264,6 +264,8 @@ export const ZH_HANS_TRANSLATIONS = {
     userEditName: '编辑',
     userSaveName: '保存',
     userCancelEdit: '取消',
+    profileSaveSuccess: '名称已保存。',
+    profileSaveError: '保存名称失败，请重试。',
     userBack: '← 返回',
     userPrevPage: '← 上一页',
     userNextPage: '下一页 →',

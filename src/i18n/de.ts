@@ -264,6 +264,8 @@ export const DE_TRANSLATIONS = {
     userEditName: 'Bearbeiten',
     userSaveName: 'Speichern',
     userCancelEdit: 'Abbrechen',
+    profileSaveSuccess: 'Name gespeichert.',
+    profileSaveError: 'Name konnte nicht gespeichert werden. Bitte erneut versuchen.',
     userBack: '← Zurück',
     userPrevPage: '← Zurück',
     userNextPage: 'Weiter →',

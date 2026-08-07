@@ -264,6 +264,8 @@ export const IT_TRANSLATIONS = {
     userEditName: 'Modifica',
     userSaveName: 'Salva',
     userCancelEdit: 'Annulla',
+    profileSaveSuccess: 'Nome salvato.',
+    profileSaveError: 'Impossibile salvare il nome. Riprova.',
     userBack: '← Indietro',
     userPrevPage: '← Precedente',
     userNextPage: 'Successivo →',

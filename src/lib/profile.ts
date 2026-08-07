@@ -106,3 +106,30 @@ export async function upsertProfile(
     .from('profiles')
     .upsert({ id: userId, ...fields }, { onConflict: 'id' });
 }
+
+/**
+ * Update display_name for the authenticated user.
+ * Uses UPDATE (not upsert) to avoid INSERT permission issues.
+ * Throws on DB error or if no rows were updated.
+ */
+export async function updateDisplayName(
+  userId: string,
+  displayName: string,
+): Promise<void> {
+  const trimmed = displayName.trim();
+  if (!trimmed) throw new Error('display_name cannot be empty');
+  if (trimmed.length > 30) throw new Error('display_name too long (max 30 chars)');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ display_name: trimmed })
+    .eq('id', userId)
+    .select('id');
+
+  if (error) {
+    throw new Error(`profiles update failed: [${error.code}] ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    throw new Error('profiles update: no rows updated (RLS or missing row?)');
+  }
+}

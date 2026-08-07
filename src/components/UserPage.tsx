@@ -22,7 +22,7 @@ import { useLang } from '../lib/lang';
 import type { LocaleCode } from '../lib/locales';
 import { formatDate, formatDateTime, getIntlLocale } from '../lib/localeFormat';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
-import { getProfile, upsertProfile, isProActive } from '../lib/profile';
+import { getProfile, upsertProfile, updateDisplayName, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
 import { getMyArenaTitles, type ArenaTitle } from '../lib/arena';
@@ -96,6 +96,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   });
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSaved, setNameSaved] = useState(false);
 
   useEffect(() => {
     const fetcher = viewOnly ? fetchPublicUserPageStats : fetchUserPageStats;
@@ -155,15 +158,19 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
           setUsername(profile.display_name);
         } else if (!viewOnly && !profile.display_name) {
           // Supabaseに display_name がない場合、localName または defaultName を同期
-          const nameToSync = loadUsername(userId) || defaultName;
-          upsertProfile(userId, { display_name: nameToSync }).catch(() => {/* silent */});
+          const nameToSync: string = loadUsername(userId) || defaultName || 'Player';
+          updateDisplayName(userId, nameToSync).catch((err) => {
+            console.error('[UserPage] display_name init sync failed:', err instanceof Error ? err.message : String(err));
+          });
         }
       } else if (viewOnly) {
         setUsername('Unknown');
       } else {
-        // プロフィール行自体未作成の場合も同様に同期
+        // プロフィール行自体未作成の場合：upsert（INSERT+UPDATE）はINSERTアクセスを必要とするためそのまま使用
         const nameToSync = loadUsername(userId) || defaultName;
-        upsertProfile(userId, { display_name: nameToSync }).catch(() => {/* silent */});
+        upsertProfile(userId, { display_name: nameToSync }).catch((err) => {
+          console.error('[UserPage] profile row creation failed:', err instanceof Error ? err.message : String(err));
+        });
       }
     });
   }, [displayUserId, viewOnly]);
@@ -177,15 +184,32 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     await upsertProfile(userId, { stats_public: val });
   }
 
-  function handleSaveName() {
+  async function handleSaveName() {
     const trimmed = nameInput.trim();
-    if (trimmed) {
+    if (!trimmed) return;
+    if (savingName) return;
+
+    setSavingName(true);
+    setNameError(null);
+    setNameSaved(false);
+
+    try {
+      // DB更新を先に実行（成功してからUIを更新）
+      await updateDisplayName(userId, trimmed);
+      // DB更新成功後にUIとlocalStorageを更新
       setUsername(trimmed);
       saveUsername(userId, trimmed);
-      // Supabase にも同期（相手が参照できるように）
-      upsertProfile(userId, { display_name: trimmed }).catch(() => {/* silent */});
+      setNameSaved(true);
+      setEditingName(false);
+      setTimeout(() => setNameSaved(false), 3000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[UserPage] handleSaveName failed:', msg);
+      setNameError(t.profileSaveError);
+      // 編集画面を閉じない（ユーザーが再試行できるように）
+    } finally {
+      setSavingName(false);
     }
-    setEditingName(false);
   }
   // 候補手表示用: 現在分析中の対局の human_color
   const [currentHumanColor, setCurrentHumanColor] = useState<'black' | 'white' | null>(null);
@@ -249,6 +273,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
 
   function handleCancelEdit() {
     setEditingName(false);
+    setNameError(null);
+    setNameSaved(false);
   }
 
   const playerName = username;
@@ -276,18 +302,23 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     <input
                       className="up-name-input"
                       value={nameInput}
-                      onChange={(e) => setNameInput(e.target.value)}
+                      onChange={(e) => { setNameInput(e.target.value); setNameError(null); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') handleCancelEdit(); }}
                       maxLength={30}
                       autoFocus
+                      disabled={savingName}
                     />
-                    <button type="button" className="up-name-save-btn" onClick={handleSaveName}>{t.userSaveName}</button>
-                    <button type="button" className="up-name-cancel-btn" onClick={handleCancelEdit}>{t.userCancelEdit}</button>
+                    <button type="button" className="up-name-save-btn" onClick={handleSaveName} disabled={savingName}>
+                      {savingName ? '…' : t.userSaveName}
+                    </button>
+                    <button type="button" className="up-name-cancel-btn" onClick={handleCancelEdit} disabled={savingName}>{t.userCancelEdit}</button>
+                    {nameError && <span className="up-name-error">{nameError}</span>}
                   </div>
                 ) : (
                   <div className="up-name-row">
                     <span className="up-player-name">{playerName}</span>
                     {!viewOnly && <button type="button" className="up-edit-name-btn" onClick={handleEditName}>{t.userEditName}</button>}
+                    {!viewOnly && nameSaved && <span className="up-name-saved">{t.profileSaveSuccess}</span>}
                   </div>
                 )}
                 <div className="up-meta-row">
