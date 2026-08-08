@@ -451,6 +451,7 @@ export const PT_BR_TRANSLATIONS = {
     arenaRulesEntryTitle: 'Requisito de inscrição',
     arenaRulesEntryBody: 'Membros Pro podem participar de Official Arenas durante o período inicial de lançamento. As Official Arenas serão abertas progressivamente para membros Free após a estabilização das operações. O momento desta abertura será determinado com base nas condições da arena.',
     arenaRulesEntryMasterRewardNote: 'Ao se inscrever, você concorda que as regras da Arena, incluindo transições de Master e a Recompensa Master, se aplicam.',
+    arenaEntryPublicUseConsent: 'Ao entrar na Arena, você consente com a publicação e o uso do seu nome de exibição, resultados de partidas e registros de partidas daquela Arena para as operações, registros, publicidade, divulgação e postagens em SNS da ONE EIGHT.',
     arenaRulesMasterRewardAmount: (amount: string) => `Recompensa Master: ${amount}`,
     arenaRulesMasterRewardUnset: 'Recompensa Master: A definir',
     arenaRulesPointTitle: 'Pontos',

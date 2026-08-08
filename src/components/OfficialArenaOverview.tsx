@@ -254,6 +254,9 @@ function EntryConfirmModal({
 
           {/* Entry rules apply note */}
           <p style={confirmModalStyles.proNote}>{t.arenaRulesEntryMasterRewardNote}</p>
+
+          {/* Public use consent */}
+          <p style={confirmModalStyles.publicUseConsent}>{t.arenaEntryPublicUseConsent}</p>
         </div>
 
         {/* Buttons */}
@@ -1666,6 +1669,14 @@ const confirmModalStyles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     // iPhone誤タップ防止
     minHeight: 44,
+  },
+  publicUseConsent: {
+    fontSize: '0.72rem',
+    color: '#555',
+    margin: 0,
+    lineHeight: 1.55,
+    borderTop: '1px solid #e8e3de',
+    paddingTop: '0.45rem',
   },
 };
 

@@ -458,6 +458,7 @@ export const EN_TRANSLATIONS = {
     arenaRulesEntryTitle: 'Entry Requirement',
     arenaRulesEntryBody: 'Pro members can enter Official Arenas during the initial launch period. Official Arenas will be progressively opened to Free members after operations have stabilized. The timing of this expansion will be determined based on arena conditions.',
     arenaRulesEntryMasterRewardNote: 'By entering, you agree that the Arena rules, including Master transitions and Master Reward, apply.',
+    arenaEntryPublicUseConsent: 'By entering the Arena, you consent to the publication and use of your display name, match results, and game records from that Arena for ONE EIGHT\'s operation, records, publicity, advertising, and social media posts.',
     arenaRulesMasterRewardAmount: (amount: string) => `Master Reward: ${amount}`,
     arenaRulesMasterRewardUnset: 'Master Reward: TBD',
     arenaRulesPointTitle: 'Points',

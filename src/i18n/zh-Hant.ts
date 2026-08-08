@@ -462,6 +462,7 @@ export const ZH_HANT_TRANSLATIONS = {
     arenaRulesEntryTitle: '報名要求',
     arenaRulesEntryBody: 'Pro 會員可在初期運營期間報名 Official Arena。Official Arena 將在運營穩定後逐步對 Free 會員開放。開放時間將根據 Arena 運營狀況决定。',
     arenaRulesEntryMasterRewardNote: '報名即表示同意適用 Arena 規則，包括 Master 轉換和 Master 獎勵。',
+    arenaEntryPublicUseConsent: '參加Arena即表示您同意將該Arena中您的顯示名稱、對局結果及棋譜用於ONE EIGHT的營運、記錄、宣傳、廣告及SNS投稿等公開使用。',
     arenaRulesMasterRewardAmount: (amount: string) => `Master 獎勵：${amount}`,
     arenaRulesMasterRewardUnset: 'Master 獎勵：待確定',
     arenaRulesPointTitle: '積分',

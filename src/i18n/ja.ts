@@ -456,6 +456,7 @@ export const JA_TRANSLATIONS = {
     arenaRulesEntryTitle: '参加条件',
     arenaRulesEntryBody: 'Pro会員はOfficial Arenaの初期運営期間中からEntryできます。Official Arenaは、運営体制の安定後、Free会員にも段階的に解放する予定です。解放時期はArenaの運営状況により決定します。',
     arenaRulesEntryMasterRewardNote: 'Entryにより、Masterの遷移およびMaster報酬を含むArena規則が適用されます。',
+    arenaEntryPublicUseConsent: 'ArenaへのEntryにより、当該Arenaにおける自身の表示名、対局結果および棋譜が、ONE EIGHTの運営、記録、広報、広告およびSNS投稿のために公開・利用されることに同意します。',
     arenaRulesMasterRewardAmount: (amount: string) => `Master報酬：${amount}`,
     arenaRulesMasterRewardUnset: 'Master報酬：未定',
     arenaRulesPointTitle: 'ポイント',

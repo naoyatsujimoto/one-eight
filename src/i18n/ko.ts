@@ -451,6 +451,7 @@ export const KO_TRANSLATIONS = {
     arenaRulesEntryTitle: '참가 요건',
     arenaRulesEntryBody: 'Pro 회원은 초기 운영 기간 중 Official Arena에 참가할 수 있습니다. Official Arena는 운영이 안정된 후 Free 회원에게도 단계적으로 개방될 예정입니다. 개방 시기는 아레나 운영 상황에 따라 결정됩니다.',
     arenaRulesEntryMasterRewardNote: 'Entry시 Master 전환 및 Master 보상을 포함한 Arena 규칙이 적용됩니다.',
+    arenaEntryPublicUseConsent: 'Arena에 Entry함으로써, 해당 Arena에서의 표시 이름, 대국 결과 및 기보가 ONE EIGHT의 운영, 기록, 홍보, 광고 및 SNS 게시를 위해 공개 및 이용되는 것에 동의합니다.',
     arenaRulesMasterRewardAmount: (amount: string) => `Master 보상: ${amount}`,
     arenaRulesMasterRewardUnset: 'Master 보상: 미정',
     arenaRulesPointTitle: '포인트',
