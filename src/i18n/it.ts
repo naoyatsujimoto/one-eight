@@ -266,6 +266,7 @@ export const IT_TRANSLATIONS = {
     userCancelEdit: 'Annulla',
     profileSaveSuccess: 'Nome salvato.',
     profileSaveError: 'Impossibile salvare il nome. Riprova.',
+    statsSaveError: 'Impossibile salvare l’impostazione di visibilità. Riprova.',
     userBack: '← Indietro',
     userPrevPage: '← Precedente',
     userNextPage: 'Successivo →',

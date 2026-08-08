@@ -266,6 +266,7 @@ export const KO_TRANSLATIONS = {
     userCancelEdit: '취소',
     profileSaveSuccess: '이름이 저장되었습니다.',
     profileSaveError: '이름 저장에 실패했습니다. 다시 시도해 주세요.',
+    statsSaveError: '공개 설정 저장에 실패했습니다. 다시 시도해 주세요.',
     userBack: '← 뒤로',
     userPrevPage: '← 이전',
     userNextPage: '다음 →',

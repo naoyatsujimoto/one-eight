@@ -262,6 +262,7 @@ export const JA_TRANSLATIONS = {
     userCancelEdit: 'キャンセル',
     profileSaveSuccess: '名前を保存しました。',
     profileSaveError: '名前の保存に失敗しました。もう一度お試しください。',
+    statsSaveError: '公開設定の保存に失敗しました。もう一度お試しください。',
     userBack: '← 戻る',
     userPrevPage: '← 前',
     userNextPage: '次 →',

@@ -108,6 +108,52 @@ export async function upsertProfile(
 }
 
 /**
+ * Update lang for the authenticated user.
+ * Uses UPDATE (not upsert) to avoid INSERT permission issues.
+ * Throws on DB error or if no rows were updated.
+ */
+export async function updateProfileLang(
+  userId: string,
+  lang: Lang,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ lang })
+    .eq('id', userId)
+    .select('id');
+
+  if (error) {
+    throw new Error(`profiles lang update failed: [${error.code}] ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    throw new Error('profiles lang update: no rows updated (RLS or missing row?)');
+  }
+}
+
+/**
+ * Update stats_public for the authenticated user.
+ * Uses UPDATE (not upsert) to avoid INSERT permission issues.
+ * Throws on DB error or if no rows were updated.
+ */
+export async function updateProfileStatsPublic(
+  userId: string,
+  statsPublic: boolean,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ stats_public: statsPublic })
+    .eq('id', userId)
+    .select('id');
+
+  if (error) {
+    throw new Error(`profiles stats_public update failed: [${error.code}] ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    throw new Error('profiles stats_public update: no rows updated (RLS or missing row?)');
+  }
+}
+
+/**
  * Update display_name for the authenticated user.
  * Uses UPDATE (not upsert) to avoid INSERT permission issues.
  * Throws on DB error or if no rows were updated.

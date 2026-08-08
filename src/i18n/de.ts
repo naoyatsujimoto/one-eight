@@ -266,6 +266,7 @@ export const DE_TRANSLATIONS = {
     userCancelEdit: 'Abbrechen',
     profileSaveSuccess: 'Name gespeichert.',
     profileSaveError: 'Name konnte nicht gespeichert werden. Bitte erneut versuchen.',
+    statsSaveError: 'Sichtbarkeitseinstellung konnte nicht gespeichert werden. Bitte erneut versuchen.',
     userBack: '← Zurück',
     userPrevPage: '← Zurück',
     userNextPage: 'Weiter →',

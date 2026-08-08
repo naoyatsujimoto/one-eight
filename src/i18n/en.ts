@@ -264,6 +264,7 @@ export const EN_TRANSLATIONS = {
     userCancelEdit: 'Cancel',
     profileSaveSuccess: 'Name saved.',
     profileSaveError: 'Failed to save name. Please try again.',
+    statsSaveError: 'Failed to save visibility setting. Please try again.',
     userBack: '← Back',
     userPrevPage: '← Prev',
     userNextPage: 'Next →',

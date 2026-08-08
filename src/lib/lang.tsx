@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { upsertProfile } from './profile';
+import { updateProfileLang } from './profile';
 import { SUPPORTED_LOCALES } from './locales';
 import type { LocaleCode } from './locales';
 import { resolveUiTranslations, EN_TRANSLATIONS, JA_TRANSLATIONS } from '../i18n/index';
@@ -85,7 +85,9 @@ export function LangProvider({ children }: { children: ReactNode }) {
   const setLangWithSync = useCallback((l: Lang) => {
     setLang(l);
     if (userId) {
-      upsertProfile(userId, { lang: l }).catch(() => {/* silent */});
+      updateProfileLang(userId, l).catch((err) => {
+        console.error('[lang] DB sync failed:', err instanceof Error ? err.message : String(err));
+      });
     }
   }, [userId, setLang]);
 

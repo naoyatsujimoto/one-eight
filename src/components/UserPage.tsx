@@ -22,7 +22,7 @@ import { useLang } from '../lib/lang';
 import type { LocaleCode } from '../lib/locales';
 import { formatDate, formatDateTime, getIntlLocale } from '../lib/localeFormat';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
-import { getProfile, upsertProfile, updateDisplayName, isProActive } from '../lib/profile';
+import { getProfile, upsertProfile, updateDisplayName, updateProfileStatsPublic, isProActive } from '../lib/profile';
 import { OfficialMatchCalendar } from './OfficialMatchCalendar';
 import { listMyOfficialMatches, type OfficialMatchListItem } from '../lib/officialMatch';
 import { getMyArenaTitles, type ArenaTitle } from '../lib/arena';
@@ -99,6 +99,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameSaved, setNameSaved] = useState(false);
+  const [savingStats, setSavingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetcher = viewOnly ? fetchPublicUserPageStats : fetchUserPageStats;
@@ -166,11 +168,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
       } else if (viewOnly) {
         setUsername('Unknown');
       } else {
-        // プロフィール行自体未作成の場合：upsert（INSERT+UPDATE）はINSERTアクセスを必要とするためそのまま使用
-        const nameToSync = loadUsername(userId) || defaultName;
-        upsertProfile(userId, { display_name: nameToSync }).catch((err) => {
-          console.error('[UserPage] profile row creation failed:', err instanceof Error ? err.message : String(err));
-        });
+        // プロフィール行が存在しない異常ケース
+        // INSERT権限がないため行作成は不可。サイレント失敗せずログに記録。
+        // 通常はauth.users作成時のtriggerで行が作成されるはずなので、
+        // 行不在は異常（trigger不備など）として扱う。
+        console.error('[UserPage] profiles row missing for user:', userId);
       }
     });
   }, [displayUserId, viewOnly]);
@@ -180,8 +182,19 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     setEditingName(true);
   }
   async function handleStatsPublicChange(val: boolean) {
-    setStatsPublic(val);
-    await upsertProfile(userId, { stats_public: val });
+    if (savingStats) return;
+    setSavingStats(true);
+    setStatsError(null);
+    try {
+      await updateProfileStatsPublic(userId, val);
+      setStatsPublic(val);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[UserPage] handleStatsPublicChange failed:', msg);
+      setStatsError(t.statsSaveError);
+    } finally {
+      setSavingStats(false);
+    }
   }
 
   async function handleSaveName() {
@@ -370,11 +383,13 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                       type="button"
                       className={`up-segment-btn${statsPublic === val ? ' up-segment-btn--active' : ''}`}
                       onClick={() => handleStatsPublicChange(val)}
+                      disabled={savingStats}
                     >
                       {val ? t.statsPublic : t.statsPrivate}
                     </button>
                   ))}
                 </div>
+                {statsError && <span className="up-name-error">{statsError}</span>}
               </div>
             )}
           </div>

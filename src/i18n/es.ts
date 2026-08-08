@@ -266,6 +266,7 @@ export const ES_TRANSLATIONS = {
     userCancelEdit: 'Cancelar',
     profileSaveSuccess: 'Nombre guardado.',
     profileSaveError: 'Error al guardar el nombre. Inténtalo de nuevo.',
+    statsSaveError: 'Error al guardar la configuración de visibilidad. Inténtalo de nuevo.',
     userBack: '← Atrás',
     userPrevPage: '← Anterior',
     userNextPage: 'Siguiente →',
