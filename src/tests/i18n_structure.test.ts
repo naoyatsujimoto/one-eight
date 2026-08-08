@@ -376,4 +376,79 @@ describe('i18n structure', () => {
     const errors = compareShapes(EN_TRANSLATIONS, ZH_HANT_TRANSLATIONS);
     expect(errors).toEqual([]);
   });
+
+  // ===========================================================
+  // STATS translation audit: JA and FR
+  // ===========================================================
+  describe('STATS translation audit', () => {
+    it('JA statsVisibility does not contain "STATS"', () => {
+      expect(JA_TRANSLATIONS.statsVisibility).not.toContain('STATS');
+    });
+
+    it('JA opponentStats does not contain "STATS"', () => {
+      expect(JA_TRANSLATIONS.opponentStats).not.toContain('STATS');
+    });
+
+    it('JA statsPrivateMsg does not contain "STATS"', () => {
+      expect(JA_TRANSLATIONS.statsPrivateMsg).not.toContain('STATS');
+    });
+
+    // JA target key values are non-empty
+    it('JA statsVisibility is non-empty', () => {
+      expect(JA_TRANSLATIONS.statsVisibility.length).toBeGreaterThan(0);
+    });
+
+    it('JA opponentStats is non-empty', () => {
+      expect(JA_TRANSLATIONS.opponentStats.length).toBeGreaterThan(0);
+    });
+
+    it('JA statsPrivateMsg is non-empty', () => {
+      expect(JA_TRANSLATIONS.statsPrivateMsg.length).toBeGreaterThan(0);
+    });
+
+    // FR: no standalone English abbreviation 'Stats' or 'stats'
+    // Matches word-boundary occurrences only (not part of 'Statistiques')
+    const FR_STATS_ABBR_RE = /\bStats\b|\bstats\b/;
+
+    it('FR stats does not contain standalone Stats/stats abbreviation', () => {
+      expect(FR_STATS_ABBR_RE.test(FR_TRANSLATIONS.stats)).toBe(false);
+    });
+
+    it('FR statsVisibility does not contain standalone Stats/stats abbreviation', () => {
+      expect(FR_STATS_ABBR_RE.test(FR_TRANSLATIONS.statsVisibility)).toBe(false);
+    });
+
+    it('FR opponentStats does not contain standalone Stats/stats abbreviation', () => {
+      expect(FR_STATS_ABBR_RE.test(FR_TRANSLATIONS.opponentStats)).toBe(false);
+    });
+
+    it('FR statsPrivateMsg does not contain standalone Stats/stats abbreviation', () => {
+      expect(FR_STATS_ABBR_RE.test(FR_TRANSLATIONS.statsPrivateMsg)).toBe(false);
+    });
+
+    it('FR myStats does not contain standalone Stats/stats abbreviation', () => {
+      expect(FR_STATS_ABBR_RE.test(FR_TRANSLATIONS.myStats)).toBe(false);
+    });
+
+    // FR target keys are non-empty
+    it('FR stats is non-empty', () => {
+      expect(FR_TRANSLATIONS.stats.length).toBeGreaterThan(0);
+    });
+
+    it('FR statsVisibility is non-empty', () => {
+      expect(FR_TRANSLATIONS.statsVisibility.length).toBeGreaterThan(0);
+    });
+
+    it('FR opponentStats is non-empty', () => {
+      expect(FR_TRANSLATIONS.opponentStats.length).toBeGreaterThan(0);
+    });
+
+    it('FR statsPrivateMsg is non-empty', () => {
+      expect(FR_TRANSLATIONS.statsPrivateMsg.length).toBeGreaterThan(0);
+    });
+
+    it('FR myStats is non-empty', () => {
+      expect(FR_TRANSLATIONS.myStats.length).toBeGreaterThan(0);
+    });
+  });
 });
