@@ -8,6 +8,7 @@
 
 import type { PostmortemResult, PostmortemMetric } from '../game/postmortem'
 import type { MoveRecord } from '../game/types'
+import { track } from './kpiTracker'
 import { savePostmortemCache, loadPostmortemCache } from '../game/storage'
 import type { PostmortemWorkerRequest, PostmortemWorkerResponse } from '../workers/postmortem.worker'
 
@@ -20,10 +21,13 @@ export type AnalysisJobStatus =
   | { status: 'done';    history: MoveRecord[]; result: PostmortemResult }
   | { status: 'error';   history: MoveRecord[]; message: string }
 
+export type PostmortemMatchMode = 'human_vs_cpu' | 'online' | 'official' | 'arena' | 'unknown'
+
 type Job = {
   gameId: string
   history: MoveRecord[]
   humanColor: 'black' | 'white' | null
+  matchMode?: PostmortemMatchMode
 }
 
 // ─── Manager class ───────────────────────────────────────────────────────────
@@ -90,6 +94,7 @@ class PostmortemWorkerManager {
     gameId: string,
     history: MoveRecord[],
     humanColor?: 'black' | 'white' | null,
+    matchMode?: PostmortemMatchMode,
   ): void {
     const current = this.getStatus(gameId)
     if (current.status === 'queued' || current.status === 'running') return
@@ -101,16 +106,28 @@ class PostmortemWorkerManager {
       running: this._runningId !== null ? 1 : 0,
     })
 
+    // KPI: postmortem_started (キャッシュヒットかどうかにかかわらず1回)
+    track('postmortem_started', {
+      match_mode: matchMode ?? 'unknown',
+      move_count: history.length,
+    })
+
     // キャッシュヒット → 即 done
     const cached = loadPostmortemCache(gameId)
     if (cached) {
       console.log('[PM/manager] cache hit', { gameId })
       this.setJob(gameId, { status: 'done', result: cached, history })
+      // KPI: postmortem_completed (cache hit)
+      track('postmortem_completed', {
+        match_mode: matchMode ?? 'unknown',
+        candidate_count: cached.rows?.length ?? 0,
+        elapsed_seconds: 0,
+      })
       return
     }
 
     // キューに追加して処理を試みる
-    this.queue.push({ gameId, history, humanColor: humanColor ?? null })
+    this.queue.push({ gameId, history, humanColor: humanColor ?? null, matchMode })
     this.setJob(gameId, { status: 'queued', history })
     this.processNext()
   }
@@ -176,12 +193,28 @@ class PostmortemWorkerManager {
           result: e.data.result,
           history: job.history,
         })
+        // KPI: postmortem_completed (worker done)
+        track('postmortem_completed', {
+          match_mode: job.matchMode ?? 'unknown',
+          candidate_count: e.data.result?.rows?.length ?? 0,
+          elapsed_seconds: Math.min(Math.round(elapsedMs / 1000), 86400),
+        })
+        // KPI: performance_measure (worker ms)
+        track('performance_measure', {
+          metric_name: 'postmortem_worker_ms',
+          value_ms: Math.min(elapsedMs, 300000),
+        })
       } else {
         console.log('[PM/manager] worker error', { gameId: job.gameId, error: e.data.message })
         this.setJob(job.gameId, {
           status: 'error',
           message: e.data.message,
           history: job.history,
+        })
+        // KPI: postmortem_failed (worker error)
+        track('postmortem_failed', {
+          error_code: 'WORKER_ERROR',
+          stage: 'worker',
         })
       }
       worker.terminate()
@@ -195,6 +228,16 @@ class PostmortemWorkerManager {
         status: 'error',
         message: err.message ?? 'Worker error',
         history: job.history,
+      })
+      // KPI: postmortem_failed (worker onerror)
+      track('postmortem_failed', {
+        error_code: 'WORKER_FATAL',
+        stage: 'worker',
+      })
+      // KPI: performance_measure
+      track('performance_measure', {
+        metric_name: 'postmortem_worker_ms',
+        value_ms: Math.min(elapsedMs, 300000),
       })
       worker.terminate()
       finish()

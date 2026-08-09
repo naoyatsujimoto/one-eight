@@ -388,6 +388,81 @@ export function getQueueSnapshot(): readonly PendingEvent[] {
   return [..._queue];
 }
 
+// ---------------------------------------------------------------------------
+// KPI RPC除外リスト（再帰防止）
+// ---------------------------------------------------------------------------
+
+const KPI_RPC_NAMES: ReadonlySet<string> = new Set([
+  'track_kpi_event',
+  'track_kpi_events_batch',
+  'upsert_kpi_session',
+  'cleanup_old_kpi_events',
+  '_kpi_allowed_event_names',
+  '_kpi_validate_properties',
+  '_kpi_check_pii_keys',
+  '_kpi_check_rate_limit',
+  '_kpi_cleanup_rate_limit',
+  '_kpi_require_admin',
+  'admin_set_kpi_start_at',
+  'admin_clear_kpi_start_at',
+  'admin_get_kpi_match_summary',
+  'admin_get_kpi_match_daily',
+  'admin_get_kpi_arena_funnel',
+  'admin_get_kpi_postmortem_summary',
+  'admin_get_kpi_system_health_summary',
+]);
+
+/**
+ * RPC呼び出しをKPI計測する共通ヘルパー。
+ * 成功・失敗問わず rpc_call_completed を送信。
+ * 失敗時のみ rpc_error を送信。
+ * KPI個有のRPCは計測しない（再帰防止）。
+ */
+export async function trackRpcCall<T>(
+  rpcName: string,
+  rpcFn: () => Promise<T>,
+  route: string,
+): Promise<T> {
+  // KPI RPC自身は計測しない（再帰防止）
+  const isKpiRpc = KPI_RPC_NAMES.has(rpcName);
+
+  const startMs = performance.now();
+  try {
+    const result = await rpcFn();
+    const elapsedMs = Math.round(performance.now() - startMs);
+    if (!isKpiRpc && _initialized) {
+      track('rpc_call_completed', {
+        rpc_name: rpcName,
+        outcome: 'success',
+        elapsed_ms: Math.min(elapsedMs, 300000),
+        route: route.slice(0, 500),
+      });
+    }
+    return result;
+  } catch (err: unknown) {
+    const elapsedMs = Math.round(performance.now() - startMs);
+    if (!isKpiRpc && _initialized) {
+      track('rpc_call_completed', {
+        rpc_name: rpcName,
+        outcome: 'error',
+        elapsed_ms: Math.min(elapsedMs, 300000),
+        route: route.slice(0, 500),
+      });
+      // rpc_errorも併せて送信
+      const errorCode =
+        err != null && typeof err === 'object' && 'code' in err
+          ? String((err as { code: unknown }).code).slice(0, 100)
+          : undefined;
+      track('rpc_error', {
+        rpc_name: rpcName.slice(0, 100),
+        error_code: errorCode,
+        route: route.slice(0, 500),
+      });
+    }
+    throw err;
+  }
+}
+
 /**
  * Trackerをリセット（テスト用）
  */

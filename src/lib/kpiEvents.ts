@@ -220,6 +220,21 @@ export interface KpiEventPropsMap {
     elapsed_since_disconnect_seconds?: number;
   };
 
+  /** 対局開始 */
+  match_started: {
+    match_key: string;  // ゲーム識別子のみ。棋譜等は禁止
+    match_mode: 'human_vs_cpu' | 'online' | 'official' | 'arena';
+    cpu_difficulty?: string;  // 既存の正式difficulty値のみ
+  };
+
+  /** RPC呼び出し完了 */
+  rpc_call_completed: {
+    rpc_name: string;
+    outcome: 'success' | 'error';
+    elapsed_ms: number;
+    route: string;  // pathnameのみ
+  };
+
   /** パフォーマンス計測 */
   performance_measure: {
     metric_name: string; // e.g. 'postmortem_rpc_latency', 'page_load'
@@ -261,6 +276,8 @@ export const ALLOWED_KPI_EVENT_NAMES: readonly KpiEventName[] = [
   'rpc_error',
   'realtime_reconnected',
   'performance_measure',
+  'match_started',
+  'rpc_call_completed',
 ] as const;
 
 // ---------------------------------------------------------------------------

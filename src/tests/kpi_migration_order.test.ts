@@ -7,7 +7,9 @@
  *  3. 新migration 20260809195846 が存在すること
  *  4. 各migrationの依存関係が正しい順序で定義されていること（静的SQL解析）
  *  5. TypeScript KpiEventPropsMapのevent名一覧とDB validator対象event名が完全一致すること
- *  6. ALLOWED_KPI_EVENT_NAMES が25件であること
+ *  6. ALLOWED_KPI_EVENT_NAMES が25件であること (Phase 2)
+ *  7. Phase 3 migrationが存在すること
+ *  8. ALLOWED_KPI_EVENT_NAMES が27件であること (Phase 3追加後)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -190,12 +192,13 @@ describe('KPI Migration Order — 静的検証', () => {
 
 describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
 
-  it('15. ALLOWED_KPI_EVENT_NAMES が25件であること', () => {
-    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(25);
+  it('15. ALLOWED_KPI_EVENT_NAMES が27件であること (Phase 3追加後)', () => {
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(27);
   });
 
-  it('16. DB validator (event_validation migration) のevent名がTypeScriptと完全一致すること', () => {
-    const sql = readMigration('20260809195847_kpi_phase1_event_validation.sql');
+  it('16. DB validator (Phase 3 event_validation migration) のevent名がTypeScriptと完全一致すること', () => {
+    // Phase 3 migration が _kpi_validate_properties を再定義し、全27 eventを含む
+    const sql = readMigration('20260810000001_kpi_phase3_match_event.sql');
     const dbEvents = extractDbValidatorEvents(sql);
     const tsEvents = [...ALLOWED_KPI_EVENT_NAMES].sort();
 
@@ -213,7 +216,7 @@ describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
     }
   });
 
-  it('17. TypeScriptのevent名一覧が正確に25件すべて定義されていること', () => {
+  it('17. TypeScriptのevent名一覧が正確に27件すべて定義されていること (Phase 3追加後)', () => {
     const expected = [
       'page_view',
       'session_started',
@@ -240,6 +243,8 @@ describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
       'rpc_error',
       'realtime_reconnected',
       'performance_measure',
+      'match_started',
+      'rpc_call_completed',
     ];
 
     expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(expected.length);
@@ -248,6 +253,63 @@ describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
         (ALLOWED_KPI_EVENT_NAMES as readonly string[]).includes(name),
         `ALLOWED_KPI_EVENT_NAMES should include: ${name}`
       ).toBe(true);
+    }
+  });
+});
+
+describe('KPI Migration Order — Phase 3 静的検証', () => {
+
+  const PHASE3_MIGRATIONS = [
+    { file: '20260810000001_kpi_phase3_match_event.sql',      ts: 20260810000001, desc: 'match_event_validation' },
+    { file: '20260810000002_kpi_phase3_admin_match.sql',      ts: 20260810000002, desc: 'admin_match_rpcs' },
+    { file: '20260810000003_kpi_phase3_admin_arena.sql',      ts: 20260810000003, desc: 'admin_arena_rpc' },
+    { file: '20260810000004_kpi_phase3_admin_postmortem.sql', ts: 20260810000004, desc: 'admin_postmortem_rpc' },
+    { file: '20260810000005_kpi_phase3_admin_system.sql',     ts: 20260810000005, desc: 'admin_system_rpc' },
+  ] as const;
+
+  it('18. Phase 3 全migrationファイルが存在すること', () => {
+    const { existsSync } = require('fs');
+    for (const { file } of PHASE3_MIGRATIONS) {
+      expect(existsSync(migrationPath(file)), `${file} should exist`).toBe(true);
+    }
+  });
+
+  it('19. Phase 3 migration番号が昇順に並んでいること', () => {
+    const timestamps = PHASE3_MIGRATIONS.map(m => m.ts);
+    for (let i = 1; i < timestamps.length; i++) {
+      expect(timestamps[i]).toBeGreaterThan(timestamps[i - 1]!);
+    }
+  });
+
+  it('20. Phase 3 migration番号がPhase 2最新 (20260809210000) より大きいこと', () => {
+    for (const { ts } of PHASE3_MIGRATIONS) {
+      expect(ts).toBeGreaterThan(20260809210000);
+    }
+  });
+
+  it('21. Phase 3 event_validation migration が _kpi_allowed_event_names を再定義すること', () => {
+    const sql = readMigration('20260810000001_kpi_phase3_match_event.sql');
+    expect(sql).toContain('CREATE OR REPLACE FUNCTION public._kpi_allowed_event_names');
+    expect(sql).toContain("'match_started'");
+    expect(sql).toContain("'rpc_call_completed'");
+  });
+
+  it('22. Phase 3 event_validation migration が _kpi_validate_properties を再定義すること', () => {
+    const sql = readMigration('20260810000001_kpi_phase3_match_event.sql');
+    expect(sql).toContain('CREATE OR REPLACE FUNCTION public._kpi_validate_properties');
+    expect(sql).toContain("WHEN 'match_started' THEN");
+    expect(sql).toContain("WHEN 'rpc_call_completed' THEN");
+  });
+
+  it('23. DB validator Phase 3 のevent名がTypeScriptと一致すること', () => {
+    const sql = readMigration('20260810000001_kpi_phase3_match_event.sql');
+    const phase3Events = ['match_started', 'rpc_call_completed'];
+    for (const eventName of phase3Events) {
+      expect(
+        (ALLOWED_KPI_EVENT_NAMES as readonly string[]).includes(eventName),
+        `TS catalog should include: ${eventName}`
+      ).toBe(true);
+      expect(sql, `SQL should validate: ${eventName}`).toContain(`WHEN '${eventName}' THEN`);
     }
   });
 });

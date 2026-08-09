@@ -171,8 +171,28 @@ describe('1. 許可event送信（RPCモック）', () => {
     );
   });
 
-  it('全25eventが許可リストに存在する', () => {
-    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(25);
+  it('全eventが許可リストに存在する (Phase 3後27件)', () => {
+    // Phase 1: 25件、Phase 3追加: match_started / rpc_call_completed (+2)
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBeGreaterThanOrEqual(25);
+    // Phase 1の基本25 eventが全て含まれることを確認
+    const phase1Events = [
+      'page_view', 'session_started', 'session_heartbeat',
+      'auth_started', 'auth_succeeded', 'auth_failed',
+      'language_changed',
+      'training_started', 'training_step_reached', 'training_attempted',
+      'training_incorrect', 'training_hint_shown', 'training_step_advanced',
+      'training_resumed', 'training_completed',
+      'postmortem_started', 'postmortem_completed', 'postmortem_failed',
+      'postmortem_refreshed', 'postmortem_candidates_opened',
+      'pro_feature_used', 'frontend_error', 'rpc_error',
+      'realtime_reconnected', 'performance_measure',
+    ];
+    for (const name of phase1Events) {
+      expect(
+        (ALLOWED_KPI_EVENT_NAMES as readonly string[]).includes(name),
+        `ALLOWED_KPI_EVENT_NAMES should include: ${name}`
+      ).toBe(true);
+    }
   });
 });
 
