@@ -349,3 +349,81 @@ KPI集計から**デフォルト除外**するもの：
 | Phase 2 | Admin KPIダッシュボード、集計RPC、可視化 |
 | Phase 3 | Retention/Cohort分析、Activation詳細、自動アラート |
 | Phase 4 | 外部BI連携（検討） |
+
+---
+
+## Phase 2 実装記録（2026-08-09）
+
+### Phase 2 接続済みevent
+
+| Event | 送信タイミング | 送信箇所 | 除外 |
+|---|---|---|---|
+| `session_started` | 初回アクセス時・30分inactivity後 | useKpiLifecycle | /ai-check-login |
+| `session_heartbeat` | 60秒間隔・visible+activity有 | useKpiLifecycle | hidden/no activity |
+| `page_view` | ログイン画面表示時（1回のみ） | AuthGate | 認証済みユーザー・/ai-check-login |
+| `auth_started` | Magic Link / OTP送信直前 | AuthGate | /ai-check-login |
+| `auth_succeeded` | SIGNED_IN event受信後 | useAuthSucceededWatcher | INITIAL_SESSION・token refresh・reload |
+| `auth_failed` | 認証要求失敗時 | AuthGate | /ai-check-login |
+| `language_changed` | locale実際変更時 | LangProvider | 初期読込・同一locale再選択 |
+
+### Phase 2 Session定義
+
+| 要素 | 仕様 |
+|---|---|
+| 開始 | 初回アクセス時・30分以上inactivity後の活動 |
+| 終了 | ログアウト時（次回は新session） |
+| anonymous_id | localStorage永続（logout後も維持） |
+| session_id | sessionStorage（logout/user切替でリセット） |
+| 30分inactivity | localStorage保存のlast_activity_atで判定 |
+
+### Phase 2 認証二重計上防止
+
+| ケース | 対策 |
+|---|---|
+| INITIAL_SESSION (page reload) | auth_succeededを送信しない |
+| SIGNED_IN重複 | 同一userId・5秒以内はスキップ |
+| token refresh | TOKEN_REFRESHED eventは無視 |
+| auth button二重tap | pendingAuthRef フラグで排除 |
+
+### Phase 2 登録正本
+
+- 正本: `auth.users` テーブル
+- 除外: `is_admin=true` / `is_internal_test_account=true`
+- 集計RPC: `admin_get_kpi_acquisition_auth_summary`
+
+### Phase 2 Pro正本・分類
+
+| 分類 | 条件 |
+|---|---|
+| `free` | plan != 'pro' |
+| `active_pro` | plan='pro' + status='active' + period_end未来 |
+| `canceled_but_active_until_period_end` | plan='pro' + status='canceled' + period_end未来 |
+| `inactive_expired` | その他のpro状態 |
+| `excluded` | is_internal_test_account=true または internal_plan_override IS NOT NULL |
+
+DB関数: `_kpi_is_pro_active()` / `_kpi_classify_pro_status()`
+
+### Phase 2 追加RPC
+
+| RPC | 用途 |
+|---|---|
+| `admin_get_kpi_acquisition_auth_summary(p_from, p_to, p_timezone, p_include_internal)` | 集客・認証・登録・Pro集計 |
+| `_kpi_is_pro_active()` | Pro有効判定（DB側） |
+| `_kpi_classify_pro_status()` | Pro状態4分類 |
+| `_kpi_require_admin()` | Admin確認ヘルパー |
+| `admin_kpi_users_view` | PIIなしAdmin用ユーザービュー |
+
+### Phase 2 プライバシー確認事項（法務確認待ち）
+
+以下の項目は法務確認事項として記録のみ。Terms/Privacy文言は未変更：
+- session tracking（anonymous_id）のcookieless計測
+- heartbeatによる滞在時間推計
+- auth_started/succeeded/failedによるログインfunnel計測
+
+### Phase 3 引継ぎ事項
+
+- 対局・Arena計測接続（後続Phase）
+- Training計測接続（後続Phase）
+- Postmortem計測接続（後続Phase）
+- system health接続（後続Phase）
+- Admin Dashboard UI（後続Phase）
