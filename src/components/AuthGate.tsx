@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getProfile, isProActive } from '../lib/profile';
 import { useLang } from '../lib/lang';
 import { SplashScreen } from './SplashScreen';
+import { track } from '../lib/kpiTracker';
+import { useAuthKpi, useAuthSucceededWatcher } from '../hooks/useAuthKpi';
 
 interface Props {
   children: ReactNode;
@@ -20,6 +22,14 @@ export function AuthGate({ children }: Props) {
   const [otpStep, setOtpStep] = useState<OtpStep>('email');
   const [sent, setSent] = useState(false);
   const [proActive, setProActive] = useState(false);
+  const { trackAuthStarted, trackAuthFailed } = useAuthKpi();
+  // 認証成功監視 (SIGNED_IN イベントで auth_succeeded を送信)
+  useAuthSucceededWatcher();
+
+  // ── ログイン画面 page_view の送信（重複防止） ──────────────────────────────
+  // 未認証ユーザーにログイン画面が実際に表示された時だけ1回送信
+  // reload/新sessionは新規page view
+  const loginPageViewSentRef = useRef(false);
 
   useEffect(() => {
     if (!user) { setProActive(false); return; }
@@ -39,6 +49,32 @@ export function AuthGate({ children }: Props) {
     setSplashDismissed(true);
   }
 
+  // ── ログイン画面 page_view ─────────────────────────────────────────────
+  // 未認証ユーザーにログイン画面が実際に表示された時だけ1回送信。
+  // renderSiごとに送信しない（loginPageViewSentRefで制御）
+  // 同一表示でlocale変更してもpage_viewを増やさない
+  // reload／新sessionは新規page view（loginPageViewSentRefはcomponentマウント毎に初期化）
+  useEffect(() => {
+    // 未認証かつローディング完了後の表示時のみ
+    if (loading || user) return;
+    // splash表示中はまだログイン画面でない
+    if (!splashDismissed) return;
+    // 既に送信済みならスキップ
+    if (loginPageViewSentRef.current) return;
+    loginPageViewSentRef.current = true;
+
+    try {
+      const route = window.location.pathname;
+      // query string / token / hash は保存しない
+      track('page_view', {
+        route: route.length <= 500 ? route : route.slice(0, 500),
+      });
+    } catch {
+      // KPI送信失敗は無視
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user, splashDismissed]);
+
   if (loading) {
     return (
       <div style={styles.center}>
@@ -57,10 +93,17 @@ export function AuthGate({ children }: Props) {
       if (!email.trim()) return;
       setSubmitting(true);
       setError(null);
+      // KPI: auth_started (実際にSupabase認証要求を開始する直前)
+      trackAuthStarted('magic_link');
       const { error: err } = await signInWithMagicLink(email.trim());
       setSubmitting(false);
-      if (err) setError(err);
-      else setSent(true);
+      if (err) {
+        setError(err);
+        // KPI: auth_failed
+        trackAuthFailed({ message: err }, 'magic_link');
+      } else {
+        setSent(true);
+      }
     }
 
     async function handleSendOtp(e: React.FormEvent) {
@@ -68,10 +111,14 @@ export function AuthGate({ children }: Props) {
       if (!email.trim()) return;
       setSubmitting(true);
       setError(null);
+      // KPI: auth_started (OTP送信開始)
+      trackAuthStarted('magic_link'); // OTPメールコードはmagic_linkと同じOTPフロー
       const { error: err } = await signInWithOtpCode(email.trim());
       setSubmitting(false);
       if (err) {
         setError(err);
+        // KPI: auth_failed
+        trackAuthFailed({ message: err }, 'magic_link');
       } else {
         setOtpStep('code');
         setOtpCode('');
@@ -83,9 +130,16 @@ export function AuthGate({ children }: Props) {
       if (!email.trim() || !otpCode.trim()) return;
       setSubmitting(true);
       setError(null);
+      // KPI: auth_started (OTP検証開始)
+      trackAuthStarted('magic_link');
       const { error: err } = await verifyOtpCode(email.trim(), otpCode.trim());
       setSubmitting(false);
-      if (err) setError(t.authInvalidCode);
+      if (err) {
+        setError(t.authInvalidCode);
+        // KPI: auth_failed
+        trackAuthFailed({ message: err }, 'magic_link');
+      }
+      // 成功時: auth_succeededはuseAuthSucceededWatcherが SIGNED_INイベントで変換
     }
 
     async function handleResendOtp() {

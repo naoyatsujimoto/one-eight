@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { updateProfileLang } from './profile';
 import { SUPPORTED_LOCALES } from './locales';
 import type { LocaleCode } from './locales';
 import { resolveUiTranslations, EN_TRANSLATIONS, JA_TRANSLATIONS } from '../i18n/index';
 import type { Translations } from '../i18n/types';
+import { track, setTrackerLocale } from './kpiTracker';
 
 /**
  * Lang is now an alias for LocaleCode (10 supported locales).
@@ -75,9 +76,37 @@ export function LangProvider({ children }: { children: ReactNode }) {
     return initial;
   });
   const [userId, setUserId] = useState<string | null>(null);
+  // 初期読み込みのlanguage_changedを防ぐ（初期値を記憑）
+  const isInitialLangRef = useRef(true);
 
   const setLang = useCallback((l: Lang) => {
-    setLangState(l);
+    setLangState((prev) => {
+      // 同じlocaleの再選択はlanguage_changedを送信しない
+      if (prev === l) return prev;
+
+      // 初期読み込みは変更eventにしない
+      if (!isInitialLangRef.current) {
+        try {
+          // /ai-check-login は除外
+          const p = window.location.pathname;
+          if (p !== '/ai-check-login' && p !== '/ai-check-login/') {
+            setTrackerLocale(l);
+            track('language_changed', {
+              from_locale: prev,
+              to_locale: l,
+            });
+          }
+        } catch {
+          // KPI送信失敗は無視
+        }
+      } else {
+        // 初期値を記録した後、次回から変更とみなす
+        isInitialLangRef.current = false;
+        try { setTrackerLocale(l); } catch { /* noop */ }
+      }
+
+      return l;
+    });
     syncHtmlLang(l);
     try { localStorage.setItem(LANG_LS_KEY, l); } catch { /* noop */ }
   }, []);

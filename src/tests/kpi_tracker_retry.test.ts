@@ -70,7 +70,7 @@ Object.defineProperty(global, 'navigator', {
 // ---------------------------------------------------------------------------
 
 function createMockSupabase(
-  rpcImpl: () => Promise<{ data: unknown; error: unknown }>
+  rpcImpl: (...args: unknown[]) => Promise<{ data: unknown; error: unknown }>
 ): { mock: SupabaseClient; rpcFn: ReturnType<typeof vi.fn> } {
   const rpcFn = vi.fn().mockImplementation(rpcImpl);
   const mock = { rpc: rpcFn } as unknown as SupabaseClient;
@@ -260,9 +260,10 @@ describe('KPI Tracker — retryable errors', () => {
     const idempotencyKeys: string[] = [];
     let callCount = 0;
 
-    const { mock, rpcFn } = createMockSupabase(async (_rpcName: string, params: Record<string, unknown>) => {
+    const { mock, rpcFn } = createMockSupabase(async (...args: unknown[]) => {
+      const params = args[1] as Record<string, unknown>;
       callCount++;
-      const key = params['p_idempotency_key'] as string;
+      const key = params?.['p_idempotency_key'] as string;
       if (key) idempotencyKeys.push(key);
       if (callCount < 3) {
         throw new Error('Transient error');

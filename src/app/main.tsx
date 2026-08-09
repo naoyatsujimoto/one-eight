@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AuthGate } from '../components/AuthGate';
 import { LangProvider } from '../lib/lang';
+import { KpiLifecycle } from '../components/KpiLifecycle';
 import { JournalListPage } from '../components/JournalListPage';
 import { JournalArticlePage } from '../components/JournalArticlePage';
 import { AiCheckLogin } from '../components/AiCheckLogin';
@@ -35,21 +36,27 @@ if (isAiCheckLogin) {
 } else if (isJournalList) {
   rootElement = (
     <LangProvider>
-      <JournalListPage />
+      <KpiLifecycle>
+        <JournalListPage />
+      </KpiLifecycle>
     </LangProvider>
   );
 } else if (isJournalArticle) {
   rootElement = (
     <LangProvider>
-      <JournalArticlePage />
+      <KpiLifecycle>
+        <JournalArticlePage />
+      </KpiLifecycle>
     </LangProvider>
   );
 } else {
   rootElement = (
     <LangProvider>
-      <AuthGate>
-        <App />
-      </AuthGate>
+      <KpiLifecycle>
+        <AuthGate>
+          <App />
+        </AuthGate>
+      </KpiLifecycle>
     </LangProvider>
   );
 }
