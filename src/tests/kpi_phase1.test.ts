@@ -873,7 +873,7 @@ describe('18. DB migration: PUBLIC EXECUTE REVOKE', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
@@ -918,7 +918,7 @@ describe('19. DB migration: timestamp検証', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
@@ -951,7 +951,7 @@ describe('20. DB migration: session所有権', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
@@ -991,7 +991,7 @@ describe('21. DB migration: rate-limit', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
@@ -1037,7 +1037,7 @@ describe('22. DB migration: idempotency atomic', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
@@ -1067,7 +1067,7 @@ describe('23. DB migration: properties検証', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
@@ -1104,7 +1104,7 @@ describe('24. DB migration: settings validation', () => {
     const { readFileSync } = require('fs');
     const { resolve } = require('path');
     return readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      resolve(__dirname, '../../supabase/migrations/20260809195846_kpi_phase1_security.sql'),
       'utf-8'
     ) as string;
   })();
