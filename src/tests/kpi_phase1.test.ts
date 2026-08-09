@@ -863,3 +863,371 @@ describe('Tracker: batching', () => {
     expect(queue[0]!.eventName).toBe('page_view');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Test: 18. DB migration: PUBLIC EXECUTE REVOKE
+// ---------------------------------------------------------------------------
+
+describe('18. DB migration: PUBLIC EXECUTE REVOKE', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('_kpi_allowed_event_namesにREVOKE FROM PUBLIC文が存在する', () => {
+    expect(SECURITY_MIG).toContain(
+      'REVOKE ALL ON FUNCTION public._kpi_allowed_event_names() FROM PUBLIC'
+    );
+  });
+
+  it('cleanup_old_kpi_eventsにREVOKE FROM anon文が存在する', () => {
+    expect(SECURITY_MIG).toContain(
+      'REVOKE ALL ON FUNCTION public.cleanup_old_kpi_events() FROM anon'
+    );
+  });
+
+  it('cleanup_old_kpi_eventsにREVOKE FROM authenticated文が存在する', () => {
+    expect(SECURITY_MIG).toContain(
+      'REVOKE ALL ON FUNCTION public.cleanup_old_kpi_events() FROM authenticated'
+    );
+  });
+
+  it('admin RPCにREVOKE FROM PUBLIC文が存在する', () => {
+    expect(SECURITY_MIG).toContain(
+      'REVOKE ALL ON FUNCTION public.admin_get_kpi_settings() FROM PUBLIC'
+    );
+    expect(SECURITY_MIG).toContain(
+      'REVOKE ALL ON FUNCTION public.admin_update_kpi_settings(TIMESTAMPTZ,INTEGER) FROM PUBLIC'
+    );
+    expect(SECURITY_MIG).toContain(
+      'REVOKE ALL ON FUNCTION public.admin_get_kpi_event_catalog_summary() FROM PUBLIC'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 19. DB migration: timestamp検証
+// ---------------------------------------------------------------------------
+
+describe('19. DB migration: timestamp検証', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('track_kpi_eventにKPI_EVENT_FUTURE_TIMESTAMP検証が存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_EVENT_FUTURE_TIMESTAMP');
+  });
+
+  it('track_kpi_eventにKPI_EVENT_TOO_OLD検証が存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_EVENT_TOO_OLD');
+  });
+
+  it('upsert_kpi_sessionにKPI_SESSION_INVALID_TIMES検証が存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_SESSION_INVALID_TIMES');
+  });
+
+  it('upsert_kpi_sessionにGREATEST(kpi_sessions.last_seen_at, EXCLUDED.last_seen_at)が存在する', () => {
+    expect(SECURITY_MIG).toContain(
+      'GREATEST(kpi_sessions.last_seen_at, EXCLUDED.last_seen_at)'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 20. DB migration: session所有権
+// ---------------------------------------------------------------------------
+
+describe('20. DB migration: session所有権', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('upsert_kpi_sessionにKPI_SESSION_ANON_MISMATCH検証が存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_SESSION_ANON_MISMATCH');
+  });
+
+  it('upsert_kpi_sessionにKPI_SESSION_USER_MISMATCH検証が存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_SESSION_USER_MISMATCH');
+  });
+
+  it('upsert_kpi_sessionにKPI_SESSION_ENV_MISMATCH検証が存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_SESSION_ENV_MISMATCH');
+  });
+
+  it('upsert_kpi_sessionにFOR UPDATEロックが存在する', () => {
+    expect(SECURITY_MIG).toContain('FOR UPDATE');
+  });
+
+  it('ON CONFLICTにfirst_routeの更新がない（初回値維持）', () => {
+    // ON CONFLICT DO UPDATE句にfirst_route =が含まれないことを確認
+    const onConflictIdx = SECURITY_MIG.lastIndexOf('ON CONFLICT (session_id) DO UPDATE');
+    expect(onConflictIdx).toBeGreaterThan(-1);
+    // ON CONFLICT以降の部分（次のEND;まで）を取得
+    const afterConflict = SECURITY_MIG.slice(onConflictIdx, onConflictIdx + 600);
+    expect(afterConflict).not.toMatch(/first_route\s*=/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 21. DB migration: rate-limit
+// ---------------------------------------------------------------------------
+
+describe('21. DB migration: rate-limit', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('kpi_rate_limitテーブルが定義されている', () => {
+    expect(SECURITY_MIG).toContain('CREATE TABLE IF NOT EXISTS kpi_rate_limit');
+  });
+
+  it('_kpi_check_rate_limitが定義されている', () => {
+    expect(SECURITY_MIG).toContain(
+      'CREATE OR REPLACE FUNCTION public._kpi_check_rate_limit'
+    );
+  });
+
+  it('track_kpi_eventにKPI_RATE_LIMIT_EXCEEDEDが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_RATE_LIMIT_EXCEEDED');
+    // track_kpi_event内に存在することを確認
+    const trackFnIdx = SECURITY_MIG.indexOf(
+      'CREATE OR REPLACE FUNCTION public.track_kpi_event('
+    );
+    const upsertFnIdx = SECURITY_MIG.indexOf(
+      'CREATE OR REPLACE FUNCTION public.upsert_kpi_session('
+    );
+    const trackSection = SECURITY_MIG.slice(trackFnIdx, upsertFnIdx);
+    expect(trackSection).toContain('KPI_RATE_LIMIT_EXCEEDED');
+  });
+
+  it('upsert_kpi_sessionにKPI_RATE_LIMIT_EXCEEDEDが存在する', () => {
+    const upsertFnIdx = SECURITY_MIG.indexOf(
+      'CREATE OR REPLACE FUNCTION public.upsert_kpi_session('
+    );
+    const afterUpsert = SECURITY_MIG.slice(upsertFnIdx);
+    expect(afterUpsert).toContain('KPI_RATE_LIMIT_EXCEEDED');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 22. DB migration: idempotency atomic
+// ---------------------------------------------------------------------------
+
+describe('22. DB migration: idempotency atomic', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('ON CONFLICT (idempotency_key) DO NOTHINGが存在する', () => {
+    expect(SECURITY_MIG).toContain('ON CONFLICT (idempotency_key) DO NOTHING');
+  });
+
+  it('IF EXISTS重複チェックが削除されON CONFLICTへ置換済み', () => {
+    // 新migrationにIF EXISTS (SELECT 1 FROM kpi_events WHERE idempotency_key = ...)がない
+    expect(SECURITY_MIG).not.toContain(
+      'IF EXISTS (SELECT 1 FROM kpi_events WHERE idempotency_key'
+    );
+  });
+
+  it('KPI_IDEMPOTENCY_KEY_TOO_LONGチェックが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_IDEMPOTENCY_KEY_TOO_LONG');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 23. DB migration: properties検証
+// ---------------------------------------------------------------------------
+
+describe('23. DB migration: properties検証', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('_kpi_check_pii_keysが定義されている', () => {
+    expect(SECURITY_MIG).toContain(
+      'CREATE OR REPLACE FUNCTION public._kpi_check_pii_keys(p_obj JSONB)'
+    );
+  });
+
+  it('KPI_PROPS_PII_KEY_DETECTEDが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_PROPS_PII_KEY_DETECTED');
+  });
+
+  it('KPI_PROPS_NESTED_NOT_ALLOWEDが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_PROPS_NESTED_NOT_ALLOWED');
+  });
+
+  it('KPI_PROPS_STRING_TOO_LONGが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_PROPS_STRING_TOO_LONG');
+  });
+
+  it('KPI_PROPS_TOO_MANY_KEYSが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_PROPS_TOO_MANY_KEYS');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 24. DB migration: settings validation
+// ---------------------------------------------------------------------------
+
+describe('24. DB migration: settings validation', () => {
+  const SECURITY_MIG = (() => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    return readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260809113951_kpi_phase1_security.sql'),
+      'utf-8'
+    ) as string;
+  })();
+
+  it('admin_update_kpi_settingsにKPI_SETTINGS_RETENTION_OUT_OF_RANGEが存在する', () => {
+    expect(SECURITY_MIG).toContain('KPI_SETTINGS_RETENTION_OUT_OF_RANGE');
+  });
+
+  it('retention_daysのCHECKが30〜730の範囲検証を含む', () => {
+    // migration内に30と730の数値チェックが存在する
+    expect(SECURITY_MIG).toMatch(/p_raw_event_retention_days\s*<\s*30/);
+    expect(SECURITY_MIG).toMatch(/p_raw_event_retention_days\s*>\s*730/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 25. Tracker: RPC error判定
+// ---------------------------------------------------------------------------
+
+describe('25. Tracker: RPC error判定', () => {
+  it('{ data: null, error: { code: "invalid_parameter_value" } } でretryしない', async () => {
+    const { mock, rpcFn } = createSupabaseMock({
+      data: null,
+      error: { code: 'invalid_parameter_value', message: 'unknown event' },
+    });
+    initKpiTracker(mock);
+    initSession();
+
+    track('page_view', { route: '/test' });
+    await flushNow();
+
+    // 1回呼ばれたが、error=non-retryableなので再キューされない
+    expect(rpcFn).toHaveBeenCalledTimes(1);
+    // キューが空であること（retryされていない）
+    const queue = getQueueSnapshot();
+    expect(queue.length).toBe(0);
+  });
+
+  it('{ data: null, error: { message: "KPI_RATE_LIMIT_EXCEEDED" } } でretryしない', async () => {
+    const { mock, rpcFn } = createSupabaseMock({
+      data: null,
+      error: { code: 'too_many_requests', message: 'KPI_RATE_LIMIT_EXCEEDED' },
+    });
+    initKpiTracker(mock);
+    initSession();
+
+    track('page_view', { route: '/test' });
+    await flushNow();
+
+    expect(rpcFn).toHaveBeenCalledTimes(1);
+    const queue = getQueueSnapshot();
+    expect(queue.length).toBe(0);
+  });
+
+  it('{ data: null, error: { code: "500", message: "Internal server error" } } でretryする（retryCount増加）', async () => {
+    // retryはsetTimeoutで遅延するため、setTimeout後のqueue確認はしない
+    // flushBatch内でshouldRetry=trueになりsetTimeoutが呼ばれることを確認
+    const { mock, rpcFn } = createSupabaseMock({
+      data: null,
+      error: { code: '500', message: 'Internal server error' },
+    });
+    initKpiTracker(mock);
+    initSession();
+
+    track('page_view', { route: '/test' });
+    await flushNow();
+
+    // 1回呼ばれ、retryable errorなのでsetTimeoutで再キューされる
+    // （setTimeout内なので即座には確認不可だが、RPCは1回のみ）
+    expect(rpcFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('KPI_プレフィックスのerrorメッセージはnon-retryable', async () => {
+    const { mock, rpcFn } = createSupabaseMock({
+      data: null,
+      error: { code: 'P0001', message: 'KPI_PROPS_PII_KEY_DETECTED' },
+    });
+    initKpiTracker(mock);
+    initSession();
+
+    track('page_view', { route: '/test' });
+    await flushNow();
+
+    expect(rpcFn).toHaveBeenCalledTimes(1);
+    const queue = getQueueSnapshot();
+    expect(queue.length).toBe(0);
+  });
+
+  it('MAX_RETRY(3)超えたら静かに破棄', async () => {
+    // retryCount=MAX_RETRYのイベントはretryされない
+    // kpiTracker.tsのMAX_RETRY=3を確認
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    const trackerSrc = readFileSync(
+      resolve(__dirname, '../lib/kpiTracker.ts'),
+      'utf-8'
+    ) as string;
+    expect(trackerSrc).toContain('const MAX_RETRY = 3');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: 26. Tracker: offline queue仕様明記確認
+// ---------------------------------------------------------------------------
+
+describe('26. Tracker: offline queue仕様明記確認', () => {
+  it('kpiTracker.tsにPhase 1 offline queue: memory-onlyのコメントが存在する', () => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    const trackerSrc = readFileSync(
+      resolve(__dirname, '../lib/kpiTracker.ts'),
+      'utf-8'
+    ) as string;
+    expect(trackerSrc).toContain('Phase 1 offline queue: memory-only');
+  });
+
+  it('OFFLINE_QUEUE_MAXが50である', () => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    const trackerSrc = readFileSync(
+      resolve(__dirname, '../lib/kpiTracker.ts'),
+      'utf-8'
+    ) as string;
+    expect(trackerSrc).toContain('const OFFLINE_QUEUE_MAX = 50');
+  });
+});

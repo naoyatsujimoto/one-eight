@@ -12,6 +12,11 @@
  * - device/OS/browserは粗い分類のみ（User-Agent全文を保存しない）
  * - fingerprinting禁止
  * - user_idを外部引数として自由指定できない（auth.uid()から決定）
+ *
+ * Phase 1 offline queue: memory-only
+ * ページreloadで消える仕様（永続化はPhase 2以降）
+ * キュー上限: OFFLINE_QUEUE_MAX=50件
+ * 7日超のeventは送信時にDB側で拒否（KPI_EVENT_TOO_OLD）
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -111,6 +116,32 @@ function sanitizeProperties(
 }
 
 // ---------------------------------------------------------------------------
+// Non-retryable error判定
+// ---------------------------------------------------------------------------
+
+/** non-retryableエラーコード（固定リスト） */
+const NON_RETRYABLE_CODES = new Set([
+  'invalid_parameter_value',  // validation error, unknown event, PII拒否
+  'P0001',                    // RAISE EXCEPTION (PostgreSQL custom)
+  '42501',                    // insufficient_privilege (permission denied)
+  'too_many_requests',        // rate limit
+  // KPI固有エラーコード
+  'KPI_RATE_LIMIT_EXCEEDED',
+  'KPI_PROPS_PII_KEY_DETECTED',
+  'KPI_EVENT_FUTURE_TIMESTAMP',
+  'KPI_EVENT_TOO_OLD',
+  'KPI_IDEMPOTENCY_KEY_TOO_LONG',
+]);
+
+function isNonRetryable(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  if (error.code && NON_RETRYABLE_CODES.has(error.code)) return true;
+  // KPI_プレフィックスのエラーメッセージはnon-retryable
+  if (error.message?.startsWith('KPI_')) return true;
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Flush logic
 // ---------------------------------------------------------------------------
 
@@ -144,28 +175,38 @@ async function flushBatch(events: PendingEvent[]): Promise<void> {
     )
   );
 
-  // 失敗したイベントをリトライキューへ
+  // 【7】失敗したイベントをリトライキューへ（{ data, error }のerrorも検査）
   results.forEach((result, i) => {
     const ev = events[i];
     if (!ev) return;
+
+    let shouldRetry = false;
     if (result.status === 'rejected') {
-      if (ev.retryCount < MAX_RETRY) {
-        const delay = RETRY_BASE_DELAY_MS * Math.pow(2, ev.retryCount);
-        const retryEv: PendingEvent = {
-          eventName: ev.eventName,
-          properties: ev.properties,
-          occurredAt: ev.occurredAt,
-          idempotencyKey: ev.idempotencyKey,
-          retryCount: ev.retryCount + 1,
-        };
-        setTimeout(() => {
-          if (_queue.length < OFFLINE_QUEUE_MAX) {
-            _queue.push(retryEv);
-          }
-        }, delay);
-      }
-      // MAX_RETRY超えたら静かに破棄
+      // ネットワーク障害等（Promise reject）
+      shouldRetry = true;
+    } else if (result.value?.error) {
+      // Supabase RPC { data, error } のerror検査
+      const err = result.value.error as { code?: string; message?: string };
+      shouldRetry = !isNonRetryable(err);
     }
+
+    if (shouldRetry && ev.retryCount < MAX_RETRY) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, ev.retryCount);
+      const retryEv: PendingEvent = {
+        eventName: ev.eventName,
+        properties: ev.properties,
+        occurredAt: ev.occurredAt,
+        idempotencyKey: ev.idempotencyKey,
+        retryCount: ev.retryCount + 1,
+      };
+      setTimeout(() => {
+        if (_queue.length < OFFLINE_QUEUE_MAX) {
+          _queue.push(retryEv);
+          scheduleBatch();  // 再スケジュール確保
+        }
+      }, delay);
+    }
+    // shouldRetry=false または MAX_RETRY超えたら静かに破棄
   });
 }
 
