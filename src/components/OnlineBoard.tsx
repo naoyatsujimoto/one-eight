@@ -79,7 +79,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
     turnStartedAt,
     serverUpdatedAt,
     isBeforeOfficialStart,
-  } = useOnlineGame(gameId, myUserId);
+  } = useOnlineGame(gameId, myUserId, isOfficialMatch ? 'official' : 'online');
 
   // OM-1c: 定刻前待機時刻表示用 state
   const [, forceUpdate] = useState(0);

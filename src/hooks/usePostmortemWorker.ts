@@ -6,7 +6,7 @@
 
 import { useSyncExternalStore, useCallback } from 'react'
 import { postmortemWorkerManager } from '../lib/postmortemWorkerManager'
-import type { AnalysisJobStatus } from '../lib/postmortemWorkerManager'
+import type { AnalysisJobStatus, PostmortemMatchMode } from '../lib/postmortemWorkerManager'
 import type { MoveRecord } from '../game/types'
 
 export type { AnalysisJobStatus }
@@ -28,8 +28,8 @@ export function usePostmortemWorker() {
   )
 
   const run = useCallback(
-    (gameId: string, history: MoveRecord[], humanColor?: 'black' | 'white' | null) =>
-      postmortemWorkerManager.run(gameId, history, humanColor),
+    (gameId: string, history: MoveRecord[], humanColor?: 'black' | 'white' | null, matchMode?: PostmortemMatchMode) =>
+      postmortemWorkerManager.run(gameId, history, humanColor, matchMode),
     [],
   )
 

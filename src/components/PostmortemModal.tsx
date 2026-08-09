@@ -21,6 +21,7 @@ import type { MoveRecord } from '../game/types';
 import { useLang } from '../lib/lang';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { formatDate } from '../lib/localeFormat';
+import { track } from '../lib/kpiTracker';
 
 // ─── GameMeta ─────────────────────────────────────────────────────────────────
 
@@ -122,10 +123,19 @@ export function PostmortemModal({
         humanColor,
         () => candidateCancelRef.current,
       );
-      setResult(enriched);
-      setCandidatesComputed(true);
+      if (!candidateCancelRef.current) {
+        setResult(enriched);
+        setCandidatesComputed(true);
+        // KPI: postmortem_candidates_opened (実際に候補手一覧が表示された時のみ)
+        const candidateCount = enriched?.rows?.filter(r => r.candidateMoves && r.candidateMoves.length > 0).length ?? 0;
+        try {
+          track('postmortem_candidates_opened', { candidate_count: candidateCount });
+        } catch {
+          // KPI送信失敗は無視
+        }
+      }
     } catch {
-      // サイレントに無視
+      // サイレントに無視（計算失敗 = opened送信しない）
     } finally {
       setComputingCandidates(false);
     }

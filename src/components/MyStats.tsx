@@ -8,6 +8,7 @@ import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { useLang } from '../lib/lang';
 import { getProfile, isProActive } from '../lib/profile';
 import { formatDate } from '../lib/localeFormat';
+import { track } from '../lib/kpiTracker';
 
 interface Props {
   userId: string;
@@ -61,7 +62,10 @@ export function MyStats({ userId, onClose }: Props) {
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    runWorker(record.game_id, record.full_record, hc);
+    const matchMode = record.mode === 'human_vs_cpu' ? 'human_vs_cpu' : 'human_vs_human' as const;
+    // PostmortemMatchModeへ変換 (ローカル対局は'human_vs_cpu'または'unknown')
+    const pmMode = matchMode === 'human_vs_cpu' ? 'human_vs_cpu' : 'unknown' as const;
+    runWorker(record.game_id, record.full_record, hc, pmMode);
   }
 
   // 完了表示スケジューラー
@@ -112,6 +116,10 @@ export function MyStats({ userId, onClose }: Props) {
 
   // 更新ボタンのハンドラ: cache 削除→再分析
   function handleRefresh(record: GameRecord) {
+    // queued/running中は操作不可
+    const currentSt = getStatus(record.game_id);
+    if (currentSt.status === 'queued' || currentSt.status === 'running') return;
+
     dismissWorker(record.game_id);
     clearPostmortemCache(record.game_id);
     // 既存の完了表示タイマーをクリア
@@ -126,7 +134,14 @@ export function MyStats({ userId, onClose }: Props) {
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    runWorker(record.game_id, record.full_record, hc);
+    const pmMode = record.mode === 'human_vs_cpu' ? 'human_vs_cpu' : 'unknown' as const;
+    runWorker(record.game_id, record.full_record, hc, pmMode);
+    // KPI: postmortem_refreshed (ユーザー操作が実際に受理された時のみ)
+    try {
+      track('postmortem_refreshed', { trigger: 'user' });
+    } catch {
+      // KPI送信失敗は無視
+    }
   }
 
   // モーダル close

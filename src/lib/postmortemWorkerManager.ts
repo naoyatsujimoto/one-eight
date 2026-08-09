@@ -118,9 +118,9 @@ class PostmortemWorkerManager {
       console.log('[PM/manager] cache hit', { gameId })
       this.setJob(gameId, { status: 'done', result: cached, history })
       // KPI: postmortem_completed (cache hit)
+      // candidate_countは候補昤調済みの時点では履歴数だけ記録、候補数は candidates_opened で記録
       track('postmortem_completed', {
         match_mode: matchMode ?? 'unknown',
-        candidate_count: cached.rows?.length ?? 0,
         elapsed_seconds: 0,
       })
       return
@@ -194,9 +194,9 @@ class PostmortemWorkerManager {
           history: job.history,
         })
         // KPI: postmortem_completed (worker done)
+        // candidate_countは candidates_opened で記録するためここでは省略
         track('postmortem_completed', {
           match_mode: job.matchMode ?? 'unknown',
-          candidate_count: e.data.result?.rows?.length ?? 0,
           elapsed_seconds: Math.min(Math.round(elapsedMs / 1000), 86400),
         })
         // KPI: performance_measure (worker ms)

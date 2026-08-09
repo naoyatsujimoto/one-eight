@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { track } from '../lib/kpiTracker';
 import { Board } from '../components/Board';
 import { TimerSettings } from '../components/TimerSettings';
 import { HowToPlay } from '../components/HowToPlay';
@@ -337,6 +338,24 @@ export default function App() {
     const config = timerConfig ?? pendingTimerConfig;
     const newState: GameState = { ...resetGame(cpuPlayer), timerConfig: config.mode === 'none' ? null : config };
     setState(newState);
+    // KPI: match_started (CPU戦のみ。PvPは送らない)
+    if (cpuPlayer !== null) {
+      const matchKey = `cpu-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      try {
+        // sessionStorageで重複送信防止
+        const sentKey = `kpi_match_started_${matchKey}`;
+        if (!sessionStorage.getItem(sentKey)) {
+          sessionStorage.setItem(sentKey, '1');
+          track('match_started', {
+            match_key: matchKey,
+            match_mode: 'human_vs_cpu',
+            cpu_difficulty: cpuDifficulty,
+          });
+        }
+      } catch {
+        // sessionStorage error は無視
+      }
+    }
     setBuildState(EMPTY_BUILD_STATE);
     setUndoStack([]);
     // タイマー初期化

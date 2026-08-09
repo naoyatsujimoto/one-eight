@@ -14,6 +14,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import type React from 'react';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
+import { track } from '../lib/kpiTracker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
@@ -452,6 +453,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     currentUserId={userId}
                     onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameRecord(r); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
                     onRefresh={(record) => {
+                      // queued/running中は操作不可
+                      const currentSt = getStatus(record.game_id);
+                      if (currentSt.status === 'queued' || currentSt.status === 'running') return;
                       dismissWorker(record.game_id);
                       clearPostmortemCache(record.game_id);
                       const existingTimer = completionTimersRef.current.get(record.game_id);
@@ -459,6 +463,8 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                       setRefreshCompletedIds(prev => { const n = new Set(prev); n.delete(record.game_id); return n; });
                       setRefreshingIds(prev => new Set([...prev, record.game_id]));
                       handleAnalyzeClick(record);
+                      // KPI: postmortem_refreshed
+                      try { track('postmortem_refreshed', { trigger: 'user' }); } catch { /* ignore */ }
                     }}
                     getStatus={getStatus}
                     onAnalyzeClick={handleAnalyzeClick}

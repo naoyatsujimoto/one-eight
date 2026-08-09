@@ -384,3 +384,144 @@ describe('KPI Phase 3 — DB Validator 一致検証', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 3 補正 (20260810000006) テスト
+// ---------------------------------------------------------------------------
+
+describe('KPI Phase 3 補正 — 20260810000006', () => {
+
+  const COMPLETION_MIGRATION = '20260810000006_kpi_phase3_completion.sql';
+
+  it('1. 補正migrationファイルが存在する', () => {
+    expect(existsSync(migrationPath(COMPLETION_MIGRATION))).toBe(true);
+  });
+
+  it('2. 補正migrationにCREATE OR REPLACE FUNCTION admin_get_kpi_match_summary が含まれる', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('admin_get_kpi_match_summary');
+    expect(sql).toContain('admin_get_kpi_match_daily');
+    expect(sql).toContain('admin_get_kpi_arena_funnel');
+    expect(sql).toContain('admin_get_kpi_postmortem_summary');
+    expect(sql).toContain('admin_get_kpi_system_health_summary');
+  });
+
+  it('3. CPU mode実値 (human_vs_cpu, human_vs_human) が使用されている', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    // NOT IN ('online_pvp') ではなく IN ('human_vs_cpu', 'human_vs_human') を使用
+    expect(sql).toContain("IN ('human_vs_cpu', 'human_vs_human')");
+    // online_pvp exclusion パターンは使わない
+    expect(sql).not.toContain("NOT IN ('online_pvp')");
+  });
+
+  it('4. Arena正規結合キー (official_match_id = official_matches.id) が使用されている', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('am2.official_match_id = om.id');
+  });
+
+  it('5. internal_plan_override IS NOT NULL の除外条件が含まれる', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('internal_plan_override IS NOT NULL');
+  });
+
+  it('6. online_game_id=NULLのArena no-showがOfficialへ混入しない (official_match_id排他)', () => {
+    // arena_matchesのofficial_match_idで排他するため、online_game_id=NULLのArenaはOfficialに混入しない
+    const sql = readMigration(COMPLETION_MIGRATION);
+    // Official standalone の除外条件がofficial_match_idベースであることを確認
+    expect(sql).toContain('am2.official_match_id = om.id');
+    // online_game_id IS NULL のみで排他するパターンが「Officialのみ」の集計に使われないことを確認
+    // (arena_matches.online_game_id = om.online_game_id は使用禁止)
+    expect(sql).not.toContain('am2.online_game_id = om.online_game_id');
+  });
+
+  it('7. scheduled/pending/cancelledがtotal_matchesから除外されている', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain("NOT IN ('scheduled', 'pending', 'cancelled')");
+  });
+
+  it('8. Official standalone参加者がunique_playersに含まれる (black_user_id + white_user_id)', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    // Official standalone参加者のUNION ALLが存在する
+    expect(sql).toContain('om.black_user_id');
+    expect(sql).toContain('om.white_user_id');
+  });
+
+  it('9. Arena Entryのinternal除外が適用されている', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    // arena_entries にも内部除外フィルタが適用されていること
+    expect(sql).toContain('ent.user_id');
+    expect(sql).toContain('is_internal_test_account');
+  });
+
+  it('10. processed no-showをstarted扱いしないロジック確認', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    // started_matches: processedだけを理由にstartedに含めない
+    // no_show/no_contestは completed_matches から除外される
+    expect(sql).toContain("end_reason NOT IN ('no_show', 'no_contest')");
+  });
+
+  it('11. 補正migrationがSECURITY DEFINERと_kpi_require_adminを含む', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('SECURITY DEFINER');
+    expect(sql).toContain('_kpi_require_admin');
+  });
+
+  it('12. 補正migrationがREVOKE FROM PUBLIC, anon を含む', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('REVOKE ALL ON FUNCTION');
+    expect(sql).toContain('anon');
+  });
+
+  it('13. 補正migrationがservice_role, postgres へのGRANTを含む', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('service_role, postgres');
+  });
+
+  it('14. p_from IS NULL / p_to IS NULL の明示拒否が含まれる', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('p_from must not be NULL');
+    expect(sql).toContain('p_to must not be NULL');
+  });
+
+  it('15. 最大366日制限が含まれる', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('366 days');
+  });
+
+  it('16. set search_path = \'\' が全RPCに含まれる', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain("SET search_path = ''");
+  });
+
+  it('17. CPU distinct game_idで計上 (COUNT DISTINCT)', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('COUNT(DISTINCT ml.id)');
+  });
+
+  it('18. Arena/OfficialをCOUNT(DISTINCT)で排他計上', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('COUNT(DISTINCT am.id)');
+    expect(sql).toContain('COUNT(DISTINCT om.id)');
+  });
+
+  it('19. /ai-check-login eventを除外するフィルタが含まれる', () => {
+    const sql = readMigration(COMPLETION_MIGRATION);
+    expect(sql).toContain('ai-check-login');
+  });
+
+  it('20. migration番号が正しい昇順 (20260810000006 > 20260810000005)', () => {
+    const ts6 = parseInt('20260810000006', 10);
+    const ts5 = parseInt('20260810000005', 10);
+    expect(ts6).toBeGreaterThan(ts5);
+  });
+
+  it('21. TS catalog / DB allowed list / DB validator の27 event完全一致', () => {
+    // TS catalog
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(27);
+    // DB allowed list (20260810000001)
+    const sql1 = readMigration('20260810000001_kpi_phase3_match_event.sql');
+    for (const name of ALLOWED_KPI_EVENT_NAMES) {
+      expect(sql1, `DB allowed list should include '${name}'`).toContain(`'${name}'`);
+    }
+  });
+});

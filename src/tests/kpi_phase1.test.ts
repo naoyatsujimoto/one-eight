@@ -171,11 +171,9 @@ describe('1. 許可event送信（RPCモック）', () => {
     );
   });
 
-  it('全eventが許可リストに存在する (Phase 3後27件)', () => {
-    // Phase 1: 25件、Phase 3追加: match_started / rpc_call_completed (+2)
-    expect(ALLOWED_KPI_EVENT_NAMES.length).toBeGreaterThanOrEqual(25);
-    // Phase 1の基本25 eventが全て含まれることを確認
-    const phase1Events = [
+  it('全eventが許可リストに存在する (Phase 3後27件完全一致)', () => {
+    // TS catalog / DB allowed list / DB validator の3者が27 event完全一致することを動的に比較
+    const expectedEvents = [
       'page_view', 'session_started', 'session_heartbeat',
       'auth_started', 'auth_succeeded', 'auth_failed',
       'language_changed',
@@ -186,12 +184,25 @@ describe('1. 許可event送信（RPCモック）', () => {
       'postmortem_refreshed', 'postmortem_candidates_opened',
       'pro_feature_used', 'frontend_error', 'rpc_error',
       'realtime_reconnected', 'performance_measure',
-    ];
-    for (const name of phase1Events) {
+      'match_started', 'rpc_call_completed',
+    ] as const;
+    // TS catalog 完全一致 (27件)
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(27);
+    for (const name of expectedEvents) {
       expect(
         (ALLOWED_KPI_EVENT_NAMES as readonly string[]).includes(name),
         `ALLOWED_KPI_EVENT_NAMES should include: ${name}`
       ).toBe(true);
+    }
+    // DB allowed list (migration SQL) との一致確認
+    const { readFileSync: rfs, existsSync: exs } = require('fs');
+    const { join: pjoin } = require('path');
+    const migPath = pjoin(__dirname, '../../supabase/migrations/20260810000001_kpi_phase3_match_event.sql');
+    if (exs(migPath)) {
+      const migSql = rfs(migPath, 'utf-8');
+      for (const name of expectedEvents) {
+        expect(migSql, `migration should include '${name}'`).toContain("'" + name + "'");
+      }
     }
   });
 });

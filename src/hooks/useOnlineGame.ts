@@ -20,6 +20,22 @@ import { supabase } from '../lib/supabase';
 import { fetchOnlineGame, submitOnlineMove, claimTimeout, type OnlineGameRow } from '../lib/onlineGame';
 import { getWinner, isGameEnded } from '../game/selectors';
 import type { GameState, Player } from '../game/types';
+import { track } from '../lib/kpiTracker';
+
+// match_started 重複送信防止ヘルパー
+function trackMatchStartedOnce(
+  matchKey: string,
+  matchMode: 'online' | 'official' | 'arena',
+): void {
+  try {
+    const sentKey = `kpi_match_started_${matchKey}`;
+    if (sessionStorage.getItem(sentKey)) return;
+    sessionStorage.setItem(sentKey, '1');
+    track('match_started', { match_key: matchKey, match_mode: matchMode });
+  } catch {
+    // sessionStorage error は無視
+  }
+}
 
 export type OnlineStatus =
   | 'waiting'    // 相手待ち
@@ -44,12 +60,20 @@ export interface UseOnlineGameResult {
   isBeforeOfficialStart: boolean;
 }
 
-export function useOnlineGame(gameId: string | null, myUserId: string | null): UseOnlineGameResult {
+export function useOnlineGame(
+  gameId: string | null,
+  myUserId: string | null,
+  matchMode: 'online' | 'official' | 'arena' = 'online',
+): UseOnlineGameResult {
   const [gameRow, setGameRow] = useState<OnlineGameRow | null>(null);
   const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>('waiting');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const gameRowRef = useRef<OnlineGameRow | null>(null);
+  // Realtime再接続用 ref
+  const prevChannelStatusRef = useRef<string | null>(null);
+  const disconnectTimeRef = useRef<number | null>(null);
+  const reconnectAttemptRef = useRef<number>(0);
 
   // Phase T-2a: タイマー状態
   const [blackRemainingMs, setBlackRemainingMs] = useState<number | null>(null);
@@ -87,6 +111,11 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
   useEffect(() => {
     if (!gameId) return;
 
+    // Realtime再接続用: リセット
+    prevChannelStatusRef.current = null;
+    disconnectTimeRef.current = null;
+    reconnectAttemptRef.current = 0;
+
     const channel = supabase
       .channel(`online_game:${gameId}`)
       .on(
@@ -100,21 +129,56 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
             setOnlineStatus('finished');
           } else if (updated.status === 'playing') {
             setOnlineStatus('playing');
+            // KPI: match_started (playingになった時点で送信)
+            trackMatchStartedOnce(gameId, matchMode);
           }
         },
       )
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
+      .subscribe(async (channelStatus) => {
+        if (channelStatus === 'SUBSCRIBED') {
+          const isFirstSubscribe = prevChannelStatusRef.current === null;
+          // Realtime再接続計測 (CHANNEL_ERROR/TIMED_OUT/CLOSED後の再接続のみ)
+          if (!isFirstSubscribe && prevChannelStatusRef.current !== null) {
+            reconnectAttemptRef.current += 1;
+            const elapsedSecs = disconnectTimeRef.current != null
+              ? Math.round((Date.now() - disconnectTimeRef.current) / 1000)
+              : undefined;
+            try {
+              track('realtime_reconnected', {
+                channel: 'online_game',
+                attempt_number: reconnectAttemptRef.current,
+                elapsed_since_disconnect_seconds: elapsedSecs,
+              });
+            } catch {
+              // KPI送信失敗は無視
+            }
+          }
+          prevChannelStatusRef.current = 'SUBSCRIBED';
+          disconnectTimeRef.current = null;
+
           const fresh = await fetchOnlineGame(gameId);
           if (fresh) {
             setGameRow(fresh);
             syncTimerFromRow(fresh);
-            setOnlineStatus(
-              fresh.status === 'finished' ? 'finished'
+            const newStatus = fresh.status === 'finished' ? 'finished'
               : fresh.status === 'playing' ? 'playing'
-              : 'waiting'
-            );
+              : 'waiting';
+            setOnlineStatus(newStatus);
+            // KPI: match_started (playing状態の時のみ)
+            if (fresh.status === 'playing') {
+              trackMatchStartedOnce(gameId, matchMode);
+            }
           }
+        } else if (
+          channelStatus === 'CHANNEL_ERROR' ||
+          channelStatus === 'TIMED_OUT' ||
+          channelStatus === 'CLOSED'
+        ) {
+          // 切断時刻を記録
+          if (disconnectTimeRef.current === null) {
+            disconnectTimeRef.current = Date.now();
+          }
+          prevChannelStatusRef.current = channelStatus;
         }
       });
 
@@ -124,6 +188,7 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   // waiting 中のフォールバックポーリング（iOS Safari 対策: Realtime 漏れ対策）
@@ -136,6 +201,8 @@ export function useOnlineGame(gameId: string | null, myUserId: string | null): U
         setGameRow(fresh);
         syncTimerFromRow(fresh);
         setOnlineStatus('playing');
+        // KPI: match_started (フォールバックポーリングでplayingになった時)
+        trackMatchStartedOnce(gameId, matchMode);
         clearInterval(id);
       }
     }, 3000);

@@ -108,6 +108,10 @@ let _authListenerRegistered = false;
 let _heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 let _currentSessionId: string | null = null;
 let _sessionStartedAt: string | null = null;
+let _errorListenerRegistered = false;
+// frontend_error 重複抑制: (error_type + pathname) ごとの最終送信時刻
+const _errorLastSentAt: Map<string, number> = new Map();
+const ERROR_DEDUP_MS = 5000; // 5秒以内の同一分類は1件のみ
 
 /**
  * heartbeatを停止してインターバルをクリア
@@ -390,6 +394,43 @@ export function useKpiLifecycle(): void {
     }
 
     // ---------------------------------------------------------------------------
+    // 8. frontend_error リスナー（StrictMode対応: モジュールレベルフラグで重複登録防止）
+    // ---------------------------------------------------------------------------
+    function trackFrontendError(errorType: string) {
+      try {
+        if (isAiCheckLoginPath()) return;
+        const pathname = typeof window !== 'undefined' ? window.location.pathname.slice(0, 500) : '/';
+        const dedupeKey = `${errorType}::${pathname}`;
+        const now = Date.now();
+        const lastSent = _errorLastSentAt.get(dedupeKey);
+        if (lastSent != null && now - lastSent < ERROR_DEDUP_MS) return;
+        _errorLastSentAt.set(dedupeKey, now);
+        track('frontend_error', {
+          error_type: errorType.slice(0, 100),
+          route: pathname,
+        });
+      } catch {
+        // KPI送信失敗は無視
+      }
+    }
+
+    if (!_errorListenerRegistered && typeof window !== 'undefined') {
+      _errorListenerRegistered = true;
+
+      window.addEventListener('error', (event: ErrorEvent) => {
+        // cross-origin script errorは除外
+        if (event.filename && !event.filename.startsWith(window.location.origin)) return;
+        const errorType = event.error?.constructor?.name ?? 'Error';
+        trackFrontendError(errorType);
+      });
+
+      window.addEventListener('unhandledrejection', (_event: PromiseRejectionEvent) => {
+        const errorType = 'UnhandledRejection';
+        trackFrontendError(errorType);
+      });
+    }
+
+    // ---------------------------------------------------------------------------
     // Cleanup
     // ---------------------------------------------------------------------------
     return () => {
@@ -411,6 +452,8 @@ export function useKpiLifecycle(): void {
 export function resetKpiLifecycle(): void {
   _lifecycleInitDone = false;
   _authListenerRegistered = false;
+  _errorListenerRegistered = false;
+  _errorLastSentAt.clear();
   _currentSessionId = null;
   _sessionStartedAt = null;
   stopHeartbeat();
