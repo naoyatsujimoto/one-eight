@@ -523,7 +523,7 @@ CREATE OR REPLACE VIEW public.admin_kpi_users_view AS
     p.plan,
     p.subscription_status,
     p.current_period_end,
-    p.locale,
+    p.lang                                         AS locale,
     COALESCE(p.is_admin, FALSE)                    AS is_admin,
     COALESCE(p.is_internal_test_account, FALSE)    AS is_internal_test_account,
     p.internal_plan_override,
