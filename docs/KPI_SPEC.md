@@ -620,3 +620,20 @@ reached step なしの run は `unknown_step_abandoned_runs` として分離（s
 
 - Training 脱落分析集計 RPC: **完了**
 - Admin Dashboard UI: 後続 Phase
+
+### Phase 4-B Corrections（20260810000011/12/13）
+
+- Run は run_id だけで一意。canonical start = 最初の training_started（occurred_at ASC, id ASC）
+- 集計は effective_as_of（LEAST(p_to, now())）以前の event のみ使用
+- p_to 後の event は過去期間の集計結果を変化させない
+- completed event の step は move_index + 1 で解決（training_completed に step プロパティなし）
+- active incomplete run は最後に到達した step にのみ帰属（全到達 step には加算しない）
+- daily の日付集合は start_day ∪ completion_day の UNION
+- authenticated Admin は 4 RPC を実行可能。非 Admin は admin required エラー。anon は permission denied
+
+#### Bug Fix（20260810000012/13）
+
+- Bug1(summary): last_step_reached 内で kpi_events.run_id カラム参照 → ke.properties->>'training_run_id' に修正
+- Bug2(task_summary): RETURNS TABLE 列名 task_id と all_task_ids CTE 列名が衝突 → cr.task_id/tp.task_id でテーブル修飾して解消
+- Bug3(step_funnel): Bug2 と同じ問題 → src.task_id でテーブル修飾して解消
+- Percentile fix: percentile_cont() が double precision を返すため ::NUMERIC キャストを追加（M13）
