@@ -412,11 +412,27 @@ const KPI_RPC_NAMES: ReadonlySet<string> = new Set([
   'admin_get_kpi_system_health_summary',
 ]);
 
+// {data, error}形式の判定ヘルパー
+function isDataErrorShape(value: unknown): value is { data: unknown; error: { code?: string; message?: string } } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'error' in value &&
+    (value as Record<string, unknown>)['error'] !== null &&
+    typeof (value as Record<string, unknown>)['error'] === 'object'
+  );
+}
+
 /**
  * RPC呼び出しをKPI計測する共通ヘルパー。
  * 成功・失敗問わず rpc_call_completed を送信。
  * 失敗時のみ rpc_error を送信。
  * KPI個有のRPCは計測しない（再帰防止）。
+ *
+ * 対応ケース:
+ *   A. rpcFn が例外を throw した場合 → outcome='error'、計測後に同じ例外を再 throw
+ *   B. rpcFn が { data, error }形式を返し、error が非 null の場合 → outcome='error'
+ *   どちらの場合も rpc_call_completed は必ず1回だけ送信
  */
 export async function trackRpcCall<T>(
   rpcName: string,
@@ -430,6 +446,27 @@ export async function trackRpcCall<T>(
   try {
     const result = await rpcFn();
     const elapsedMs = Math.round(performance.now() - startMs);
+
+    // {data, error}形式の場合: error 非 null → outcome='error'
+    if (isDataErrorShape(result)) {
+      const errObj = (result as { data: unknown; error: { code?: string; message?: string } }).error;
+      if (!isKpiRpc && _initialized) {
+        track('rpc_call_completed', {
+          rpc_name: rpcName,
+          outcome: 'error',
+          elapsed_ms: Math.min(elapsedMs, 300000),
+          route: route.slice(0, 500),
+        });
+        track('rpc_error', {
+          rpc_name: rpcName.slice(0, 100),
+          error_code: errObj.code ? String(errObj.code).slice(0, 100) : undefined,
+          route: route.slice(0, 500),
+        });
+      }
+      // 元の戻り値をそのまま返す（呼び出し側の error 処理を変えない）
+      return result;
+    }
+
     if (!isKpiRpc && _initialized) {
       track('rpc_call_completed', {
         rpc_name: rpcName,

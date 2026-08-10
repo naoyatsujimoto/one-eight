@@ -5,6 +5,7 @@ import { loadGameRecords, type GameRecord } from '../game/analytics';
 import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal, type PostmortemGameMeta } from './PostmortemModal';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
+import { resolvePostmortemMatchMode } from '../lib/postmortemWorkerManager';
 import { useLang } from '../lib/lang';
 import { getProfile, isProActive } from '../lib/profile';
 import { formatDate } from '../lib/localeFormat';
@@ -62,9 +63,8 @@ export function MyStats({ userId, onClose }: Props) {
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    const matchMode = record.mode === 'human_vs_cpu' ? 'human_vs_cpu' : 'human_vs_human' as const;
-    // PostmortemMatchModeへ変換 (ローカル対局は'human_vs_cpu'または'unknown')
-    const pmMode = matchMode === 'human_vs_cpu' ? 'human_vs_cpu' : 'unknown' as const;
+    // resolvePostmortemMatchMode: human_vs_human → offline_pvp, human_vs_cpu → human_vs_cpu
+    const pmMode = resolvePostmortemMatchMode(record.mode);
     runWorker(record.game_id, record.full_record, hc, pmMode);
   }
 
@@ -134,7 +134,8 @@ export function MyStats({ userId, onClose }: Props) {
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    const pmMode = record.mode === 'human_vs_cpu' ? 'human_vs_cpu' : 'unknown' as const;
+    // resolvePostmortemMatchMode: human_vs_human → offline_pvp
+    const pmMode = resolvePostmortemMatchMode(record.mode);
     runWorker(record.game_id, record.full_record, hc, pmMode);
     // KPI: postmortem_refreshed (ユーザー操作が実際に受理された時のみ)
     try {

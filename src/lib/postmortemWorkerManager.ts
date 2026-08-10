@@ -21,7 +21,39 @@ export type AnalysisJobStatus =
   | { status: 'done';    history: MoveRecord[]; result: PostmortemResult }
   | { status: 'error';   history: MoveRecord[]; message: string }
 
-export type PostmortemMatchMode = 'human_vs_cpu' | 'online' | 'official' | 'arena' | 'unknown'
+export type PostmortemMatchMode = 'human_vs_cpu' | 'offline_pvp' | 'online' | 'official' | 'arena' | 'unknown'
+
+// ─── 共通純粋関数 ─────────────────────────────────────────────────────────────────────
+
+/**
+ * resolvePostmortemMatchMode — GameRecordの mode とオンライン対局情報から
+ * PostmortemMatchMode を決定する共通純粋関数。
+ *
+ * マッピング:
+ * - 'human_vs_cpu'   → 'human_vs_cpu'
+ * - 'human_vs_human' → 'offline_pvp'
+ * - 'online'         → 'online'
+ * - 'official'       → 'official'
+ * - 'arena'          → 'arena'
+ * - 判定不能時       → 'unknown'
+ *
+ * @param localMode  GameRecord.mode ('human_vs_cpu' | 'human_vs_human')
+ * @param onlineMode オンライン対局の matchMode ('online' | 'official' | 'arena') | null
+ */
+export function resolvePostmortemMatchMode(
+  localMode: string | null | undefined,
+  onlineMode?: 'online' | 'official' | 'arena' | null,
+): PostmortemMatchMode {
+  // オンライン対局情報があればそちらを優先
+  if (onlineMode === 'arena') return 'arena';
+  if (onlineMode === 'official') return 'official';
+  if (onlineMode === 'online') return 'online';
+  // ローカル対局の分類
+  if (localMode === 'human_vs_cpu') return 'human_vs_cpu';
+  if (localMode === 'human_vs_human') return 'offline_pvp'; // human_vs_human は offline_pvp
+  // 判定不能時
+  return 'unknown';
+}
 
 type Job = {
   gameId: string

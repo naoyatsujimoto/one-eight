@@ -95,8 +95,12 @@ function isWin(record: GameRecord, key: 'human' | 'cpu'): boolean {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/** ゲーム終了時に呼び出す。Human vs CPU / Human vs Human 両方を保存する。 */
-export function saveGameRecord(state: GameState, cpuDifficulty?: string | null): GameRecord | null {
+/** ゲーム終了時に呼び出す。Human vs CPU / Human vs Human 両方を保存する。
+ * @param state       現在のゲーム状態
+ * @param cpuDifficulty CPU難易度（CPU戦のみ）
+ * @param gameId      外部から渡す安定した対局ID（省略時は内部で生成）
+ */
+export function saveGameRecord(state: GameState, cpuDifficulty?: string | null, gameId?: string | null): GameRecord | null {
   if (state.trainingMode) return null;
   if (!state.gameEnded) return null;
 
@@ -108,7 +112,7 @@ export function saveGameRecord(state: GameState, cpuDifficulty?: string | null):
     : null;
 
   const record: GameRecord = {
-    game_id: generateGameId(),
+    game_id: gameId ?? generateGameId(),
     started_at: state.startedAt ?? now,
     ended_at: state.endedAt ?? now,
     mode,

@@ -127,11 +127,18 @@ export function PostmortemModal({
         setResult(enriched);
         setCandidatesComputed(true);
         // KPI: postmortem_candidates_opened (実際に候補手一覧が表示された時のみ)
-        const candidateCount = enriched?.rows?.filter(r => r.candidateMoves && r.candidateMoves.length > 0).length ?? 0;
-        try {
-          track('postmortem_candidates_opened', { candidate_count: candidateCount });
-        } catch {
-          // KPI送信失敗は無視
+        // candidate_count は候補手の「總数」（行数ではなく候補手合計数）
+        // 例: 2候補の行と3候補の行があれば candidate_count=5
+        const candidateCount = enriched?.rows?.reduce(
+          (sum, r) => sum + (r.candidateMoves?.length ?? 0),
+          0
+        ) ?? 0;
+        if (candidateCount > 0) {
+          try {
+            track('postmortem_candidates_opened', { candidate_count: candidateCount });
+          } catch {
+            // KPI送信失敗は無視
+          }
         }
       }
     } catch {

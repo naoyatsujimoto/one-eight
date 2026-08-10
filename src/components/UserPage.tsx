@@ -14,6 +14,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import type React from 'react';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
+import { resolvePostmortemMatchMode } from '../lib/postmortemWorkerManager';
 import { track } from '../lib/kpiTracker';
 import { fetchUserPageStats, fetchPublicUserPageStats, type UserPageStats, type MatchLogRow } from '../lib/matchLog';
 import { loadAggregates, loadGameRecords, cacheGameRecord, type GameRecord, type Aggregates } from '../game/analytics';
@@ -53,7 +54,7 @@ interface Props {
   /** 公式戦入室後に OnlineBoard へ遷移させるコールバック
    * OM-1c: isOfficial / startsAt を追加引数として渡す。
    */
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
 }
 
 export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUserId, onEnterOnlineGame }: Props) {
@@ -236,7 +237,9 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    runWorker(record.game_id, record.full_record, hc);
+    // resolvePostmortemMatchMode: human_vs_human → offline_pvp, human_vs_cpu → human_vs_cpu
+    const pmMode = resolvePostmortemMatchMode(record.mode);
+    runWorker(record.game_id, record.full_record, hc, pmMode);
   }, [getStatus, runWorker]);
 
   // 完了表示スケジューラー
@@ -451,7 +454,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     localMap={localMap}
                     officialGameMap={officialGameMap}
                     currentUserId={userId}
-                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameRecord(r); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc); }}
+                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameRecord(r); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc, resolvePostmortemMatchMode(r.mode)); }}
                     onRefresh={(record) => {
                       // queued/running中は操作不可
                       const currentSt = getStatus(record.game_id);

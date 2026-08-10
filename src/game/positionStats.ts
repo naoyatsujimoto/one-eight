@@ -14,6 +14,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { trackRpcCall } from '../lib/kpiTracker';
 
 // ─── 型定義 ──────────────────────────────────────────────────────────────────
 
@@ -70,15 +71,13 @@ export async function fetchPositionWinRates(
   // 重複除去
   const uniqueHashes = [...new Set(hashes)];
 
-  const _t0_position = performance.now();
-  const { data, error } = await supabase
-    .rpc('get_position_win_rates', {
-      hashes: uniqueHashes,
-      mode_group: modeGroup,
-    });
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'get_position_win_rates',
+    async () => supabase.rpc('get_position_win_rates', { hashes: uniqueHashes, mode_group: modeGroup }),
+    '/postmortem',
+  );
 
   if (error) {
-    console.error('[PM/supabase] fetchPositionWinRates error', { elapsedMs: Math.round(performance.now() - _t0_position), error: error.message });
     console.warn('[positionStats] RPC error:', error.message);
     return new Map();
   }
@@ -114,7 +113,7 @@ export async function fetchPositionWinRates(
     });
   }
 
-  console.log('[PM/supabase] fetchPositionWinRates done', { elapsedMs: Math.round(performance.now() - _t0_position), count: result.size });
+  console.log('[PM/supabase] fetchPositionWinRates done', { count: result.size });
   return result;
 }
 
@@ -159,15 +158,13 @@ export async function fetchSymmetryGroupWinRates(
 
   const uniqueIds = [...new Set(groupIds)];
 
-  const _t0_symmetry = performance.now();
-  const { data, error } = await supabase
-    .rpc('get_symmetry_group_win_rates', {
-      group_ids: uniqueIds,
-      mode_group: modeGroup,
-    });
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'get_symmetry_group_win_rates',
+    async () => supabase.rpc('get_symmetry_group_win_rates', { group_ids: uniqueIds, mode_group: modeGroup }),
+    '/postmortem',
+  );
 
   if (error) {
-    console.error('[PM/supabase] fetchSymmetryGroupWinRates error', { elapsedMs: Math.round(performance.now() - _t0_symmetry), error: error.message });
     console.warn('[positionStats] symmetry group RPC error:', error.message);
     return new Map();
   }
@@ -194,7 +191,7 @@ export async function fetchSymmetryGroupWinRates(
     });
   }
 
-  console.log('[PM/supabase] fetchSymmetryGroupWinRates done', { elapsedMs: Math.round(performance.now() - _t0_symmetry), count: result.size });
+  console.log('[PM/supabase] fetchSymmetryGroupWinRates done', { count: result.size });
   return result;
 }
 
@@ -230,11 +227,15 @@ export async function fetchMediumPatternWinRate(
   if (!patternId) return null;
 
   try {
-    const { data, error } = await supabase.rpc('get_medium_pattern_win_rates', {
-      p_pattern_ids: [patternId],
-      p_mode_group: modeGroup,
-      p_min_total: minTotal,
-    });
+    const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+      'get_medium_pattern_win_rates',
+      async () => supabase.rpc('get_medium_pattern_win_rates', {
+        p_pattern_ids: [patternId],
+        p_mode_group: modeGroup,
+        p_min_total: minTotal,
+      }),
+      '/postmortem',
+    );
 
     if (error) {
       console.warn('[positionStats] medium_pattern RPC error:', error.message);
@@ -274,14 +275,17 @@ export async function fetchMediumPatternWinRates(
   const uniqueIds = [...new Set(patternIds)];
 
   try {
-    const { data, error } = await supabase.rpc('get_medium_pattern_win_rates', {
-      p_pattern_ids: uniqueIds,
-      p_mode_group: modeGroup,
-      p_min_total: minTotal,
-    });
+    const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+      'get_medium_pattern_win_rates',
+      async () => supabase.rpc('get_medium_pattern_win_rates', {
+        p_pattern_ids: uniqueIds,
+        p_mode_group: modeGroup,
+        p_min_total: minTotal,
+      }),
+      '/postmortem',
+    );
 
     if (error) {
-      console.error('[PM/supabase] fetchMediumPatternWinRates error', { error: error.message });
       console.warn('[positionStats] medium_pattern batch RPC error:', error.message);
       return new Map();
     }

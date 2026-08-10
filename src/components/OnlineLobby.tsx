@@ -29,7 +29,7 @@ interface Props {
   /** 公式戦入室後に OnlineBoard へ遷移させる callback。
    * Ranked Match / Competition で使用。
    */
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
 }
 
 type Mode = 'select' | 'friend' | 'random' | 'ranked' | 'tournament';

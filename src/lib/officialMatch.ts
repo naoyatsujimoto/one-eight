@@ -60,16 +60,19 @@ export async function createOfficialMatch(params: {
   tournamentId?: string | null;
   roundId?: string | null;
 }): Promise<{ matchId: string; status: 'scheduled' } | { error: string }> {
-  const { data, error } = await supabase.rpc('create_official_match', {
-    p_black_user_id: params.blackUserId,
-    p_white_user_id: params.whiteUserId,
-    p_starts_at: params.startsAt,
-    p_ends_at: params.endsAt ?? null,
-    p_timer_config: params.timerConfig,
-    p_tournament_id: params.tournamentId ?? null,
-    p_round_id: params.roundId ?? null,
-  });
-
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'create_official_match',
+    async () => supabase.rpc('create_official_match', {
+      p_black_user_id: params.blackUserId,
+      p_white_user_id: params.whiteUserId,
+      p_starts_at: params.startsAt,
+      p_ends_at: params.endsAt ?? null,
+      p_timer_config: params.timerConfig,
+      p_tournament_id: params.tournamentId ?? null,
+      p_round_id: params.roundId ?? null,
+    }),
+    _route,
+  );
   if (error) return { error: error.message };
   const result = data as { match_id: string; status: 'scheduled' };
   return { matchId: result.match_id, status: result.status };
@@ -150,11 +153,11 @@ export async function cancelOfficialMatch(
   matchId: string,
   reason?: string,
 ): Promise<{ ok: true } | { error: string }> {
-  const { data, error } = await supabase.rpc('cancel_official_match', {
-    p_match_id: matchId,
-    p_reason: reason ?? null,
-  });
-
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'cancel_official_match',
+    async () => supabase.rpc('cancel_official_match', { p_match_id: matchId, p_reason: reason ?? null }),
+    _route,
+  );
   if (error) return { error: error.message };
   const result = data as { ok: boolean };
   return result.ok ? { ok: true } : { error: 'cancel failed' };

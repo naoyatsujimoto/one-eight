@@ -229,7 +229,7 @@ export default function App() {
     setHasSaved(true);
     // Auto-save analytics when any game ends (Human vs CPU or Human vs Human)
     if (state.gameEnded) {
-      const record = saveGameRecord(state, state.cpuPlayer !== null ? cpuDifficulty : undefined);
+      const record = saveGameRecord(state, state.cpuPlayer !== null ? cpuDifficulty : undefined, currentGameIdRef.current);
       if (record) {
         updateAggregates(record);
         if (user) {
@@ -942,6 +942,14 @@ export default function App() {
   const [officialStartsAt, setOfficialStartsAt] = useState<string | null>(() => {
     try { return sessionStorage.getItem('one_eight_official_starts_at') || null; } catch { return null; }
   });
+  // オンライン対局の matchMode（リロード復元対応）
+  const [onlineMatchMode, setOnlineMatchMode] = useState<'online' | 'official' | 'arena'>(() => {
+    try {
+      const saved = sessionStorage.getItem('one_eight_online_match_mode');
+      if (saved === 'online' || saved === 'official' || saved === 'arena') return saved;
+    } catch { /* ignore */ }
+    return 'online';
+  });
 
   // onlineGameId / onlineRoomCode / isOfficialMatch / officialStartsAt を sessionStorage に同期
   useEffect(() => {
@@ -953,9 +961,17 @@ export default function App() {
         sessionStorage.removeItem('one_eight_online_room_code');
         sessionStorage.removeItem('one_eight_is_official');
         sessionStorage.removeItem('one_eight_official_starts_at');
+        sessionStorage.removeItem('one_eight_online_match_mode');
       }
     } catch { /* ignore */ }
   }, [onlineGameId]);
+
+  // onlineMatchMode を sessionStorage に同期
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('one_eight_online_match_mode', onlineMatchMode);
+    } catch { /* ignore */ }
+  }, [onlineMatchMode]);
 
   useEffect(() => {
     try {
@@ -1022,9 +1038,10 @@ export default function App() {
         gameId={onlineGameId}
         myUserId={user.id}
         roomCode={onlineRoomCode}
-        onExit={() => { setOnlineGameId(null); setOnlineRoomCode(undefined); setIsOfficialMatch(false); setOfficialStartsAt(null); }}
+        onExit={() => { setOnlineGameId(null); setOnlineRoomCode(undefined); setIsOfficialMatch(false); setOfficialStartsAt(null); setOnlineMatchMode('online'); }}
         isOfficialMatch={isOfficialMatch}
         officialStartsAt={officialStartsAt}
+        matchMode={onlineMatchMode}
       />
     );
   }
@@ -1036,11 +1053,12 @@ export default function App() {
         userId={user.id}
         userEmail={user.email ?? null}
         onBack={() => goTo('main')}
-        onEnterOnlineGame={(gameId, isOfficial, startsAt) => {
+        onEnterOnlineGame={(gameId, isOfficial, startsAt, mm) => {
           setOnlineGameId(gameId);
           setOnlineRoomCode(undefined);
           setIsOfficialMatch(isOfficial ?? false);
           setOfficialStartsAt(startsAt ?? null);
+          setOnlineMatchMode(mm ?? (isOfficial ? 'official' : 'online'));
         }}
       />
     );
@@ -1242,11 +1260,12 @@ export default function App() {
           proActive={proActive}
           onGameReady={handleOnlineGameReady}
           onCancel={() => setOnlineLobbyOpen(false)}
-          onEnterOnlineGame={(gameId, isOfficial, startsAt) => {
+          onEnterOnlineGame={(gameId, isOfficial, startsAt, mm) => {
             setOnlineGameId(gameId);
             setOnlineRoomCode(undefined);
             setIsOfficialMatch(isOfficial ?? false);
             setOfficialStartsAt(startsAt ?? null);
+            setOnlineMatchMode(mm ?? (isOfficial ? 'official' : 'online'));
             setOnlineLobbyOpen(false);
           }}
         />

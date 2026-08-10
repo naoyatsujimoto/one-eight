@@ -27,7 +27,7 @@ interface Props {
    *  OM-1c: isOfficial=true / startsAt を渡す。
    *  enableEntry=false の場合は呼ばれない（Enter Match ボタン非表示）。
    */
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
   /** Enter Match ボタンを表示するか。デフォルト true（既存互換）。
    *  false にすると Enter Match ボタンを非表示にし、Online Play 誘導メッセージを表示する。
    */
@@ -492,8 +492,8 @@ export function OfficialMatchCalendar({
       setEnteringId(null);
     } else {
       setEnteringId(null);
-      // OM-1c: isOfficial=true / startsAt を渡す
-      onEnterOnlineGame?.(result.onlineGameId, result.isOfficial, result.startsAt);
+      // OM-1c: isOfficial=true / startsAt を渡す。standalone公式戦は matchMode='official'
+      onEnterOnlineGame?.(result.onlineGameId, result.isOfficial, result.startsAt, 'official');
     }
   }, [onEnterOnlineGame]);
 

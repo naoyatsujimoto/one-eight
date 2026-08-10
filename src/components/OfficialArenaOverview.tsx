@@ -297,7 +297,7 @@ interface ArenaDetailModalProps {
   isProActive: boolean;
   onClose: () => void;
   onEntrySuccess: () => void;
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
 }
 
 function ArenaDetailModal({
@@ -480,7 +480,7 @@ function DetailContent({
   entryError: string | null;
   entrySuccessMsg: string | null;
   onEntryClick: () => void;
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
 }) {
   const masterName = detail.current_master_display_name;
   const interimName = detail.current_interim_master_display_name;
@@ -647,7 +647,7 @@ function MyArenaMatchSection({
   myMatch: MyArenaMatch | null;
   t: ReturnType<typeof useLang>['t'];
   lang: string;
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
 }) {
   const [entering, setEntering] = useState(false);
   const [enterError, setEnterError] = useState<string | null>(null);
@@ -733,7 +733,8 @@ function MyArenaMatchSection({
       const errMsg = mapEnterMatchError(result.error, t);
       setEnterError(errMsg);
     } else {
-      onEnterOnlineGame(result.onlineGameId, result.isOfficial, result.startsAt);
+      // Arena由来の対局は matchMode='arena' を明示的に渡す
+      onEnterOnlineGame(result.onlineGameId, result.isOfficial, result.startsAt, 'arena');
     }
   };
 
@@ -1029,7 +1030,7 @@ interface OfficialArenaOverviewProps {
   /** Pro active かどうか */
   isProActive?: boolean;
   /** Arena Match入室後に呼び出す callback */
-  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null) => void;
+  onEnterOnlineGame?: (onlineGameId: string, isOfficial?: boolean, startsAt?: string | null, matchMode?: 'online' | 'official' | 'arena') => void;
 }
 
 export function OfficialArenaOverview({

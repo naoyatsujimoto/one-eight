@@ -58,15 +58,29 @@ interface Props {
   myUserId: string;
   roomCode?: string;
   onExit: () => void;
-  /** OM-1c: 公式戦由来ゲームかどうか。Ghost Mode 無効化制御に使用。 */
+  /** OM-1c: 公式戦由来ゲームかどうか。Ghost Mode 無効化制御に使用。幾久互換性のため残存。 */
   isOfficialMatch?: boolean;
   /** OM-1c: 公式戦の開始時刻(ISO)。定刻前待機表示に使用。 */
   officialStartsAt?: string | null;
+  /**
+   * 履履経路: 'online' | 'official' | 'arena'
+   * - 'online': 通常オンライン対局
+   * - 'official': standalone公式戦
+   * - 'arena': Arena対局
+   * 未指定時は isOfficialMatch を元にフォールバック。
+   */
+  matchMode?: 'online' | 'official' | 'arena';
 }
 
-export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatch, officialStartsAt }: Props) {
+export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatch, officialStartsAt, matchMode: matchModeProp }: Props) {
   const { t } = useLang();
   const { playSymbol, playAsset } = useSound();
+
+  // matchModeの解決: matchModeProp を優先、なければ isOfficialMatch にフォールバック
+  const resolvedMatchMode: 'online' | 'official' | 'arena' = matchModeProp ?? (isOfficialMatch ? 'official' : 'online');
+  // isOfficialLike: Ghost Mode制御など official 冗長処理に使用
+  const isOfficialLike = resolvedMatchMode === 'official' || resolvedMatchMode === 'arena';
+
   const {
     gameRow,
     myColor,
@@ -79,12 +93,13 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
     turnStartedAt,
     serverUpdatedAt,
     isBeforeOfficialStart,
-  } = useOnlineGame(gameId, myUserId, isOfficialMatch ? 'official' : 'online');
+  } = useOnlineGame(gameId, myUserId, resolvedMatchMode);
 
   // OM-1c: 定刻前待機時刻表示用 state
   const [, forceUpdate] = useState(0);
   useEffect(() => {
-    if (!isOfficialMatch || !officialStartsAt) return;
+    // 定刻前待機を表示するのは isOfficialLike (公式戦または Arena) のみ
+    if (!isOfficialLike || !officialStartsAt) return;
     const ms = new Date(officialStartsAt).getTime() - Date.now();
     if (ms <= 0) return;
     // starts_at まで毎秒更新してカウントダウンを表示
@@ -95,7 +110,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
       forceUpdate((n) => n + 1);
     }, 500);
     return () => clearInterval(id);
-  }, [isOfficialMatch, officialStartsAt]);
+  }, [isOfficialLike, officialStartsAt]);
   const [localState, setLocalState] = useState<GameState | null>(null);
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD_STATE);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -113,16 +128,15 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
     });
   }, [myUserId]);
 
-  // online_pvp は常に showGhostToggle = proActive
-  // OM-1c: 公式戦では Ghost Mode 無効
-  const showGhostToggle = proActive && !isOfficialMatch;
+  // 公式戦・ Arena では Ghost Mode 無効
+  const showGhostToggle = proActive && !isOfficialLike;
 
-  // OM-1c: 公式戦の場合 ghostModeActive を強制 OFF
+  // 公式戦・ Arena の場合 ghostModeActive を強制 OFF
   useEffect(() => {
-    if (isOfficialMatch && ghostModeActive) {
+    if (isOfficialLike && ghostModeActive) {
       setGhostModeActive(false);
     }
-  }, [isOfficialMatch, ghostModeActive]);
+  }, [isOfficialLike, ghostModeActive]);
 
   // Ghost Mode ON かつ自分の手番のときのみ fetch
   useEffect(() => {
@@ -399,7 +413,7 @@ export function OnlineBoard({ gameId, myUserId, roomCode, onExit, isOfficialMatc
         // OM-1d: Whiteのみ入室時に Black 未入室メッセージを表示
         // 条件: 公式戦 + 自分が White + 相手(Black)の手番 + 手数 1(未着手)
         const isOfficialWaitingForBlack =
-          isOfficialMatch &&
+          isOfficialLike &&
           myColor === 'white' &&
           gameRow !== null &&
           gameRow.current_player_id === gameRow.black_player_id &&

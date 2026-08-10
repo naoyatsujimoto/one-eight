@@ -5,27 +5,7 @@ import { supabase } from './supabase';
 import { createInitialState } from '../game/initialState';
 import type { GameState } from '../game/types';
 import type { TimerConfig } from '../game/timerTypes';
-import { track } from './kpiTracker';
-
-// Supabase テーブルクエリ的 {data, error} 形式の RPC 計測ヘルパー
-function trackRpcResult(
-  rpcName: string,
-  route: string,
-  error: { code?: string; message?: string } | null,
-  startMs: number,
-): void {
-  const elapsedMs = Math.min(Math.round(performance.now() - startMs), 300000);
-  const outcome: 'success' | 'error' = error ? 'error' : 'success';
-  try {
-    track('rpc_call_completed', { rpc_name: rpcName, outcome, elapsed_ms: elapsedMs, route });
-    if (error) {
-      const errorCode = error.code ? String(error.code).slice(0, 100) : undefined;
-      track('rpc_error', { rpc_name: rpcName.slice(0, 100), error_code: errorCode, route });
-    }
-  } catch {
-    // KPI送信失敗は無視
-  }
-}
+import { trackRpcCall } from './kpiTracker';
 
 export type OnlineGameRow = {
   id: string;
@@ -107,12 +87,11 @@ export async function createOnlineGame(
 // ─── ゲーム参加 ───────────────────────────────────────────────────────────────
 
 export async function joinOnlineGame(roomCode: string): Promise<{ gameId: string; color: 'white' } | { error: string }> {
-  const startMs = performance.now();
-  const { data, error } = await supabase.rpc('join_online_game', {
-    p_room_code: roomCode.toUpperCase(),
-  });
-  trackRpcResult('join_online_game', '/online', error, startMs);
-
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'join_online_game',
+    async () => supabase.rpc('join_online_game', { p_room_code: roomCode.toUpperCase() }),
+    '/online',
+  );
   if (error) return { error: error.message };
   const result = data as { game_id: string; color: 'white' };
   return { gameId: result.game_id, color: result.color };
@@ -143,12 +122,11 @@ export async function joinOrCreateRandomGame(
   userId: string,
   initialState: GameState,
 ): Promise<{ gameId: string; color: 'black' | 'white'; roomCode: string } | { error: string }> {
-  const startMs = performance.now();
-  const { data, error } = await supabase.rpc('join_or_create_random_game', {
-    p_user_id: userId,
-    p_initial_state: initialState,
-  });
-  trackRpcResult('join_or_create_random_game', '/online', error, startMs);
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'join_or_create_random_game',
+    async () => supabase.rpc('join_or_create_random_game', { p_user_id: userId, p_initial_state: initialState }),
+    '/online',
+  );
   if (error) return { error: error.message };
   // Supabase JS v2 では RETURNS json の RPC が data=null を返すバグがある。
   // ネストされた形式 ({ data: { game_id, ... } }) にも対応する。
@@ -182,16 +160,17 @@ export async function submitOnlineMove(
   nextPlayerId: string,
   winner: string | null,
 ): Promise<SubmitMoveResult> {
-  const startMs = performance.now();
-  const { data, error } = await supabase.rpc('apply_online_move', {
-    p_game_id: gameId,
-    p_expected_move_number: expectedMoveNumber,
-    p_new_game_state: newGameState,
-    p_next_player_id: nextPlayerId,
-    p_winner: winner,
-  });
-
-  trackRpcResult('apply_online_move', '/game', error, startMs);
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'apply_online_move',
+    async () => supabase.rpc('apply_online_move', {
+      p_game_id: gameId,
+      p_expected_move_number: expectedMoveNumber,
+      p_new_game_state: newGameState,
+      p_next_player_id: nextPlayerId,
+      p_winner: winner,
+    }),
+    '/game',
+  );
   if (error) return { error: error.message };
 
   const result = data as {
@@ -220,11 +199,11 @@ export async function submitOnlineMove(
 export async function claimTimeout(
   gameId: string,
 ): Promise<{ winner: string; timeoutPlayer: string } | { error: string }> {
-  const startMs = performance.now();
-  const { data, error } = await supabase.rpc('claim_timeout', {
-    p_game_id: gameId,
-  });
-  trackRpcResult('claim_timeout', '/game', error, startMs);
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'claim_timeout',
+    async () => supabase.rpc('claim_timeout', { p_game_id: gameId }),
+    '/game',
+  );
   if (error) return { error: error.message };
   const result = data as { winner: string; timeout_player: string };
   return { winner: result.winner, timeoutPlayer: result.timeout_player };

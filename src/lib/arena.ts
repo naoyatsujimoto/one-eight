@@ -7,23 +7,11 @@
  */
 
 import { supabase } from './supabase';
-import { track, trackRpcCall } from './kpiTracker';
+import { trackRpcCall } from './kpiTracker';
 
 const _arenaRoute = typeof window !== 'undefined' ? window.location.pathname : '/arena';
 
-/** シンプルなRPC計測ヘルパー ({data, error}形式用) */
-function _trackRpcResult(
-  rpcName: string,
-  route: string,
-  hasError: boolean,
-  startMs: number,
-): void {
-  const elapsedMs = Math.min(Math.round(performance.now() - startMs), 300_000);
-  const outcome: 'success' | 'error' = hasError ? 'error' : 'success';
-  try {
-    track('rpc_call_completed', { rpc_name: rpcName, outcome, elapsed_ms: elapsedMs, route });
-  } catch { /* KPI失敗は無視 */ }
-}
+// _trackRpcResult は削除。共通ヘルパー trackRpcCall を使用する
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -194,12 +182,12 @@ export async function getArenaDetail(
 export async function enterArenaEvent(
   eventId: string
 ): Promise<EnterArenaEventResult> {
-  const startMs = performance.now();
   const route = _arenaRoute;
-  const { data, error } = await supabase.rpc('enter_arena_event', {
-    p_arena_event_id: eventId,
-  });
-  _trackRpcResult('enter_arena_event', route, !!error, startMs);
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'enter_arena_event',
+    async () => supabase.rpc('enter_arena_event', { p_arena_event_id: eventId }),
+    route,
+  );
   if (error) {
     // Supabase RPC error — try to extract reason from message
     const msg = error.message ?? 'unknown_error';
@@ -263,10 +251,12 @@ export interface ArenaTitle {
  * authenticated専用。未ログイン時は空配列を返す。
  */
 export async function getMyArenaTitles(): Promise<ArenaTitle[]> {
-  const startMs = performance.now();
   const route = _arenaRoute;
-  const { data, error } = await supabase.rpc('get_my_arena_titles');
-  _trackRpcResult('get_my_arena_titles', route, !!error, startMs);
+  const { data, error } = await trackRpcCall<{ data: unknown; error: { code?: string; message: string } | null }>(
+    'get_my_arena_titles',
+    async () => supabase.rpc('get_my_arena_titles'),
+    route,
+  );
   if (error) {
     console.warn('[arena] get_my_arena_titles error:', error.message);
     return [];
