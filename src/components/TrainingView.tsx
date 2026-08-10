@@ -310,16 +310,17 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
+      // KPI: track BEFORE advanceSession so final attempt is counted in total_attempts
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
       commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
       // wrong move — rollback
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
   }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
@@ -336,15 +337,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
+      // KPI: track BEFORE advanceSession
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
       commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
   }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
@@ -362,15 +364,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
+      // KPI: track BEFORE advanceSession
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
       commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
   }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
@@ -407,15 +410,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
+        // KPI: track BEFORE advanceSession
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
         commitSession(advanced);
         setBuildState(EMPTY_BUILD);
         playAsset();
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       } else {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
         commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
         setBuildState(EMPTY_BUILD);
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       }
       return;
     }
@@ -443,15 +447,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       if (!lastRecord) return;
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
+        // KPI: track BEFORE advanceSession
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         commitSession(advanced);
         setBuildState(EMPTY_BUILD);
         playAsset();
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       } else {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
         commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
         setBuildState(EMPTY_BUILD);
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       }
       return;
     }
@@ -467,15 +472,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (!lastRecord) return;
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
+      // KPI: track BEFORE advanceSession
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
       commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
-      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
   }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 

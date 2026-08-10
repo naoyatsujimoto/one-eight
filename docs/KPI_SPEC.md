@@ -520,13 +520,103 @@ DB関数: `_kpi_is_pro_active()` / `_kpi_classify_pro_status()`
 | started | mount 時の ref フラグ（kpiMountEventSentRef） |
 | step_reached | `reachedStepsRef: Set<number>` で重複排除 |
 | hint_shown | `hintShownStepsRef: Set<number>` で重複排除 |
-| attempted | setState updater 外の setTimeout 経由で送信 |
+| attempted | commitSession による同期 ref 更新で源管理 |
 | completed | `completionSentRef: boolean` で 1 回のみ |
 
 - React StrictMode・言語切替・typewriter 再描画による重複を防止
 - 一局指南の再開後も到達済み step は再送しない（kpi フィールドを FullGameResumeState に保持）
 
-### Phase 4-B 予定
+### 正解確定時の attempt 順序（Phase 4-A 補正）
 
-- 集計 RPC（脱落率・完走率・平均 attempts・平均所要時間）
-- Admin Dashboard UI
+正解確定時は必ず以下の順序で実行する:
+
+1. **`kpiTrackAttemptResult(..., true)` を先に実行** — kpiTotalAttemptsRef へ加算
+2. **`advanceSession()`** — 最終 step の場合は内部で training_completed を送信（この時点で total_attempts に最終正解 attempt が含まれる）
+3. **`commitSession()`** — React state 更新
+
+これにより `training_completed.total_attempts` に最終正解 attempt が常に含まれる。不正解 N 回 + 正解 1 回の場合、total_attempts = N+1 となる。
+
+**対象ハンドラー:**
+- handleMiddlePocketClick (Selective Build)
+- handleLargePocketClick (Massive Build)
+- handleMassiveMiddleClick (Massive ・ Middle)
+- handleSmallPocketClick (Quad Build)
+- handleMiddleOrSelective (共通経路)
+
+### Phase 4-B: Training 集計 RPC
+
+#### 4 RPC 一覧
+
+| RPC | 用途 | 戻り値数 |
+|---|---|---|
+| `admin_get_kpi_training_summary(p_from, p_to, p_timezone, p_include_internal)` | 全体サマリー（1行） | 30 列 |
+| `admin_get_kpi_training_task_summary(p_from, p_to, p_timezone, p_include_internal)` | task_id 別サマリー | task_id 毎に 1 行 |
+| `admin_get_kpi_training_step_funnel(p_from, p_to, p_timezone, p_include_internal)` | step 別ファネル | task_id / step 毎に 1 行 |
+| `admin_get_kpi_training_daily(p_from, p_to, p_timezone, p_include_internal)` | 日次集計 | 日別 1 行 |
+
+#### 共通シグネチャ
+
+```
+p_from TIMESTAMPTZ  -- NULL 不可
+ p_to   TIMESTAMPTZ  -- NULL 不可、p_from < p_to 必須、最大 366 日
+p_timezone TEXT DEFAULT 'Asia/Tokyo'
+p_include_internal BOOLEAN DEFAULT false
+```
+
+#### Run cohort 正本定義
+
+- **1 run** = `properties.training_run_id` の UUID 1 件
+- **run 開始** = `training_started` の `MIN(occurred_at)`（重複 started は 1 run に集約）
+- **cohort 対象** = `training_started` が `effective_from` 以上、`p_to` 未満の run
+- **完了** = 同一 run_id に `training_completed` が存在
+- **effective_as_of** = `LEAST(p_to, now())`
+
+#### 24 時間脱落定義
+
+**abandoned run:**
+- `training_started` あり
+- `training_completed` なし
+- `started_at <= effective_as_of - INTERVAL '24 hours'`
+- `last_training_activity_at <= effective_as_of - INTERVAL '24 hours'`
+
+**abandoned に含めない:**
+- 開始から 24 時間未満
+- 最終活動から 24 時間未満
+- 完了済み
+- orphan event のみで `training_started` なし
+- internal / test / AI 確認経路
+- production 以外
+
+**drop-off step:** 最後に記録された `training_step_reached` の step。  
+reached step なしの run は `unknown_step_abandoned_runs` として分離（step 1 に割り当てない）。
+
+#### start cohort vs. completion event の違い
+
+| 指標 | 定義 |
+|---|---|
+| `started_runs` | cohort 内の run 数（started_at が effective_from 以上） |
+| `completion_events_in_period` | 期間内に completed イベントが発生した distinct run 数 |
+| `cohort_completed_runs` | cohort 開始 run のうち effective_as_of までに完了した run 数 |
+
+#### training_progress vs. kpi_events の役割分離
+
+| 正本 | 用途 |
+|---|---|
+| `kpi_events` | run 単位の開始 / 進行 / attempt / 完了 / 脱落検知 |
+| `training_progress.completed_at` | 登録ユーザーの初回 task 完了日時の正本 |
+
+- `training_progress` の 1 行を Replay 回数として数えない
+- 未ログイン完了は `kpi_events` の completed run で計測（`training_progress` には存在しない）
+- `training_progress.attempt_count` を Run attempts 集計に使用しない
+
+#### official_kpi_start_at と参考値
+
+- `official_kpi_start_at IS NULL` の間は **参考値（データ収集フェーズ）**
+- `is_reference_period = true` として RPC が返却する
+- 非 NULL の場合: `effective_from = GREATEST(p_from, official_kpi_start_at)`
+- この値の設定は Naoya の明示的指示による
+
+### Phase 4-A の引継事項→Phase 4-B完了
+
+- Training 脱落分析集計 RPC: **完了**
+- Admin Dashboard UI: 後続 Phase
