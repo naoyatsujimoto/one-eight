@@ -6,7 +6,7 @@
  * DB・RPC・migration変更なし。
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import './AdminKpiDashboard.css';
 import {
   fetchKpiDashboard,
@@ -164,7 +164,7 @@ function SectionMatches({
   dailyError?: string;
   loading: boolean;
 }) {
-  const maxMatches = daily.reduce((m, r) => Math.max(m, safeNum(r.matches) ?? 0), 0);
+  const maxMatches = daily.reduce((m, r) => Math.max(m, safeNum(r.total_matches) ?? 0), 0);
 
   return (
     <section className="kpi-section">
@@ -189,18 +189,18 @@ function SectionMatches({
               <KpiCard label="CPU" value={displayValue(summary.cpu_matches)} />
               <KpiCard label="Offline PvP" value={displayValue(summary.offline_pvp_matches)} />
               <KpiCard label="Online Casual" value={displayValue(summary.online_casual_matches)} />
-              <KpiCard label="Official" value={displayValue(summary.official_matches)} />
-              <KpiCard label="Arena" value={displayValue(summary.arena_matches)} />
+              <KpiCard label="Official" value={displayValue(summary.official_standalone_matches)} />
+              <KpiCard label="Arena" value={displayValue(summary.arena_matches_count)} />
             </div>
 
             <div className="kpi-subsection-title">End Reasons</div>
             <div className="kpi-card-grid kpi-card-grid--wide">
-              <KpiCard label="Normal" value={displayValue(summary.end_normal)} />
-              <KpiCard label="Timeout" value={displayValue(summary.end_timeout)} />
-              <KpiCard label="Resign" value={displayValue(summary.end_resign)} />
-              <KpiCard label="Draw" value={displayValue(summary.end_draw)} />
-              <KpiCard label="Forfeit" value={displayValue(summary.end_forfeit)} />
-              <KpiCard label="No Contest" value={displayValue(summary.end_no_contest)} />
+              <KpiCard label="Normal" value={displayValue(summary.normal_end_count)} />
+              <KpiCard label="Timeout" value={displayValue(summary.timeout_count)} />
+              <KpiCard label="Resign" value={displayValue(summary.resign_count)} />
+              <KpiCard label="Draw" value={displayValue(summary.draw_count)} />
+              <KpiCard label="Forfeit" value={displayValue(summary.forfeit_count)} />
+              <KpiCard label="No Contest" value={displayValue(summary.no_contest_count)} />
             </div>
           </>
         )}
@@ -216,7 +216,7 @@ function SectionMatches({
           <BarChart
             rows={daily.map((r) => ({
               label: String(r.day ?? '').slice(5, 10), // MM-DD
-              value: safeNum(r.matches),
+              value: safeNum(r.total_matches),
             }))}
             maxVal={maxMatches}
           />
@@ -255,31 +255,21 @@ function SectionArenaFunnel({
             <table className="kpi-table">
               <thead>
                 <tr>
-                  <th>Arena</th>
-                  <th>Scheduled At</th>
-                  <th>Entries</th>
-                  <th>Unique Entrants</th>
-                  <th>Matched</th>
+                  <th>Arena Event ID</th>
                   <th>Started</th>
                   <th>Completed</th>
-                  <th>Entry→Match</th>
-                  <th>Completion</th>
-                  <th>No-show</th>
+                  <th>Assigned</th>
+                  <th>Completion Rate</th>
                 </tr>
               </thead>
               <tbody>
                 {data.map((r, i) => (
                   <tr key={i}>
-                    <td>{String(r.arena_code ?? r.arena_id ?? '—')}</td>
-                    <td>{r.scheduled_at ? String(r.scheduled_at).slice(0, 16).replace('T', ' ') : '—'}</td>
-                    <td>{displayValue(r.entries)}</td>
-                    <td>{displayValue(r.unique_entrants)}</td>
-                    <td>{displayValue(r.matched_users)}</td>
-                    <td>{displayValue(r.started)}</td>
-                    <td>{displayValue(r.completed)}</td>
-                    <td>{r.entry_to_match_rate !== null && r.entry_to_match_rate !== undefined ? fmtPct(r.entry_to_match_rate) : '—'}</td>
-                    <td>{r.completion_rate !== null && r.completion_rate !== undefined ? fmtPct(r.completion_rate) : '—'}</td>
-                    <td>{r.no_show_rate !== null && r.no_show_rate !== undefined ? fmtPct(r.no_show_rate) : '—'}</td>
+                    <td>{String(r.arena_event_id ?? '—')}</td>
+                    <td>{displayValue(r.started_matches)}</td>
+                    <td>{displayValue(r.completed_matches)}</td>
+                    <td>{displayValue(r.assigned_matches)}</td>
+                    <td>{r.match_completion_rate !== null && r.match_completion_rate !== undefined ? fmtPct(r.match_completion_rate) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -332,8 +322,6 @@ function SectionTraining({
     return (safeNum(b.share_of_task_abandonments) ?? 0) - (safeNum(a.share_of_task_abandonments) ?? 0);
   });
 
-  const maxDaily = daily.reduce((m, r) => Math.max(m, safeNum(r.started_runs) ?? 0), 0);
-
   return (
     <section className="kpi-section">
       <div className="kpi-section__header">
@@ -350,21 +338,21 @@ function SectionTraining({
             <div className="kpi-card-grid">
               <KpiCard label="Started Runs" value={displayValue(summary.started_runs)} />
               <KpiCard label="Unique Starters" value={displayValue(summary.unique_starters)} />
-              <KpiCard label="Completed" value={displayValue(summary.completed_runs)} />
-              <KpiCard label="Completion Rate" value={summary.completion_rate !== null && summary.completion_rate !== undefined ? fmtPct(summary.completion_rate) : '—'} />
+              <KpiCard label="Completed" value={displayValue(summary.cohort_completed_runs)} />
+              <KpiCard label="Completion Rate" value={summary.cohort_completion_rate !== null && summary.cohort_completion_rate !== undefined ? fmtPct(summary.cohort_completion_rate) : '—'} />
               <KpiCard label="Abandoned" value={displayValue(summary.abandoned_runs)} />
               <KpiCard label="Abandonment Rate" value={summary.abandonment_rate !== null && summary.abandonment_rate !== undefined ? fmtPct(summary.abandonment_rate) : '—'} />
               <KpiCard label="Attempt Events" value={displayValue(summary.attempt_events)} />
               <KpiCard label="Incorrect Attempts" value={displayValue(summary.incorrect_attempts)} />
-              <KpiCard label="Hint Users" value={displayValue(summary.hint_users)} />
+              <KpiCard label="Hinted Runs" value={displayValue(summary.hinted_runs)} />
             </div>
 
             <div className="kpi-subsection-title">一局指南 vs 個別</div>
             <div className="kpi-card-grid kpi-card-grid--wide">
-              <KpiCard label="Full Game Started" value={displayValue(summary.full_game_started)} />
-              <KpiCard label="Full Game Completed" value={displayValue(summary.full_game_completed)} />
-              <KpiCard label="Individual Started" value={displayValue(summary.individual_started)} />
-              <KpiCard label="Individual Completed" value={displayValue(summary.individual_completed)} />
+              <KpiCard label="Full Game Started" value={displayValue(summary.full_game_started_runs)} />
+              <KpiCard label="Full Game Completed" value={displayValue(summary.full_game_completed_runs)} />
+              <KpiCard label="Individual Started" value={displayValue(summary.individual_started_runs)} />
+              <KpiCard label="Individual Completed" value={displayValue(summary.individual_completed_runs)} />
             </div>
           </>
         )}
@@ -384,13 +372,13 @@ function SectionTraining({
                   <th>Task ID</th>
                   <th>Kind</th>
                   <th>Started</th>
-                  <th>Completed</th>
+                  <th>Cohort Completed</th>
                   <th>Rate</th>
                   <th>Abandoned</th>
                   <th>Abandon Rate</th>
                   <th>Attempts</th>
                   <th>Incorrect</th>
-                  <th>Hint Users</th>
+                  <th>Hinted Runs</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,13 +387,13 @@ function SectionTraining({
                     <td>{String(r.task_id ?? '—')}</td>
                     <td>{String(r.training_kind ?? '—')}</td>
                     <td>{displayValue(r.started_runs)}</td>
-                    <td>{displayValue(r.completed_runs)}</td>
+                    <td>{displayValue(r.cohort_completed_runs)}</td>
                     <td>{r.completion_rate !== null && r.completion_rate !== undefined ? fmtPct(r.completion_rate) : '—'}</td>
                     <td>{displayValue(r.abandoned_runs)}</td>
                     <td>{r.abandonment_rate !== null && r.abandonment_rate !== undefined ? fmtPct(r.abandonment_rate) : '—'}</td>
                     <td>{displayValue(r.attempt_events)}</td>
                     <td>{displayValue(r.incorrect_attempts)}</td>
-                    <td>{displayValue(r.hint_users)}</td>
+                    <td>{displayValue(r.hinted_runs)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -447,7 +435,7 @@ function SectionTraining({
                     <th>Move Index</th>
                     <th>Total Steps</th>
                     <th>Reached</th>
-                    <th>Advanced / Completed</th>
+                    <th>Continued / Completed</th>
                     <th>Abandoned</th>
                     <th>Progression</th>
                     <th>Share of Abandonments</th>
@@ -461,7 +449,7 @@ function SectionTraining({
                       <td>{displayValue(r.move_index)}</td>
                       <td>{displayValue(r.total_steps)}</td>
                       <td>{displayValue(r.reached_runs)}</td>
-                      <td>{displayValue(r.advanced_or_completed_runs)}</td>
+                      <td>{displayValue(r.continued_or_completed_runs)}</td>
                       <td>{displayValue(r.abandoned_runs_at_step)}</td>
                       <td>{r.progression_rate !== null && r.progression_rate !== undefined ? fmtPct(r.progression_rate) : '—'}</td>
                       <td>{r.share_of_task_abandonments !== null && r.share_of_task_abandonments !== undefined ? fmtPct(r.share_of_task_abandonments) : '—'}</td>
@@ -481,13 +469,28 @@ function SectionTraining({
           <div className="kpi-status kpi-status--empty">No data</div>
         )}
         {!loading && !dailyError && daily.length > 0 && (
-          <BarChart
-            rows={daily.map((r) => ({
-              label: String(r.day ?? '').slice(5, 10),
-              value: safeNum(r.started_runs),
-            }))}
-            maxVal={maxDaily}
-          />
+          <div className="kpi-table-wrap">
+            <table className="kpi-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Started</th>
+                  <th>Completed</th>
+                  <th>Abandoned</th>
+                </tr>
+              </thead>
+              <tbody>
+                {daily.map((r, i) => (
+                  <tr key={i}>
+                    <td>{String(r.day ?? '').slice(5, 10)}</td>
+                    <td>{displayValue(r.started_runs)}</td>
+                    <td>{displayValue(r.completion_events)}</td>
+                    <td>{displayValue(r.abandoned_runs)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </section>
@@ -536,20 +539,23 @@ function SectionPostmortem({
             </div>
 
             {/* Mode counts */}
-            {data.mode_counts && (
-              <>
-                <div className="kpi-subsection-title">Mode Counts</div>
-                <JsonKvTable data={data.mode_counts} />
-              </>
-            )}
+            <div className="kpi-subsection-title">Mode Counts</div>
+            <div className="kpi-card-grid kpi-card-grid--wide">
+              <KpiCard label="Online" value={displayValue(data.online_mode_count)} />
+              <KpiCard label="Official" value={displayValue(data.official_mode_count)} />
+              <KpiCard label="Arena" value={displayValue(data.arena_mode_count)} />
+              <KpiCard label="CPU" value={displayValue(data.cpu_mode_count)} />
+              <KpiCard label="Unknown" value={displayValue(data.unknown_mode_count)} />
+            </div>
 
             {/* Error counts */}
-            {data.error_counts && (
-              <>
-                <div className="kpi-subsection-title">Error Counts</div>
-                <JsonKvTable data={data.error_counts} />
-              </>
-            )}
+            <div className="kpi-subsection-title">Error Counts</div>
+            <div className="kpi-card-grid kpi-card-grid--wide">
+              <KpiCard label="RPC Errors" value={displayValue(data.rpc_error_count)} />
+              <KpiCard label="Worker Errors" value={displayValue(data.worker_error_count)} />
+              <KpiCard label="Parse Errors" value={displayValue(data.parse_error_count)} />
+              <KpiCard label="Unknown Errors" value={displayValue(data.unknown_error_count)} />
+            </div>
           </>
         )}
       </div>
@@ -584,7 +590,7 @@ function SectionSystemHealth({
             <div className="kpi-card-grid">
               <KpiCard label="Sessions" value={displayValue(data.sessions)} />
               <KpiCard label="Frontend Errors" value={displayValue(data.frontend_errors)} />
-              <KpiCard label="Errors / 100 Sessions" value={data.errors_per_100_sessions !== null && data.errors_per_100_sessions !== undefined ? fmtDec(data.errors_per_100_sessions, 2) : '—'} />
+              <KpiCard label="Errors / 100 Sessions" value={data.frontend_errors_per_100_sessions !== null && data.frontend_errors_per_100_sessions !== undefined ? fmtDec(data.frontend_errors_per_100_sessions, 2) : '—'} />
               <KpiCard label="RPC Calls" value={displayValue(data.rpc_calls)} />
               <KpiCard label="RPC Errors" value={displayValue(data.rpc_errors)} />
               <KpiCard label="RPC Error Rate" value={data.rpc_error_rate !== null && data.rpc_error_rate !== undefined ? fmtPct(data.rpc_error_rate) : '—'} />
@@ -689,7 +695,7 @@ export function AdminKpiDashboard({ onBack }: Props) {
     const result = await fetchKpiDashboard({
       p_from: range.from,
       p_to: range.to,
-      p_tz: 'Asia/Tokyo',
+      p_timezone: 'Asia/Tokyo',
       p_include_internal: includeInternal,
     });
 
@@ -699,12 +705,8 @@ export function AdminKpiDashboard({ onBack }: Props) {
   }, [preset, customFrom, customTo, includeInternal]);
 
   // 初回ロード
-  const [initialized, setInitialized] = useState(false);
-  if (!initialized) {
-    setInitialized(true);
-    // 非同期で初回ロード（useEffectなしでsetState直呼び）
-    setTimeout(handleLoad, 0);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { handleLoad(); }, []);
 
   const isRefPeriod =
     data?.settings !== null &&
@@ -725,7 +727,7 @@ export function AdminKpiDashboard({ onBack }: Props) {
       </div>
 
       {/* 参考計測バナー */}
-      {initialized && isRefPeriod && (
+      {data !== null && isRefPeriod && (
         <div className="kpi-dashboard__reference-notice">
           現在は参考計測期間です。正式KPI開始日は未設定です。
         </div>

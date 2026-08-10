@@ -137,7 +137,7 @@ describe('[Phase4C] テスト3: 期間指定とinclude_internalがRPCへ渡る',
     // 共通パラメータが各RPC呼び出しに渡されていること
     expect(src).toContain('p_from: params.p_from');
     expect(src).toContain('p_to: params.p_to');
-    expect(src).toContain('p_tz: params.p_tz');
+    expect(src).toContain('p_timezone: params.p_timezone');  // p_tz → p_timezone
     expect(src).toContain('p_include_internal: params.p_include_internal');
   });
 
@@ -389,6 +389,124 @@ describe('[Phase4C] テスト8: fixture安全化', () => {
     const runDBFixtureLocal = hasDBCreds && process.env.RUN_KPI_DB_FIXTURE === '1';
     // テスト環境では RUN_KPI_DB_FIXTURE は通常未設定
     expect(runDBFixtureLocal).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// テスト 10: Phase 4-C RPC契約不一致修正の確認
+// ---------------------------------------------------------------------------
+
+describe('[Phase4C] テスト10: RPC契約不一致修正の確認', () => {
+  it('p_timezoneがKpiAdminParamsに存在し、p_tzが残っていない', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../lib/kpiAdmin.ts');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('p_timezone: string');
+    expect(src).not.toContain('p_tz: string');
+    expect(src).toContain('p_timezone: params.p_timezone');
+    expect(src).not.toContain('p_tz: params.p_tz');
+  });
+
+  it('AcquisitionとSettingsをJSONBオブジェクトとして取得（extractJsonb使用）', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../lib/kpiAdmin.ts');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('extractJsonb');
+    // extractSingleでrows[0]を使っていない（acquisitionAuth/settingsに対して）
+    // extractJsonb関数定義を確認
+    expect(src).toContain('function extractJsonb');
+    expect(src).toContain('result.value.data ?? null');
+  });
+
+  it('fmtPct(75)は75.0%を返す（100倍しない）', async () => {
+    const { fmtPct } = await import('../lib/kpiAdmin');
+    expect(fmtPct(75)).toBe('75.0%');
+    expect(fmtPct(100)).toBe('100.0%');
+    expect(fmtPct(0)).toBe('0.0%');
+    expect(fmtPct(50.5)).toBe('50.5%');
+  });
+
+  it('Match SummaryにRPC実列名が含まれている', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../lib/kpiAdmin.ts');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('official_standalone_matches');
+    expect(src).toContain('arena_matches_count');
+    expect(src).toContain('normal_end_count');
+    expect(src).toContain('timeout_count');
+    expect(src).toContain('resign_count');
+    expect(src).toContain('draw_count');
+    expect(src).toContain('forfeit_count');
+    expect(src).toContain('no_contest_count');
+    // 旧列名が残っていない
+    expect(src).not.toContain('official_matches:');
+    expect(src).not.toContain('arena_matches:');
+    expect(src).not.toContain('end_normal:');
+  });
+
+  it('Match DailyにRPC実列名 total_matches が含まれ、旧列名 matches が型に残っていない', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const kpiFile = path.join(__dirname, '../lib/kpiAdmin.ts');
+    const dashFile = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const kpiSrc = fs.readFileSync(kpiFile, 'utf-8');
+    const dashSrc = fs.readFileSync(dashFile, 'utf-8');
+    // kpiAdmin.tsにtotal_matchesが型定義されている
+    expect(kpiSrc).toContain('total_matches: unknown');
+    // ダッシュボードでtotal_matchesを参照している
+    expect(dashSrc).toContain('r.total_matches');
+  });
+
+  it('Training DailyにStarted/Completed/Abandonedが表示される', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    // 3つの値を参照している
+    expect(src).toContain('r.started_runs');
+    expect(src).toContain('r.completion_events');
+    expect(src).toContain('r.abandoned_runs');
+    // 列ヘッダーに表示名がある
+    expect(src).toContain('Started');
+    expect(src).toContain('Completed');
+    expect(src).toContain('Abandoned');
+  });
+
+  it('Training DailyにRPC実列名 completion_events が含まれ、旧列名 completed_runs が型に残っていない', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const kpiFile = path.join(__dirname, '../lib/kpiAdmin.ts');
+    const kpiSrc = fs.readFileSync(kpiFile, 'utf-8');
+    expect(kpiSrc).toContain('completion_events: unknown');
+    // KpiTrainingDailyRow定義の中にcompleted_runsが残っていないことを確認
+    const dailyRowMatch = kpiSrc.match(/export interface KpiTrainingDailyRow \{[\s\S]*?\}/);
+    expect(dailyRowMatch).not.toBeNull();
+    if (dailyRowMatch) {
+      expect(dailyRowMatch[0]).not.toContain('completed_runs');
+      expect(dailyRowMatch[0]).toContain('completion_events');
+    }
+  });
+
+  it('useEffectで初回ロード（setTimeoutパターンが残っていない）', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('useEffect');
+    expect(src).not.toContain('setTimeout(handleLoad');
+    expect(src).not.toContain("setInitialized(true)");
+  });
+
+  it('AdminKpiDashboard.tsxにp_timezone: Asia/Tokyoが含まれる', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain("p_timezone: 'Asia/Tokyo'");
+    expect(src).not.toContain("p_tz: 'Asia/Tokyo'");
   });
 });
 

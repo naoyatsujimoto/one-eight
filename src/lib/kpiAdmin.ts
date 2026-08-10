@@ -14,7 +14,7 @@ import { supabase } from './supabase';
 export interface KpiAdminParams {
   p_from: string;     // ISO8601
   p_to: string;       // ISO8601
-  p_tz: string;       // e.g. 'Asia/Tokyo'
+  p_timezone: string; // e.g. 'Asia/Tokyo'
   p_include_internal: boolean;
 }
 
@@ -36,11 +36,11 @@ export function fmtNum(v: unknown): string {
   return n.toLocaleString();
 }
 
-/** パーセント表示（小数1桁） */
+/** パーセント表示（小数1桁） — RPCはすでに0〜100の百分率で返すため100倍しない */
 export function fmtPct(v: unknown): string {
   const n = safeNum(v);
   if (n === null) return '—';
-  return `${(n * 100).toFixed(1)}%`;
+  return `${n.toFixed(1)}%`;
 }
 
 /** 小数表示（小数2桁） */
@@ -76,7 +76,7 @@ export async function adminGetKpiAcquisitionAuthSummary(params: KpiAdminParams) 
   return supabase.rpc('admin_get_kpi_acquisition_auth_summary', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -93,14 +93,14 @@ export interface KpiMatchSummaryRow {
   cpu_matches: unknown;
   offline_pvp_matches: unknown;
   online_casual_matches: unknown;
-  official_matches: unknown;
-  arena_matches: unknown;
-  end_normal: unknown;
-  end_timeout: unknown;
-  end_resign: unknown;
-  end_draw: unknown;
-  end_forfeit: unknown;
-  end_no_contest: unknown;
+  official_standalone_matches: unknown;
+  arena_matches_count: unknown;
+  normal_end_count: unknown;
+  timeout_count: unknown;
+  resign_count: unknown;
+  draw_count: unknown;
+  forfeit_count: unknown;
+  no_contest_count: unknown;
   is_reference_period: unknown;
 }
 
@@ -108,7 +108,7 @@ export async function adminGetKpiMatchSummary(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_match_summary', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -119,16 +119,19 @@ export async function adminGetKpiMatchSummary(params: KpiAdminParams) {
 
 export interface KpiMatchDailyRow {
   day: unknown;
-  matches: unknown;
-  completed: unknown;
-  players: unknown;
+  total_matches: unknown;
+  cpu_matches: unknown;
+  offline_pvp_matches: unknown;
+  online_casual_matches: unknown;
+  official_standalone_matches: unknown;
+  arena_matches_count: unknown;
 }
 
 export async function adminGetKpiMatchDaily(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_match_daily', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -138,24 +141,18 @@ export async function adminGetKpiMatchDaily(params: KpiAdminParams) {
 // ---------------------------------------------------------------------------
 
 export interface KpiArenaFunnelRow {
-  arena_id: unknown;
-  arena_code: unknown;
-  scheduled_at: unknown;
-  entries: unknown;
-  unique_entrants: unknown;
-  matched_users: unknown;
-  started: unknown;
-  completed: unknown;
-  entry_to_match_rate: unknown;
-  completion_rate: unknown;
-  no_show_rate: unknown;
+  arena_event_id: unknown;
+  started_matches: unknown;
+  completed_matches: unknown;
+  assigned_matches: unknown;
+  match_completion_rate: unknown;
 }
 
 export async function adminGetKpiArenaFunnel(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_arena_funnel', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -175,8 +172,15 @@ export interface KpiPostmortemSummaryRow {
   p95_elapsed_seconds: unknown;
   refreshed: unknown;
   candidates_opened: unknown;
-  mode_counts: unknown;
-  error_counts: unknown;
+  online_mode_count: unknown;
+  official_mode_count: unknown;
+  arena_mode_count: unknown;
+  cpu_mode_count: unknown;
+  unknown_mode_count: unknown;
+  rpc_error_count: unknown;
+  worker_error_count: unknown;
+  parse_error_count: unknown;
+  unknown_error_count: unknown;
   is_reference_period: unknown;
 }
 
@@ -184,7 +188,7 @@ export async function adminGetKpiPostmortemSummary(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_postmortem_summary', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -196,7 +200,7 @@ export async function adminGetKpiPostmortemSummary(params: KpiAdminParams) {
 export interface KpiSystemHealthSummaryRow {
   sessions: unknown;
   frontend_errors: unknown;
-  errors_per_100_sessions: unknown;
+  frontend_errors_per_100_sessions: unknown;
   rpc_calls: unknown;
   rpc_errors: unknown;
   rpc_error_rate: unknown;
@@ -210,7 +214,7 @@ export async function adminGetKpiSystemHealthSummary(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_system_health_summary', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -222,17 +226,17 @@ export async function adminGetKpiSystemHealthSummary(params: KpiAdminParams) {
 export interface KpiTrainingSummaryRow {
   started_runs: unknown;
   unique_starters: unknown;
-  completed_runs: unknown;
-  completion_rate: unknown;
+  cohort_completed_runs: unknown;
+  cohort_completion_rate: unknown;
   abandoned_runs: unknown;
   abandonment_rate: unknown;
   attempt_events: unknown;
   incorrect_attempts: unknown;
-  hint_users: unknown;
-  full_game_started: unknown;
-  full_game_completed: unknown;
-  individual_started: unknown;
-  individual_completed: unknown;
+  hinted_runs: unknown;
+  full_game_started_runs: unknown;
+  full_game_completed_runs: unknown;
+  individual_started_runs: unknown;
+  individual_completed_runs: unknown;
   is_reference_period: unknown;
 }
 
@@ -240,7 +244,7 @@ export async function adminGetKpiTrainingSummary(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_training_summary', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -253,20 +257,20 @@ export interface KpiTrainingTaskSummaryRow {
   task_id: unknown;
   training_kind: unknown;
   started_runs: unknown;
-  completed_runs: unknown;
+  cohort_completed_runs: unknown;
   completion_rate: unknown;
   abandoned_runs: unknown;
   abandonment_rate: unknown;
   attempt_events: unknown;
   incorrect_attempts: unknown;
-  hint_users: unknown;
+  hinted_runs: unknown;
 }
 
 export async function adminGetKpiTrainingTaskSummary(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_training_task_summary', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -282,7 +286,7 @@ export interface KpiTrainingStepFunnelRow {
   move_index: unknown;
   total_steps: unknown;
   reached_runs: unknown;
-  advanced_or_completed_runs: unknown;
+  continued_or_completed_runs: unknown;
   abandoned_runs_at_step: unknown;
   progression_rate: unknown;
   share_of_task_abandonments: unknown;
@@ -292,7 +296,7 @@ export async function adminGetKpiTrainingStepFunnel(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_training_step_funnel', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -304,7 +308,7 @@ export async function adminGetKpiTrainingStepFunnel(params: KpiAdminParams) {
 export interface KpiTrainingDailyRow {
   day: unknown;
   started_runs: unknown;
-  completed_runs: unknown;
+  completion_events: unknown;
   abandoned_runs: unknown;
 }
 
@@ -312,7 +316,7 @@ export async function adminGetKpiTrainingDaily(params: KpiAdminParams) {
   return supabase.rpc('admin_get_kpi_training_daily', {
     p_from: params.p_from,
     p_to: params.p_to,
-    p_tz: params.p_tz,
+    p_timezone: params.p_timezone,
     p_include_internal: params.p_include_internal,
   });
 }
@@ -393,6 +397,21 @@ export async function fetchKpiDashboard(params: KpiAdminParams): Promise<{
 
   const errors: KpiDashboardSectionError = {};
 
+  function extractJsonb<T>(
+    result: PromiseSettledResult<{ data: T | null; error: unknown }>,
+    key: keyof KpiDashboardSectionError,
+  ): T | null {
+    if (result.status === 'rejected') {
+      errors[key] = String(result.reason);
+      return null;
+    }
+    if (result.value.error) {
+      errors[key] = String((result.value.error as { message?: string }).message ?? result.value.error);
+      return null;
+    }
+    return result.value.data ?? null;
+  }
+
   function extractSingle<T>(
     result: PromiseSettledResult<{ data: T[] | null; error: unknown }>,
     key: keyof KpiDashboardSectionError,
@@ -425,27 +444,14 @@ export async function fetchKpiDashboard(params: KpiAdminParams): Promise<{
     return result.value.data ?? [];
   }
 
-  function extractSettingsSingle(
-    result: PromiseSettledResult<{ data: KpiSettingsRow[] | null; error: unknown }>,
-  ): KpiSettingsRow | null {
-    if (result.status === 'rejected') {
-      errors['settings'] = String(result.reason);
-      return null;
-    }
-    if (result.value.error) {
-      errors['settings'] = String((result.value.error as { message?: string }).message ?? result.value.error);
-      return null;
-    }
-    const rows = result.value.data;
-    if (!rows || rows.length === 0) return null;
-    return rows[0] ?? null;
-  }
-
   return {
     data: {
-      settings: extractSettingsSingle(r_settings as PromiseSettledResult<{ data: KpiSettingsRow[] | null; error: unknown }>),
-      acquisitionAuth: extractSingle<KpiAcquisitionAuthSummaryRow>(
-        r_acq as PromiseSettledResult<{ data: KpiAcquisitionAuthSummaryRow[] | null; error: unknown }>,
+      settings: extractJsonb<KpiSettingsRow>(
+        r_settings as PromiseSettledResult<{ data: KpiSettingsRow | null; error: unknown }>,
+        'settings',
+      ),
+      acquisitionAuth: extractJsonb<KpiAcquisitionAuthSummaryRow>(
+        r_acq as PromiseSettledResult<{ data: KpiAcquisitionAuthSummaryRow | null; error: unknown }>,
         'acquisitionAuth',
       ),
       matchSummary: extractSingle<KpiMatchSummaryRow>(
