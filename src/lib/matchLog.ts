@@ -5,6 +5,9 @@
 import { supabase } from './supabase';
 import { loadGameRecords, type GameRecord } from '../game/analytics';
 import type { MoveRecord } from '../game/types';
+import { trackRpcCall } from './kpiTracker';
+
+const _matchLogRoute = typeof window !== 'undefined' ? window.location.pathname : '/stats';
 
 export interface MatchLogRow {
   id?: string;
@@ -126,8 +129,28 @@ export interface UserPageStats {
 
 export async function fetchUserPageStats(_userId: string): Promise<UserPageStats> {
   // P-2: RPC 経由で履歴を取得（free: 直近10局 / pro: 全件）
-  const { data, error } = await supabase
-    .rpc('get_user_match_history');
+  const route = _matchLogRoute;
+  let rpcData: unknown = null;
+  let rpcError: { message: string; code?: string; details?: unknown } | null = null;
+  try {
+    rpcData = await trackRpcCall(
+      'get_user_match_history',
+      async () => {
+        const { data, error } = await supabase.rpc('get_user_match_history');
+        if (error) throw Object.assign(new Error(error.message), { code: error.code, details: error.details });
+        return data;
+      },
+      route,
+    );
+  } catch (err) {
+    if (err instanceof Error) {
+      rpcError = { message: err.message, code: (err as { code?: string }).code };
+    } else {
+      rpcError = { message: String(err) };
+    }
+  }
+  const data = rpcData;
+  const error = rpcError;
 
   if (error) {
     console.error('[matchLog] get_user_match_history RPC error:', error.message, { code: error.code, details: error.details });
@@ -224,8 +247,28 @@ export async function fetchUserPageStats(_userId: string): Promise<UserPageStats
  * viewOnly モードで対戦相手の STATS を表示する際に使用。
  */
 export async function fetchPublicUserPageStats(userId: string): Promise<UserPageStats> {
-  const { data, error } = await supabase
-    .rpc('get_public_match_logs', { target_user_id: userId });
+  const route = _matchLogRoute;
+  let pubData: unknown = null;
+  let pubError: { message: string; code?: string; details?: unknown } | null = null;
+  try {
+    pubData = await trackRpcCall(
+      'get_public_match_logs',
+      async () => {
+        const { data, error } = await supabase.rpc('get_public_match_logs', { target_user_id: userId });
+        if (error) throw Object.assign(new Error(error.message), { code: error.code, details: error.details });
+        return data;
+      },
+      route,
+    );
+  } catch (err) {
+    if (err instanceof Error) {
+      pubError = { message: err.message, code: (err as { code?: string }).code };
+    } else {
+      pubError = { message: String(err) };
+    }
+  }
+  const data = pubData;
+  const error = pubError;
 
   if (error) {
     console.error('[matchLog] get_public_match_logs RPC error:', error.message, { code: error.code, details: error.details });
@@ -315,12 +358,27 @@ export async function fetchGhostMoves(
   humanColor: 'black' | 'white' | null,
   moveIndex: number = 0,
 ): Promise<GhostMove[]> {
-  const { data, error } = await supabase.rpc('get_ghost_moves', {
-    p_canonical_hash: canonicalHash,
-    p_human_color: humanColor,
-    p_move_index: moveIndex,
-  });
-  if (error || !data) return [];
+  const route = _matchLogRoute;
+  let ghostData: unknown = null;
+  try {
+    ghostData = await trackRpcCall(
+      'get_ghost_moves',
+      async () => {
+        const { data, error } = await supabase.rpc('get_ghost_moves', {
+          p_canonical_hash: canonicalHash,
+          p_human_color: humanColor,
+          p_move_index: moveIndex,
+        });
+        if (error) throw Object.assign(new Error(error.message), { code: error.code });
+        return data;
+      },
+      route,
+    );
+  } catch {
+    return [];
+  }
+  const data = ghostData;
+  if (!data) return [];
 
   // v1/v2 互換変換: RPC が gate_ids_str を返す旧 v1 形式の場合、v2 形式に変換する
   // (ghost_mode_get_ghost_moves_v2.sql が本番未適用の場合のフォールバック)
@@ -362,13 +420,25 @@ export async function fetchGhostMoves(
 
 export async function fetchMyStats(_userId: string): Promise<MyStats> {
   // P-2: RPC 経由で履歴を取得（free: 直近10局 / pro: 全件）
-  const { data, error } = await supabase
-    .rpc('get_user_match_history');
-
-  if (error) {
-    console.error('[matchLog] get_user_match_history RPC error (fetchMyStats):', error.message, { code: error.code, details: error.details });
+  const route = _matchLogRoute;
+  let statsData: unknown = null;
+  try {
+    statsData = await trackRpcCall(
+      'get_user_match_history',
+      async () => {
+        const { data, error } = await supabase.rpc('get_user_match_history');
+        if (error) throw Object.assign(new Error(error.message), { code: error.code, details: error.details });
+        return data;
+      },
+      route,
+    );
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error('[matchLog] get_user_match_history RPC error (fetchMyStats):', err.message);
+    }
     return { total: 0, wins: 0, losses: 0, draws: 0, recent: [] };
   }
+  const data = statsData;
   if (!data) {
     return { total: 0, wins: 0, losses: 0, draws: 0, recent: [] };
   }

@@ -111,6 +111,8 @@ const SCREENS: Screen[] = TUTORIAL_ENABLED
 export default function App() {
   const { user } = useAuth();
   const { t, setLang, setUserId } = useLang();
+  /** KPI: 対局識別子 (新対局開始時に一度生成、match_startedとsaveGameRecordで共有) */
+  const currentGameIdRef = useRef<string | null>(null);
   // statsOpen は UserPage 画面遷移に置き換え済み（削除）
   const [screen, setScreen] = useState<Screen>(() => {
     // Restore screen from sessionStorage to survive reloads
@@ -338,18 +340,20 @@ export default function App() {
     const config = timerConfig ?? pendingTimerConfig;
     const newState: GameState = { ...resetGame(cpuPlayer), timerConfig: config.mode === 'none' ? null : config };
     setState(newState);
-    // KPI: match_started (CPU戦のみ。PvPは送らない)
-    if (cpuPlayer !== null) {
-      const matchKey = `cpu-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // KPI: match_started (CPU戦 / Offline PvP)
+    // Training・ import・復元済み終了対局では送信しない
+    {
+      const newGameId = crypto.randomUUID();
+      currentGameIdRef.current = newGameId;
+      const matchMode = cpuPlayer !== null ? 'human_vs_cpu' : 'offline_pvp';
       try {
-        // sessionStorageで重複送信防止
-        const sentKey = `kpi_match_started_${matchKey}`;
+        const sentKey = `kpi_match_started_${newGameId}`;
         if (!sessionStorage.getItem(sentKey)) {
           sessionStorage.setItem(sentKey, '1');
           track('match_started', {
-            match_key: matchKey,
-            match_mode: 'human_vs_cpu',
-            cpu_difficulty: cpuDifficulty,
+            match_key: newGameId,
+            match_mode: matchMode,
+            ...(cpuPlayer !== null ? { cpu_difficulty: cpuDifficulty } : {}),
           });
         }
       } catch {

@@ -7,6 +7,9 @@
 
 import { supabase } from './supabase';
 import { createInitialState } from '../game/initialState';
+import { trackRpcCall } from './kpiTracker';
+
+const _route = typeof window !== 'undefined' ? window.location.pathname : '/official';
 
 // ─── 型定義 ──────────────────────────────────────────────────────────────────
 
@@ -84,15 +87,24 @@ export async function listMyOfficialMatches(params?: {
   status?: OfficialMatchStatus[];
   includeArena?: boolean;
 }): Promise<OfficialMatchListItem[] | { error: string }> {
-  const { data, error } = await supabase.rpc('list_my_official_matches', {
-    p_from: params?.from ?? null,
-    p_to: params?.to ?? null,
-    p_status: params?.status ?? null,
-    p_include_arena: params?.includeArena ?? false,
+  const route = _route;
+  return trackRpcCall(
+    'list_my_official_matches',
+    async () => {
+      const { data, error } = await supabase.rpc('list_my_official_matches', {
+        p_from: params?.from ?? null,
+        p_to: params?.to ?? null,
+        p_status: params?.status ?? null,
+        p_include_arena: params?.includeArena ?? false,
+      });
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
+      return (data as OfficialMatchListItem[]) ?? [];
+    },
+    route,
+  ).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: msg };
   });
-
-  if (error) return { error: error.message };
-  return (data as OfficialMatchListItem[]) ?? [];
 }
 
 /**
@@ -102,26 +114,33 @@ export async function listMyOfficialMatches(params?: {
 export async function enterOfficialMatch(
   matchId: string,
 ): Promise<{ onlineGameId: string; color: 'black' | 'white'; isOfficial: true; startsAt: string } | { error: string }> {
-  // initialState はフロントエンドで生成して渡す（game_state NOT NULL 対策）
   const initialState = createInitialState(null);
-
-  const { data, error } = await supabase.rpc('enter_official_match', {
-    p_match_id: matchId,
-    p_initial_state: initialState,
-  });
-
-  if (error) return { error: error.message };
-  // Supabase JS v2 では RETURNS json の RPC が data=null を返すバグがある。
-  // joinOrCreateRandomGame と同様のフォールバック対応を実施する。
-  const raw = data as { online_game_id?: string; color?: string; is_official?: boolean; starts_at?: string } | null;
-  const nested = (data as { data?: { online_game_id?: string; color?: string; is_official?: boolean; starts_at?: string } } | null)?.data;
-  const onlineGameId = raw?.online_game_id ?? nested?.online_game_id;
-  const color = (raw?.color ?? nested?.color) as 'black' | 'white' | undefined;
-  const startsAt = raw?.starts_at ?? nested?.starts_at ?? new Date().toISOString();
-  if (!onlineGameId || !color) {
-    return { error: `enter_official_match returned unexpected data: ${JSON.stringify(data)}` };
+  const route = _route;
+  try {
+    return await trackRpcCall(
+      'enter_official_match',
+      async () => {
+        const { data, error } = await supabase.rpc('enter_official_match', {
+          p_match_id: matchId,
+          p_initial_state: initialState,
+        });
+        if (error) throw Object.assign(new Error(error.message), { code: error.code });
+        const raw = data as { online_game_id?: string; color?: string; is_official?: boolean; starts_at?: string } | null;
+        const nested = (data as { data?: { online_game_id?: string; color?: string; is_official?: boolean; starts_at?: string } } | null)?.data;
+        const onlineGameId = raw?.online_game_id ?? nested?.online_game_id;
+        const color = (raw?.color ?? nested?.color) as 'black' | 'white' | undefined;
+        const startsAt = raw?.starts_at ?? nested?.starts_at ?? new Date().toISOString();
+        if (!onlineGameId || !color) {
+          throw new Error(`enter_official_match returned unexpected data: ${JSON.stringify(data)}`);
+        }
+        return { onlineGameId, color, isOfficial: true as const, startsAt };
+      },
+      route,
+    );
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: msg };
   }
-  return { onlineGameId, color, isOfficial: true, startsAt };
 }
 
 /**
@@ -176,9 +195,19 @@ export function msUntilStart(startsAt: string): number {
 export async function checkOfficialMatchExpiry(
   matchId: string,
 ): Promise<{ ok: boolean; status?: string; reason?: string }> {
-  const { data, error } = await supabase.rpc('check_official_match_expiry', {
-    p_match_id: matchId,
+  const route = _route;
+  return trackRpcCall(
+    'check_official_match_expiry',
+    async () => {
+      const { data, error } = await supabase.rpc('check_official_match_expiry', {
+        p_match_id: matchId,
+      });
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
+      return (data as { ok: boolean; status?: string; reason?: string }) ?? { ok: false };
+    },
+    route,
+  ).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, reason: msg };
   });
-  if (error) return { ok: false, reason: error.message };
-  return (data as { ok: boolean; status?: string; reason?: string }) ?? { ok: false };
 }

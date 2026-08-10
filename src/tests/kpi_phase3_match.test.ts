@@ -525,3 +525,133 @@ describe('KPI Phase 3 補正 — 20260810000006', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 3 最終補正 (20260810000007) テスト
+// ---------------------------------------------------------------------------
+
+describe('KPI Phase 3 最終補正 — 20260810000007', () => {
+
+  const FINAL_MIGRATION = '20260810000007_kpi_phase3_final.sql';
+
+  it('1. 最終補正migrationファイルが存在する', () => {
+    expect(existsSync(migrationPath(FINAL_MIGRATION))).toBe(true);
+  });
+
+  it('2. offline_pvp が match_started match_mode として存在する', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain("'offline_pvp'");
+    // match_started の enum に offline_pvp が含まれる
+    expect(sql).toContain("'human_vs_cpu', 'offline_pvp', 'online', 'official', 'arena'");
+  });
+
+  it('3. offline_pvp_matches 列が admin_get_kpi_match_summary に含まれる', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('offline_pvp_matches');
+  });
+
+  it('4. total_matches = cpu + offline_pvp + online + official + arena の5分類', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('v_cpu_matches');
+    expect(sql).toContain('v_offline_pvp');
+    expect(sql).toContain('v_online_casual');
+    expect(sql).toContain('v_official_standalone');
+    expect(sql).toContain('v_arena_count');
+  });
+
+  it('5. CPU は mode=human_vs_cpu のみ (human_vs_human は offline_pvp へ分離)', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    // cpu_by_day で mode='human_vs_cpu' 単独使用
+    expect(sql).toContain("AND ml.mode = 'human_vs_cpu'");
+    // offline_pvp_by_day で mode='human_vs_human' 単独使用
+    expect(sql).toContain("AND ml.mode = 'human_vs_human'");
+  });
+
+  it('6. Arena Funnel started定義修正: move_number > 0 が使用されている', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('og.move_number > 0');
+  });
+
+  it('7. completed_matches 突合: CPU/Offline/Online/Official/Arena の5種突合', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('completed_keys');
+    // CPU 突合
+    expect(sql).toContain("sk.match_mode = 'human_vs_cpu'");
+    // Offline PvP 突合
+    expect(sql).toContain("sk.match_mode = 'offline_pvp'");
+    // Online 突合
+    expect(sql).toContain("sk.match_mode = 'online'");
+    // Official 突合
+    expect(sql).toContain("sk.match_mode = 'official'");
+    // Arena 突合
+    expect(sql).toContain("sk.match_mode = 'arena'");
+  });
+
+  it('8. no_show / no_contest が completed から除外されている', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain("NOT IN ('cancelled', 'no_show', 'no_contest', 'scheduled', 'pending')");
+  });
+
+  it('9. DROP FUNCTION が admin_get_kpi_match_summary と admin_get_kpi_match_daily に含まれる', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('DROP FUNCTION IF EXISTS public.admin_get_kpi_match_summary');
+    expect(sql).toContain('DROP FUNCTION IF EXISTS public.admin_get_kpi_match_daily');
+  });
+
+  it('10. SECURITY DEFINER と _kpi_require_admin が全RPCに含まれる', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('SECURITY DEFINER');
+    expect(sql).toContain('_kpi_require_admin');
+  });
+
+  it('11. REVOKE FROM PUBLIC / anon が含まれる', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('REVOKE ALL ON FUNCTION');
+    expect(sql).toContain('anon');
+  });
+
+  it('12. ai-check-login 除外フィルタが含まれる', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    expect(sql).toContain('ai-check-login');
+  });
+
+  it('13. offline_pvp が postmortem_started / postmortem_completed match_mode に含まれる', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    // postmortem_started
+    expect(sql).toContain("'human_vs_cpu', 'offline_pvp', 'online', 'official', 'arena', 'unknown'");
+  });
+
+  it('14. TS kpiEvents.ts の match_started に offline_pvp が含まれる', () => {
+    // kpiEvents.ts を直接チェック
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    const src = readFileSync(resolve(__dirname, '../lib/kpiEvents.ts'), 'utf-8') as string;
+    expect(src).toContain("'offline_pvp'");
+    // match_started の match_mode union に offline_pvp が含まれる
+    expect(src).toContain("match_mode: 'human_vs_cpu' | 'offline_pvp' | 'online' | 'official' | 'arena'");
+  });
+
+  it('15. TS kpiEvents.ts の postmortem_started に offline_pvp が含まれる', () => {
+    const { readFileSync } = require('fs');
+    const { resolve } = require('path');
+    const src = readFileSync(resolve(__dirname, '../lib/kpiEvents.ts'), 'utf-8') as string;
+    // postmortem match_mode
+    expect(src).toContain("'human_vs_cpu' | 'offline_pvp' | 'online' | 'official' | 'arena' | 'unknown'");
+  });
+
+  it('16. migration番号が正しい昇順 (20260810000007 > 20260810000006)', () => {
+    const ts7 = parseInt('20260810000007', 10);
+    const ts6 = parseInt('20260810000006', 10);
+    expect(ts7).toBeGreaterThan(ts6);
+  });
+
+  it('17. Arena Funnel no-show回帰: online_game_id IS NOT NULL だけでは started にしない', () => {
+    const sql = readMigration(FINAL_MIGRATION);
+    // 修正後: online_game_id IS NOT NULL AND EXISTS (og.move_number > 0...)
+    expect(sql).toContain('am.online_game_id IS NOT NULL');
+    expect(sql).toContain('og.move_number > 0');
+    // 古い started 定義 (status IN ('active','completed','processed') だけ) が使われていない
+    // 新定義: move_number > 0 OR status IN ('playing', 'finished')
+    expect(sql).toContain("og.status IN ('playing', 'finished')");
+  });
+});

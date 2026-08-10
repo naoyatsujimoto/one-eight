@@ -163,13 +163,13 @@ export interface KpiEventPropsMap {
 
   /** Postmortem開始 */
   postmortem_started: {
-    match_mode?: 'human_vs_cpu' | 'online' | 'official' | 'arena' | 'unknown';
+    match_mode?: 'human_vs_cpu' | 'offline_pvp' | 'online' | 'official' | 'arena' | 'unknown';
     move_count?: number;
   };
 
   /** Postmortem完了 */
   postmortem_completed: {
-    match_mode?: 'human_vs_cpu' | 'online' | 'official' | 'arena' | 'unknown';
+    match_mode?: 'human_vs_cpu' | 'offline_pvp' | 'online' | 'official' | 'arena' | 'unknown';
     candidate_count?: number;
     elapsed_seconds?: number;
   };
@@ -223,7 +223,7 @@ export interface KpiEventPropsMap {
   /** 対局開始 */
   match_started: {
     match_key: string;  // ゲーム識別子のみ。棋譜等は禁止
-    match_mode: 'human_vs_cpu' | 'online' | 'official' | 'arena';
+    match_mode: 'human_vs_cpu' | 'offline_pvp' | 'online' | 'official' | 'arena';
     cpu_difficulty?: string;  // 既存の正式difficulty値のみ
   };
 

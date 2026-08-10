@@ -7,6 +7,23 @@
  */
 
 import { supabase } from './supabase';
+import { track, trackRpcCall } from './kpiTracker';
+
+const _arenaRoute = typeof window !== 'undefined' ? window.location.pathname : '/arena';
+
+/** シンプルなRPC計測ヘルパー ({data, error}形式用) */
+function _trackRpcResult(
+  rpcName: string,
+  route: string,
+  hasError: boolean,
+  startMs: number,
+): void {
+  const elapsedMs = Math.min(Math.round(performance.now() - startMs), 300_000);
+  const outcome: 'success' | 'error' = hasError ? 'error' : 'success';
+  try {
+    track('rpc_call_completed', { rpc_name: rpcName, outcome, elapsed_ms: elapsedMs, route });
+  } catch { /* KPI失敗は無視 */ }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,15 +145,20 @@ export type EnterArenaEventResult =
 export async function getArenaOverview(): Promise<
   ArenaOverviewItem[] | { error: string }
 > {
-  const { data, error } = await supabase.rpc('get_arena_overview');
-  if (error) {
-    return { error: error.message };
-  }
-  // RPC returns JSONB — supabase-js returns it parsed already
-  if (!Array.isArray(data)) {
-    return { error: 'Unexpected response format' };
-  }
-  return data as ArenaOverviewItem[];
+  const route = _arenaRoute;
+  return trackRpcCall(
+    'get_arena_overview',
+    async () => {
+      const { data, error } = await supabase.rpc('get_arena_overview');
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
+      if (!Array.isArray(data)) throw new Error('Unexpected response format');
+      return data as ArenaOverviewItem[];
+    },
+    route,
+  ).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: msg };
+  });
 }
 
 /**
@@ -146,20 +168,22 @@ export async function getArenaOverview(): Promise<
 export async function getArenaDetail(
   arenaId: string
 ): Promise<ArenaDetailData | { error: string }> {
-  const { data, error } = await supabase.rpc('get_arena_detail', {
-    p_arena_id: arenaId,
+  const route = _arenaRoute;
+  return trackRpcCall(
+    'get_arena_detail',
+    async () => {
+      const { data, error } = await supabase.rpc('get_arena_detail', { p_arena_id: arenaId });
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
+      if (!data || typeof data !== 'object') throw new Error('Unexpected response format');
+      const d = data as Record<string, unknown>;
+      if (d['error']) throw new Error(d['error'] as string);
+      return data as unknown as ArenaDetailData;
+    },
+    route,
+  ).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: msg };
   });
-  if (error) {
-    return { error: error.message };
-  }
-  if (!data || typeof data !== 'object') {
-    return { error: 'Unexpected response format' };
-  }
-  const d = data as Record<string, unknown>;
-  if (d['error']) {
-    return { error: d['error'] as string };
-  }
-  return data as unknown as ArenaDetailData;
 }
 
 /**
@@ -170,9 +194,12 @@ export async function getArenaDetail(
 export async function enterArenaEvent(
   eventId: string
 ): Promise<EnterArenaEventResult> {
+  const startMs = performance.now();
+  const route = _arenaRoute;
   const { data, error } = await supabase.rpc('enter_arena_event', {
     p_arena_event_id: eventId,
   });
+  _trackRpcResult('enter_arena_event', route, !!error, startMs);
   if (error) {
     // Supabase RPC error — try to extract reason from message
     const msg = error.message ?? 'unknown_error';
@@ -236,7 +263,10 @@ export interface ArenaTitle {
  * authenticated専用。未ログイン時は空配列を返す。
  */
 export async function getMyArenaTitles(): Promise<ArenaTitle[]> {
+  const startMs = performance.now();
+  const route = _arenaRoute;
   const { data, error } = await supabase.rpc('get_my_arena_titles');
+  _trackRpcResult('get_my_arena_titles', route, !!error, startMs);
   if (error) {
     console.warn('[arena] get_my_arena_titles error:', error.message);
     return [];

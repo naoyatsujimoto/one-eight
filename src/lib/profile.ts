@@ -4,6 +4,9 @@
  */
 import { supabase } from './supabase';
 import type { Lang } from './lang';
+import { trackRpcCall } from './kpiTracker';
+
+const _profileRoute = typeof window !== 'undefined' ? window.location.pathname : '/profile';
 
 export type SubscriptionPlan = 'free' | 'pro'
 export type SubscriptionStatus = 'inactive' | 'active' | 'trial' | 'canceled' | 'past_due'
@@ -90,11 +93,18 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 export async function getPublicProfile(
   userId: string,
 ): Promise<{ display_name: string | null; stats_public: boolean } | null> {
-  const { data, error } = await supabase
-    .rpc('get_public_profile', { user_id: userId });
-  if (error || !data || (data as unknown[]).length === 0) return null;
-  const row = (data as { display_name: string | null; stats_public: boolean }[])[0];
-  return { display_name: row?.display_name ?? null, stats_public: row?.stats_public ?? false };
+  const route = _profileRoute;
+  return trackRpcCall(
+    'get_public_profile',
+    async () => {
+      const { data, error } = await supabase.rpc('get_public_profile', { user_id: userId });
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
+      if (!data || (data as unknown[]).length === 0) return null;
+      const row = (data as { display_name: string | null; stats_public: boolean }[])[0];
+      return { display_name: row?.display_name ?? null, stats_public: row?.stats_public ?? false };
+    },
+    route,
+  ).catch(() => null);
 }
 
 /** Upsert profile fields for the given user. */
