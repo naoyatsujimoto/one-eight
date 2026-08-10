@@ -75,6 +75,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   const [fullGameResumeState, setFullGameResumeState] = useState<FullGameResumeState | null>(null);
   const [fullGameCompleted, setFullGameCompleted] = useState(() => isFullGameCompleted());
   const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
+  const sessionRef = useRef<TrainingSession>(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
 
   // Completion state loaded from localStorage
@@ -229,17 +231,15 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   }
 
   const handleSelectPosition = useCallback((positionId: PositionId) => {
-    setSession((prev) => {
-      if (prev.status !== 'playing') return prev;
-      const step = prev.task.steps[prev.stepIndex];
-      if (!step || step.kind !== 'user_move') return prev;
-      const nextState = selectPosition(prev.gameState, positionId);
-      if (nextState.selectedPosition !== null && nextState.selectedPosition !== prev.gameState.selectedPosition) {
-        setTimeout(() => playSymbol(), 0);
-      }
-      return { ...prev, gameState: nextState, feedback: null };
-    });
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'user_move') return;
+    const nextState = selectPosition(prev.gameState, positionId);
+    const didSelect = nextState.selectedPosition !== null && nextState.selectedPosition !== prev.gameState.selectedPosition;
+    setSession({ ...prev, gameState: nextState, feedback: null });
     setBuildState(EMPTY_BUILD);
+    if (didSelect) playSymbol();
   }, [playSymbol]);
 
   // ── KPI helper: track attempt result for individual training steps ──────────────
@@ -276,204 +276,204 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     }
   }, []);
 
-    const handleMiddlePocketClick = useCallback((gateId: GateId) => {
-    setSession((prev) => {
-      if (prev.status !== 'playing') return prev;
-      const step = prev.task.steps[prev.stepIndex];
-      if (!step || step.kind !== 'user_move') return prev;
-      if (!prev.gameState.selectedPosition) return prev;
+  const handleMiddlePocketClick = useCallback((gateId: GateId) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'user_move') return;
+    if (!prev.gameState.selectedPosition) return;
 
-      // selective: first or second click
-      if (prev.selectiveFirst === null) {
-        // first click — store and wait
-        setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
-        return { ...prev, selectiveFirst: gateId, feedback: null };
-      }
+    // selective: first or second click
+    if (prev.selectiveFirst === null) {
+      // first click — store and wait
+      setSession({ ...prev, selectiveFirst: gateId, feedback: null });
+      setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
+      return;
+    }
 
-      if (prev.selectiveFirst === gateId) {
-        // deselect first click
+    if (prev.selectiveFirst === gateId) {
+      // deselect first click
+      setSession({ ...prev, selectiveFirst: null, feedback: null });
+      setBuildState(EMPTY_BUILD);
+      return;
+    }
+
+    // second click — apply selective build
+    const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
+    const nextState = applySelectiveBuild(prev.gameState, gates);
+    const lastRecord = nextState.history[nextState.history.length - 1];
+    if (!lastRecord) return; // no change
+
+    const expected = step.expected;
+    if (validateMove(lastRecord, expected)) {
+      const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
+      setSession(advanced);
+      setBuildState(EMPTY_BUILD);
+      playAsset();
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+    } else {
+      // wrong move — rollback
+      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      setBuildState(EMPTY_BUILD);
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+    }
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+
+  const handleLargePocketClick = useCallback((gateId: GateId) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'user_move') return;
+    if (!prev.gameState.selectedPosition) return;
+
+    const nextState = applyMassiveBuild(prev.gameState, gateId);
+    const lastRecord = nextState.history[nextState.history.length - 1];
+    if (!lastRecord) return;
+
+    const expected = step.expected;
+    if (validateMove(lastRecord, expected)) {
+      const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
+      setSession(advanced);
+      setBuildState(EMPTY_BUILD);
+      playAsset();
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+    } else {
+      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      setBuildState(EMPTY_BUILD);
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+    }
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+
+  const handleMassiveMiddleClick = useCallback((gateId: GateId) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'user_move') return;
+    if (!prev.gameState.selectedPosition) return;
+    if (prev.selectiveFirst !== null) return;
+
+    const nextState = applyMassiveBuild(prev.gameState, gateId);
+    const lastRecord = nextState.history[nextState.history.length - 1];
+    if (!lastRecord) return;
+
+    const expected = step.expected;
+    if (validateMove(lastRecord, expected)) {
+      const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
+      setSession(advanced);
+      setBuildState(EMPTY_BUILD);
+      playAsset();
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+    } else {
+      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      setBuildState(EMPTY_BUILD);
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+    }
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+
+  const handleSmallPocketClick = useCallback((gateId: GateId) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'user_move') return;
+    const pos = prev.gameState.selectedPosition;
+    if (!pos) return;
+    if (step.expected.build.type !== 'quad') return;
+
+    const connectedGates = POSITION_TO_GATES[pos];
+    const quadMax = connectedGates.length;
+
+    if (!connectedGates.includes(gateId)) return;
+
+    const current = prev.quadSelected;
+    let next: GateId[];
+    if (current.includes(gateId)) {
+      next = current.filter((id) => id !== gateId);
+      setSession({ ...prev, quadSelected: next });
+      setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
+      return;
+    }
+    next = [...current, gateId] as GateId[];
+
+    const minGates = step.expected.build.type === 'quad' ? step.expected.build.minGates : undefined;
+    const autoCommitThreshold = minGates !== undefined ? Math.min(minGates, quadMax) : quadMax;
+    if (next.length >= autoCommitThreshold) {
+      const nextState = applyQuadBuildForGates(prev.gameState, next);
+      const lastRecord = nextState.history[nextState.history.length - 1];
+      if (!lastRecord) return;
+
+      const expected = step.expected;
+      if (validateMove(lastRecord, expected)) {
+        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
+        setSession(advanced);
         setBuildState(EMPTY_BUILD);
-        return { ...prev, selectiveFirst: null, feedback: null };
+        playAsset();
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+      } else {
+        setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+        setBuildState(EMPTY_BUILD);
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       }
+      return;
+    }
 
-      // second click — apply selective build
+    setSession({ ...prev, quadSelected: next, feedback: null });
+    setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+
+  const handleMiddleOrSelective = useCallback((gateId: GateId) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'user_move') return;
+    if (!prev.gameState.selectedPosition) return;
+
+    if (prev.selectiveFirst !== null) {
+      if (prev.selectiveFirst === gateId) {
+        setSession({ ...prev, selectiveFirst: null, feedback: null });
+        setBuildState(EMPTY_BUILD);
+        return;
+      }
       const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
       const nextState = applySelectiveBuild(prev.gameState, gates);
       const lastRecord = nextState.history[nextState.history.length - 1];
-      if (!lastRecord) return prev; // no change
-
+      if (!lastRecord) return;
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
-        setTimeout(() => playAsset(), 0);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
+        setSession(advanced);
         setBuildState(EMPTY_BUILD);
-        return advanced;
+        playAsset();
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       } else {
-        // wrong move — rollback
+        setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
         setBuildState(EMPTY_BUILD);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
-        return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       }
-    });
-  }, [t]);
+      return;
+    }
 
-  const handleLargePocketClick = useCallback((gateId: GateId) => {
-    setSession((prev) => {
-      if (prev.status !== 'playing') return prev;
-      const step = prev.task.steps[prev.stepIndex];
-      if (!step || step.kind !== 'user_move') return prev;
-      if (!prev.gameState.selectedPosition) return prev;
+    if (step.expected.build.type === 'selective') {
+      setSession({ ...prev, selectiveFirst: gateId, feedback: null });
+      setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
+      return;
+    }
 
-      const nextState = applyMassiveBuild(prev.gameState, gateId);
-      const lastRecord = nextState.history[nextState.history.length - 1];
-      if (!lastRecord) return prev;
-
-      const expected = step.expected;
-      if (validateMove(lastRecord, expected)) {
-        setTimeout(() => playAsset(), 0);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-        setBuildState(EMPTY_BUILD);
-        return advanced;
-      } else {
-        setBuildState(EMPTY_BUILD);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
-        return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
-      }
-    });
-  }, [t]);
-
-  const handleMassiveMiddleClick = useCallback((gateId: GateId) => {
-    setSession((prev) => {
-      if (prev.status !== 'playing') return prev;
-      const step = prev.task.steps[prev.stepIndex];
-      if (!step || step.kind !== 'user_move') return prev;
-      if (!prev.gameState.selectedPosition) return prev;
-      if (prev.selectiveFirst !== null) {
-        return prev;
-      }
-
-      const nextState = applyMassiveBuild(prev.gameState, gateId);
-      const lastRecord = nextState.history[nextState.history.length - 1];
-      if (!lastRecord) return prev;
-
-      const expected = step.expected;
-      if (validateMove(lastRecord, expected)) {
-        setTimeout(() => playAsset(), 0);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-        setBuildState(EMPTY_BUILD);
-        return advanced;
-      } else {
-        setBuildState(EMPTY_BUILD);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
-        return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
-      }
-    });
-  }, [t]);
-
-  const handleSmallPocketClick = useCallback((gateId: GateId) => {
-    setSession((prev) => {
-      if (prev.status !== 'playing') return prev;
-      const step = prev.task.steps[prev.stepIndex];
-      if (!step || step.kind !== 'user_move') return prev;
-      const pos = prev.gameState.selectedPosition;
-      if (!pos) return prev;
-      if (step.expected.build.type !== 'quad') return prev;
-
-      const connectedGates = POSITION_TO_GATES[pos];
-      const quadMax = connectedGates.length;
-
-      if (!connectedGates.includes(gateId)) return prev;
-
-      const current = prev.quadSelected;
-      let next: GateId[];
-      if (current.includes(gateId)) {
-        next = current.filter((id) => id !== gateId);
-        setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
-        return { ...prev, quadSelected: next };
-      }
-      next = [...current, gateId] as GateId[];
-
-      const minGates = step.expected.build.type === 'quad' ? step.expected.build.minGates : undefined;
-      const autoCommitThreshold = minGates !== undefined ? Math.min(minGates, quadMax) : quadMax;
-      if (next.length >= autoCommitThreshold) {
-        const nextState = applyQuadBuildForGates(prev.gameState, next);
-        const lastRecord = nextState.history[nextState.history.length - 1];
-        if (!lastRecord) return prev;
-
-        const expected = step.expected;
-        if (validateMove(lastRecord, expected)) {
-          setTimeout(() => playAsset(), 0);
-          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
-          const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
-          setBuildState(EMPTY_BUILD);
-          return advanced;
-        } else {
-          setBuildState(EMPTY_BUILD);
-          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
-          return { ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
-        }
-      }
-
-      setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
-      return { ...prev, quadSelected: next, feedback: null };
-    });
-  }, [t]);
-
-  const handleMiddleOrSelective = useCallback((gateId: GateId) => {
-    setSession((prev) => {
-      if (prev.status !== 'playing') return prev;
-      const step = prev.task.steps[prev.stepIndex];
-      if (!step || step.kind !== 'user_move') return prev;
-      if (!prev.gameState.selectedPosition) return prev;
-
-      if (prev.selectiveFirst !== null) {
-        if (prev.selectiveFirst === gateId) {
-          setBuildState(EMPTY_BUILD);
-          return { ...prev, selectiveFirst: null, feedback: null };
-        }
-        const gates: [GateId, GateId] = [prev.selectiveFirst, gateId];
-        const nextState = applySelectiveBuild(prev.gameState, gates);
-        const lastRecord = nextState.history[nextState.history.length - 1];
-        if (!lastRecord) return prev;
-        const expected = step.expected;
-        if (validateMove(lastRecord, expected)) {
-          setTimeout(() => playAsset(), 0);
-          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
-          const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-          setBuildState(EMPTY_BUILD);
-          return advanced;
-        } else {
-          setBuildState(EMPTY_BUILD);
-          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
-          return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
-        }
-      }
-
-      if (step.expected.build.type === 'selective') {
-        setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
-        return { ...prev, selectiveFirst: gateId, feedback: null };
-      }
-
-      const nextState = applyMassiveBuild(prev.gameState, gateId);
-      const lastRecord = nextState.history[nextState.history.length - 1];
-      if (!lastRecord) return prev;
-      const expected = step.expected;
-      if (validateMove(lastRecord, expected)) {
-        setTimeout(() => playAsset(), 0);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-        setBuildState(EMPTY_BUILD);
-        return advanced;
-      } else {
-        setBuildState(EMPTY_BUILD);
-        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
-        return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
-      }
-    });
-  }, [t]);
+    const nextState = applyMassiveBuild(prev.gameState, gateId);
+    const lastRecord = nextState.history[nextState.history.length - 1];
+    if (!lastRecord) return;
+    const expected = step.expected;
+    if (validateMove(lastRecord, expected)) {
+      const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
+      setSession(advanced);
+      setBuildState(EMPTY_BUILD);
+      playAsset();
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+    } else {
+      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      setBuildState(EMPTY_BUILD);
+      kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+    }
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
 
   function handleRestartStep() {
     setSession((prev) => ({
@@ -675,6 +675,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         onComplete={() => { setFullGameResumeState(null); setMode('intro'); }}
         onExit={(state) => { setFullGameResumeState(state); setMode('intro'); }}
         resumeState={fullGameResumeState}
+        userId={userId}
       />
     );
   }

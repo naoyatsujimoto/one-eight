@@ -111,9 +111,10 @@ interface FullGameTrainingRunnerProps {
   onComplete: () => void;
   onExit?: (state: FullGameResumeState) => void;
   resumeState?: FullGameResumeState | null;
+  userId?: string | null;
 }
 
-export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: FullGameTrainingRunnerProps) {
+export function FullGameTrainingRunner({ onComplete, onExit, resumeState, userId = null }: FullGameTrainingRunnerProps) {
   const { lang, t } = useLang();
   const { playSymbol, playAsset } = useSound();
   // Resolve per-locale text bundle for all 10 supported locales
@@ -748,8 +749,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     }
     markFullGameCompleted();
     // Save to training_progress (full-game-v1 as canonical record)
-    // userId is not available here — save via localStorage path; Supabase sync on next login
-    saveTrainingProgress(null, {
+    saveTrainingProgress(userId ?? null, {
       taskId: 'full-game-v1',
       completedAt: new Date().toISOString(),
       attemptCount: kpiTotalAttemptsRef.current,
@@ -757,7 +757,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       lastCompletedStep: FULL_GAME_V1.steps.length,
     });
     onComplete();
-  }, [onComplete]);
+  }, [onComplete, userId]);
 
   const handleExit = useCallback(() => {
     // typewriter cleanup

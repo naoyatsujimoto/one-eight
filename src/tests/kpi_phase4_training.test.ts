@@ -582,3 +582,117 @@ describe('TrainingTaskId — full-game-v1 互換性', () => {
     expect(loaded.some((r) => r.taskId === 'full-game-v1')).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 4-A 補正テスト (A+B+C)
+// ---------------------------------------------------------------------------
+
+const CORRECTIONS_MIGRATION = '20260810000009_kpi_phase4a_corrections.sql';
+
+// ---------------------------------------------------------------------------
+// A. rate-limit overload 曖昧エラーの修正
+// ---------------------------------------------------------------------------
+
+describe('Phase 4-A corrections: rate-limit migration', () => {
+  it('20260810000009 migration ファイルが存在する', () => {
+    const migPath = join(MIGRATIONS_DIR, CORRECTIONS_MIGRATION);
+    expect(existsSync(migPath)).toBe(true);
+  });
+
+  it('3引数版に DEFAULT がない', () => {
+    const sql = readFileSync(join(MIGRATIONS_DIR, CORRECTIONS_MIGRATION), 'utf-8');
+    // p_window_secs INTEGER DEFAULT は存在しないこと
+    expect(sql).not.toMatch(/p_window_secs\s+INTEGER\s+DEFAULT/);
+  });
+
+  it('2引数版への委譲が public. schema 修飾されている', () => {
+    const sql = readFileSync(join(MIGRATIONS_DIR, CORRECTIONS_MIGRATION), 'utf-8');
+    expect(sql).toContain('public._kpi_check_rate_limit(p_bucket_key, p_limit)');
+  });
+
+  it('PUBLIC/anon/authenticated への EXECUTE 権限が REVOKE されている', () => {
+    const sql = readFileSync(join(MIGRATIONS_DIR, CORRECTIONS_MIGRATION), 'utf-8');
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\._kpi_check_rate_limit\(TEXT, INTEGER, INTEGER\) FROM PUBLIC/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\._kpi_check_rate_limit\(TEXT, INTEGER, INTEGER\) FROM anon/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\._kpi_check_rate_limit\(TEXT, INTEGER, INTEGER\) FROM authenticated/);
+  });
+
+  it('service_role/postgres への GRANT EXECUTE がある', () => {
+    const sql = readFileSync(join(MIGRATIONS_DIR, CORRECTIONS_MIGRATION), 'utf-8');
+    expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\._kpi_check_rate_limit\(TEXT, INTEGER, INTEGER\)[\s\S]*TO service_role, postgres/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B. FullGameTrainingRunner userId 伝播
+// ---------------------------------------------------------------------------
+
+describe('Phase 4-A corrections: FullGameTrainingRunner userId', () => {
+  it('userId prop が存在する', () => {
+    const fgrSource = readFileSync(join(__dirname, '../components/FullGameTrainingRunner.tsx'), 'utf-8');
+    expect(fgrSource).toMatch(/userId\??\s*:\s*string\s*\|\s*null/);
+  });
+
+  it('saveTrainingProgress(null, ...) の固定 null が消えている', () => {
+    const fgrSource = readFileSync(join(__dirname, '../components/FullGameTrainingRunner.tsx'), 'utf-8');
+    expect(fgrSource).not.toMatch(/saveTrainingProgress\(null,/);
+  });
+
+  it('saveTrainingProgress に userId を渡している', () => {
+    const fgrSource = readFileSync(join(__dirname, '../components/FullGameTrainingRunner.tsx'), 'utf-8');
+    expect(fgrSource).toMatch(/saveTrainingProgress\(userId/);
+  });
+
+  it('TrainingView が FullGameTrainingRunner に userId を渡している', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toMatch(/userId=\{userId\}/);
+  });
+
+  it('未ログイン（userId=null）でも saveTrainingProgress が呼ばれる', () => {
+    const fgrSource = readFileSync(join(__dirname, '../components/FullGameTrainingRunner.tsx'), 'utf-8');
+    // saveTrainingProgress(userId ?? null, ...) or saveTrainingProgress(userId, ...)
+    expect(fgrSource).toMatch(/saveTrainingProgress\(userId/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C. TrainingView updater 純粋性
+// ---------------------------------------------------------------------------
+
+describe('Phase 4-A corrections: TrainingView updater purity', () => {
+  it('kpiTrackAttemptResult が setSession updater 内の setTimeout から呼ばれていない', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    // setSession updater 内での setTimeout + kpiTrackAttemptResult が存在しないこと
+    expect(tvSource).not.toMatch(/setSession\([^)]*prev[^)]*=>[\s\S]{0,500}setTimeout[\s\S]{0,200}kpiTrackAttemptResult/);
+  });
+
+  it('sessionRef が TrainingView に存在する', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toContain('sessionRef');
+  });
+
+  it('handleMiddlePocketClick が sessionRef.current を使用している', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toMatch(/handleMiddlePocketClick[\s\S]{0,100}sessionRef\.current/);
+  });
+
+  it('handleLargePocketClick が sessionRef.current を使用している', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toMatch(/handleLargePocketClick[\s\S]{0,100}sessionRef\.current/);
+  });
+
+  it('handleMassiveMiddleClick が sessionRef.current を使用している', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toMatch(/handleMassiveMiddleClick[\s\S]{0,100}sessionRef\.current/);
+  });
+
+  it('handleSmallPocketClick が sessionRef.current を使用している', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toMatch(/handleSmallPocketClick[\s\S]{0,100}sessionRef\.current/);
+  });
+
+  it('handleMiddleOrSelective が sessionRef.current を使用している', () => {
+    const tvSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf-8');
+    expect(tvSource).toMatch(/handleMiddleOrSelective[\s\S]{0,100}sessionRef\.current/);
+  });
+});
