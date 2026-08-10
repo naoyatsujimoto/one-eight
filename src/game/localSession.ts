@@ -16,6 +16,8 @@ export interface LocalSessionMeta {
   gameId: string;
   matchStartedSent: boolean;
   gameOverSaved: boolean;
+  /** 対局の生成元。'live'=通常対局, 'import'=棋譜インポート。未保存の旧形式は 'live' として扱う。 */
+  origin?: 'live' | 'import';
 }
 
 export function loadLocalSession(): LocalSessionMeta | null {
@@ -30,7 +32,12 @@ export function loadLocalSession(): LocalSessionMeta | null {
       typeof (parsed as Record<string, unknown>)['matchStartedSent'] === 'boolean' &&
       typeof (parsed as Record<string, unknown>)['gameOverSaved'] === 'boolean'
     ) {
-      return parsed as LocalSessionMeta;
+      const meta = parsed as LocalSessionMeta;
+      // 後方互換: origin 未設定の旧形式は 'live' として補完
+      if (meta.origin === undefined) {
+        meta.origin = 'live';
+      }
+      return meta;
     }
     return null;
   } catch {
@@ -60,5 +67,6 @@ export function newLocalSession(gameId?: string): LocalSessionMeta {
     gameId: gameId ?? crypto.randomUUID(),
     matchStartedSent: false,
     gameOverSaved: false,
+    origin: 'live',
   };
 }

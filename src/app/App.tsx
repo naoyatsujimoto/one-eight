@@ -11,7 +11,6 @@ import { TitleScreen } from '../components/TitleScreen';
 import { TutorialScreen } from '../components/TutorialScreen';
 import { TrainingView } from '../components/TrainingView';
 import { AuthGate } from '../components/AuthGate';
-import { MyStats } from '../components/MyStats';
 import { useAuth } from '../hooks/useAuth';
 import { saveMatchLog, fetchGhostMoves } from '../lib/matchLog';
 import type { GhostMove } from '../lib/matchLog';
@@ -240,9 +239,10 @@ export default function App() {
     const session = localSessionRef.current!;
 
     // ── match_started: 最初の合法手が確定した時点で1回だけ送信 ──
-    // Training・Online対局では送らない（それぞれ別経路で送信）
+    // Training・Online対局・Import では送らない（それぞれ別経路 or 除外）
     if (
       !state.trainingMode &&
+      (session.origin ?? 'live') !== 'import' &&
       state.history.length === 1 &&
       !session.matchStartedSent
     ) {
@@ -265,7 +265,8 @@ export default function App() {
     }
 
     // ── 終局保存: 1対局1回（リロード後の再保存を防止） ──
-    if (state.gameEnded && !session.gameOverSaved) {
+    // Import 対局は KPI・GameRecord・MatchLog に保存しない
+    if (state.gameEnded && !session.gameOverSaved && (session.origin ?? 'live') !== 'import') {
       session.gameOverSaved = true;
       saveLocalSession(session);
       const record = saveGameRecord(state, state.cpuPlayer !== null ? cpuDifficulty : undefined, session.gameId);
@@ -419,6 +420,17 @@ export default function App() {
     setState(importedState);
     setBuildState(EMPTY_BUILD_STATE);
     setUndoStack([]);
+    // KPI除外: Import対局には新規 gameId を割り当て origin='import' で保存する
+    // match_started / saveGameRecord / updateAggregates / saveMatchLog は実行しない
+    {
+      const importSession = newLocalSession(crypto.randomUUID());
+      importSession.origin = 'import';
+      // Import済みは記録不要なので記録完了フラグも置く
+      importSession.matchStartedSent = true;
+      importSession.gameOverSaved = true;
+      localSessionRef.current = importSession;
+      saveLocalSession(importSession);
+    }
   }
 
   // Block human interaction during CPU turn

@@ -225,8 +225,9 @@ describe('UserPage — gameMeta を PostmortemModal に渡す', () => {
   });
 });
 
-describe('MyStats — gameMeta を PostmortemModal に渡す', () => {
-  const src = readSrc('components/MyStats.tsx');
+// MyStats コンポーネントは削除済み。UserPage が同等機能を担当する。
+describe('UserPage — MyStatsと同等の gameMeta PostmortemModal機能を維持', () => {
+  const src = readSrc('components/UserPage.tsx');
 
   it('pendingModalGameRecord state が存在する', () => {
     expect(src).toContain('pendingModalGameRecord');
