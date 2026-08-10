@@ -215,6 +215,8 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? '';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? '';
 const hasDBCreds = SUPABASE_URL.length > 0 && SERVICE_ROLE_KEY.length > 0;
+// 本番fixtureはDBクレデンシャルがあり かつ RUN_KPI_DB_FIXTURE=1 の場合のみ実行
+const runDBFixture = hasDBCreds && process.env.RUN_KPI_DB_FIXTURE === '1';
 // Admin email (is_admin=true in profiles)
 const ADMIN_EMAIL = 'tsujimoto@tentomushi.co.jp';
 
@@ -314,7 +316,7 @@ async function insertEvent(params: {
 
 describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
   beforeAll(async () => {
-    if (!hasDBCreds) return;
+    if (!runDBFixture) return;
     serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
@@ -332,7 +334,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
   });
 
   afterAll(async () => {
-    if (!serviceClient) return;
+    if (!runDBFixture || !serviceClient) return;
     // cleanup: 挿入したkpi_eventsを削除
     for (const runId of insertedRunIds) {
       await serviceClient
@@ -353,9 +355,9 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
     adminClient = null;
   });
 
-  it('前提: DBクレデンシャルが設定されている', () => {
-    if (!hasDBCreds) {
-      console.warn('SUPABASE_SERVICE_ROLE_KEY not set — DB tests skipped');
+  it('前提: DBクレデンシャルが設定されている (RUN_KPI_DB_FIXTURE=1必須)', () => {
+    if (!runDBFixture) {
+      console.warn('RUN_KPI_DB_FIXTURE != 1 or no DB creds — DB fixture tests skipped');
       expect(true).toBe(true);
       return;
     }
@@ -365,7 +367,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト9: Admin で4 RPC成功
   it('テスト9: Admin (authenticated, is_admin=true) で4 RPC成功', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト9: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -406,7 +408,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト1: 正解1+不正解2 → attempt_events=1(training_attempted), incorrect_attempts=2
   it('テスト1: 正解1+不正解2 → attempt_events=1, incorrect_attempts=2', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト1: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -441,7 +443,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト2: duplicate completed → completed_run=1, elapsed=最初の値
   it('テスト2: duplicate completed → cohort_completed_runs=1, elapsed=最初のevent値', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト2: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -474,7 +476,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト3: p_to後のreached → effective_as_of境界でbase_eventsに含まれない
   it('テスト3: p_to後のreached → 過去drop-off stepへ影響なし', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト3: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -510,7 +512,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト4: step 5→step 3へ戻ったrun → last step=3 (時刻で決定)
   it('テスト4: step5→step3へ戻ったrun → last step=3 (時刻で決定)', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト4: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -545,7 +547,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト5: canonical start task=A, reached event task=B → task Aへ集計
   it('テスト5: canonical start task=A, reached event task=B → task Aへ集計', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト5: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -586,7 +588,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト6: move metadata矛盾 → 最初のcanonical reached値を採用
   it('テスト6: move metadata矛盾 → 最初のcanonical reached値(occurred_at ASC)を採用', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト6: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -633,7 +635,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト7: AI経路のrun → eligible_canonical_runsに含まれない
   it('テスト7: AI経路(route=/ai-check-login)のrun → eligible_canonical_runsに含まれない', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト7: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -667,7 +669,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト8: 通常のeligible run → dailyに出る
   it('テスト8: 通常のeligible run completion → dailyに出る', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト8: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -701,7 +703,7 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
   // テスト13: 4 RPCの実行結果確認（戻り値型と構造）
   it('テスト13: 4 RPCの実行結果確認（戻り値型と構造）', async () => {
-    if (!hasDBCreds || !adminClient) {
+    if (!runDBFixture || !adminClient) {
       console.warn('skip テスト13: admin client unavailable');
       expect(true).toBe(true);
       return;
@@ -749,8 +751,8 @@ describe('[DB] 実DB接続テスト (SUPABASE_SERVICE_ROLE_KEY必須)', () => {
 
 describe('[DB] official_kpi_start_at = NULL確認', () => {
   it('kpi_settings.official_kpi_start_at はNULL (変更禁止確認)', async () => {
-    if (!hasDBCreds) {
-      console.warn('skip: no DB creds');
+    if (!runDBFixture) {
+      console.warn('RUN_KPI_DB_FIXTURE != 1 — skip');
       expect(true).toBe(true);
       return;
     }

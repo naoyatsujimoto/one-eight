@@ -22,8 +22,9 @@ import {
 } from '../lib/prizeAdmin';
 import { PrizeWinnerFilePrint } from './PrizeWinnerFilePrint';
 import { PrizePaymentDashboard } from './PrizePaymentDashboard';
+import { AdminKpiDashboard } from './AdminKpiDashboard';
 
-type AdminSubScreen = 'awards' | 'winner_file' | 'payment_dashboard';
+type AdminSubScreen = 'awards' | 'winner_file' | 'payment_dashboard' | 'kpi_dashboard';
 
 interface Props {
   onBack: () => void;
@@ -305,6 +306,10 @@ export function AdminPage({ onBack }: Props) {
     );
   }
 
+  if (subScreen === 'kpi_dashboard') {
+    return <AdminKpiDashboard onBack={() => setSubScreen('awards')} />;
+  }
+
   return (
     <div style={s.page}>
       {/* ヘッダー */}
@@ -356,6 +361,14 @@ export function AdminPage({ onBack }: Props) {
           onClick={() => setSubScreen('payment_dashboard')}
         >
           Payment Dashboard
+        </button>
+        <div style={s.navDivider} />
+        <button
+          type="button"
+          style={s.navBtn}
+          onClick={() => setSubScreen('kpi_dashboard')}
+        >
+          KPI Dashboard
         </button>
         <div style={s.navDivider} />
         <button
