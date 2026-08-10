@@ -14,6 +14,15 @@ import type { FGStepText, FGTrainingText } from '../training/i18n/fullGameV1/typ
 import { validateMove } from '../training/validateMove';
 import { applyScriptedMove, scriptedMoveToExpected, markFullGameCompleted } from '../training/fullGameUtils';
 import { splitIntoSentences } from '../training/splitIntoSentences';
+import { saveTrainingProgress } from '../training/trainingProgress';
+import {
+  generateTrainingRunId,
+  fullGameMoveId,
+  fullGameMoveIndex,
+  fullGameStep,
+  computeElapsedSeconds,
+} from '../training/trainingKpiUtils';
+import { track } from '../lib/kpiTracker';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -43,6 +52,17 @@ export type FullGameResumeState = {
   questionSelected: number | null;
   questionShowHint: boolean;
   completeSentIdx: number;
+  /** KPI state (Phase 4-A): preserved across resume */
+  kpi: {
+    trainingRunId: string;
+    runStartedAt: string;
+    totalAttempts: number;
+    stepAttemptCounts: [number, number][];  // [stepIndex, count][]
+    reachedSteps: number[];
+    hintShownSteps: number[];
+    completionSent: boolean;
+    lastCompletedStep: number;  // last step that was fully advanced (1-based; 0 if none)
+  };
 };
 
 const EMPTY_BUILD: BoardBuildState = {
@@ -98,6 +118,19 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
   const { playSymbol, playAsset } = useSound();
   // Resolve per-locale text bundle for all 10 supported locales
   const fullGameText = resolveFullGameV1Text(lang);
+
+  // ── KPI state refs (Phase 4-A) ─────────────────────────────────────────────
+  const kpiRunIdRef = useRef<string>(resumeState?.kpi?.trainingRunId ?? generateTrainingRunId());
+  const kpiRunStartedAtRef = useRef<string>(resumeState?.kpi?.runStartedAt ?? new Date().toISOString());
+  const kpiTotalAttemptsRef = useRef<number>(resumeState?.kpi?.totalAttempts ?? 0);
+  const kpiStepAttemptCountsRef = useRef<Map<number, number>>(
+    new Map(resumeState?.kpi?.stepAttemptCounts ?? [])
+  );
+  const kpiReachedStepsRef = useRef<Set<number>>(new Set(resumeState?.kpi?.reachedSteps ?? []));
+  const kpiHintShownStepsRef = useRef<Set<number>>(new Set(resumeState?.kpi?.hintShownSteps ?? []));
+  const kpiCompletionSentRef = useRef<boolean>(resumeState?.kpi?.completionSent ?? false);
+  const kpiLastCompletedStepRef = useRef<number>(resumeState?.kpi?.lastCompletedStep ?? 0);
+  const kpiMountEventSentRef = useRef<boolean>(false);
 
   // ── Core state ────────────────────────────────────────────────────────────
   const [stepIndex, setStepIndex] = useState(resumeState?.stepIndex ?? 0);
@@ -164,6 +197,73 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       setIntroSentenceIndex(0);
     }
   }, []);
+
+  // ── KPI: mount-time event (training_started or training_resumed) ──────────────────
+  useEffect(() => {
+    if (kpiMountEventSentRef.current) return;
+    kpiMountEventSentRef.current = true;
+    const step0 = FULL_GAME_V1.steps[0];
+    const moveNum0 = step0?.moveNumber ?? 0;
+    if (initResumeRef.current) {
+      // Resume: same run_id, send training_resumed
+      const resumedStepIdx = initResumeRef.current.stepIndex;
+      const resumedStep = FULL_GAME_V1.steps[resumedStepIdx];
+      const resumedMoveNum = resumedStep?.moveNumber ?? 0;
+      track('training_resumed', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(resumedMoveNum),
+        move_index: fullGameMoveIndex(resumedStepIdx),
+        step: fullGameStep(resumedStepIdx),
+        last_completed_step: kpiLastCompletedStepRef.current,
+      });
+    } else {
+      // Fresh start
+      track('training_started', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(moveNum0),
+        move_index: 0,
+        resumed: false,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── KPI: training_step_reached (exactly-once per step per run) ───────────────────
+  useEffect(() => {
+    // Skip question and complete phases (step not yet advanced)
+    if (phase === 'question' || phase === 'complete') return;
+    if (kpiReachedStepsRef.current.has(stepIndex)) return;
+    kpiReachedStepsRef.current.add(stepIndex);
+    const step = FULL_GAME_V1.steps[stepIndex];
+    if (!step) return;
+    track('training_step_reached', {
+      training_run_id: kpiRunIdRef.current,
+      task_id: FULL_GAME_V1.id,
+      move_id: fullGameMoveId(step.moveNumber),
+      move_index: fullGameMoveIndex(stepIndex),
+      step: fullGameStep(stepIndex),
+      total_steps: FULL_GAME_V1.steps.length,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIndex, phase]);
+
+  // ── KPI: training_hint_shown (exactly-once per step per run) ─────────────────────
+  useEffect(() => {
+    if (!showHint) return;
+    if (kpiHintShownStepsRef.current.has(stepIndex)) return;
+    kpiHintShownStepsRef.current.add(stepIndex);
+    const step = FULL_GAME_V1.steps[stepIndex];
+    if (!step) return;
+    track('training_hint_shown', {
+      training_run_id: kpiRunIdRef.current,
+      task_id: FULL_GAME_V1.id,
+      move_id: fullGameMoveId(step.moveNumber),
+      step: fullGameStep(stepIndex),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showHint, stepIndex]);
 
   // ── Typewriter helpers ────────────────────────────────────────────────────
   const startTypewriter = useCallback((text: string) => {
@@ -290,6 +390,25 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       return;
     }
 
+    // KPI: training_step_advanced (last step → next step; skip if going to complete)
+    // We record from the current stepIndex → nextIndex
+    // This is called when the user presses Next on auto/intro/success/select_success/question
+    {
+      const fromStep = fullGameStep(nextIndex - 1); // 1-based from-step
+      const toStep = fullGameStep(nextIndex);        // 1-based to-step
+      const fromStepObj = steps[nextIndex - 1];
+      if (fromStepObj && fromStep >= 1) {
+        kpiLastCompletedStepRef.current = fromStep;
+        track('training_step_advanced', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: FULL_GAME_V1.id,
+          move_id: fullGameMoveId(fromStepObj.moveNumber),
+          from_step: fromStep,
+          to_step: toStep,
+        });
+      }
+    }
+
     const nextStep = steps[nextIndex]!;
     setStepIndex(nextIndex);
     setShowHint(false);
@@ -375,6 +494,18 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
 
     const expected = scriptedMoveToExpected(currentStep.expectedMove);
     if (validateMove(lastRecord, expected)) {
+      // KPI: training_attempted (correct)
+      const qAttemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+      kpiStepAttemptCountsRef.current.set(stepIndex, qAttemptNum);
+      kpiTotalAttemptsRef.current += 1;
+      track('training_attempted', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStep.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: qAttemptNum,
+        result: 'correct',
+      });
       playAsset();
       setGameState(newState);
       snapshot.current = newState;
@@ -386,6 +517,25 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       setSentenceIndex(0);
       setPhase('success');
     } else {
+      // KPI: training_attempted (incorrect) + training_incorrect
+      const qAttemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+      kpiStepAttemptCountsRef.current.set(stepIndex, qAttemptNum);
+      kpiTotalAttemptsRef.current += 1;
+      track('training_attempted', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStep.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: qAttemptNum,
+        result: 'incorrect',
+      });
+      track('training_incorrect', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStep.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: qAttemptNum,
+      });
       setGameState(snapshot.current);
       setBuildState(EMPTY_BUILD);
       setSelectiveFirst(null);
@@ -534,9 +684,44 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
   // ── Handle question answer ────────────────────────────────────────────────
   const handleQuestionAnswer = useCallback((index: number) => {
     setQuestionSelected(index);
-    const stepText = getStepText(fullGameText, FULL_GAME_V1.steps[stepIndex]!.moveNumber);
+    const currentStepObj = FULL_GAME_V1.steps[stepIndex];
+    const stepText = currentStepObj ? getStepText(fullGameText, currentStepObj.moveNumber) : undefined;
     const correctIndex = stepText?.postQuestion?.correctOptionIndex ?? 0;
-    if (index !== correctIndex) {
+    const isCorrect = index === correctIndex;
+    // KPI: question attempt
+    const qAttemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+    kpiStepAttemptCountsRef.current.set(stepIndex, qAttemptNum);
+    kpiTotalAttemptsRef.current += 1;
+    if (currentStepObj) {
+      track('training_attempted', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStepObj.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: qAttemptNum,
+        result: isCorrect ? 'correct' : 'incorrect',
+      });
+      if (!isCorrect) {
+        track('training_incorrect', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: FULL_GAME_V1.id,
+          move_id: fullGameMoveId(currentStepObj.moveNumber),
+          step: fullGameStep(stepIndex),
+          attempt_number: qAttemptNum,
+        });
+        // question hint shown on wrong answer — fire hint event
+        if (!kpiHintShownStepsRef.current.has(stepIndex)) {
+          kpiHintShownStepsRef.current.add(stepIndex);
+          track('training_hint_shown', {
+            training_run_id: kpiRunIdRef.current,
+            task_id: FULL_GAME_V1.id,
+            move_id: fullGameMoveId(currentStepObj.moveNumber),
+            step: fullGameStep(stepIndex),
+          });
+        }
+      }
+    }
+    if (!isCorrect) {
       setQuestionShowHint(true);
     }
   }, [stepIndex]);
@@ -547,7 +732,30 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
 
   // ── Handle finish (complete phase) ───────────────────────────────────────
   const handleFinish = useCallback(() => {
+    if (!kpiCompletionSentRef.current) {
+      kpiCompletionSentRef.current = true;
+      const finalStepObj = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1];
+      const finalMoveNum = finalStepObj?.moveNumber ?? 0;
+      const finalStepIdx = FULL_GAME_V1.steps.length - 1;
+      track('training_completed', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(finalMoveNum),
+        move_index: fullGameMoveIndex(finalStepIdx),
+        total_attempts: kpiTotalAttemptsRef.current,
+        elapsed_seconds: computeElapsedSeconds(kpiRunStartedAtRef.current),
+      });
+    }
     markFullGameCompleted();
+    // Save to training_progress (full-game-v1 as canonical record)
+    // userId is not available here — save via localStorage path; Supabase sync on next login
+    saveTrainingProgress(null, {
+      taskId: 'full-game-v1',
+      completedAt: new Date().toISOString(),
+      attemptCount: kpiTotalAttemptsRef.current,
+      bestAttemptCount: kpiTotalAttemptsRef.current,
+      lastCompletedStep: FULL_GAME_V1.steps.length,
+    });
     onComplete();
   }, [onComplete]);
 
@@ -557,7 +765,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       clearInterval(typeIntervalRef.current);
       typeIntervalRef.current = null;
     }
-    // 現在の進行状態を保存して呼び出し元へ渡す
+    // 現在の進行状態を保存して呼び出し元へ渡す（KPI状態も含む）
     onExit?.({
       stepIndex,
       gameState,
@@ -573,6 +781,16 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       questionSelected,
       questionShowHint,
       completeSentIdx,
+      kpi: {
+        trainingRunId: kpiRunIdRef.current,
+        runStartedAt: kpiRunStartedAtRef.current,
+        totalAttempts: kpiTotalAttemptsRef.current,
+        stepAttemptCounts: Array.from(kpiStepAttemptCountsRef.current.entries()),
+        reachedSteps: Array.from(kpiReachedStepsRef.current),
+        hintShownSteps: Array.from(kpiHintShownStepsRef.current),
+        completionSent: kpiCompletionSentRef.current,
+        lastCompletedStep: kpiLastCompletedStepRef.current,
+      },
     });
   }, [onExit, stepIndex, gameState, phase, sentenceIndex, introSentenceIndex, buildState, selectiveFirst, quadSelected, showHint, wrongAttempt, questionSelected, questionShowHint, completeSentIdx]);
 
@@ -586,11 +804,42 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     if (currentStep?.kind === 'select_only') {
       setGameState((prev) => selectPosition(prev, positionId));
       if (positionId === currentStep.expectedPosition) {
+        // KPI: training_attempted (correct)
+        const sAttemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+        kpiStepAttemptCountsRef.current.set(stepIndex, sAttemptNum);
+        kpiTotalAttemptsRef.current += 1;
+        track('training_attempted', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: FULL_GAME_V1.id,
+          move_id: fullGameMoveId(currentStep.moveNumber),
+          step: fullGameStep(stepIndex),
+          attempt_number: sAttemptNum,
+          result: 'correct',
+        });
         playSymbol();
         setWrongAttempt(false);
         setSentenceIndex(0);
         setPhase('select_success');
       } else {
+        // KPI: training_attempted (incorrect) + training_incorrect
+        const sAttemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+        kpiStepAttemptCountsRef.current.set(stepIndex, sAttemptNum);
+        kpiTotalAttemptsRef.current += 1;
+        track('training_attempted', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: FULL_GAME_V1.id,
+          move_id: fullGameMoveId(currentStep.moveNumber),
+          step: fullGameStep(stepIndex),
+          attempt_number: sAttemptNum,
+          result: 'incorrect',
+        });
+        track('training_incorrect', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: FULL_GAME_V1.id,
+          move_id: fullGameMoveId(currentStep.moveNumber),
+          step: fullGameStep(stepIndex),
+          attempt_number: sAttemptNum,
+        });
         setWrongAttempt(true);
       }
       return;
@@ -622,6 +871,18 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
     const expected = scriptedMoveToExpected(currentStep.expectedMove);
     if (validateMove(lastRecord, expected)) {
       // Correct!
+      // KPI: training_attempted (correct)
+      const attemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+      kpiStepAttemptCountsRef.current.set(stepIndex, attemptNum);
+      kpiTotalAttemptsRef.current += 1;
+      track('training_attempted', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStep.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: attemptNum,
+        result: 'correct',
+      });
       playAsset();
       setGameState(newState);
       snapshot.current = newState;
@@ -634,6 +895,25 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState }: Full
       setPhase('success');
     } else {
       // Wrong — rollback
+      // KPI: training_attempted (incorrect) + training_incorrect
+      const attemptNum = (kpiStepAttemptCountsRef.current.get(stepIndex) ?? 0) + 1;
+      kpiStepAttemptCountsRef.current.set(stepIndex, attemptNum);
+      kpiTotalAttemptsRef.current += 1;
+      track('training_attempted', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStep.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: attemptNum,
+        result: 'incorrect',
+      });
+      track('training_incorrect', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: FULL_GAME_V1.id,
+        move_id: fullGameMoveId(currentStep.moveNumber),
+        step: fullGameStep(stepIndex),
+        attempt_number: attemptNum,
+      });
       setGameState(snapshot.current);
       setBuildState(EMPTY_BUILD);
       setSelectiveFirst(null);

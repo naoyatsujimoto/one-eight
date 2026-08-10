@@ -96,6 +96,7 @@ export interface KpiEventPropsMap {
 
   /** Training開始 */
   training_started: {
+    training_run_id: string;  // UUID: 1 run = 1 UUID
     task_id: string;
     move_id: string;
     move_index: number;
@@ -104,6 +105,7 @@ export interface KpiEventPropsMap {
 
   /** Training Stepへ到達 */
   training_step_reached: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     move_index: number;
@@ -113,6 +115,7 @@ export interface KpiEventPropsMap {
 
   /** Training試行（正解・不正解問わず） */
   training_attempted: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     step: number;
@@ -122,6 +125,7 @@ export interface KpiEventPropsMap {
 
   /** Training不正解 */
   training_incorrect: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     step: number;
@@ -130,6 +134,7 @@ export interface KpiEventPropsMap {
 
   /** Trainingヒント表示 */
   training_hint_shown: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     step: number;
@@ -137,6 +142,7 @@ export interface KpiEventPropsMap {
 
   /** Training次のstepへ進んだ */
   training_step_advanced: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     from_step: number;
@@ -145,6 +151,7 @@ export interface KpiEventPropsMap {
 
   /** Training再開 */
   training_resumed: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     move_index: number;
@@ -154,6 +161,7 @@ export interface KpiEventPropsMap {
 
   /** Training完了 */
   training_completed: {
+    training_run_id: string;
     task_id: string;
     move_id: string;
     move_index: number;

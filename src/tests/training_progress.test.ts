@@ -79,7 +79,7 @@ describe('saveTrainingProgress — localStorage (userId null)', () => {
     expect(parsed[0]?.completedAt).toBe('2026-06-03T00:00:00.000Z');
   });
 
-  it('updates an existing record for the same taskId', async () => {
+  it('updates an existing record for the same taskId (completed_at: first-completion preserved)', async () => {
     await saveTrainingProgress(null, {
       taskId: 'T1_build_basics',
       completedAt: '2026-06-01T00:00:00.000Z',
@@ -95,7 +95,10 @@ describe('saveTrainingProgress — localStorage (userId null)', () => {
 
     const records = await loadTrainingProgress(null);
     expect(records).toHaveLength(1);
-    expect(records[0]?.completedAt).toBe('2026-06-03T00:00:00.000Z');
+    // Phase 4-A spec: completed_at は初回完了日時。Replay で上書きしない。
+    expect(records[0]?.completedAt).toBe('2026-06-01T00:00:00.000Z');
+    // bestAttemptCount は最小値（1）
+    expect(records[0]?.bestAttemptCount).toBe(1);
   });
 
   it('stores multiple distinct tasks', async () => {

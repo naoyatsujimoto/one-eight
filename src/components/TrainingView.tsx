@@ -15,6 +15,16 @@ import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { saveTrainingProgress, isTaskCompleted } from '../training/trainingProgress';
 import type { TrainingTaskId } from '../training/trainingProgress';
 import type { TrainingSession, TrainingTask } from '../training/types';
+import { track } from '../lib/kpiTracker';
+import {
+  generateTrainingRunId,
+  taskMoveId,
+  taskStep,
+  taskMoveIndex,
+  countUserMovesBefore,
+  countTotalUserMoves,
+  computeElapsedSeconds,
+} from '../training/trainingKpiUtils';
 
 const EMPTY_BUILD: BoardBuildState = {
   mode: 'none',
@@ -49,6 +59,15 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // Keep a ref so advanceSession always reads the latest userId even in stale callbacks
   const userIdRef = useRef<string | null>(userId);
   useEffect(() => { userIdRef.current = userId ?? null; }, [userId]);
+  // KPI state refs (Phase 4-A) — individual training tasks
+  const kpiRunIdRef = useRef<string>(generateTrainingRunId());
+  const kpiRunStartedAtRef = useRef<string>(new Date().toISOString());
+  const kpiTotalAttemptsRef = useRef<number>(0);
+  // stepAttemptCounts: Map<stepIndex, count> for current step (reset per task)
+  const kpiStepAttemptCountsRef = useRef<Map<number, number>>(new Map());
+  const kpiReachedStepsRef = useRef<Set<number>>(new Set());
+  const kpiCompletionSentRef = useRef<boolean>(false);
+  const kpiStartedSentRef = useRef<boolean>(false);
   const { t, lang } = useLang();
   const { playSymbol, playAsset } = useSound();
   const [mode, setMode] = useState<ViewMode>('intro');
@@ -99,15 +118,28 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     while (s.status === 'playing') {
       const step = s.task.steps[s.stepIndex];
       if (!step) {
-        // all steps done — save progress
+        // all steps done — complete
         const taskId = s.task.id as TrainingTaskId;
-        const newBest = s.attemptCount;
+        const totalUserMoves = countTotalUserMoves(s.task.steps);
+        // KPI: training_completed (exactly once)
+        if (!kpiCompletionSentRef.current) {
+          kpiCompletionSentRef.current = true;
+          const lastUserMoveIdx = totalUserMoves - 1;
+          track('training_completed', {
+            training_run_id: kpiRunIdRef.current,
+            task_id: taskId as string,
+            move_id: taskMoveId(taskId as string, lastUserMoveIdx),
+            move_index: taskMoveIndex(lastUserMoveIdx),
+            total_attempts: kpiTotalAttemptsRef.current,
+            elapsed_seconds: computeElapsedSeconds(kpiRunStartedAtRef.current),
+          });
+        }
         saveTrainingProgress(userIdRef.current, {
           taskId,
           completedAt: new Date().toISOString(),
           attemptCount: s.attemptCount,
-          bestAttemptCount: newBest,
-          lastCompletedStep: s.task.steps.filter((st) => st.kind === 'user_move').length,
+          bestAttemptCount: s.attemptCount,
+          lastCompletedStep: totalUserMoves,
         });
         setCompletedTasks((prev) => new Set([...prev, taskId]));
         return { ...s, status: 'complete', feedback: null };
@@ -123,10 +155,70 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         feedback: null,
       };
     }
+    // KPI: training_step_reached for the new user_move step (if not yet reached)
+    if (s.status === 'playing') {
+      const nextStep = s.task.steps[s.stepIndex];
+      if (nextStep && nextStep.kind === 'user_move' && !kpiReachedStepsRef.current.has(s.stepIndex)) {
+        kpiReachedStepsRef.current.add(s.stepIndex);
+        const totalUserMoves = countTotalUserMoves(s.task.steps);
+        const userMoveIdx = countUserMovesBefore(s.task.steps, s.stepIndex);
+        const prevUserMoveIdx = userMoveIdx - 1;
+        // training_step_advanced: from previous user step to this one
+        if (prevUserMoveIdx >= 0) {
+          track('training_step_advanced', {
+            training_run_id: kpiRunIdRef.current,
+            task_id: s.task.id as string,
+            move_id: taskMoveId(s.task.id as string, prevUserMoveIdx),
+            from_step: taskStep(prevUserMoveIdx),
+            to_step: taskStep(userMoveIdx),
+          });
+        }
+        track('training_step_reached', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: s.task.id as string,
+          move_id: taskMoveId(s.task.id as string, userMoveIdx),
+          move_index: taskMoveIndex(userMoveIdx),
+          step: taskStep(userMoveIdx),
+          total_steps: totalUserMoves,
+        });
+      }
+    }
     return s;
   }
 
   function startTask(task: TrainingTask) {
+    // KPI: reset per-run state and send training_started
+    const newRunId = generateTrainingRunId();
+    const newRunStartedAt = new Date().toISOString();
+    kpiRunIdRef.current = newRunId;
+    kpiRunStartedAtRef.current = newRunStartedAt;
+    kpiTotalAttemptsRef.current = 0;
+    kpiStepAttemptCountsRef.current = new Map();
+    kpiReachedStepsRef.current = new Set();
+    kpiCompletionSentRef.current = false;
+    kpiStartedSentRef.current = true;
+    // user_move steps only — first step index 0
+    const totalUserMoves = countTotalUserMoves(task.steps);
+    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move');
+    track('training_started', {
+      training_run_id: newRunId,
+      task_id: task.id as string,
+      move_id: taskMoveId(task.id as string, 0),
+      move_index: 0,
+      resumed: false,
+    });
+    // training_step_reached for first user step (if exists)
+    if (firstUserStep >= 0 && totalUserMoves > 0) {
+      kpiReachedStepsRef.current.add(firstUserStep);
+      track('training_step_reached', {
+        training_run_id: newRunId,
+        task_id: task.id as string,
+        move_id: taskMoveId(task.id as string, 0),
+        move_index: 0,
+        step: 1,
+        total_steps: totalUserMoves,
+      });
+    }
     setSession(makeSession(task));
     setBuildState(EMPTY_BUILD);
     setMode('task');
@@ -150,7 +242,41 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     setBuildState(EMPTY_BUILD);
   }, [playSymbol]);
 
-  const handleMiddlePocketClick = useCallback((gateId: GateId) => {
+  // ── KPI helper: track attempt result for individual training steps ──────────────
+  // Called via setTimeout to avoid calling track() inside setState updaters directly
+  const kpiTrackAttemptResult = useCallback((
+    taskId: string,
+    steps: import('../training/types').TrainingStep[],
+    stepIdx: number,
+    isCorrect: boolean
+  ) => {
+    const userMoveIdx = countUserMovesBefore(steps, stepIdx);
+    const totalUserMoves = countTotalUserMoves(steps);
+    const attemptNum = (kpiStepAttemptCountsRef.current.get(stepIdx) ?? 0) + 1;
+    kpiStepAttemptCountsRef.current.set(stepIdx, attemptNum);
+    kpiTotalAttemptsRef.current += 1;
+    const moveId = taskMoveId(taskId, userMoveIdx);
+    const stepNum = taskStep(userMoveIdx);
+    track('training_attempted', {
+      training_run_id: kpiRunIdRef.current,
+      task_id: taskId,
+      move_id: moveId,
+      step: stepNum,
+      attempt_number: attemptNum,
+      result: isCorrect ? 'correct' : 'incorrect',
+    });
+    if (!isCorrect) {
+      track('training_incorrect', {
+        training_run_id: kpiRunIdRef.current,
+        task_id: taskId,
+        move_id: moveId,
+        step: stepNum,
+        attempt_number: attemptNum,
+      });
+    }
+  }, []);
+
+    const handleMiddlePocketClick = useCallback((gateId: GateId) => {
     setSession((prev) => {
       if (prev.status !== 'playing') return prev;
       const step = prev.task.steps[prev.stepIndex];
@@ -179,12 +305,14 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
         setTimeout(() => playAsset(), 0);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
       } else {
         // wrong move — rollback
         setBuildState(EMPTY_BUILD);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
         return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
       }
     });
@@ -204,11 +332,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
         setTimeout(() => playAsset(), 0);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
       } else {
         setBuildState(EMPTY_BUILD);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
         return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
       }
     });
@@ -231,11 +361,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
         setTimeout(() => playAsset(), 0);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
       } else {
         setBuildState(EMPTY_BUILD);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
         return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
       }
     });
@@ -274,11 +406,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         const expected = step.expected;
         if (validateMove(lastRecord, expected)) {
           setTimeout(() => playAsset(), 0);
+          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
           const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
           setBuildState(EMPTY_BUILD);
           return advanced;
         } else {
           setBuildState(EMPTY_BUILD);
+          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
           return { ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
         }
       }
@@ -307,11 +441,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         const expected = step.expected;
         if (validateMove(lastRecord, expected)) {
           setTimeout(() => playAsset(), 0);
+          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
           const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
           setBuildState(EMPTY_BUILD);
           return advanced;
         } else {
           setBuildState(EMPTY_BUILD);
+          setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
           return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
         }
       }
@@ -327,11 +463,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
         setTimeout(() => playAsset(), 0);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true), 0);
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
         setBuildState(EMPTY_BUILD);
         return advanced;
       } else {
         setBuildState(EMPTY_BUILD);
+        setTimeout(() => kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false), 0);
         return { ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong };
       }
     });
@@ -349,7 +487,38 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   }
 
   function handleRestart() {
-    setSession(makeSession(session.task));
+    // KPI: Replay = new run
+    const newRunId = generateTrainingRunId();
+    const newRunStartedAt = new Date().toISOString();
+    kpiRunIdRef.current = newRunId;
+    kpiRunStartedAtRef.current = newRunStartedAt;
+    kpiTotalAttemptsRef.current = 0;
+    kpiStepAttemptCountsRef.current = new Map();
+    kpiReachedStepsRef.current = new Set();
+    kpiCompletionSentRef.current = false;
+    kpiStartedSentRef.current = true;
+    const task = session.task;
+    const totalUserMoves = countTotalUserMoves(task.steps);
+    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move');
+    track('training_started', {
+      training_run_id: newRunId,
+      task_id: task.id as string,
+      move_id: taskMoveId(task.id as string, 0),
+      move_index: 0,
+      resumed: false,
+    });
+    if (firstUserStep >= 0 && totalUserMoves > 0) {
+      kpiReachedStepsRef.current.add(firstUserStep);
+      track('training_step_reached', {
+        training_run_id: newRunId,
+        task_id: task.id as string,
+        move_id: taskMoveId(task.id as string, 0),
+        move_index: 0,
+        step: 1,
+        total_steps: totalUserMoves,
+      });
+    }
+    setSession(makeSession(task));
     setBuildState(EMPTY_BUILD);
   }
 
@@ -454,6 +623,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               T8_prepare_capture: 'trainingT8Desc',
               T9_no_build_endgame: 'trainingT9Desc',
               T10_defensive_build: 'trainingT10Desc',
+              'full-game-v1': 'trainingFullGameDesc',
             };
             const descKey = descKeyMap[taskId] ?? '';
             const descText = (t as Record<string, unknown>)[descKey] as string | undefined;

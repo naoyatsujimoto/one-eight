@@ -427,3 +427,106 @@ DB関数: `_kpi_is_pro_active()` / `_kpi_classify_pro_status()`
 - Postmortem計測接続（後続Phase）
 - system health接続（後続Phase）
 - Admin Dashboard UI（後続Phase）
+
+---
+
+## Phase 4-A: Training KPI 仕様
+
+作成日: 2026-08-10
+
+### training_run_id — Run 結合キー
+
+- 型: UUID v4 (string)
+- 生成: Training 開始・Replay ごとに新規生成（`crypto.randomUUID()` / fallback）
+- 役割: 1 run のすべての training_* event を結合するキー
+- PII: なし
+- 一局指南の途中退出・再開では**同じ run_id を維持**
+- Replay は新しい run_id
+- 全 8 training event の必須プロパティ
+
+### 一局指南 canonical ID 定義
+
+| フィールド | 定義 |
+|---|---|
+| `task_id` | `full-game-v1`（FULL_GAME_V1.id の実値） |
+| `move_id` | `move:{moveNumber}` 例: Move 58 → `move:58` |
+| `move_index` | stepIndex（0-based, 0..60） |
+| `step` | stepIndex + 1（1-based, 1..61） |
+| `total_steps` | `FULL_GAME_V1.steps.length` = 61 |
+
+- moveNumber: 0〜60（M0 intro を含む 61 steps）
+- Move 0 も到達 step として `training_step_reached` を送信する
+- 自動手・説明 Move を含め、画面に表示された各 Move を step 対象にする
+- `training_attempted` はユーザーの正誤判定が確定した時のみ
+
+### 個別 Training canonical ID 定義
+
+| フィールド | 定義 |
+|---|---|
+| `task_id` | task.id の実値（例: `T1_build_basics`） |
+| `move_id` | `{task_id}:step:{userMoveIndex}` 例: `T1_build_basics:step:0` |
+| `move_index` | userMoveIndex（0-based, user_move のみ連番） |
+| `step` | userMoveIndex + 1（1-based） |
+| `total_steps` | task 内の user_move 総数 |
+
+- cpu_fixed_move は個別 Training の step としてカウントしない
+- user_move のみを 0-based で連番化する
+
+### Training Events (8件)
+
+| Event | 送信条件 |
+|---|---|
+| `training_started` | Start / Replay で新規 run 開始時（1 run 1 回） |
+| `training_step_reached` | ユーザー表示 step に到達時（1 run 1 step 1 回） |
+| `training_attempted` | 正誤判定確定ごと（attempted_number は step 内で 1 から増加） |
+| `training_incorrect` | incorrect 確定時（attempted と同時に 1 回ずつ） |
+| `training_hint_shown` | ヒント表示初回（1 run 1 step 1 回） |
+| `training_step_advanced` | 現 step 完了 → 次 step 進行時（最終 step から complete は送らない） |
+| `training_resumed` | 一局指南の保存状態から再開時（training_started は再送しない） |
+| `training_completed` | 完了確定時（1 run 1 回） |
+
+### DB Validation — wrapper 方式
+
+- `_kpi_strip_training_run_id(p_event_name, p_props)` を新設
+  - training event: training_run_id を UUID v4 検証後に strip して返す
+  - 非 training event: props をそのまま返す
+- `track_kpi_event` は `_kpi_validate_properties` 呼び出し前に strip wrapper を経由する
+- 既存 `_kpi_validate_properties` は変更しない（退行防止）
+- strip 後の props を validation に渡し、元の props（training_run_id 含む）を DB に保存する
+- helper: PUBLIC / anon / authenticated から直接実行不可、service_role / postgres のみ
+
+### training_progress — 初回完了日時 (completed_at)
+
+- `training_progress.completed_at` は**初回完了日時の正本**
+- Replay 完了では `completed_at` を上書きしない（既存行の `completed_at` を維持）
+- `updated_at` のみ更新可
+- 一局指南（`full-game-v1`）も `saveTrainingProgress()` で同様に保存
+- 未ログイン: localStorage 保存のみ
+- ログインユーザー: Supabase + localStorage cache
+- `best_attempt_count` は最小値を維持（既存仕様と同一）
+
+### 脱落定義（Phase 4-B で集計）
+
+- `training_started` 送信済み
+- `training_completed` なし
+- 最後の Training 活動から 24 時間以上経過
+- 最後に到達した Move を脱落箇所とする
+- client 側に脱落 event は新設しない（Phase 4-B の集計 RPC で算出）
+
+### Exactly-once 設計
+
+| Event | 保証方法 |
+|---|---|
+| started | mount 時の ref フラグ（kpiMountEventSentRef） |
+| step_reached | `reachedStepsRef: Set<number>` で重複排除 |
+| hint_shown | `hintShownStepsRef: Set<number>` で重複排除 |
+| attempted | setState updater 外の setTimeout 経由で送信 |
+| completed | `completionSentRef: boolean` で 1 回のみ |
+
+- React StrictMode・言語切替・typewriter 再描画による重複を防止
+- 一局指南の再開後も到達済み step は再送しない（kpi フィールドを FullGameResumeState に保持）
+
+### Phase 4-B 予定
+
+- 集計 RPC（脱落率・完走率・平均 attempts・平均所要時間）
+- Admin Dashboard UI

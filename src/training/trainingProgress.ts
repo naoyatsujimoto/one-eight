@@ -12,7 +12,7 @@
 
 import { supabase } from '../lib/supabase';
 
-export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates' | 'T4_partial_build' | 'T6_asset_values' | 'T5_capture_tie' | 'T8_prepare_capture' | 'T9_no_build_endgame' | 'T10_defensive_build';
+export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates' | 'T4_partial_build' | 'T6_asset_values' | 'T5_capture_tie' | 'T8_prepare_capture' | 'T9_no_build_endgame' | 'T10_defensive_build' | 'full-game-v1';
 
 export interface TrainingProgressRecord {
   taskId: TrainingTaskId;
@@ -46,7 +46,8 @@ function writeToStorage(records: TrainingProgressRecord[]): void {
   }
 }
 
-/** Merge a single record into localStorage, preserving bestAttemptCount (keep smaller). */
+/** Merge a single record into localStorage, preserving bestAttemptCount (keep smaller)
+ * and completed_at (first-completion canonical: never overwrite). */
 function mergeIntoStorage(record: TrainingProgressRecord): void {
   const all = readFromStorage();
   const idx = all.findIndex((r) => r.taskId === record.taskId);
@@ -58,7 +59,9 @@ function mergeIntoStorage(record: TrainingProgressRecord): void {
       record.bestAttemptCount !== undefined && existing.bestAttemptCount !== undefined
         ? Math.min(existing.bestAttemptCount, record.bestAttemptCount)
         : record.bestAttemptCount ?? existing.bestAttemptCount;
-    all[idx] = { ...existing, ...record, bestAttemptCount };
+    // completed_at: preserve first-completion date (never overwrite)
+    const completedAt = existing.completedAt ?? record.completedAt;
+    all[idx] = { ...existing, ...record, bestAttemptCount, completedAt };
   }
   writeToStorage(all);
 }
@@ -126,7 +129,9 @@ export async function saveTrainingProgress(
           ? Math.min(existing.bestAttemptCount, r.bestAttemptCount)
           : r.bestAttemptCount ?? existing.bestAttemptCount ?? 0
       );
-      all[idx] = { ...existing, ...r, bestAttemptCount };
+      // completed_at: preserve first-completion date (never overwrite)
+      const completedAt = existing.completedAt ?? r.completedAt;
+      all[idx] = { ...existing, ...r, bestAttemptCount, completedAt };
     }
     writeToStorage(all);
     return;
@@ -135,7 +140,7 @@ export async function saveTrainingProgress(
   // Supabase path — read existing to preserve bestAttemptCount
   const { data: existing } = await supabase
     .from('training_progress')
-    .select('best_attempt_count')
+    .select('best_attempt_count, completed_at')
     .eq('user_id', userId)
     .eq('task_id', r.taskId)
     .single();
@@ -145,16 +150,22 @@ export async function saveTrainingProgress(
       ? (existing as DbRow).best_attempt_count
       : undefined;
 
+  const existingCompletedAt: string | null | undefined =
+    existing ? (existing as DbRow).completed_at : undefined;
+
   const finalBest = Math.max(1,
     r.bestAttemptCount !== undefined && existingBest !== undefined
       ? Math.min(existingBest, r.bestAttemptCount)
       : r.bestAttemptCount ?? existingBest ?? 0
   );
 
+  // completed_at: preserve first-completion date (never overwrite)
+  const finalCompletedAt = existingCompletedAt ?? r.completedAt ?? new Date().toISOString();
+
   const row: DbRow = {
     user_id: userId,
     task_id: r.taskId,
-    completed_at: r.completedAt ?? new Date().toISOString(),
+    completed_at: finalCompletedAt,
     attempt_count: r.attemptCount ?? 1,
     best_attempt_count: finalBest,
     last_completed_step: r.lastCompletedStep ?? 0,

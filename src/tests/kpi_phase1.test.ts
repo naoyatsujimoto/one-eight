@@ -150,6 +150,7 @@ describe('1. 許可event送信（RPCモック）', () => {
     initSession();
 
     track('training_started', {
+      training_run_id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
       task_id: 't1',
       move_id: 'm1',
       move_index: 0,
@@ -279,6 +280,7 @@ describe('3. event別properties型検証', () => {
     initSession();
 
     track('training_completed', {
+      training_run_id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
       task_id: 't1',
       move_id: 'm1',
       move_index: 2,
