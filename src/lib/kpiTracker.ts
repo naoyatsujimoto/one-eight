@@ -413,14 +413,12 @@ const KPI_RPC_NAMES: ReadonlySet<string> = new Set([
 ]);
 
 // {data, error}形式の判定ヘルパー
-function isDataErrorShape(value: unknown): value is { data: unknown; error: { code?: string; message?: string } } {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'error' in value &&
-    (value as Record<string, unknown>)['error'] !== null &&
-    typeof (value as Record<string, unknown>)['error'] === 'object'
-  );
+// error が null/undefined 以外の値（object・string・number など）であればエラー扱い。
+function isDataErrorShape(value: unknown): value is { data: unknown; error: NonNullable<unknown> } {
+  if (value === null || typeof value !== 'object') return false;
+  if (!('error' in value)) return false;
+  const err = (value as Record<string, unknown>)['error'];
+  return err !== null && err !== undefined;
 }
 
 /**
@@ -449,7 +447,12 @@ export async function trackRpcCall<T>(
 
     // {data, error}形式の場合: error 非 null → outcome='error'
     if (isDataErrorShape(result)) {
-      const errObj = (result as { data: unknown; error: { code?: string; message?: string } }).error;
+      const errRaw = (result as { data: unknown; error: NonNullable<unknown> }).error;
+      // error が object の場合のみ code を取得（string 等他型は code 不明)
+      const errorCode: string | undefined =
+        errRaw !== null && typeof errRaw === 'object' && 'code' in errRaw
+          ? String((errRaw as Record<string, unknown>)['code']).slice(0, 100)
+          : undefined;
       if (!isKpiRpc && _initialized) {
         track('rpc_call_completed', {
           rpc_name: rpcName,
@@ -459,7 +462,7 @@ export async function trackRpcCall<T>(
         });
         track('rpc_error', {
           rpc_name: rpcName.slice(0, 100),
-          error_code: errObj.code ? String(errObj.code).slice(0, 100) : undefined,
+          error_code: errorCode,
           route: route.slice(0, 500),
         });
       }

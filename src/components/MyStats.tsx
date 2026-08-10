@@ -6,6 +6,7 @@ import { clearPostmortemCache } from '../game/storage';
 import { PostmortemModal, type PostmortemGameMeta } from './PostmortemModal';
 import { usePostmortemWorker } from '../hooks/usePostmortemWorker';
 import { resolvePostmortemMatchMode } from '../lib/postmortemWorkerManager';
+import type { OfficialMatchListItem } from '../lib/officialMatch';
 import { useLang } from '../lib/lang';
 import { getProfile, isProActive } from '../lib/profile';
 import { formatDate } from '../lib/localeFormat';
@@ -14,9 +15,11 @@ import { track } from '../lib/kpiTracker';
 interface Props {
   userId: string;
   onClose: () => void;
+  /** online_pvp 履歴の source_kind 分類用。UserPage から渡す場合は詳細分類が可能。渡さない場合は online_pvp → 'online' にフォールバック */
+  officialGameMap?: Map<string, OfficialMatchListItem>;
 }
 
-export function MyStats({ userId, onClose }: Props) {
+export function MyStats({ userId, onClose, officialGameMap = new Map() }: Props) {
   const { t, lang } = useLang();
   const [stats, setStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,8 +66,9 @@ export function MyStats({ userId, onClose }: Props) {
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    // resolvePostmortemMatchMode: human_vs_human → offline_pvp, human_vs_cpu → human_vs_cpu
-    const pmMode = resolvePostmortemMatchMode(record.mode);
+    // online_pvp 履歴は officialGameMap を参照して分類
+    const officialItem = record.mode === 'online_pvp' ? officialGameMap.get(record.game_id) : undefined;
+    const pmMode = resolvePostmortemMatchMode(record.mode, undefined, officialItem);
     runWorker(record.game_id, record.full_record, hc, pmMode);
   }
 
@@ -134,8 +138,9 @@ export function MyStats({ userId, onClose }: Props) {
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    // resolvePostmortemMatchMode: human_vs_human → offline_pvp
-    const pmMode = resolvePostmortemMatchMode(record.mode);
+    // online_pvp 履歴は officialGameMap を参照して分類
+    const officialItemR = record.mode === 'online_pvp' ? officialGameMap.get(record.game_id) : undefined;
+    const pmMode = resolvePostmortemMatchMode(record.mode, undefined, officialItemR);
     runWorker(record.game_id, record.full_record, hc, pmMode);
     // KPI: postmortem_refreshed (ユーザー操作が実際に受理された時のみ)
     try {

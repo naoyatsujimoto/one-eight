@@ -350,6 +350,250 @@ describe('Task 2: matchMode 伝播の型確認', () => {
   });
 });
 
+// ─── Task 1: LocalSession 永続化 ────────────────────────────────────────────
+
+describe('Task 1: LocalSession 永続化', () => {
+
+  beforeEach(() => {
+    localStorageMock.clear();
+  });
+
+  it('28. newLocalSession() は UUID 形式の gameId を持つ', async () => {
+    const { newLocalSession } = await import('../game/localSession');
+    const s = newLocalSession();
+    expect(s.gameId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(s.matchStartedSent).toBe(false);
+    expect(s.gameOverSaved).toBe(false);
+  });
+
+  it('29. saveLocalSession / loadLocalSession の往復整合性', async () => {
+    const { newLocalSession, saveLocalSession, loadLocalSession } = await import('../game/localSession');
+    const s = newLocalSession('test-id-abc');
+    saveLocalSession(s);
+    const loaded = loadLocalSession();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.gameId).toBe('test-id-abc');
+    expect(loaded!.matchStartedSent).toBe(false);
+    expect(loaded!.gameOverSaved).toBe(false);
+  });
+
+  it('30. matchStartedSent=true に更新して復元できる', async () => {
+    const { newLocalSession, saveLocalSession, loadLocalSession } = await import('../game/localSession');
+    const s = newLocalSession('test-id-def');
+    s.matchStartedSent = true;
+    saveLocalSession(s);
+    const loaded = loadLocalSession();
+    expect(loaded!.matchStartedSent).toBe(true);
+    expect(loaded!.gameOverSaved).toBe(false);
+  });
+
+  it('31. gameOverSaved=true に更新して復元できる', async () => {
+    const { newLocalSession, saveLocalSession, loadLocalSession } = await import('../game/localSession');
+    const s = newLocalSession('test-id-ghi');
+    s.matchStartedSent = true;
+    s.gameOverSaved = true;
+    saveLocalSession(s);
+    const loaded = loadLocalSession();
+    expect(loaded!.gameOverSaved).toBe(true);
+  });
+
+  it('32. clearLocalSession 後は null が返る', async () => {
+    const { newLocalSession, saveLocalSession, loadLocalSession, clearLocalSession } = await import('../game/localSession');
+    saveLocalSession(newLocalSession());
+    clearLocalSession();
+    expect(loadLocalSession()).toBeNull();
+  });
+
+  it('33. 破損データは null が返る', async () => {
+    const { loadLocalSession } = await import('../game/localSession');
+    localStorageMock.setItem('one_eight_local_session', 'INVALID_JSON{{');
+    expect(loadLocalSession()).toBeNull();
+  });
+
+  it('34. 欠辺フィールドのデータは null が返る', async () => {
+    const { loadLocalSession } = await import('../game/localSession');
+    localStorageMock.setItem('one_eight_local_session', JSON.stringify({ gameId: 'x' }));
+    expect(loadLocalSession()).toBeNull();
+  });
+});
+
+// ─── Task 2: OfficialMatchCalendar Arena/Official 判定 — ロジック検証 ─────────────────
+
+describe('Task 2: Arena / Official matchMode 判定ロジック', () => {
+
+  // OfficialMatchCalendar.handleEnter 内で行う同一ロジック
+  // source_kind は実隋には 'standalone' | 'arena' | undefinedだが、
+  // TypeScript の型結局時に string として受け取ることで比較を正確に型提證する
+  function getMatchModeFromSourceKind(sk: string | undefined): 'official' | 'arena' {
+    return sk === 'arena' ? 'arena' : 'official';
+  }
+
+  it('35. source_kind=\'arena\' のアイテムが matchMode に arena を返す', () => {
+    const matches: { id: string; source_kind?: string }[] = [
+      { id: 'match-001', source_kind: 'standalone' },
+      { id: 'match-002', source_kind: 'arena' },
+    ];
+    const matchItem = matches.find((m) => m.id === 'match-002');
+    expect(getMatchModeFromSourceKind(matchItem?.source_kind)).toBe('arena');
+  });
+
+  it('36. source_kind=\'standalone\' のアイテムが matchMode に official を返す', () => {
+    const matches: { id: string; source_kind?: string }[] = [
+      { id: 'match-001', source_kind: 'standalone' },
+    ];
+    const matchItem = matches.find((m) => m.id === 'match-001');
+    expect(getMatchModeFromSourceKind(matchItem?.source_kind)).toBe('official');
+  });
+
+  it('37. source_kind 未設定のアイテムは official にフォールバック', () => {
+    const matches: { id: string; source_kind?: string }[] = [
+      { id: 'match-003' },
+    ];
+    const matchItem = matches.find((m) => m.id === 'match-003');
+    expect(getMatchModeFromSourceKind(matchItem?.source_kind)).toBe('official');
+  });
+
+  it('38. matchId がリストにない場合は official にフォールバック', () => {
+    const matches: { id: string; source_kind?: string }[] = [];
+    const matchItem = matches.find((m) => m.id === 'unknown-id');
+    expect(getMatchModeFromSourceKind(matchItem?.source_kind)).toBe('official');
+  });
+});
+
+// ─── Task 3: online_pvp の 5分類 ────────────────────────────────────────────────
+
+describe('Task 3: online_pvp の 5分類', () => {
+
+  it('39. online_pvp かつ officialItem なし → online', () => {
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('online_pvp', undefined, undefined);
+    expect(result).toBe('online');
+  });
+
+  it('40. online_pvp かつ officialItem=null → online', () => {
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('online_pvp', undefined, null);
+    expect(result).toBe('online');
+  });
+
+  it('41. online_pvp かつ source_kind=\'standalone\' → official', () => {
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('online_pvp', undefined, { source_kind: 'standalone' });
+    expect(result).toBe('official');
+  });
+
+  it('42. online_pvp かつ source_kind=\'arena\' → arena', () => {
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('online_pvp', undefined, { source_kind: 'arena' });
+    expect(result).toBe('arena');
+  });
+
+  it('43. online_pvp かつ source_kind 未定義 → online (フォールバック)', () => {
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('online_pvp', undefined, {});
+    expect(result).toBe('online');
+  });
+
+  it('44. online_pvp でも onlineMode 指定ありは onlineMode を優先', () => {
+    // onlineMode が明示指定された場合はそちらが最優先
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('online_pvp', 'official', { source_kind: 'arena' });
+    expect(result).toBe('official');
+  });
+
+  it('45. 不明な mode・onlineModeヿofficialItem なし → unknown', () => {
+    const result: PostmortemMatchMode = resolvePostmortemMatchMode('unknown_mode');
+    expect(result).toBe('unknown');
+  });
+});
+
+// ─── Task 4: isDataErrorShape — string/object error 対応 ──────────────────────
+
+describe('Task 4: trackRpcCall — string error と object error の共通対応', () => {
+
+  let mockSupabase2: {
+    rpc: ReturnType<typeof vi.fn>;
+    from: ReturnType<typeof vi.fn>;
+    channel: ReturnType<typeof vi.fn>;
+    removeChannel: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    resetTracker();
+    Object.keys(sessionStorageData).forEach(k => delete sessionStorageData[k]);
+    mockSupabase2 = {
+      rpc: vi.fn(),
+      from: vi.fn(),
+      channel: vi.fn(() => ({ on: vi.fn(() => ({ subscribe: vi.fn() })) })),
+      removeChannel: vi.fn(),
+    };
+    initKpiTracker(mockSupabase2 as unknown as import('@supabase/supabase-js').SupabaseClient, {
+      appVersion: 'test',
+      locale: 'ja',
+    });
+  });
+
+  it('46. error が string の {data, error} は outcome=error になる', async () => {
+    const { trackRpcCall } = await import('../lib/kpiTracker');
+    const rpcFn = vi.fn().mockResolvedValue({ data: null, error: 'some string error' });
+    const result = await trackRpcCall('test_rpc_str', rpcFn, '/test');
+    expect(result).toEqual({ data: null, error: 'some string error' });
+    const queue = getQueueSnapshot();
+    const completedEvent = queue.find(
+      e => e.eventName === 'rpc_call_completed' &&
+      (e.properties as Record<string, unknown>)['rpc_name'] === 'test_rpc_str'
+    );
+    expect(completedEvent).toBeTruthy();
+    const props = completedEvent!.properties as Record<string, unknown>;
+    expect(props['outcome']).toBe('error');
+  });
+
+  it('47. error が number の {data, error} も outcome=error になる', async () => {
+    const { trackRpcCall } = await import('../lib/kpiTracker');
+    const rpcFn = vi.fn().mockResolvedValue({ data: null, error: 500 });
+    await trackRpcCall('test_rpc_num', rpcFn, '/test');
+    const queue = getQueueSnapshot();
+    const completedEvent = queue.find(
+      e => e.eventName === 'rpc_call_completed' &&
+      (e.properties as Record<string, unknown>)['rpc_name'] === 'test_rpc_num'
+    );
+    expect(completedEvent).toBeTruthy();
+    expect((completedEvent!.properties as Record<string, unknown>)['outcome']).toBe('error');
+  });
+
+  it('48. error=null は引き続き success になる', async () => {
+    const { trackRpcCall } = await import('../lib/kpiTracker');
+    const rpcFn = vi.fn().mockResolvedValue({ data: [1, 2], error: null });
+    await trackRpcCall('test_rpc_null_err', rpcFn, '/test');
+    const queue = getQueueSnapshot();
+    const completedEvent = queue.find(
+      e => e.eventName === 'rpc_call_completed' &&
+      (e.properties as Record<string, unknown>)['rpc_name'] === 'test_rpc_null_err'
+    );
+    expect(completedEvent).toBeTruthy();
+    expect((completedEvent!.properties as Record<string, unknown>)['outcome']).toBe('success');
+  });
+
+  it('49. error=undefined は success になる', async () => {
+    const { trackRpcCall } = await import('../lib/kpiTracker');
+    const rpcFn = vi.fn().mockResolvedValue({ data: 'ok', error: undefined });
+    await trackRpcCall('test_rpc_undef_err', rpcFn, '/test');
+    const queue = getQueueSnapshot();
+    const completedEvent = queue.find(
+      e => e.eventName === 'rpc_call_completed' &&
+      (e.properties as Record<string, unknown>)['rpc_name'] === 'test_rpc_undef_err'
+    );
+    expect(completedEvent).toBeTruthy();
+    expect((completedEvent!.properties as Record<string, unknown>)['outcome']).toBe('success');
+  });
+
+  it('50. string error は rpc_call_completed が 1 回のみ送信される', async () => {
+    const { trackRpcCall } = await import('../lib/kpiTracker');
+    const rpcFn = vi.fn().mockResolvedValue({ data: null, error: 'err' });
+    await trackRpcCall('test_single_str', rpcFn, '/test');
+    const queue = getQueueSnapshot();
+    const completedEvents = queue.filter(
+      e => e.eventName === 'rpc_call_completed' &&
+      (e.properties as Record<string, unknown>)['rpc_name'] === 'test_single_str'
+    );
+    expect(completedEvents.length).toBe(1);
+  });
+});
+
 // ─── scripts の untracked 確認 ────────────────────────────────────────────────
 
 describe('Task 6 (#17): scripts/ ファイルは untracked のまま', () => {

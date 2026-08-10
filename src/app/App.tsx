@@ -46,6 +46,7 @@ import {
 } from '../game/engine';
 import { selectCpuMove, CpuDifficulty } from '../game/ai';
 import { clearState, hasSavedState, loadState, saveState } from '../game/storage';
+import { loadLocalSession, saveLocalSession, newLocalSession, type LocalSessionMeta } from '../game/localSession';
 import { saveGameRecord, updateAggregates } from '../game/analytics';
 // postmortemPrecompute: auto-precompute on game end is disabled (trigger via Analyze button in STATS)
 import { POSITION_TO_GATES } from '../game/constants';
@@ -111,8 +112,16 @@ const SCREENS: Screen[] = TUTORIAL_ENABLED
 export default function App() {
   const { user } = useAuth();
   const { t, setLang, setUserId } = useLang();
-  /** KPI: 対局識別子 (新対局開始時に一度生成、match_startedとsaveGameRecordで共有) */
-  const currentGameIdRef = useRef<string | null>(null);
+  /**
+   * KPI: 対局セッションメタ (gameId / matchStartedSent / gameOverSaved)
+   * リロード後も localStorage から復元し、同一対局内での重複送信・保存を防ぐ。
+   */
+  const localSessionRef = useRef<LocalSessionMeta | null>(null);
+  if (localSessionRef.current === null) {
+    const saved = loadLocalSession();
+    localSessionRef.current = saved ?? newLocalSession();
+    if (!saved) saveLocalSession(localSessionRef.current);
+  }
   // statsOpen は UserPage 画面遷移に置き換え済み（削除）
   const [screen, setScreen] = useState<Screen>(() => {
     // Restore screen from sessionStorage to survive reloads
@@ -227,9 +236,39 @@ export default function App() {
   useEffect(() => {
     saveState(state);
     setHasSaved(true);
-    // Auto-save analytics when any game ends (Human vs CPU or Human vs Human)
-    if (state.gameEnded) {
-      const record = saveGameRecord(state, state.cpuPlayer !== null ? cpuDifficulty : undefined, currentGameIdRef.current);
+
+    const session = localSessionRef.current!;
+
+    // ── match_started: 最初の合法手が確定した時点で1回だけ送信 ──
+    // Training・Online対局では送らない（それぞれ別経路で送信）
+    if (
+      !state.trainingMode &&
+      state.history.length === 1 &&
+      !session.matchStartedSent
+    ) {
+      session.matchStartedSent = true;
+      saveLocalSession(session);
+      const matchMode = state.cpuPlayer !== null ? 'human_vs_cpu' : 'offline_pvp';
+      try {
+        const sentKey = `kpi_match_started_${session.gameId}`;
+        if (!sessionStorage.getItem(sentKey)) {
+          sessionStorage.setItem(sentKey, '1');
+          track('match_started', {
+            match_key: session.gameId,
+            match_mode: matchMode,
+            ...(state.cpuPlayer !== null ? { cpu_difficulty: cpuDifficulty } : {}),
+          });
+        }
+      } catch {
+        // sessionStorage unavailable — ignore
+      }
+    }
+
+    // ── 終局保存: 1対局1回（リロード後の再保存を防止） ──
+    if (state.gameEnded && !session.gameOverSaved) {
+      session.gameOverSaved = true;
+      saveLocalSession(session);
+      const record = saveGameRecord(state, state.cpuPlayer !== null ? cpuDifficulty : undefined, session.gameId);
       if (record) {
         updateAggregates(record);
         if (user) {
@@ -340,25 +379,12 @@ export default function App() {
     const config = timerConfig ?? pendingTimerConfig;
     const newState: GameState = { ...resetGame(cpuPlayer), timerConfig: config.mode === 'none' ? null : config };
     setState(newState);
-    // KPI: match_started (CPU戦 / Offline PvP)
-    // Training・ import・復元済み終了対局では送信しない
+    // KPI: localSession をリセット（match_started は最初の合法手確定時に送信）
     {
       const newGameId = crypto.randomUUID();
-      currentGameIdRef.current = newGameId;
-      const matchMode = cpuPlayer !== null ? 'human_vs_cpu' : 'offline_pvp';
-      try {
-        const sentKey = `kpi_match_started_${newGameId}`;
-        if (!sessionStorage.getItem(sentKey)) {
-          sessionStorage.setItem(sentKey, '1');
-          track('match_started', {
-            match_key: newGameId,
-            match_mode: matchMode,
-            ...(cpuPlayer !== null ? { cpu_difficulty: cpuDifficulty } : {}),
-          });
-        }
-      } catch {
-        // sessionStorage error は無視
-      }
+      const freshSession = newLocalSession(newGameId);
+      localSessionRef.current = freshSession;
+      saveLocalSession(freshSession);
     }
     setBuildState(EMPTY_BUILD_STATE);
     setUndoStack([]);

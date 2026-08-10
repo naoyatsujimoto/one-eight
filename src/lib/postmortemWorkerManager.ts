@@ -26,32 +26,42 @@ export type PostmortemMatchMode = 'human_vs_cpu' | 'offline_pvp' | 'online' | 'o
 // ─── 共通純粋関数 ─────────────────────────────────────────────────────────────────────
 
 /**
- * resolvePostmortemMatchMode — GameRecordの mode とオンライン対局情報から
+ * resolvePostmortemMatchMode — GameRecord.mode / オンライン対局情報 / DB履歴情報から
  * PostmortemMatchMode を決定する共通純粋関数。
  *
  * マッピング:
- * - 'human_vs_cpu'   → 'human_vs_cpu'
- * - 'human_vs_human' → 'offline_pvp'
- * - 'online'         → 'online'
- * - 'official'       → 'official'
- * - 'arena'          → 'arena'
- * - 判定不能時       → 'unknown'
+ * - 'human_vs_cpu'                             → 'human_vs_cpu'
+ * - 'human_vs_human'                           → 'offline_pvp'
+ * - onlineMode 指定あり                          → onlineMode 優先
+ * - 'online_pvp' かつ officialItem なし          → 'online'
+ * - 'online_pvp' かつ source_kind='standalone'   → 'official'
+ * - 'online_pvp' かつ source_kind='arena'        → 'arena'
+ * - 判定不能時                                 → 'unknown'
  *
- * @param localMode  GameRecord.mode ('human_vs_cpu' | 'human_vs_human')
- * @param onlineMode オンライン対局の matchMode ('online' | 'official' | 'arena') | null
+ * @param localMode    GameRecord.mode
+ * @param onlineMode   リアルタイム対局の matchMode ('online' | 'official' | 'arena') | null
+ * @param officialItem DB履歴から引いた OfficialMatchListItem（online_pvp 分類の追加情報）
  */
 export function resolvePostmortemMatchMode(
   localMode: string | null | undefined,
   onlineMode?: 'online' | 'official' | 'arena' | null,
+  officialItem?: { source_kind?: 'standalone' | 'arena' } | null,
 ): PostmortemMatchMode {
-  // オンライン対局情報があればそちらを優先
+  // onlineMode が明示指定された場合はそちらを最優先
   if (onlineMode === 'arena') return 'arena';
   if (onlineMode === 'official') return 'official';
   if (onlineMode === 'online') return 'online';
   // ローカル対局の分類
   if (localMode === 'human_vs_cpu') return 'human_vs_cpu';
-  if (localMode === 'human_vs_human') return 'offline_pvp'; // human_vs_human は offline_pvp
-  // 判定不能時
+  if (localMode === 'human_vs_human') return 'offline_pvp';
+  // DB履歴の online_pvp レコード: officialItem に基づく分類
+  if (localMode === 'online_pvp') {
+    if (!officialItem) return 'online';               // officialGameMap に存在しない → 通常オンライン
+    if (officialItem.source_kind === 'arena') return 'arena';
+    if (officialItem.source_kind === 'standalone') return 'official';
+    return 'online';                                  // source_kind 不明時のフォールバック
+  }
+  // 本当に判定不能な場合のみ unknown
   return 'unknown';
 }
 

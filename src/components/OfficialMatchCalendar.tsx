@@ -485,6 +485,12 @@ export function OfficialMatchCalendar({
       return next;
     });
 
+    // Enter 対象を matchId から特定し、source_kind に基づいて matchMode を決定
+    // source_kind === 'arena' → 'arena'、それ以外 → 'official'
+    const matchItem = matches.find((m) => m.id === matchId);
+    const matchMode: 'official' | 'arena' =
+      matchItem?.source_kind === 'arena' ? 'arena' : 'official';
+
     const result = await enterOfficialMatch(matchId);
 
     if ('error' in result) {
@@ -492,10 +498,10 @@ export function OfficialMatchCalendar({
       setEnteringId(null);
     } else {
       setEnteringId(null);
-      // OM-1c: isOfficial=true / startsAt を渡す。standalone公式戦は matchMode='official'
-      onEnterOnlineGame?.(result.onlineGameId, result.isOfficial, result.startsAt, 'official');
+      // OM-1c: isOfficial=true / startsAt を渡す。matchMode は source_kind に基づく
+      onEnterOnlineGame?.(result.onlineGameId, result.isOfficial, result.startsAt, matchMode);
     }
-  }, [onEnterOnlineGame]);
+  }, [onEnterOnlineGame, matches]);
 
   // filter prop によるフィルタリング（ranked / tournament / all）
   const typeFilteredMatches = filter === 'ranked'

@@ -237,10 +237,11 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
     setCurrentHumanColor(hc);
     setPendingModalGameRecord(record);
     setPendingModalGameId(record.game_id);
-    // resolvePostmortemMatchMode: human_vs_human → offline_pvp, human_vs_cpu → human_vs_cpu
-    const pmMode = resolvePostmortemMatchMode(record.mode);
+    // online_pvp の場合は officialGameMap から source_kind を引いて分類
+    const officialItem = record.mode === 'online_pvp' ? officialGameMap.get(record.game_id) : undefined;
+    const pmMode = resolvePostmortemMatchMode(record.mode, undefined, officialItem);
     runWorker(record.game_id, record.full_record, hc, pmMode);
-  }, [getStatus, runWorker]);
+  }, [getStatus, runWorker, officialGameMap]);
 
   // 完了表示スケジューラー
   const scheduleCompletion = useCallback((gameId: string, kind: 'analyze' | 'refresh') => {
@@ -454,7 +455,7 @@ export function UserPage({ userId, userEmail, onBack, viewOnly = false, targetUs
                     localMap={localMap}
                     officialGameMap={officialGameMap}
                     currentUserId={userId}
-                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameRecord(r); setPendingModalGameId(r.game_id); runWorker(r.game_id, r.full_record, hc, resolvePostmortemMatchMode(r.mode)); }}
+                    onPostmortem={(r) => { const hc = (r.human_color as 'black' | 'white' | null) ?? null; setCurrentHumanColor(hc); setPendingModalGameRecord(r); setPendingModalGameId(r.game_id); const _offItem = r.mode === 'online_pvp' ? officialGameMap.get(r.game_id) : undefined; runWorker(r.game_id, r.full_record, hc, resolvePostmortemMatchMode(r.mode, undefined, _offItem)); }}
                     onRefresh={(record) => {
                       // queued/running中は操作不可
                       const currentSt = getStatus(record.game_id);

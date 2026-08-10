@@ -21,7 +21,7 @@ export interface GameRecord {
   game_id: string;
   started_at: string;
   ended_at: string;
-  mode: 'human_vs_cpu' | 'human_vs_human';
+  mode: 'human_vs_cpu' | 'human_vs_human' | 'online_pvp';
   human_color: Player | null;
   winner: Player | 'draw' | null;
   move_count: number;
