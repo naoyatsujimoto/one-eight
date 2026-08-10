@@ -132,6 +132,7 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState, userId
   const kpiCompletionSentRef = useRef<boolean>(resumeState?.kpi?.completionSent ?? false);
   const kpiLastCompletedStepRef = useRef<number>(resumeState?.kpi?.lastCompletedStep ?? 0);
   const kpiMountEventSentRef = useRef<boolean>(false);
+  const finishInFlightRef = useRef(false);
 
   // ── Core state ────────────────────────────────────────────────────────────
   const [stepIndex, setStepIndex] = useState(resumeState?.stepIndex ?? 0);
@@ -732,31 +733,37 @@ export function FullGameTrainingRunner({ onComplete, onExit, resumeState, userId
   }, [stepIndex, gameState, advanceToStep]);
 
   // ── Handle finish (complete phase) ───────────────────────────────────────
-  const handleFinish = useCallback(() => {
-    if (!kpiCompletionSentRef.current) {
-      kpiCompletionSentRef.current = true;
-      const finalStepObj = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1];
-      const finalMoveNum = finalStepObj?.moveNumber ?? 0;
-      const finalStepIdx = FULL_GAME_V1.steps.length - 1;
-      track('training_completed', {
-        training_run_id: kpiRunIdRef.current,
-        task_id: FULL_GAME_V1.id,
-        move_id: fullGameMoveId(finalMoveNum),
-        move_index: fullGameMoveIndex(finalStepIdx),
-        total_attempts: kpiTotalAttemptsRef.current,
-        elapsed_seconds: computeElapsedSeconds(kpiRunStartedAtRef.current),
+  const handleFinish = useCallback(async () => {
+    if (finishInFlightRef.current) return;
+    finishInFlightRef.current = true;
+    try {
+      if (!kpiCompletionSentRef.current) {
+        kpiCompletionSentRef.current = true;
+        const finalStepObj = FULL_GAME_V1.steps[FULL_GAME_V1.steps.length - 1];
+        const finalMoveNum = finalStepObj?.moveNumber ?? 0;
+        const finalStepIdx = FULL_GAME_V1.steps.length - 1;
+        track('training_completed', {
+          training_run_id: kpiRunIdRef.current,
+          task_id: FULL_GAME_V1.id,
+          move_id: fullGameMoveId(finalMoveNum),
+          move_index: fullGameMoveIndex(finalStepIdx),
+          total_attempts: kpiTotalAttemptsRef.current,
+          elapsed_seconds: computeElapsedSeconds(kpiRunStartedAtRef.current),
+        });
+      }
+      markFullGameCompleted();
+      await saveTrainingProgress(userId ?? null, {
+        taskId: 'full-game-v1',
+        completedAt: new Date().toISOString(),
+        attemptCount: kpiTotalAttemptsRef.current,
+        bestAttemptCount: kpiTotalAttemptsRef.current,
+        lastCompletedStep: FULL_GAME_V1.steps.length,
       });
+    } catch (err) {
+      console.error('[FullGame] handleFinish error:', err);
+    } finally {
+      onComplete();
     }
-    markFullGameCompleted();
-    // Save to training_progress (full-game-v1 as canonical record)
-    saveTrainingProgress(userId ?? null, {
-      taskId: 'full-game-v1',
-      completedAt: new Date().toISOString(),
-      attemptCount: kpiTotalAttemptsRef.current,
-      bestAttemptCount: kpiTotalAttemptsRef.current,
-      lastCompletedStep: FULL_GAME_V1.steps.length,
-    });
-    onComplete();
   }, [onComplete, userId]);
 
   const handleExit = useCallback(() => {

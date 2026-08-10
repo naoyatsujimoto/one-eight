@@ -77,6 +77,10 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
   const sessionRef = useRef<TrainingSession>(session);
   useEffect(() => { sessionRef.current = session; }, [session]);
+  const commitSession = useCallback((next: TrainingSession) => {
+    sessionRef.current = next;
+    setSession(next);
+  }, []);
   const [buildState, setBuildState] = useState<BoardBuildState>(EMPTY_BUILD);
 
   // Completion state loaded from localStorage
@@ -221,7 +225,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         total_steps: totalUserMoves,
       });
     }
-    setSession(makeSession(task));
+    commitSession(makeSession(task));
     setBuildState(EMPTY_BUILD);
     setMode('task');
   }
@@ -237,10 +241,10 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (!step || step.kind !== 'user_move') return;
     const nextState = selectPosition(prev.gameState, positionId);
     const didSelect = nextState.selectedPosition !== null && nextState.selectedPosition !== prev.gameState.selectedPosition;
-    setSession({ ...prev, gameState: nextState, feedback: null });
+    commitSession({ ...prev, gameState: nextState, feedback: null });
     setBuildState(EMPTY_BUILD);
     if (didSelect) playSymbol();
-  }, [playSymbol]);
+  }, [playSymbol, commitSession]);
 
   // ── KPI helper: track attempt result for individual training steps ──────────────
   // Called via setTimeout to avoid calling track() inside setState updaters directly
@@ -286,14 +290,14 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     // selective: first or second click
     if (prev.selectiveFirst === null) {
       // first click — store and wait
-      setSession({ ...prev, selectiveFirst: gateId, feedback: null });
+      commitSession({ ...prev, selectiveFirst: gateId, feedback: null });
       setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
       return;
     }
 
     if (prev.selectiveFirst === gateId) {
       // deselect first click
-      setSession({ ...prev, selectiveFirst: null, feedback: null });
+      commitSession({ ...prev, selectiveFirst: null, feedback: null });
       setBuildState(EMPTY_BUILD);
       return;
     }
@@ -307,17 +311,17 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-      setSession(advanced);
+      commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
       // wrong move — rollback
-      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
-  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
   const handleLargePocketClick = useCallback((gateId: GateId) => {
     const prev = sessionRef.current;
@@ -333,16 +337,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-      setSession(advanced);
+      commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
-      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
-  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
   const handleMassiveMiddleClick = useCallback((gateId: GateId) => {
     const prev = sessionRef.current;
@@ -359,16 +363,16 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-      setSession(advanced);
+      commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
-      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
-  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
   const handleSmallPocketClick = useCallback((gateId: GateId) => {
     const prev = sessionRef.current;
@@ -388,7 +392,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     let next: GateId[];
     if (current.includes(gateId)) {
       next = current.filter((id) => id !== gateId);
-      setSession({ ...prev, quadSelected: next });
+      commitSession({ ...prev, quadSelected: next });
       setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
       return;
     }
@@ -404,21 +408,21 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, quadSelected: [], feedback: t.trainingFeedbackCleared });
-        setSession(advanced);
+        commitSession(advanced);
         setBuildState(EMPTY_BUILD);
         playAsset();
         kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       } else {
-        setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+        commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, quadSelected: [], attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
         setBuildState(EMPTY_BUILD);
         kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       }
       return;
     }
 
-    setSession({ ...prev, quadSelected: next, feedback: null });
+    commitSession({ ...prev, quadSelected: next, feedback: null });
     setBuildState({ mode: 'quad', selectiveFirst: null, selectiveCanConfirm: false, quadSelected: next, quadMax });
-  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
   const handleMiddleOrSelective = useCallback((gateId: GateId) => {
     const prev = sessionRef.current;
@@ -429,7 +433,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
     if (prev.selectiveFirst !== null) {
       if (prev.selectiveFirst === gateId) {
-        setSession({ ...prev, selectiveFirst: null, feedback: null });
+        commitSession({ ...prev, selectiveFirst: null, feedback: null });
         setBuildState(EMPTY_BUILD);
         return;
       }
@@ -440,12 +444,12 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       const expected = step.expected;
       if (validateMove(lastRecord, expected)) {
         const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-        setSession(advanced);
+        commitSession(advanced);
         setBuildState(EMPTY_BUILD);
         playAsset();
         kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
       } else {
-        setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+        commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
         setBuildState(EMPTY_BUILD);
         kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
       }
@@ -453,7 +457,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     }
 
     if (step.expected.build.type === 'selective') {
-      setSession({ ...prev, selectiveFirst: gateId, feedback: null });
+      commitSession({ ...prev, selectiveFirst: gateId, feedback: null });
       setBuildState({ mode: 'selective', selectiveFirst: gateId, selectiveCanConfirm: false, quadSelected: [], quadMax: 4 });
       return;
     }
@@ -464,25 +468,26 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const expected = step.expected;
     if (validateMove(lastRecord, expected)) {
       const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, gameState: nextState, snapshot: nextState, selectiveFirst: null, feedback: t.trainingFeedbackCleared });
-      setSession(advanced);
+      commitSession(advanced);
       setBuildState(EMPTY_BUILD);
       playAsset();
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
     } else {
-      setSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      commitSession({ ...prev, gameState: prev.snapshot, selectiveFirst: null, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
       setBuildState(EMPTY_BUILD);
       kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
     }
-  }, [t, playAsset, kpiTrackAttemptResult, advanceSession]);
+  }, [t, playAsset, kpiTrackAttemptResult, advanceSession, commitSession]);
 
   function handleRestartStep() {
-    setSession((prev) => ({
-      ...prev,
-      gameState: prev.snapshot,
+    const next = {
+      ...sessionRef.current,
+      gameState: sessionRef.current.snapshot,
       selectiveFirst: null,
       quadSelected: [],
       feedback: null,
-    }));
+    };
+    commitSession(next);
     setBuildState(EMPTY_BUILD);
   }
 
@@ -518,7 +523,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
         total_steps: totalUserMoves,
       });
     }
-    setSession(makeSession(task));
+    commitSession(makeSession(task));
     setBuildState(EMPTY_BUILD);
   }
 
