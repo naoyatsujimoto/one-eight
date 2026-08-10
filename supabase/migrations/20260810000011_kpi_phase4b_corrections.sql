@@ -1,0 +1,1321 @@
+-- =============================================================================
+-- 20260810000011_kpi_phase4b_corrections.sql
+-- KPI Phase 4-B Corrections: Run Canonicalization / effective_as_of / Grant fix
+--
+-- 修正点サマリー:
+--   A. authenticated GRANT 欠落 → 4 RPC に GRANT EXECUTE TO authenticated 追加
+--   B. Run Canonicalization 誤り → DISTINCT ON (run_id) で canonical_start を確定
+--   C. effective_as_of 境界 誤り → base_events に occurred_at < v_effective_as_of 追加
+--   D. completion_events_in_period 誤り → canonical run のみカウント
+--   E. Step Funnel: completed step 誤り → move_index + 1 で解決
+--   F. Step Funnel: active_incomplete 誤り → 最後に到達した step のみに帰属
+--   G. Daily RPC: 日付集合 誤り → start_day ∪ completion_day で UNION
+--   H. Task Summary: all_task_ids 内部除外 誤り → training_progress にも除外適用
+--   I. Step Funnel: continued_or_completed_runs に completed 未含 → UNION 追加
+--
+-- official_kpi_start_at: NULL 維持（変更SQL禁止）
+-- 戻り型変更なし → CREATE OR REPLACE FUNCTION
+-- raw ID / PII / 棋譜を返さない
+-- =============================================================================
+
+-- ---------------------------------------------------------------------------
+-- 1. admin_get_kpi_training_summary — 全体サマリー（修正版）
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.admin_get_kpi_training_summary(
+  p_from              TIMESTAMPTZ,
+  p_to                TIMESTAMPTZ,
+  p_timezone          TEXT    DEFAULT 'Asia/Tokyo',
+  p_include_internal  BOOLEAN DEFAULT false
+)
+RETURNS TABLE (
+  started_runs                          BIGINT,
+  unique_starters                       BIGINT,
+  completion_events_in_period           BIGINT,
+  cohort_completed_runs                 BIGINT,
+  cohort_completion_rate                NUMERIC,
+  eligible_for_abandonment_runs         BIGINT,
+  abandoned_runs                        BIGINT,
+  abandonment_rate                      NUMERIC,
+  active_incomplete_runs                BIGINT,
+  resumed_runs                          BIGINT,
+  attempt_events                        BIGINT,
+  incorrect_attempts                    BIGINT,
+  incorrect_rate                        NUMERIC,
+  hinted_runs                           BIGINT,
+  average_attempts_per_started_run      NUMERIC,
+  average_attempts_per_completed_run    NUMERIC,
+  average_elapsed_seconds               NUMERIC,
+  median_elapsed_seconds                NUMERIC,
+  p95_elapsed_seconds                   NUMERIC,
+  full_game_started_runs                BIGINT,
+  full_game_completed_runs              BIGINT,
+  individual_started_runs               BIGINT,
+  individual_completed_runs             BIGINT,
+  registered_users_first_completed_in_period BIGINT,
+  unknown_step_abandoned_runs           BIGINT,
+  orphan_training_events                BIGINT,
+  duplicate_started_runs                BIGINT,
+  duplicate_completed_runs              BIGINT,
+  invalid_training_run_id_events        BIGINT,
+  is_reference_period                   BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_official_start      TIMESTAMPTZ;
+  v_effective_from      TIMESTAMPTZ;
+  v_effective_as_of     TIMESTAMPTZ;
+  v_is_reference        BOOLEAN;
+BEGIN
+  PERFORM public._kpi_require_admin();
+
+  IF p_from IS NULL OR p_to IS NULL THEN
+    RAISE EXCEPTION 'p_from and p_to must not be NULL';
+  END IF;
+  IF p_from >= p_to THEN
+    RAISE EXCEPTION 'p_from must be before p_to';
+  END IF;
+  IF p_to - p_from > INTERVAL '366 days' THEN
+    RAISE EXCEPTION 'period too long (max 366 days)';
+  END IF;
+  BEGIN
+    PERFORM now() AT TIME ZONE p_timezone;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'invalid timezone: %', p_timezone;
+  END;
+
+  SELECT ks.official_kpi_start_at
+  INTO v_official_start
+  FROM public.kpi_settings ks
+  WHERE ks.id = 1;
+
+  v_is_reference    := (v_official_start IS NULL);
+  v_effective_from  := CASE WHEN v_official_start IS NOT NULL
+                        THEN GREATEST(p_from, v_official_start)
+                        ELSE p_from END;
+  v_effective_as_of := LEAST(p_to, now());
+
+  RETURN QUERY
+  WITH
+
+  -- [FIX-C] base_events: 状態判定用（occurred_at < v_effective_as_of に制限）
+  base_events AS (
+    SELECT
+      ke.id,
+      ke.occurred_at,
+      ke.event_name,
+      ke.user_id,
+      ke.anonymous_id,
+      ke.properties->>'training_run_id'  AS run_id,
+      ke.properties->>'task_id'          AS task_id,
+      ke.route
+    FROM public.kpi_events ke
+    WHERE ke.environment = 'production'
+      AND ke.event_name IN (
+        'training_started','training_step_reached','training_attempted',
+        'training_incorrect','training_hint_shown','training_step_advanced',
+        'training_resumed','training_completed'
+      )
+      AND (ke.properties->>'training_run_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      AND ke.occurred_at < v_effective_as_of  -- [FIX-C] effective_as_of 境界
+  ),
+
+  -- [FIX-B] canonical_start: run_id ごとに最初の training_started を1件に確定
+  canonical_start AS (
+    SELECT DISTINCT ON (be.run_id)
+      be.run_id,
+      be.task_id,
+      be.user_id,
+      be.anonymous_id,
+      be.occurred_at AS started_at,
+      be.route        AS start_route
+    FROM base_events be
+    WHERE be.event_name = 'training_started'
+    ORDER BY be.run_id, be.occurred_at ASC, be.id ASC
+  ),
+
+  -- [FIX-B] started_count_per_run: 重複started数を計測（diagnostic用）
+  started_count_per_run AS (
+    SELECT run_id, COUNT(*) AS started_count
+    FROM base_events
+    WHERE event_name = 'training_started'
+    GROUP BY run_id
+  ),
+
+  -- [FIX-B] cohort_runs: canonical_start ベース、internal除外はcanonical startの属性で判断
+  cohort_runs AS (
+    SELECT
+      cs.run_id,
+      cs.task_id,
+      cs.user_id,
+      cs.anonymous_id,
+      cs.started_at,
+      scp.started_count
+    FROM canonical_start cs
+    JOIN started_count_per_run scp USING (run_id)
+    WHERE cs.started_at >= v_effective_from
+      AND cs.started_at < p_to
+      -- [FIX-B] canonical startのrouteによるAI確認経路除外
+      AND COALESCE(cs.start_route, '') != '/ai-check-login'
+      -- [FIX-B] canonical startのuser_idでinternal除外
+      AND (p_include_internal OR cs.user_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.profiles pr
+        WHERE pr.id = cs.user_id
+          AND (
+            COALESCE(pr.is_admin, FALSE)
+            OR COALESCE(pr.is_internal_test_account, FALSE)
+            OR pr.internal_plan_override IS NOT NULL
+          )
+      ))
+  ),
+
+  -- training_completed（同一 run_id の最小 occurred_at）
+  completed_events AS (
+    SELECT
+      run_id,
+      MIN(occurred_at) AS completed_at,
+      COUNT(*) AS completed_count
+    FROM base_events
+    WHERE event_name = 'training_completed'
+    GROUP BY run_id
+  ),
+
+  -- 各 run の最後の training_* 活動時刻
+  last_activity AS (
+    SELECT run_id, MAX(occurred_at) AS last_at
+    FROM base_events
+    GROUP BY run_id
+  ),
+
+  -- training_resumed（同一 run_id に 1 件以上）
+  resumed_runs_set AS (
+    SELECT DISTINCT run_id
+    FROM base_events
+    WHERE event_name = 'training_resumed'
+  ),
+
+  -- cohort に対して completed / abandoned を決定
+  cohort_with_status AS (
+    SELECT
+      cr.run_id,
+      cr.task_id,
+      cr.user_id,
+      cr.anonymous_id,
+      cr.started_at,
+      cr.started_count,
+      ce.completed_at,
+      la.last_at AS last_activity_at,
+      CASE WHEN ce.completed_at IS NOT NULL
+             AND ce.completed_at < v_effective_as_of
+           THEN true ELSE false END AS is_completed,
+      CASE
+        WHEN ce.completed_at IS NOT NULL THEN false
+        WHEN cr.started_at > v_effective_as_of - INTERVAL '24 hours' THEN false
+        WHEN COALESCE(la.last_at, cr.started_at) > v_effective_as_of - INTERVAL '24 hours' THEN false
+        ELSE true
+      END AS is_abandoned
+    FROM cohort_runs cr
+    LEFT JOIN completed_events ce USING (run_id)
+    LEFT JOIN last_activity la USING (run_id)
+  ),
+
+  -- 最後に到達した step（abandoned 用）
+  last_step_reached AS (
+    SELECT DISTINCT ON (run_id)
+      run_id,
+      (properties->>'step')::INT AS step_num
+    FROM public.kpi_events ke
+    WHERE ke.environment = 'production'
+      AND ke.event_name = 'training_step_reached'
+      AND (ke.properties->>'training_run_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      AND (ke.properties->>'step') ~ '^[0-9]+$'
+    ORDER BY run_id, occurred_at DESC
+  ),
+
+  -- attempt イベント集計
+  attempt_agg AS (
+    SELECT
+      COUNT(*) AS total_attempts,
+      COUNT(*) FILTER (WHERE event_name = 'training_incorrect') AS incorrect_cnt
+    FROM base_events be
+    JOIN cohort_runs cr USING (run_id)
+    WHERE be.event_name IN ('training_attempted', 'training_incorrect')
+  ),
+
+  -- elapsed_seconds（completed run の properties.elapsed_seconds）
+  elapsed_agg AS (
+    SELECT
+      (ke.properties->>'elapsed_seconds')::NUMERIC AS elapsed_sec
+    FROM public.kpi_events ke
+    JOIN cohort_with_status cws ON cws.run_id = (ke.properties->>'training_run_id')
+    WHERE ke.environment = 'production'
+      AND ke.event_name = 'training_completed'
+      AND cws.is_completed
+      AND (ke.properties->>'elapsed_seconds') ~ '^[0-9]+(\.[0-9]+)?$'
+  ),
+
+  -- hinted runs（cohort 内）
+  hinted_agg AS (
+    SELECT COUNT(DISTINCT be.run_id) AS hinted_cnt
+    FROM base_events be
+    JOIN cohort_runs cr USING (run_id)
+    WHERE be.event_name = 'training_hint_shown'
+  ),
+
+  -- 登録ユーザー初回 task 完了（training_progress.completed_at が期間内）
+  reg_users_first_completed AS (
+    SELECT COUNT(DISTINCT tp.user_id) AS cnt
+    FROM public.training_progress tp
+    WHERE tp.completed_at >= v_effective_from
+      AND tp.completed_at < p_to
+      AND (p_include_internal OR NOT EXISTS (
+        SELECT 1 FROM public.profiles pr
+        WHERE pr.id = tp.user_id
+          AND (
+            COALESCE(pr.is_admin, FALSE)
+            OR COALESCE(pr.is_internal_test_account, FALSE)
+            OR pr.internal_plan_override IS NOT NULL
+          )
+      ))
+  ),
+
+  -- orphan events（canonical training_started なしの run_id）
+  orphan_agg AS (
+    SELECT COUNT(DISTINCT be.run_id) AS orphan_cnt
+    FROM base_events be
+    WHERE NOT EXISTS (
+      SELECT 1 FROM canonical_start cs WHERE cs.run_id = be.run_id
+    )
+  ),
+
+  -- invalid training_run_id events（時刻制限なし：全期間）
+  invalid_run_id_agg AS (
+    SELECT COUNT(*) AS invalid_cnt
+    FROM public.kpi_events ke
+    WHERE ke.environment = 'production'
+      AND ke.event_name IN (
+        'training_started','training_step_reached','training_attempted',
+        'training_incorrect','training_hint_shown','training_step_advanced',
+        'training_resumed','training_completed'
+      )
+      AND (
+        (ke.properties->>'training_run_id') IS NULL
+        OR (ke.properties->>'training_run_id') !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      )
+  )
+
+  SELECT
+    -- started_runs（cohort内のrun数）
+    (SELECT COUNT(*) FROM cohort_runs)::BIGINT,
+    -- unique_starters（PII なし：user_id または anonymous_id のユニーク数）
+    (SELECT COUNT(*) FROM (
+      SELECT COALESCE(cr.user_id::TEXT, cr.anonymous_id::TEXT) AS identity_key
+      FROM cohort_runs cr
+      GROUP BY COALESCE(cr.user_id::TEXT, cr.anonymous_id::TEXT)
+    ) u)::BIGINT,
+    -- [FIX-D] completion_events_in_period: canonical run のみ（orphan completedを除外）
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     WHERE be.event_name = 'training_completed'
+       AND be.occurred_at >= v_effective_from
+       AND be.occurred_at < v_effective_as_of
+       AND EXISTS (
+         SELECT 1 FROM canonical_start cs WHERE cs.run_id = be.run_id
+       )
+    )::BIGINT,
+    -- cohort_completed_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws WHERE cws.is_completed)::BIGINT,
+    -- cohort_completion_rate
+    CASE WHEN (SELECT COUNT(*) FROM cohort_runs) > 0
+      THEN ROUND((SELECT COUNT(*) FROM cohort_with_status WHERE is_completed)::NUMERIC
+                 / (SELECT COUNT(*) FROM cohort_runs) * 100, 2)
+      ELSE NULL END,
+    -- eligible_for_abandonment_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws
+     WHERE NOT cws.is_completed
+       AND cws.started_at <= v_effective_as_of - INTERVAL '24 hours')::BIGINT,
+    -- abandoned_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws WHERE cws.is_abandoned)::BIGINT,
+    -- abandonment_rate
+    CASE WHEN (SELECT COUNT(*) FROM cohort_with_status
+               WHERE NOT is_completed
+                 AND started_at <= v_effective_as_of - INTERVAL '24 hours') > 0
+      THEN ROUND((SELECT COUNT(*) FROM cohort_with_status WHERE is_abandoned)::NUMERIC
+                 / (SELECT COUNT(*) FROM cohort_with_status
+                    WHERE NOT is_completed
+                      AND started_at <= v_effective_as_of - INTERVAL '24 hours') * 100, 2)
+      ELSE NULL END,
+    -- active_incomplete_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws
+     WHERE NOT cws.is_completed AND NOT cws.is_abandoned)::BIGINT,
+    -- resumed_runs
+    (SELECT COUNT(DISTINCT rr.run_id) FROM resumed_runs_set rr
+     JOIN cohort_runs cr USING (run_id))::BIGINT,
+    -- attempt_events
+    (SELECT aa.total_attempts FROM attempt_agg aa),
+    -- incorrect_attempts
+    (SELECT aa.incorrect_cnt FROM attempt_agg aa),
+    -- incorrect_rate
+    CASE WHEN (SELECT aa.total_attempts FROM attempt_agg aa) > 0
+      THEN ROUND((SELECT aa.incorrect_cnt FROM attempt_agg aa)::NUMERIC
+                 / (SELECT aa.total_attempts FROM attempt_agg aa) * 100, 2)
+      ELSE NULL END,
+    -- hinted_runs
+    (SELECT ha.hinted_cnt FROM hinted_agg ha),
+    -- average_attempts_per_started_run
+    CASE WHEN (SELECT COUNT(*) FROM cohort_runs) > 0
+      THEN ROUND((SELECT aa.total_attempts FROM attempt_agg aa)::NUMERIC
+                 / (SELECT COUNT(*) FROM cohort_runs), 2)
+      ELSE NULL END,
+    -- average_attempts_per_completed_run
+    CASE WHEN (SELECT COUNT(*) FROM cohort_with_status WHERE is_completed) > 0
+      THEN ROUND((SELECT COUNT(*) FROM base_events be
+                  JOIN cohort_with_status cws USING (run_id)
+                  WHERE be.event_name = 'training_attempted' AND cws.is_completed)::NUMERIC
+                 / (SELECT COUNT(*) FROM cohort_with_status WHERE is_completed), 2)
+      ELSE NULL END,
+    -- average_elapsed_seconds
+    (SELECT ROUND(AVG(ea.elapsed_sec), 2) FROM elapsed_agg ea),
+    -- median_elapsed_seconds
+    (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY ea.elapsed_sec) FROM elapsed_agg ea),
+    -- p95_elapsed_seconds
+    (SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY ea.elapsed_sec) FROM elapsed_agg ea),
+    -- full_game_started_runs
+    (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id = 'full-game-v1')::BIGINT,
+    -- full_game_completed_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws WHERE cws.task_id = 'full-game-v1' AND cws.is_completed)::BIGINT,
+    -- individual_started_runs
+    (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id != 'full-game-v1')::BIGINT,
+    -- individual_completed_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws WHERE cws.task_id != 'full-game-v1' AND cws.is_completed)::BIGINT,
+    -- registered_users_first_completed_in_period
+    (SELECT rfc.cnt FROM reg_users_first_completed rfc),
+    -- unknown_step_abandoned_runs
+    (SELECT COUNT(*) FROM cohort_with_status cws
+     WHERE cws.is_abandoned
+       AND NOT EXISTS (
+         SELECT 1 FROM last_step_reached lsr WHERE lsr.run_id = cws.run_id
+       ))::BIGINT,
+    -- orphan_training_events
+    (SELECT oa.orphan_cnt FROM orphan_agg oa),
+    -- [FIX-B] duplicate_started_runs: run_id単位でstartedが2件以上
+    (SELECT COUNT(DISTINCT run_id) FROM started_count_per_run WHERE started_count > 1)::BIGINT,
+    -- duplicate_completed_runs
+    (SELECT COUNT(*) FROM completed_events ce WHERE ce.completed_count > 1)::BIGINT,
+    -- invalid_training_run_id_events
+    (SELECT ira.invalid_cnt FROM invalid_run_id_agg ira),
+    -- is_reference_period
+    v_is_reference;
+END;
+$$;
+
+-- [FIX-A] authenticated GRANT
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM anon;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_get_kpi_training_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN)
+  TO service_role, postgres, authenticated;
+
+COMMENT ON FUNCTION public.admin_get_kpi_training_summary IS
+  'KPI Phase 4-B Corrections: Training 全体サマリー。canonical run、effective_as_of境界、authenticated grant修正済み。';
+
+-- ---------------------------------------------------------------------------
+-- 2. admin_get_kpi_training_task_summary — task_id 別サマリー（修正版）
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.admin_get_kpi_training_task_summary(
+  p_from              TIMESTAMPTZ,
+  p_to                TIMESTAMPTZ,
+  p_timezone          TEXT    DEFAULT 'Asia/Tokyo',
+  p_include_internal  BOOLEAN DEFAULT false
+)
+RETURNS TABLE (
+  task_id                               TEXT,
+  training_kind                         TEXT,
+  started_runs                          BIGINT,
+  unique_starters                       BIGINT,
+  completion_events_in_period           BIGINT,
+  cohort_completed_runs                 BIGINT,
+  completion_rate                       NUMERIC,
+  eligible_for_abandonment_runs         BIGINT,
+  abandoned_runs                        BIGINT,
+  abandonment_rate                      NUMERIC,
+  active_incomplete_runs                BIGINT,
+  resumed_runs                          BIGINT,
+  attempt_events                        BIGINT,
+  incorrect_attempts                    BIGINT,
+  incorrect_rate                        NUMERIC,
+  hinted_runs                           BIGINT,
+  average_attempts_per_started_run      NUMERIC,
+  average_attempts_per_completed_run    NUMERIC,
+  average_elapsed_seconds               NUMERIC,
+  registered_users_first_completed_in_period BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_official_start  TIMESTAMPTZ;
+  v_effective_from  TIMESTAMPTZ;
+  v_effective_as_of TIMESTAMPTZ;
+BEGIN
+  PERFORM public._kpi_require_admin();
+
+  IF p_from IS NULL OR p_to IS NULL THEN
+    RAISE EXCEPTION 'p_from and p_to must not be NULL';
+  END IF;
+  IF p_from >= p_to THEN
+    RAISE EXCEPTION 'p_from must be before p_to';
+  END IF;
+  IF p_to - p_from > INTERVAL '366 days' THEN
+    RAISE EXCEPTION 'period too long (max 366 days)';
+  END IF;
+  BEGIN
+    PERFORM now() AT TIME ZONE p_timezone;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'invalid timezone: %', p_timezone;
+  END;
+
+  SELECT ks.official_kpi_start_at INTO v_official_start
+  FROM public.kpi_settings ks WHERE ks.id = 1;
+
+  v_effective_from  := CASE WHEN v_official_start IS NOT NULL
+                        THEN GREATEST(p_from, v_official_start)
+                        ELSE p_from END;
+  v_effective_as_of := LEAST(p_to, now());
+
+  RETURN QUERY
+  WITH
+
+  -- [FIX-C] base_events: occurred_at < v_effective_as_of
+  base_events AS (
+    SELECT
+      ke.id,
+      ke.occurred_at,
+      ke.event_name,
+      ke.user_id,
+      ke.anonymous_id,
+      ke.properties->>'training_run_id' AS run_id,
+      ke.properties->>'task_id'         AS task_id,
+      ke.route
+    FROM public.kpi_events ke
+    WHERE ke.environment = 'production'
+      AND ke.event_name IN (
+        'training_started','training_step_reached','training_attempted',
+        'training_incorrect','training_hint_shown','training_step_advanced',
+        'training_resumed','training_completed'
+      )
+      AND (ke.properties->>'training_run_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      AND ke.occurred_at < v_effective_as_of  -- [FIX-C]
+  ),
+
+  -- [FIX-B] canonical_start
+  canonical_start AS (
+    SELECT DISTINCT ON (be.run_id)
+      be.run_id,
+      be.task_id,
+      be.user_id,
+      be.anonymous_id,
+      be.occurred_at AS started_at,
+      be.route        AS start_route
+    FROM base_events be
+    WHERE be.event_name = 'training_started'
+    ORDER BY be.run_id, be.occurred_at ASC, be.id ASC
+  ),
+
+  -- [FIX-B] cohort_runs: canonical_start ベース + internal除外
+  cohort_runs AS (
+    SELECT
+      cs.run_id,
+      cs.task_id,
+      cs.user_id,
+      cs.anonymous_id,
+      cs.started_at
+    FROM canonical_start cs
+    WHERE cs.started_at >= v_effective_from
+      AND cs.started_at < p_to
+      AND COALESCE(cs.start_route, '') != '/ai-check-login'
+      AND (p_include_internal OR cs.user_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.profiles pr
+        WHERE pr.id = cs.user_id
+          AND (
+            COALESCE(pr.is_admin, FALSE)
+            OR COALESCE(pr.is_internal_test_account, FALSE)
+            OR pr.internal_plan_override IS NOT NULL
+          )
+      ))
+  ),
+
+  completed_events AS (
+    SELECT run_id, MIN(occurred_at) AS completed_at
+    FROM base_events
+    WHERE event_name = 'training_completed'
+    GROUP BY run_id
+  ),
+
+  last_activity AS (
+    SELECT run_id, MAX(occurred_at) AS last_at
+    FROM base_events GROUP BY run_id
+  ),
+
+  cohort_status AS (
+    SELECT
+      cr.run_id,
+      cr.task_id,
+      cr.user_id,
+      cr.anonymous_id,
+      cr.started_at,
+      ce.completed_at,
+      la.last_at AS last_activity_at,
+      CASE WHEN ce.completed_at IS NOT NULL AND ce.completed_at < v_effective_as_of
+           THEN true ELSE false END AS is_completed,
+      CASE
+        WHEN ce.completed_at IS NOT NULL THEN false
+        WHEN cr.started_at > v_effective_as_of - INTERVAL '24 hours' THEN false
+        WHEN COALESCE(la.last_at, cr.started_at) > v_effective_as_of - INTERVAL '24 hours' THEN false
+        ELSE true
+      END AS is_abandoned
+    FROM cohort_runs cr
+    LEFT JOIN completed_events ce USING (run_id)
+    LEFT JOIN last_activity la USING (run_id)
+  ),
+
+  -- [FIX-H] all_task_ids: training_progress にも internal 除外を適用
+  all_task_ids AS (
+    SELECT DISTINCT task_id FROM cohort_runs
+    UNION
+    SELECT DISTINCT tp.task_id FROM public.training_progress tp
+    WHERE tp.completed_at >= v_effective_from AND tp.completed_at < p_to
+      AND (p_include_internal OR NOT EXISTS (
+        SELECT 1 FROM public.profiles pr WHERE pr.id = tp.user_id
+          AND (
+            COALESCE(pr.is_admin, FALSE)
+            OR COALESCE(pr.is_internal_test_account, FALSE)
+            OR pr.internal_plan_override IS NOT NULL
+          )
+      ))
+  )
+
+  SELECT
+    ati.task_id,
+    CASE WHEN ati.task_id = 'full-game-v1' THEN 'full_game' ELSE 'individual' END AS training_kind,
+    -- started_runs
+    (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id = ati.task_id)::BIGINT,
+    -- unique_starters
+    (SELECT COUNT(*) FROM (
+       SELECT COALESCE(cr.user_id::TEXT, cr.anonymous_id::TEXT)
+       FROM cohort_runs cr WHERE cr.task_id = ati.task_id
+       GROUP BY COALESCE(cr.user_id::TEXT, cr.anonymous_id::TEXT)
+    ) u)::BIGINT,
+    -- [FIX-D] completion_events_in_period: canonical run のみ
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     WHERE be.event_name = 'training_completed'
+       AND be.occurred_at >= v_effective_from
+       AND be.occurred_at < v_effective_as_of
+       AND EXISTS (SELECT 1 FROM canonical_start cs WHERE cs.run_id = be.run_id AND cs.task_id = ati.task_id)
+    )::BIGINT,
+    -- cohort_completed_runs
+    (SELECT COUNT(*) FROM cohort_status cs WHERE cs.task_id = ati.task_id AND cs.is_completed)::BIGINT,
+    -- completion_rate
+    CASE WHEN (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id = ati.task_id) > 0
+      THEN ROUND(
+        (SELECT COUNT(*) FROM cohort_status cs WHERE cs.task_id = ati.task_id AND cs.is_completed)::NUMERIC
+        / (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id = ati.task_id) * 100, 2)
+      ELSE NULL END,
+    -- eligible_for_abandonment_runs
+    (SELECT COUNT(*) FROM cohort_status cs
+     WHERE cs.task_id = ati.task_id AND NOT cs.is_completed
+       AND cs.started_at <= v_effective_as_of - INTERVAL '24 hours')::BIGINT,
+    -- abandoned_runs
+    (SELECT COUNT(*) FROM cohort_status cs WHERE cs.task_id = ati.task_id AND cs.is_abandoned)::BIGINT,
+    -- abandonment_rate
+    CASE WHEN (SELECT COUNT(*) FROM cohort_status cs
+               WHERE cs.task_id = ati.task_id AND NOT cs.is_completed
+                 AND cs.started_at <= v_effective_as_of - INTERVAL '24 hours') > 0
+      THEN ROUND(
+        (SELECT COUNT(*) FROM cohort_status cs WHERE cs.task_id = ati.task_id AND cs.is_abandoned)::NUMERIC
+        / (SELECT COUNT(*) FROM cohort_status cs
+           WHERE cs.task_id = ati.task_id AND NOT cs.is_completed
+             AND cs.started_at <= v_effective_as_of - INTERVAL '24 hours') * 100, 2)
+      ELSE NULL END,
+    -- active_incomplete_runs
+    (SELECT COUNT(*) FROM cohort_status cs
+     WHERE cs.task_id = ati.task_id AND NOT cs.is_completed AND NOT cs.is_abandoned)::BIGINT,
+    -- resumed_runs
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     JOIN cohort_runs cr USING (run_id)
+     WHERE be.event_name = 'training_resumed' AND cr.task_id = ati.task_id)::BIGINT,
+    -- attempt_events
+    (SELECT COUNT(*)
+     FROM base_events be
+     JOIN cohort_runs cr USING (run_id)
+     WHERE be.event_name = 'training_attempted' AND cr.task_id = ati.task_id)::BIGINT,
+    -- incorrect_attempts
+    (SELECT COUNT(*)
+     FROM base_events be
+     JOIN cohort_runs cr USING (run_id)
+     WHERE be.event_name = 'training_incorrect' AND cr.task_id = ati.task_id)::BIGINT,
+    -- incorrect_rate
+    CASE WHEN (SELECT COUNT(*) FROM base_events be JOIN cohort_runs cr USING (run_id)
+               WHERE be.event_name = 'training_attempted' AND cr.task_id = ati.task_id) > 0
+      THEN ROUND(
+        (SELECT COUNT(*) FROM base_events be JOIN cohort_runs cr USING (run_id)
+         WHERE be.event_name = 'training_incorrect' AND cr.task_id = ati.task_id)::NUMERIC
+        / (SELECT COUNT(*) FROM base_events be JOIN cohort_runs cr USING (run_id)
+           WHERE be.event_name = 'training_attempted' AND cr.task_id = ati.task_id) * 100, 2)
+      ELSE NULL END,
+    -- hinted_runs
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     JOIN cohort_runs cr USING (run_id)
+     WHERE be.event_name = 'training_hint_shown' AND cr.task_id = ati.task_id)::BIGINT,
+    -- average_attempts_per_started_run
+    CASE WHEN (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id = ati.task_id) > 0
+      THEN ROUND(
+        (SELECT COUNT(*) FROM base_events be JOIN cohort_runs cr USING (run_id)
+         WHERE be.event_name = 'training_attempted' AND cr.task_id = ati.task_id)::NUMERIC
+        / (SELECT COUNT(*) FROM cohort_runs cr WHERE cr.task_id = ati.task_id), 2)
+      ELSE NULL END,
+    -- average_attempts_per_completed_run
+    CASE WHEN (SELECT COUNT(*) FROM cohort_status cs WHERE cs.task_id = ati.task_id AND cs.is_completed) > 0
+      THEN ROUND(
+        (SELECT COUNT(*) FROM base_events be JOIN cohort_status cs USING (run_id)
+         WHERE be.event_name = 'training_attempted' AND cs.task_id = ati.task_id AND cs.is_completed)::NUMERIC
+        / (SELECT COUNT(*) FROM cohort_status cs WHERE cs.task_id = ati.task_id AND cs.is_completed), 2)
+      ELSE NULL END,
+    -- average_elapsed_seconds
+    (SELECT ROUND(AVG((ke.properties->>'elapsed_seconds')::NUMERIC), 2)
+     FROM public.kpi_events ke
+     JOIN cohort_status cs ON cs.run_id = (ke.properties->>'training_run_id')
+     WHERE ke.environment = 'production'
+       AND ke.event_name = 'training_completed'
+       AND cs.task_id = ati.task_id
+       AND cs.is_completed
+       AND (ke.properties->>'elapsed_seconds') ~ '^[0-9]+(\.[0-9]+)?$'),
+    -- registered_users_first_completed_in_period
+    (SELECT COUNT(DISTINCT tp.user_id)
+     FROM public.training_progress tp
+     WHERE tp.task_id = ati.task_id
+       AND tp.completed_at >= v_effective_from
+       AND tp.completed_at < p_to
+       AND (p_include_internal OR NOT EXISTS (
+         SELECT 1 FROM public.profiles pr
+         WHERE pr.id = tp.user_id
+           AND (
+             COALESCE(pr.is_admin, FALSE)
+             OR COALESCE(pr.is_internal_test_account, FALSE)
+             OR pr.internal_plan_override IS NOT NULL
+           )
+       )))::BIGINT
+  FROM all_task_ids ati
+  ORDER BY ati.task_id;
+END;
+$$;
+
+-- [FIX-A] authenticated GRANT
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_task_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_task_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM anon;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_task_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_get_kpi_training_task_summary(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN)
+  TO service_role, postgres, authenticated;
+
+COMMENT ON FUNCTION public.admin_get_kpi_training_task_summary IS
+  'KPI Phase 4-B Corrections: task_id別 Training サマリー。canonical run、effective_as_of境界、all_task_ids internal除外、authenticated grant修正済み。';
+
+-- ---------------------------------------------------------------------------
+-- 3. admin_get_kpi_training_step_funnel — step 別ファンネル（修正版）
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.admin_get_kpi_training_step_funnel(
+  p_from              TIMESTAMPTZ,
+  p_to                TIMESTAMPTZ,
+  p_timezone          TEXT    DEFAULT 'Asia/Tokyo',
+  p_include_internal  BOOLEAN DEFAULT false
+)
+RETURNS TABLE (
+  task_id                     TEXT,
+  training_kind               TEXT,
+  move_id                     TEXT,
+  move_index                  INT,
+  step                        INT,
+  total_steps                 INT,
+  reached_runs                BIGINT,
+  attempted_runs              BIGINT,
+  attempt_events              BIGINT,
+  incorrect_runs              BIGINT,
+  incorrect_attempts          BIGINT,
+  hinted_runs                 BIGINT,
+  advanced_runs               BIGINT,
+  completed_runs_at_step      BIGINT,
+  continued_or_completed_runs BIGINT,
+  active_incomplete_runs      BIGINT,
+  abandoned_runs_at_step      BIGINT,
+  progression_rate            NUMERIC,
+  abandonment_rate_at_step    NUMERIC,
+  share_of_task_abandonments  NUMERIC
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_official_start  TIMESTAMPTZ;
+  v_effective_from  TIMESTAMPTZ;
+  v_effective_as_of TIMESTAMPTZ;
+BEGIN
+  PERFORM public._kpi_require_admin();
+
+  IF p_from IS NULL OR p_to IS NULL THEN
+    RAISE EXCEPTION 'p_from and p_to must not be NULL';
+  END IF;
+  IF p_from >= p_to THEN
+    RAISE EXCEPTION 'p_from must be before p_to';
+  END IF;
+  IF p_to - p_from > INTERVAL '366 days' THEN
+    RAISE EXCEPTION 'period too long (max 366 days)';
+  END IF;
+  BEGIN
+    PERFORM now() AT TIME ZONE p_timezone;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'invalid timezone: %', p_timezone;
+  END;
+
+  SELECT ks.official_kpi_start_at INTO v_official_start
+  FROM public.kpi_settings ks WHERE ks.id = 1;
+
+  v_effective_from  := CASE WHEN v_official_start IS NOT NULL
+                        THEN GREATEST(p_from, v_official_start)
+                        ELSE p_from END;
+  v_effective_as_of := LEAST(p_to, now());
+
+  RETURN QUERY
+  WITH
+
+  -- [FIX-C] base_events: occurred_at < v_effective_as_of、move_index追加
+  base_events AS (
+    SELECT
+      ke.id,
+      ke.occurred_at,
+      ke.event_name,
+      ke.user_id,
+      ke.properties->>'training_run_id' AS run_id,
+      ke.properties->>'task_id'         AS task_id,
+      ke.properties->>'step'            AS step_str,
+      ke.properties->>'move_id'         AS move_id,
+      ke.properties->>'move_index'      AS move_index_str,  -- [FIX-E]
+      ke.properties->>'total_steps'     AS total_steps_str,
+      ke.properties->>'from_step'       AS from_step_str,
+      ke.route
+    FROM public.kpi_events ke
+    WHERE ke.environment = 'production'
+      AND ke.event_name IN (
+        'training_started','training_step_reached','training_attempted',
+        'training_incorrect','training_hint_shown','training_step_advanced',
+        'training_resumed','training_completed'
+      )
+      AND (ke.properties->>'training_run_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      AND ke.occurred_at < v_effective_as_of  -- [FIX-C]
+  ),
+
+  -- [FIX-B] canonical_start
+  canonical_start AS (
+    SELECT DISTINCT ON (be.run_id)
+      be.run_id,
+      be.task_id,
+      be.user_id,
+      be.occurred_at AS started_at,
+      be.route        AS start_route
+    FROM base_events be
+    WHERE be.event_name = 'training_started'
+    ORDER BY be.run_id, be.occurred_at ASC, be.id ASC
+  ),
+
+  -- [FIX-B] cohort_runs: canonical_start ベース + internal除外
+  cohort_runs AS (
+    SELECT
+      cs.run_id,
+      cs.task_id,
+      cs.user_id,
+      cs.started_at
+    FROM canonical_start cs
+    WHERE cs.started_at >= v_effective_from
+      AND cs.started_at < p_to
+      AND COALESCE(cs.start_route, '') != '/ai-check-login'
+      AND (p_include_internal OR cs.user_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.profiles pr
+        WHERE pr.id = cs.user_id
+          AND (
+            COALESCE(pr.is_admin, FALSE)
+            OR COALESCE(pr.is_internal_test_account, FALSE)
+            OR pr.internal_plan_override IS NOT NULL
+          )
+      ))
+  ),
+
+  completed_events AS (
+    SELECT run_id, MIN(occurred_at) AS completed_at
+    FROM base_events WHERE event_name = 'training_completed'
+    GROUP BY run_id
+  ),
+
+  last_activity AS (
+    SELECT run_id, MAX(occurred_at) AS last_at
+    FROM base_events GROUP BY run_id
+  ),
+
+  abandoned_runs AS (
+    SELECT cr.run_id, cr.task_id
+    FROM cohort_runs cr
+    LEFT JOIN completed_events ce USING (run_id)
+    LEFT JOIN last_activity la USING (run_id)
+    WHERE ce.completed_at IS NULL
+      AND cr.started_at <= v_effective_as_of - INTERVAL '24 hours'
+      AND COALESCE(la.last_at, cr.started_at) <= v_effective_as_of - INTERVAL '24 hours'
+  ),
+
+  -- training_step_reached: canonical move_id / move_index / total_steps
+  step_reached_canonical AS (
+    SELECT DISTINCT ON (run_id, step_str)
+      run_id,
+      task_id,
+      step_str::INT                 AS step_num,
+      move_id,
+      CASE WHEN move_index_str ~ '^[0-9]+$' THEN move_index_str::INT ELSE NULL END AS move_index_val,
+      CASE WHEN total_steps_str ~ '^[0-9]+$' THEN total_steps_str::INT ELSE NULL END AS total_steps_val,
+      occurred_at
+    FROM base_events
+    WHERE event_name = 'training_step_reached'
+      AND step_str ~ '^[0-9]+$'
+    ORDER BY run_id, step_str, occurred_at ASC
+  ),
+
+  -- [FIX-E] completed_step: move_index + 1 でstepを解決
+  completed_step AS (
+    SELECT
+      be.run_id,
+      CASE
+        WHEN be.move_index_str ~ '^[0-9]+$'
+          THEN (be.move_index_str::INT + 1)
+        ELSE NULL
+      END AS step_num
+    FROM base_events be
+    WHERE be.event_name = 'training_completed'
+  ),
+
+  -- last step reached per abandoned run
+  last_step_per_abandoned AS (
+    SELECT DISTINCT ON (ar.run_id)
+      ar.run_id,
+      ar.task_id,
+      src.step_num
+    FROM abandoned_runs ar
+    JOIN step_reached_canonical src USING (run_id)
+    ORDER BY ar.run_id, src.step_num DESC
+  ),
+
+  -- task/step combinations（step_reached cohort）
+  task_steps AS (
+    SELECT DISTINCT
+      src.task_id,
+      src.step_num,
+      MIN(src.move_id) AS move_id,
+      MIN(src.move_index_val) AS move_index_val,
+      MIN(src.total_steps_val) AS total_steps_val
+    FROM step_reached_canonical src
+    JOIN cohort_runs cr USING (run_id)
+    GROUP BY src.task_id, src.step_num
+  ),
+
+  -- task total abandoned counts
+  task_total_abandoned AS (
+    SELECT task_id, COUNT(*) AS total_abandoned
+    FROM abandoned_runs GROUP BY task_id
+  ),
+
+  -- [FIX-F] active_runs: 完了・脱落以外
+  active_runs AS (
+    SELECT cr.run_id, cr.task_id
+    FROM cohort_runs cr
+    LEFT JOIN completed_events ce USING (run_id)
+    LEFT JOIN abandoned_runs ar USING (run_id)
+    WHERE ce.run_id IS NULL AND ar.run_id IS NULL
+  ),
+
+  -- [FIX-F] last_step_active: active runの最後に到達したstep
+  last_step_active AS (
+    SELECT DISTINCT ON (ar.run_id)
+      ar.run_id,
+      ar.task_id,
+      src.step_num
+    FROM active_runs ar
+    JOIN step_reached_canonical src USING (run_id)
+    ORDER BY ar.run_id, src.step_num DESC, src.occurred_at DESC
+  )
+
+  SELECT
+    ts.task_id,
+    CASE WHEN ts.task_id = 'full-game-v1' THEN 'full_game' ELSE 'individual' END,
+    ts.move_id,
+    ts.move_index_val,
+    ts.step_num,
+    ts.total_steps_val,
+    -- reached_runs
+    (SELECT COUNT(DISTINCT src2.run_id)
+     FROM step_reached_canonical src2
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE src2.task_id = ts.task_id AND src2.step_num = ts.step_num)::BIGINT,
+    -- attempted_runs
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE be.event_name = 'training_attempted'
+       AND cr2.task_id = ts.task_id
+       AND be.step_str = ts.step_num::TEXT)::BIGINT,
+    -- attempt_events
+    (SELECT COUNT(*)
+     FROM base_events be
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE be.event_name = 'training_attempted'
+       AND cr2.task_id = ts.task_id
+       AND be.step_str = ts.step_num::TEXT)::BIGINT,
+    -- incorrect_runs
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE be.event_name = 'training_incorrect'
+       AND cr2.task_id = ts.task_id
+       AND be.step_str = ts.step_num::TEXT)::BIGINT,
+    -- incorrect_attempts
+    (SELECT COUNT(*)
+     FROM base_events be
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE be.event_name = 'training_incorrect'
+       AND cr2.task_id = ts.task_id
+       AND be.step_str = ts.step_num::TEXT)::BIGINT,
+    -- hinted_runs
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE be.event_name = 'training_hint_shown'
+       AND cr2.task_id = ts.task_id
+       AND be.step_str = ts.step_num::TEXT)::BIGINT,
+    -- advanced_runs（from_step = this step）
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE be.event_name = 'training_step_advanced'
+       AND cr2.task_id = ts.task_id
+       AND be.from_step_str = ts.step_num::TEXT)::BIGINT,
+    -- [FIX-E] completed_runs_at_step: move_index+1で解決
+    (SELECT COUNT(DISTINCT cs2.run_id)
+     FROM completed_step cs2
+     JOIN cohort_runs cr2 USING (run_id)
+     WHERE cs2.step_num = ts.step_num
+       AND cr2.task_id = ts.task_id)::BIGINT,
+    -- [FIX-I] continued_or_completed_runs: advanced UNION completed（最終stepで必ずcompletedを含む）
+    (SELECT COUNT(*) FROM (
+      SELECT be.run_id FROM base_events be JOIN cohort_runs cr2 USING (run_id)
+      WHERE be.event_name = 'training_step_advanced'
+        AND cr2.task_id = ts.task_id AND be.from_step_str = ts.step_num::TEXT
+      UNION
+      SELECT cs2.run_id FROM completed_step cs2
+      JOIN cohort_runs cr2 USING (run_id)
+      WHERE cs2.step_num = ts.step_num AND cr2.task_id = ts.task_id
+    ) cont)::BIGINT,
+    -- [FIX-F] active_incomplete_runs: 最後に到達したstepのみに帰属
+    (SELECT COUNT(*)
+     FROM last_step_active lsa
+     WHERE lsa.task_id = ts.task_id AND lsa.step_num = ts.step_num)::BIGINT,
+    -- abandoned_runs_at_step
+    (SELECT COUNT(*)
+     FROM last_step_per_abandoned lspa
+     WHERE lspa.task_id = ts.task_id AND lspa.step_num = ts.step_num)::BIGINT,
+    -- progression_rate
+    CASE WHEN (
+      SELECT COUNT(DISTINCT src2.run_id) FROM step_reached_canonical src2
+      JOIN cohort_runs cr2 USING (run_id)
+      WHERE src2.task_id = ts.task_id AND src2.step_num = ts.step_num
+    ) > 0
+    THEN ROUND(
+      (SELECT COUNT(*) FROM (
+        SELECT be.run_id FROM base_events be JOIN cohort_runs cr2 USING (run_id)
+        WHERE be.event_name = 'training_step_advanced' AND cr2.task_id = ts.task_id AND be.from_step_str = ts.step_num::TEXT
+        UNION
+        SELECT cs2.run_id FROM completed_step cs2 JOIN cohort_runs cr2 USING (run_id)
+        WHERE cs2.step_num = ts.step_num AND cr2.task_id = ts.task_id
+      ) cont)::NUMERIC
+      / (SELECT COUNT(DISTINCT src2.run_id) FROM step_reached_canonical src2
+         JOIN cohort_runs cr2 USING (run_id)
+         WHERE src2.task_id = ts.task_id AND src2.step_num = ts.step_num) * 100, 2)
+    ELSE NULL END,
+    -- abandonment_rate_at_step
+    CASE WHEN (
+      SELECT COUNT(DISTINCT src2.run_id) FROM step_reached_canonical src2
+      JOIN cohort_runs cr2 USING (run_id)
+      WHERE src2.task_id = ts.task_id AND src2.step_num = ts.step_num
+    ) > 0
+    THEN ROUND(
+      (SELECT COUNT(*) FROM last_step_per_abandoned lspa
+       WHERE lspa.task_id = ts.task_id AND lspa.step_num = ts.step_num)::NUMERIC
+      / (SELECT COUNT(DISTINCT src2.run_id) FROM step_reached_canonical src2
+         JOIN cohort_runs cr2 USING (run_id)
+         WHERE src2.task_id = ts.task_id AND src2.step_num = ts.step_num) * 100, 2)
+    ELSE NULL END,
+    -- share_of_task_abandonments
+    CASE WHEN (SELECT tta.total_abandoned FROM task_total_abandoned tta WHERE tta.task_id = ts.task_id) > 0
+    THEN ROUND(
+      (SELECT COUNT(*) FROM last_step_per_abandoned lspa
+       WHERE lspa.task_id = ts.task_id AND lspa.step_num = ts.step_num)::NUMERIC
+      / (SELECT tta.total_abandoned FROM task_total_abandoned tta WHERE tta.task_id = ts.task_id) * 100, 2)
+    ELSE NULL END
+  FROM task_steps ts
+  ORDER BY ts.task_id, ts.step_num;
+END;
+$$;
+
+-- [FIX-A] authenticated GRANT
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_step_funnel(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_step_funnel(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM anon;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_step_funnel(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_get_kpi_training_step_funnel(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN)
+  TO service_role, postgres, authenticated;
+
+COMMENT ON FUNCTION public.admin_get_kpi_training_step_funnel IS
+  'KPI Phase 4-B Corrections: step別ファンネル。completed step=move_index+1、active_incomplete=最後のstepのみ、continued_or_completed=advanced∪completed、authenticated grant修正済み。';
+
+-- ---------------------------------------------------------------------------
+-- 4. admin_get_kpi_training_daily — 日次集計（修正版）
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.admin_get_kpi_training_daily(
+  p_from              TIMESTAMPTZ,
+  p_to                TIMESTAMPTZ,
+  p_timezone          TEXT    DEFAULT 'Asia/Tokyo',
+  p_include_internal  BOOLEAN DEFAULT false
+)
+RETURNS TABLE (
+  day                      DATE,
+  started_runs             BIGINT,
+  unique_starters          BIGINT,
+  completion_events        BIGINT,
+  cohort_completed_runs    BIGINT,
+  abandoned_runs           BIGINT,
+  attempt_events           BIGINT,
+  incorrect_attempts       BIGINT,
+  hinted_runs              BIGINT,
+  full_game_started_runs   BIGINT,
+  individual_started_runs  BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_official_start  TIMESTAMPTZ;
+  v_effective_from  TIMESTAMPTZ;
+  v_effective_as_of TIMESTAMPTZ;
+BEGIN
+  PERFORM public._kpi_require_admin();
+
+  IF p_from IS NULL OR p_to IS NULL THEN
+    RAISE EXCEPTION 'p_from and p_to must not be NULL';
+  END IF;
+  IF p_from >= p_to THEN
+    RAISE EXCEPTION 'p_from must be before p_to';
+  END IF;
+  IF p_to - p_from > INTERVAL '366 days' THEN
+    RAISE EXCEPTION 'period too long (max 366 days)';
+  END IF;
+  BEGIN
+    PERFORM now() AT TIME ZONE p_timezone;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'invalid timezone: %', p_timezone;
+  END;
+
+  SELECT ks.official_kpi_start_at INTO v_official_start
+  FROM public.kpi_settings ks WHERE ks.id = 1;
+
+  v_effective_from  := CASE WHEN v_official_start IS NOT NULL
+                        THEN GREATEST(p_from, v_official_start)
+                        ELSE p_from END;
+  v_effective_as_of := LEAST(p_to, now());
+
+  RETURN QUERY
+  WITH
+
+  -- [FIX-C] base_events: occurred_at < v_effective_as_of
+  base_events AS (
+    SELECT
+      ke.id,
+      ke.occurred_at,
+      ke.event_name,
+      ke.user_id,
+      ke.anonymous_id,
+      ke.properties->>'training_run_id' AS run_id,
+      ke.properties->>'task_id'         AS task_id,
+      ke.route
+    FROM public.kpi_events ke
+    WHERE ke.environment = 'production'
+      AND ke.event_name IN (
+        'training_started','training_step_reached','training_attempted',
+        'training_incorrect','training_hint_shown','training_step_advanced',
+        'training_resumed','training_completed'
+      )
+      AND (ke.properties->>'training_run_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      AND ke.occurred_at < v_effective_as_of  -- [FIX-C]
+  ),
+
+  -- [FIX-B] canonical_start
+  canonical_start AS (
+    SELECT DISTINCT ON (be.run_id)
+      be.run_id,
+      be.task_id,
+      be.user_id,
+      be.anonymous_id,
+      be.occurred_at AS started_at,
+      be.route        AS start_route
+    FROM base_events be
+    WHERE be.event_name = 'training_started'
+    ORDER BY be.run_id, be.occurred_at ASC, be.id ASC
+  ),
+
+  -- run starts（canonical）
+  run_starts AS (
+    SELECT
+      cs.run_id,
+      cs.task_id,
+      cs.user_id,
+      cs.anonymous_id,
+      cs.started_at
+    FROM canonical_start cs
+    WHERE COALESCE(cs.start_route, '') != '/ai-check-login'
+      AND (p_include_internal OR cs.user_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM public.profiles pr
+        WHERE pr.id = cs.user_id
+          AND (
+            COALESCE(pr.is_admin, FALSE)
+            OR COALESCE(pr.is_internal_test_account, FALSE)
+            OR pr.internal_plan_override IS NOT NULL
+          )
+      ))
+  ),
+
+  -- cohort（started_at が effective_from〜p_to）
+  cohort_starts AS (
+    SELECT
+      rs.run_id,
+      rs.task_id,
+      rs.user_id,
+      rs.anonymous_id,
+      rs.started_at,
+      (rs.started_at AT TIME ZONE p_timezone)::DATE AS start_day
+    FROM run_starts rs
+    WHERE rs.started_at >= v_effective_from AND rs.started_at < p_to
+  ),
+
+  -- completed events（effective_from〜effective_as_of、canonical runのみ）
+  completed_runs AS (
+    SELECT
+      be.run_id,
+      MIN(be.occurred_at) AS completed_at,
+      (MIN(be.occurred_at) AT TIME ZONE p_timezone)::DATE AS complete_day
+    FROM base_events be
+    WHERE be.event_name = 'training_completed'
+      AND EXISTS (SELECT 1 FROM canonical_start cs WHERE cs.run_id = be.run_id)
+    GROUP BY be.run_id
+  ),
+
+  last_activity AS (
+    SELECT run_id, MAX(occurred_at) AS last_at
+    FROM base_events GROUP BY run_id
+  ),
+
+  abandoned_cohort AS (
+    SELECT cs.run_id, cs.start_day
+    FROM cohort_starts cs
+    LEFT JOIN completed_runs cr USING (run_id)
+    LEFT JOIN last_activity la USING (run_id)
+    WHERE cr.completed_at IS NULL
+      AND cs.started_at <= v_effective_as_of - INTERVAL '24 hours'
+      AND COALESCE(la.last_at, cs.started_at) <= v_effective_as_of - INTERVAL '24 hours'
+  ),
+
+  cohort_completed AS (
+    SELECT cs.run_id, cs.start_day
+    FROM cohort_starts cs
+    JOIN completed_runs cr USING (run_id)
+    WHERE cr.completed_at < v_effective_as_of
+  ),
+
+  -- [FIX-G] all_days: start_day ∪ completion_day の UNION
+  all_days AS (
+    SELECT DISTINCT (started_at AT TIME ZONE p_timezone)::DATE AS day
+    FROM run_starts
+    WHERE started_at >= v_effective_from AND started_at < p_to
+    UNION
+    SELECT DISTINCT (occurred_at AT TIME ZONE p_timezone)::DATE AS day
+    FROM base_events
+    WHERE event_name = 'training_completed'
+      AND occurred_at >= v_effective_from
+      AND occurred_at < v_effective_as_of
+      AND EXISTS (SELECT 1 FROM canonical_start cs WHERE cs.run_id = base_events.run_id)
+  )
+
+  -- [FIX-G] all_days を起点にLEFT JOINで集計
+  SELECT
+    ad.day,
+    -- started_runs
+    COUNT(DISTINCT cs.run_id)::BIGINT AS started_runs,
+    -- unique_starters
+    COUNT(DISTINCT COALESCE(cs.user_id::TEXT, cs.anonymous_id::TEXT))::BIGINT AS unique_starters,
+    -- completion_events（完了日が ad.day の distinct run 数）
+    (SELECT COUNT(DISTINCT cr2.run_id)
+     FROM completed_runs cr2
+     WHERE cr2.complete_day = ad.day)::BIGINT AS completion_events,
+    -- cohort_completed_runs（start_dayが同日のrun完了数）
+    COUNT(DISTINCT cc.run_id)::BIGINT AS cohort_completed_runs,
+    -- abandoned_runs
+    COUNT(DISTINCT ac.run_id)::BIGINT AS abandoned_runs,
+    -- attempt_events
+    (SELECT COUNT(*)
+     FROM base_events be
+     WHERE be.event_name = 'training_attempted'
+       AND be.run_id IN (SELECT cs2.run_id FROM cohort_starts cs2 WHERE cs2.start_day = ad.day))::BIGINT AS attempt_events,
+    -- incorrect_attempts
+    (SELECT COUNT(*)
+     FROM base_events be
+     WHERE be.event_name = 'training_incorrect'
+       AND be.run_id IN (SELECT cs2.run_id FROM cohort_starts cs2 WHERE cs2.start_day = ad.day))::BIGINT AS incorrect_attempts,
+    -- hinted_runs
+    (SELECT COUNT(DISTINCT be.run_id)
+     FROM base_events be
+     WHERE be.event_name = 'training_hint_shown'
+       AND be.run_id IN (SELECT cs2.run_id FROM cohort_starts cs2 WHERE cs2.start_day = ad.day))::BIGINT AS hinted_runs,
+    -- full_game_started_runs
+    COUNT(DISTINCT CASE WHEN cs.task_id = 'full-game-v1' THEN cs.run_id END)::BIGINT AS full_game_started_runs,
+    -- individual_started_runs
+    COUNT(DISTINCT CASE WHEN cs.task_id != 'full-game-v1' THEN cs.run_id END)::BIGINT AS individual_started_runs
+  FROM all_days ad
+  LEFT JOIN cohort_starts cs ON cs.start_day = ad.day
+  LEFT JOIN cohort_completed cc ON cc.run_id = cs.run_id
+  LEFT JOIN abandoned_cohort ac ON ac.run_id = cs.run_id
+  GROUP BY ad.day
+  ORDER BY ad.day;
+END;
+$$;
+
+-- [FIX-A] authenticated GRANT
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_daily(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_daily(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM anon;
+REVOKE ALL ON FUNCTION public.admin_get_kpi_training_daily(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_get_kpi_training_daily(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, BOOLEAN)
+  TO service_role, postgres, authenticated;
+
+COMMENT ON FUNCTION public.admin_get_kpi_training_daily IS
+  'KPI Phase 4-B Corrections: 日次集計。日付集合=start∪completion UNION、effective_as_of境界、authenticated grant修正済み。';
