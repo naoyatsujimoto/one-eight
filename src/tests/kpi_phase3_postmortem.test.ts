@@ -314,4 +314,65 @@ describe('KPI Phase 3 — Postmortem', () => {
     expect(sql).not.toContain('display_name');
     expect(sql).not.toContain('email');
   });
+
+  it('11. migration 20260811000001 が存在する', () => {
+    expect(
+      existsSync(join(MIGRATIONS_DIR, '20260811000001_kpi_postmortem_percentile_type_fix.sql'))
+    ).toBe(true);
+  });
+
+  it('12. median/p95 の percentile_cont に ::NUMERIC キャストがある', () => {
+    const sql = readMigration('20260811000001_kpi_postmortem_percentile_type_fix.sql');
+    expect(sql).toMatch(/percentile_cont\(0\.5\)[\s\S]*?::NUMERIC/);
+    expect(sql).toMatch(/percentile_cont\(0\.95\)[\s\S]*?::NUMERIC/);
+  });
+
+  it('13. RETURNS TABLE 列順が従来と同じ（19列）', () => {
+    const sql = readMigration('20260811000001_kpi_postmortem_percentile_type_fix.sql');
+    const columns = [
+      'started',
+      'completed',
+      'failed',
+      'refreshed',
+      'candidates_opened',
+      'completion_rate',
+      'failure_rate',
+      'average_elapsed_seconds',
+      'median_elapsed_seconds',
+      'p95_elapsed_seconds',
+      'online_mode_count',
+      'official_mode_count',
+      'arena_mode_count',
+      'cpu_mode_count',
+      'unknown_mode_count',
+      'rpc_error_count',
+      'worker_error_count',
+      'parse_error_count',
+      'unknown_error_count',
+    ];
+    const returnsTableMatch = sql.match(/RETURNS TABLE \([\s\S]*?\)\s*LANGUAGE/);
+    expect(returnsTableMatch).not.toBeNull();
+    const returnsTableBlock = returnsTableMatch![0];
+    for (const col of columns) {
+      expect(returnsTableBlock).toContain(col);
+    }
+    // 19列すべてが順番に存在することを確認
+    let lastIdx = -1;
+    for (const col of columns) {
+      const idx = returnsTableBlock.indexOf(col);
+      expect(idx).toBeGreaterThan(lastIdx);
+      lastIdx = idx;
+    }
+  });
+
+  it('14. Admin guard と権限維持', () => {
+    const sql = readMigration('20260811000001_kpi_postmortem_percentile_type_fix.sql');
+    expect(sql).toContain('_kpi_require_admin()');
+    expect(sql).toContain('SECURITY DEFINER');
+    expect(sql).toContain('REVOKE ALL');
+    expect(sql).toMatch(/FROM PUBLIC.*anon|FROM PUBLIC,\s*anon/);
+    expect(sql).toContain('GRANT EXECUTE');
+    expect(sql).toContain('TO authenticated');
+    expect(sql).toContain('TO service_role');
+  });
 });
