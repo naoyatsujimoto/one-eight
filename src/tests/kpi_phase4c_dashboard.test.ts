@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { KpiArenaFunnelRow } from '../lib/kpiAdmin';
 
 // ---------------------------------------------------------------------------
 // テスト 1: AdminSubScreen型に 'kpi_dashboard' が含まれる
@@ -558,5 +559,145 @@ describe('[Phase4C] テスト9: Admin以外への公開導線確認', () => {
     // onBackを受け取って使用する
     expect(src).toContain('onBack: () => void');
     expect(src).toContain('onClick={onBack}');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// テスト 10: KpiArenaFunnelRow の全14列と画面表示確認
+// ---------------------------------------------------------------------------
+
+describe('[Phase4C] テスト10: KpiArenaFunnelRow 全14列と Arena Funnel表示', () => {
+  it('KpiArenaFunnelRow が arena_code を持つ', async () => {
+    const mod = await import('../lib/kpiAdmin');
+    const row: KpiArenaFunnelRow = {
+      arena_code: 'TEST',
+      arena_event_id: 1,
+      scheduled_at: '2025-01-01T00:00:00Z',
+      entries: 10,
+      unique_entrants: 8,
+      matched_users: 6,
+      assigned_matches: 3,
+      started_matches: 3,
+      completed_matches: 2,
+      no_show_matches: 1,
+      no_contest_matches: 0,
+      entry_to_match_rate: 0.6,
+      match_completion_rate: 0.667,
+      no_show_rate: 0.333,
+    };
+    expect(row.arena_code).toBe('TEST');
+  });
+
+  it('KpiArenaFunnelRow が全14列を持つ（型チェック）', async () => {
+    const mod = await import('../lib/kpiAdmin');
+    const row: KpiArenaFunnelRow = {
+      arena_code: 'A1',
+      arena_event_id: 42,
+      scheduled_at: '2025-06-01T18:00:00Z',
+      entries: 20,
+      unique_entrants: 16,
+      matched_users: 12,
+      assigned_matches: 6,
+      started_matches: 6,
+      completed_matches: 5,
+      no_show_matches: 1,
+      no_contest_matches: 0,
+      entry_to_match_rate: 0.75,
+      match_completion_rate: 0.833,
+      no_show_rate: 0.167,
+    };
+    const keys: (keyof KpiArenaFunnelRow)[] = [
+      'arena_code', 'arena_event_id', 'scheduled_at',
+      'entries', 'unique_entrants', 'matched_users',
+      'assigned_matches', 'started_matches', 'completed_matches',
+      'no_show_matches', 'no_contest_matches',
+      'entry_to_match_rate', 'match_completion_rate', 'no_show_rate',
+    ];
+    expect(keys.length).toBe(14);
+    for (const k of keys) {
+      expect(Object.prototype.hasOwnProperty.call(row, k)).toBe(true);
+    }
+  });
+
+  it('AdminKpiDashboard.tsx に arena_code 列の表示がある', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('r.arena_code');
+    expect(src).toContain('<th>Arena</th>');
+  });
+
+  it('AdminKpiDashboard.tsx に scheduled_at 列の表示がある', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('r.scheduled_at');
+    expect(src).toContain('<th>Scheduled At</th>');
+  });
+
+  it('AdminKpiDashboard.tsx に entries / unique_entrants / matched_users の表示がある', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('r.entries');
+    expect(src).toContain('<th>Entries</th>');
+    expect(src).toContain('r.unique_entrants');
+    expect(src).toContain('<th>Unique Entrants</th>');
+    expect(src).toContain('r.matched_users');
+    expect(src).toContain('<th>Matched Users</th>');
+  });
+
+  it('AdminKpiDashboard.tsx に no_show_matches / no_contest_matches の表示がある', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('r.no_show_matches');
+    expect(src).toContain('<th>No-show</th>');
+    expect(src).toContain('r.no_contest_matches');
+    expect(src).toContain('<th>No Contest</th>');
+  });
+
+  it('AdminKpiDashboard.tsx に entry_to_match_rate / no_show_rate が fmtPct で表示される', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    expect(src).toContain('fmtPct(r.entry_to_match_rate)');
+    expect(src).toContain('<th>Entry to Match Rate</th>');
+    expect(src).toContain('fmtPct(r.no_show_rate)');
+    expect(src).toContain('<th>No-show Rate</th>');
+  });
+
+  it('AdminKpiDashboard.tsx の Arena Funnel 表は arena_event_id を補助情報として小さく表示する', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../components/AdminKpiDashboard.tsx');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    // arena_event_id は補助表示（spanで表示）
+    expect(src).toContain('r.arena_event_id');
+    // 主要ヘッダは "Arena" (arena_code 主役)
+    expect(src).not.toContain('<th>Arena Event ID</th>');
+  });
+
+  it('kpiAdmin.ts の KpiArenaFunnelRow に旧5列から外れた列が削除されていない（全14列が揃っている）', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(__dirname, '../lib/kpiAdmin.ts');
+    const src = fs.readFileSync(filePath, 'utf-8');
+    const requiredFields = [
+      'arena_code', 'arena_event_id', 'scheduled_at',
+      'entries', 'unique_entrants', 'matched_users',
+      'assigned_matches', 'started_matches', 'completed_matches',
+      'no_show_matches', 'no_contest_matches',
+      'entry_to_match_rate', 'match_completion_rate', 'no_show_rate',
+    ];
+    for (const field of requiredFields) {
+      expect(src).toContain(field);
+    }
+    expect(requiredFields.length).toBe(14);
   });
 });

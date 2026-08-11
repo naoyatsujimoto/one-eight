@@ -141,11 +141,20 @@ export async function adminGetKpiMatchDaily(params: KpiAdminParams) {
 // ---------------------------------------------------------------------------
 
 export interface KpiArenaFunnelRow {
+  arena_code: unknown;
   arena_event_id: unknown;
+  scheduled_at: unknown;
+  entries: unknown;
+  unique_entrants: unknown;
+  matched_users: unknown;
+  assigned_matches: unknown;
   started_matches: unknown;
   completed_matches: unknown;
-  assigned_matches: unknown;
+  no_show_matches: unknown;
+  no_contest_matches: unknown;
+  entry_to_match_rate: unknown;
   match_completion_rate: unknown;
+  no_show_rate: unknown;
 }
 
 export async function adminGetKpiArenaFunnel(params: KpiAdminParams) {

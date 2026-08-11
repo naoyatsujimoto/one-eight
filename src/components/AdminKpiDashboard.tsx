@@ -255,21 +255,42 @@ function SectionArenaFunnel({
             <table className="kpi-table">
               <thead>
                 <tr>
-                  <th>Arena Event ID</th>
+                  <th>Arena</th>
+                  <th>Scheduled At</th>
+                  <th>Entries</th>
+                  <th>Unique Entrants</th>
+                  <th>Matched Users</th>
+                  <th>Assigned Matches</th>
                   <th>Started</th>
                   <th>Completed</th>
-                  <th>Assigned</th>
-                  <th>Completion Rate</th>
+                  <th>No-show</th>
+                  <th>No Contest</th>
+                  <th>Entry to Match Rate</th>
+                  <th>Match Completion Rate</th>
+                  <th>No-show Rate</th>
                 </tr>
               </thead>
               <tbody>
                 {data.map((r, i) => (
                   <tr key={i}>
-                    <td>{String(r.arena_event_id ?? '—')}</td>
+                    <td>
+                      {String(r.arena_code ?? '—')}
+                      {r.arena_event_id !== null && r.arena_event_id !== undefined && (
+                        <span style={{ fontSize: '0.75em', color: '#888', marginLeft: '0.4em' }}>({String(r.arena_event_id)})</span>
+                      )}
+                    </td>
+                    <td>{String(r.scheduled_at ?? '—')}</td>
+                    <td>{displayValue(r.entries)}</td>
+                    <td>{displayValue(r.unique_entrants)}</td>
+                    <td>{displayValue(r.matched_users)}</td>
+                    <td>{displayValue(r.assigned_matches)}</td>
                     <td>{displayValue(r.started_matches)}</td>
                     <td>{displayValue(r.completed_matches)}</td>
-                    <td>{displayValue(r.assigned_matches)}</td>
+                    <td>{displayValue(r.no_show_matches)}</td>
+                    <td>{displayValue(r.no_contest_matches)}</td>
+                    <td>{r.entry_to_match_rate !== null && r.entry_to_match_rate !== undefined ? fmtPct(r.entry_to_match_rate) : '—'}</td>
                     <td>{r.match_completion_rate !== null && r.match_completion_rate !== undefined ? fmtPct(r.match_completion_rate) : '—'}</td>
+                    <td>{r.no_show_rate !== null && r.no_show_rate !== undefined ? fmtPct(r.no_show_rate) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
