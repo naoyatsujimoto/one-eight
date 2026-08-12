@@ -375,6 +375,20 @@ export async function flushNow(): Promise<void> {
 }
 
 /**
+ * OEJ 離脱時の best-effort 即時 flush。
+ * 通常の track() / flushNow() の動作は変更しない。
+ * navigationをブロックしないため、Promise を返すが呼び出し側は await しなくてよい。
+ */
+export function flushForNavigation(): void {
+  if (_batchTimer !== null) {
+    clearTimeout(_batchTimer);
+    _batchTimer = null;
+  }
+  // best-effort: fire and forget
+  flushQueue().catch(() => {});
+}
+
+/**
  * 初期化状態を返す（テスト用）
  */
 export function isTrackerInitialized(): boolean {
