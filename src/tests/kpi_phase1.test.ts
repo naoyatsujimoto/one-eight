@@ -172,8 +172,8 @@ describe('1. 許可event送信（RPCモック）', () => {
     );
   });
 
-  it('全eventが許可リストに存在する (Phase 3後27件完全一致)', () => {
-    // TS catalog / DB allowed list / DB validator の3者が27 event完全一致することを動的に比較
+  it('全eventが許可リストに存在する (OEJ Phase 1後35件完全一致)', () => {
+    // TS catalog / DB allowed list / DB validator の3者が35 event完全一致することを動的に比較
     const expectedEvents = [
       'page_view', 'session_started', 'session_heartbeat',
       'auth_started', 'auth_succeeded', 'auth_failed',
@@ -186,9 +186,12 @@ describe('1. 許可event送信（RPCモック）', () => {
       'pro_feature_used', 'frontend_error', 'rpc_error',
       'realtime_reconnected', 'performance_measure',
       'match_started', 'rpc_call_completed',
+      'journal_list_viewed', 'journal_article_impression', 'journal_article_opened',
+      'journal_article_engagement', 'journal_reference_clicked', 'journal_language_changed',
+      'journal_game_cta_clicked', 'journal_load_failed',
     ] as const;
-    // TS catalog 完全一致 (27件)
-    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(27);
+    // TS catalog 完全一致 (35件)
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(35);
     for (const name of expectedEvents) {
       expect(
         (ALLOWED_KPI_EVENT_NAMES as readonly string[]).includes(name),
@@ -198,7 +201,7 @@ describe('1. 許可event送信（RPCモック）', () => {
     // DB allowed list (migration SQL) との一致確認
     const { readFileSync: rfs, existsSync: exs } = require('fs');
     const { join: pjoin } = require('path');
-    const migPath = pjoin(__dirname, '../../supabase/migrations/20260810000001_kpi_phase3_match_event.sql');
+    const migPath = pjoin(__dirname, '../../supabase/migrations/20260811000002_kpi_oej_phase1.sql');
     if (exs(migPath)) {
       const migSql = rfs(migPath, 'utf-8');
       for (const name of expectedEvents) {

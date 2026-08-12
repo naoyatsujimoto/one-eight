@@ -637,3 +637,93 @@ reached step なしの run は `unknown_step_abandoned_runs` として分離（s
 - Bug2(task_summary): RETURNS TABLE 列名 task_id と all_task_ids CTE 列名が衝突 → cr.task_id/tp.task_id でテーブル修飾して解消
 - Bug3(step_funnel): Bug2 と同じ問題 → src.task_id でテーブル修飾して解消
 - Percentile fix: percentile_cont() が double precision を返すため ::NUMERIC キャストを追加（M13）
+
+---
+
+## OEJ KPI Phase 1: ONE EIGHT Journal アクセス解析
+
+### 目的
+
+ONE EIGHT Journal（OEJ）のアクセス解析基盤を構築する。
+後続Phaseで以下を確認できるようにする:
+
+- OEJ全体・記事別のPV、読者、閲覧時間、読了率
+- XとInstagramを独立した流入元として表示
+- 記事別・SNS別のONE EIGHT遷移数
+- OEJ経由の認証開始・新規登録
+- 言語別・端末別の利用状況
+- 参考文献クリック
+- 読み込みエラー
+
+### イベント定義
+
+| イベント名 | 説明 | 主要properties |
+|---|---|---|
+| `journal_list_viewed` | ジャーナル一覧ページ表示 | traffic_source, utm_* |
+| `journal_article_impression` | 記事が一覧でサムネイル表示 | article_slug, list_position, locale情報 |
+| `journal_article_opened` | 記事を開いた | article_slug, entry_type, traffic_source, locale情報, utm_* |
+| `journal_article_engagement` | 記事閲覧完了（離脱時1回） | article_slug, max_scroll_percent, active_seconds, completed, locale情報 |
+| `journal_reference_clicked` | 参考文献クリック | article_slug, reference_kind, reference_position |
+| `journal_language_changed` | 言語切り替え | context, article_slug?, from_locale, to_locale |
+| `journal_game_cta_clicked` | ゲームCTAクリック | context, article_slug? |
+| `journal_load_failed` | 読み込みエラー | page_type, article_slug?, failure_code |
+
+### 流入元（traffic_source）分類
+
+Phase 1では型・DB validator・仕様のみ定義。実ブラウザ判定はPhase 2。
+
+**優先順位:**
+1. 許可されたutm_source値
+2. 自サイト内referrer
+3. 外部referrerの粗い分類
+4. direct
+
+**traffic_source 許可値:**
+- `x` — X (Twitter)。utm_source='twitter'はxへ正規化
+- `instagram` — Instagram
+- `google` — Google検索
+- `bing` — Bing検索
+- `one_eight_internal` — ONE EIGHTサイト内遷移
+- `direct` — 直接アクセス（referrerなし）
+- `other_external` — 上記以外の外部サイト
+
+XとInstagramは独立した値として保持（集計時に統合しない）。
+
+### UTMフィールド仕様
+
+`utm_medium` / `utm_campaign` / `utm_content`:
+- 最大100文字
+- 制御文字（\x00-\x1F）を拒否
+- URLや自由JSONは受け付けない
+
+### 保存禁止情報
+
+以下は一切保存しない:
+- 完全なreferrer URL
+- URL query全文、URL hash
+- 検索語
+- SNSユーザー情報
+- email、display_name、IP、User-Agent全文
+- raw error、stack trace、URLパス
+- DBエラーメッセージ
+- 記事本文
+
+### locale情報について
+
+`requested_locale` / `displayed_locale` / `fallback` はproperties内に保存。
+共通列のlocaleとは別（ユーザーのリクエスト言語と実際の表示言語の乖離を記録するため）。
+
+### Phase 1 実装スコープ
+
+- TypeScript型定義（kpiEvents.ts）
+- DB migration（_kpi_allowed_event_names / _kpi_validate_properties 更新）
+- KPI_SPEC.md 追記
+- テスト
+
+### Phase 1 実装外
+
+- JournalListPage.tsx / JournalArticlePage.tsx 変更
+- スクロール・滞在時間計測
+- UTM解析処理
+- 集計RPC
+- Admin Dashboard

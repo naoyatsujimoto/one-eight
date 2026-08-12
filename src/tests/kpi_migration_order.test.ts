@@ -192,13 +192,13 @@ describe('KPI Migration Order — 静的検証', () => {
 
 describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
 
-  it('15. ALLOWED_KPI_EVENT_NAMES が27件であること (Phase 3追加後)', () => {
-    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(27);
+  it('15. ALLOWED_KPI_EVENT_NAMES が35件であること (OEJ Phase 1追加後)', () => {
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(35);
   });
 
-  it('16. DB validator (Phase 3 event_validation migration) のevent名がTypeScriptと完全一致すること', () => {
-    // Phase 3 migration が _kpi_validate_properties を再定義し、全27 eventを含む
-    const sql = readMigration('20260810000001_kpi_phase3_match_event.sql');
+  it('16. DB validator (Phase 3 + OEJ Phase 1 migration) のevent名がTypeScriptと完全一致すること', () => {
+    // OEJ Phase 1 migration が _kpi_validate_properties を再定義し、全35 eventを含む
+    const sql = readMigration('20260811000002_kpi_oej_phase1.sql');
     const dbEvents = extractDbValidatorEvents(sql);
     const tsEvents = [...ALLOWED_KPI_EVENT_NAMES].sort();
 
@@ -216,7 +216,7 @@ describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
     }
   });
 
-  it('17. TypeScriptのevent名一覧が正確に27件すべて定義されていること (Phase 3追加後)', () => {
+  it('17. TypeScriptのevent名一覧が正確に35件すべて定義されていること (OEJ Phase 1追加後)', () => {
     const expected = [
       'page_view',
       'session_started',
@@ -245,6 +245,14 @@ describe('KPI Event Catalog — TypeScript ↔ DB 一致検証', () => {
       'performance_measure',
       'match_started',
       'rpc_call_completed',
+      'journal_list_viewed',
+      'journal_article_impression',
+      'journal_article_opened',
+      'journal_article_engagement',
+      'journal_reference_clicked',
+      'journal_language_changed',
+      'journal_game_cta_clicked',
+      'journal_load_failed',
     ];
 
     expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(expected.length);

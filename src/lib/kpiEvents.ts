@@ -249,6 +249,75 @@ export interface KpiEventPropsMap {
     value_ms: number;
     route?: RouteString;
   };
+
+  /** OEJ: ジャーナル一覧表示 */
+  journal_list_viewed: {
+    traffic_source: 'x' | 'instagram' | 'google' | 'bing' | 'one_eight_internal' | 'direct' | 'other_external';
+    utm_medium?: string;    // max 100 chars, no control chars
+    utm_campaign?: string;  // max 100 chars, no control chars
+    utm_content?: string;   // max 100 chars, no control chars
+  };
+
+  /** OEJ: 記事インプレッション（一覧でのサムネイル表示） */
+  journal_article_impression: {
+    article_slug: string;       // max 200 chars
+    list_position: number;      // integer >= 1
+    requested_locale: string;   // max 20 chars
+    displayed_locale: string;   // max 20 chars
+    fallback: boolean;
+  };
+
+  /** OEJ: 記事を開いた */
+  journal_article_opened: {
+    article_slug: string;       // max 200 chars
+    entry_type: 'journal_list' | 'direct' | 'internal' | 'external';
+    traffic_source: 'x' | 'instagram' | 'google' | 'bing' | 'one_eight_internal' | 'direct' | 'other_external';
+    requested_locale: string;   // max 20 chars
+    displayed_locale: string;   // max 20 chars
+    fallback: boolean;
+    utm_medium?: string;        // max 100 chars
+    utm_campaign?: string;      // max 100 chars
+    utm_content?: string;       // max 100 chars
+  };
+
+  /** OEJ: 記事エンゲージメント（ページ離脱時に1回だけ送信） */
+  journal_article_engagement: {
+    article_slug: string;           // max 200 chars
+    max_scroll_percent: number;     // integer 0-100
+    active_seconds: number;         // integer 0-86400
+    completed: boolean;
+    requested_locale: string;       // max 20 chars
+    displayed_locale: string;       // max 20 chars
+    fallback: boolean;
+  };
+
+  /** OEJ: 参考文献クリック */
+  journal_reference_clicked: {
+    article_slug: string;           // max 200 chars
+    reference_kind: 'doi' | 'url';
+    reference_position: number;     // integer >= 1
+  };
+
+  /** OEJ: 言語変更（一覧または記事内） */
+  journal_language_changed: {
+    context: 'list' | 'article';
+    article_slug?: string;   // max 200 chars, present when context='article'
+    from_locale: string;     // max 20 chars
+    to_locale: string;       // max 20 chars
+  };
+
+  /** OEJ: ゲームCTAクリック */
+  journal_game_cta_clicked: {
+    context: 'list_footer' | 'article_footer';
+    article_slug?: string;   // max 200 chars
+  };
+
+  /** OEJ: 読み込みエラー */
+  journal_load_failed: {
+    page_type: 'list' | 'article';
+    article_slug?: string;   // max 200 chars
+    failure_code: 'list_fetch_failed' | 'article_fetch_failed' | 'article_not_found' | 'image_load_failed' | 'unknown';
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -286,6 +355,14 @@ export const ALLOWED_KPI_EVENT_NAMES: readonly KpiEventName[] = [
   'performance_measure',
   'match_started',
   'rpc_call_completed',
+  'journal_list_viewed',
+  'journal_article_impression',
+  'journal_article_opened',
+  'journal_article_engagement',
+  'journal_reference_clicked',
+  'journal_language_changed',
+  'journal_game_cta_clicked',
+  'journal_load_failed',
 ] as const;
 
 // ---------------------------------------------------------------------------
