@@ -5,7 +5,7 @@
  *   1. URLSearchParams から許可 UTM を取得・sanitize
  *   2. document.referrer から traffic_source を判定
  *   3. article entry_type を判定
- *   4. UTM を記事リンクへ安全に引き継ぐ
+ *   4. UTM + 正規化済み utm_source を記事リンクへ安全に引き継ぐ
  *
  * PII禁止:
  *   - 完全 referrer URL 保存不可
@@ -61,12 +61,34 @@ export function getSanitizedUtm(params: URLSearchParams): SanitizedUtm {
 }
 
 /**
+ * hostname が domain と完全一致、またはサブドメイン一致かを判定する。
+ * 例: matchesHost('www.instagram.com', 'instagram.com') → true
+ *     matchesHost('exampleinstagram.com', 'instagram.com') → false
+ */
+function matchesHost(hostname: string, domain: string): boolean {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+/**
+ * Google の正式ドメイン判定。
+ * google.com / www.google.com / google.co.jp / google.de 等を対象とする。
+ */
+function isGoogleHost(hostname: string): boolean {
+  return (
+    hostname === 'google.com' ||
+    hostname.endsWith('.google.com') ||
+    /^google\.[a-z]{2,}(\.[a-z]{2})?$/.test(hostname) ||
+    /\.google\.[a-z]{2,}(\.[a-z]{2})?$/.test(hostname)
+  );
+}
+
+/**
  * document.referrer / utm_source から traffic_source を正規化する。
  *
  * 優先順位:
  *   1. utm_source
  *   2. 同一origin の referrer → 'one_eight_internal'
- *   3. 外部 referrer → ホスト名ベースで分類
+ *   3. 外部 referrer → ホスト名ベースで分類（完全一致・サブドメイン一致）
  *   4. referrerなし → 'direct'
  */
 export function resolveTrafficSource(
@@ -93,11 +115,11 @@ export function resolveTrafficSource(
 
   if (refOrigin === currentOrigin) return 'one_eight_internal';
 
-  // 外部 referrer をホスト名ベースで分類
-  if (refHostname.includes('t.co') || refHostname.includes('twitter.com') || refHostname.includes('x.com')) return 'x';
-  if (refHostname.includes('instagram.com') || refHostname.includes('l.instagram.com')) return 'instagram';
-  if (refHostname.includes('google.')) return 'google';
-  if (refHostname.includes('bing.com')) return 'bing';
+  // 外部 referrer をホスト名ベースで分類（完全一致 or サブドメイン一致）
+  if (matchesHost(refHostname, 't.co') || matchesHost(refHostname, 'twitter.com') || matchesHost(refHostname, 'x.com')) return 'x';
+  if (matchesHost(refHostname, 'instagram.com')) return 'instagram';
+  if (isGoogleHost(refHostname)) return 'google';
+  if (matchesHost(refHostname, 'bing.com')) return 'bing';
 
   return 'other_external';
 }
@@ -111,8 +133,6 @@ export function normalizeTrafficSource(raw: string): TrafficSource {
   if (s === 'instagram') return 'instagram';
   if (s === 'google') return 'google';
   if (s === 'bing') return 'bing';
-  // 空や不明は直接流入扱いではなく other_external
-  // ただし utm_source が設定されている場合は external とみなす
   return 'other_external';
 }
 
@@ -148,19 +168,30 @@ export function resolveEntryType(
   return 'external';
 }
 
+/** utm_sourceとして付与可能なtraffic_sourceの正規値 */
+const UTM_SOURCE_PROPAGATABLE: ReadonlySet<TrafficSource> = new Set([
+  'x', 'instagram', 'google', 'bing', 'other_external',
+]);
+
 /**
- * 記事リンク URL に lang + 許可 UTM を引き継ぐ。
+ * 記事リンク URL に lang + 正規化済みutm_source + 許可 UTM を引き継ぐ。
  * lang が 'en' の場合は lang パラメータを付与しない。
- * 既存 query を上書きしない（lang のみ set、UTM は append）。
+ * direct / one_eight_internal は utm_source として付けない。
+ * raw の utm_source は引き継がない（正規値のみ）。
  */
 export function buildArticleHref(
   slug: string,
   locale: string,
   utm: SanitizedUtm,
+  trafficSource?: TrafficSource,
 ): string {
   const params = new URLSearchParams();
   if (locale && locale !== 'en') {
     params.set('lang', locale);
+  }
+  // 正規化済み traffic_source を utm_source として付与（direct/one_eight_internal は除外）
+  if (trafficSource && UTM_SOURCE_PROPAGATABLE.has(trafficSource)) {
+    params.set('utm_source', trafficSource);
   }
   if (utm.utm_medium) params.set('utm_medium', utm.utm_medium);
   if (utm.utm_campaign) params.set('utm_campaign', utm.utm_campaign);

@@ -13,6 +13,7 @@ import {
   resolveTrafficSource,
   getSanitizedUtm,
   buildArticleHref,
+  type TrafficSource,
 } from '../lib/journalKpi';
 import './JournalListPage.css';
 
@@ -177,6 +178,7 @@ export function JournalListPage() {
             journalLang={journalLang}
             ui={ui}
             utmRef={utmRef}
+            trafficSourceRef={trafficSourceRef}
             impressionSentRef={impressionSentRef}
             imageFailSentRef={imageFailSentRef}
             formatDateStr={formatDateStr}
@@ -213,6 +215,7 @@ interface ArticleListProps {
   journalLang: JournalLang;
   ui: ReturnType<typeof getJournalUi>;
   utmRef: React.MutableRefObject<ReturnType<typeof getSanitizedUtm>>;
+  trafficSourceRef: React.MutableRefObject<TrafficSource>;
   impressionSentRef: React.MutableRefObject<Set<string>>;
   imageFailSentRef: React.MutableRefObject<Set<string>>;
   formatDateStr: (iso: string) => string;
@@ -224,6 +227,7 @@ function ArticleList({
   journalLang,
   ui,
   utmRef,
+  trafficSourceRef,
   impressionSentRef,
   imageFailSentRef,
   formatDateStr,
@@ -236,7 +240,7 @@ function ArticleList({
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.5) continue;
           const slug = (entry.target as HTMLElement).dataset['slug'];
           const posStr = (entry.target as HTMLElement).dataset['position'];
           const fallbackStr = (entry.target as HTMLElement).dataset['fallback'];
@@ -351,7 +355,7 @@ function ArticleList({
             {/* Read link — UTM + lang 引き継ぎ */}
             <div className="jl-card-footer">
               <a
-                href={buildArticleHref(article.slug, selectedLocale, utm)}
+                href={buildArticleHref(article.slug, selectedLocale, utm, trafficSourceRef.current)}
                 className="jl-read-link"
               >
                 {ui.readArticle} →

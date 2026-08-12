@@ -435,3 +435,129 @@ describe('track() 呼び出し検証 (mock)', () => {
     expect(mockTrack).toHaveBeenCalledTimes(2); // slug-a 1回 + slug-b 1回
   });
 });
+
+// ---------------------------------------------------------------------------
+// 補正テスト: utm_source 引継ぎ
+// ---------------------------------------------------------------------------
+
+describe('buildArticleHref — utm_source 引継ぎ', () => {
+  it('X流入: utm_source=x が記事リンクへ引き継がれる', () => {
+    const href = buildArticleHref('my-article', 'en', {}, 'x');
+    expect(href).toContain('utm_source=x');
+  });
+
+  it('Instagram流入: utm_source=instagram が記事リンクへ引き継がれる', () => {
+    const href = buildArticleHref('my-article', 'en', {}, 'instagram');
+    expect(href).toContain('utm_source=instagram');
+  });
+
+  it('twitter → normalizeTrafficSource → x → 記事リンクはutm_source=x', () => {
+    const source = normalizeTrafficSource('twitter');
+    const href = buildArticleHref('my-article', 'en', {}, source);
+    expect(href).toContain('utm_source=x');
+    expect(href).not.toContain('utm_source=twitter');
+  });
+
+  it('direct: utm_source を付けない', () => {
+    const href = buildArticleHref('my-article', 'en', {}, 'direct');
+    expect(href).not.toContain('utm_source');
+  });
+
+  it('one_eight_internal: utm_source を付けない', () => {
+    const href = buildArticleHref('my-article', 'en', {}, 'one_eight_internal');
+    expect(href).not.toContain('utm_source');
+  });
+
+  it('trafficSource未指定: utm_source を付けない', () => {
+    const href = buildArticleHref('my-article', 'en', {});
+    expect(href).not.toContain('utm_source');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 補正テスト: impression 50% 判定
+// ---------------------------------------------------------------------------
+
+describe('impression 50% 判定ロジック', () => {
+  it('isIntersecting=true かつ intersectionRatio=0.5 → 送信する', () => {
+    const entry = { isIntersecting: true, intersectionRatio: 0.5 };
+    const shouldSend = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+    expect(shouldSend).toBe(true);
+  });
+
+  it('isIntersecting=true かつ intersectionRatio=0.49 → 送信しない', () => {
+    const entry = { isIntersecting: true, intersectionRatio: 0.49 };
+    const shouldSend = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+    expect(shouldSend).toBe(false);
+  });
+
+  it('isIntersecting=false かつ intersectionRatio=1.0 → 送信しない', () => {
+    const entry = { isIntersecting: false, intersectionRatio: 1.0 };
+    const shouldSend = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+    expect(shouldSend).toBe(false);
+  });
+
+  it('isIntersecting=true かつ intersectionRatio=1.0 → 送信する', () => {
+    const entry = { isIntersecting: true, intersectionRatio: 1.0 };
+    const shouldSend = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+    expect(shouldSend).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 補正テスト: hostname 完全一致・サブドメイン一致
+// ---------------------------------------------------------------------------
+
+describe('resolveTrafficSource — hostname 完全一致・サブドメイン一致', () => {
+  const origin = 'https://example.com';
+
+  it('examplex.com は X に誤分類しない → other_external', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://examplex.com/', origin)).toBe('other_external');
+  });
+
+  it('notinstagram.com は Instagram に誤分類しない → other_external', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://notinstagram.com/', origin)).toBe('other_external');
+  });
+
+  it('www.instagram.com (サブドメイン) → instagram', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://www.instagram.com/', origin)).toBe('instagram');
+  });
+
+  it('l.instagram.com (サブドメイン) → instagram', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://l.instagram.com/', origin)).toBe('instagram');
+  });
+
+  it('x.com (完全一致) → x', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://x.com/user', origin)).toBe('x');
+  });
+
+  it('twitter.com (完全一致) → x', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://twitter.com/user', origin)).toBe('x');
+  });
+
+  it('t.co (完全一致) → x', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://t.co/abc', origin)).toBe('x');
+  });
+
+  it('www.bing.com (サブドメイン) → bing', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://www.bing.com/search', origin)).toBe('bing');
+  });
+
+  it('google.co.jp → google', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://google.co.jp/search', origin)).toBe('google');
+  });
+
+  it('www.google.com → google', () => {
+    const params = new URLSearchParams();
+    expect(resolveTrafficSource(params, 'https://www.google.com/search', origin)).toBe('google');
+  });
+});
