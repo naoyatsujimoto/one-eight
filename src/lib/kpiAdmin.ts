@@ -343,6 +343,160 @@ export async function adminGetKpiSettings() {
 }
 
 // ---------------------------------------------------------------------------
+// 12. admin_get_kpi_oej_summary
+// ---------------------------------------------------------------------------
+
+export interface KpiOejSummaryRow {
+  list_views:                 unknown;
+  article_opens:              unknown;
+  unique_readers:             unknown;
+  sessions:                   unknown;
+  impressions:                unknown;
+  engagement_events:          unknown;
+  completed_reads:            unknown;
+  completion_rate:            unknown;
+  average_active_seconds:     unknown;
+  median_active_seconds:      unknown;
+  average_max_scroll_percent: unknown;
+  game_cta_clicks:            unknown;
+  game_cta_rate:              unknown;
+  reference_clicks:           unknown;
+  load_failures:              unknown;
+  fallback_opens:             unknown;
+  fallback_rate:              unknown;
+  is_reference_period:        unknown;
+  effective_from:             unknown;
+  effective_to:               unknown;
+}
+
+export async function adminGetKpiOejSummary(params: KpiAdminParams) {
+  return supabase.rpc('admin_get_kpi_oej_summary', {
+    p_from: params.p_from,
+    p_to: params.p_to,
+    p_timezone: params.p_timezone,
+    p_include_internal: params.p_include_internal,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 13. admin_get_kpi_oej_article_summary
+// ---------------------------------------------------------------------------
+
+export interface KpiOejArticleSummaryRow {
+  article_slug:               unknown;
+  article_opens:              unknown;
+  unique_readers:             unknown;
+  impressions:                unknown;
+  list_to_open_rate:          unknown;
+  engagement_events:          unknown;
+  completed_reads:            unknown;
+  completion_rate:            unknown;
+  average_active_seconds:     unknown;
+  median_active_seconds:      unknown;
+  average_max_scroll_percent: unknown;
+  reference_clicks:           unknown;
+  game_cta_clicks:            unknown;
+  game_cta_rate:              unknown;
+  fallback_opens:             unknown;
+  load_failures:              unknown;
+}
+
+export async function adminGetKpiOejArticleSummary(params: KpiAdminParams) {
+  return supabase.rpc('admin_get_kpi_oej_article_summary', {
+    p_from: params.p_from,
+    p_to: params.p_to,
+    p_timezone: params.p_timezone,
+    p_include_internal: params.p_include_internal,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 14. admin_get_kpi_oej_source_summary
+// ---------------------------------------------------------------------------
+
+export interface KpiOejSourceSummaryRow {
+  traffic_source:        unknown;
+  list_views:            unknown;
+  article_opens:         unknown;
+  unique_readers:        unknown;
+  sessions:              unknown;
+  engagement_events:     unknown;
+  completed_reads:       unknown;
+  completion_rate:       unknown;
+  average_active_seconds:unknown;
+  game_cta_clicks:       unknown;
+  game_cta_rate:         unknown;
+}
+
+export async function adminGetKpiOejSourceSummary(params: KpiAdminParams) {
+  return supabase.rpc('admin_get_kpi_oej_source_summary', {
+    p_from: params.p_from,
+    p_to: params.p_to,
+    p_timezone: params.p_timezone,
+    p_include_internal: params.p_include_internal,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 15. admin_get_kpi_oej_daily
+// ---------------------------------------------------------------------------
+
+export interface KpiOejDailyRow {
+  day:                     unknown;
+  list_views:              unknown;
+  article_opens:           unknown;
+  unique_readers:          unknown;
+  sessions:                unknown;
+  engagement_events:       unknown;
+  completed_reads:         unknown;
+  completion_rate:         unknown;
+  game_cta_clicks:         unknown;
+  reference_clicks:        unknown;
+  load_failures:           unknown;
+  x_article_opens:         unknown;
+  instagram_article_opens: unknown;
+}
+
+export async function adminGetKpiOejDaily(params: KpiAdminParams) {
+  return supabase.rpc('admin_get_kpi_oej_daily', {
+    p_from: params.p_from,
+    p_to: params.p_to,
+    p_timezone: params.p_timezone,
+    p_include_internal: params.p_include_internal,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 16. admin_get_kpi_oej_attribution
+// ---------------------------------------------------------------------------
+
+export interface KpiOejAttributionRow {
+  dimension_type:             unknown;
+  dimension_value:            unknown;
+  auth_started:               unknown;
+  registrations:              unknown;
+  unique_auth_users:          unknown;
+  unique_registered_users:    unknown;
+  auth_to_registration_rate:  unknown;
+  attributed_auth_started:    unknown;
+  attributed_registrations:   unknown;
+  unattributed_auth_started:  unknown;
+  unattributed_registrations: unknown;
+  is_reference_period:        unknown;
+  effective_from:             unknown;
+  effective_to:               unknown;
+}
+
+export async function adminGetKpiOejAttribution(params: KpiAdminParams) {
+  return supabase.rpc('admin_get_kpi_oej_attribution', {
+    p_from: params.p_from,
+    p_to: params.p_to,
+    p_timezone: params.p_timezone,
+    p_include_internal: params.p_include_internal,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // ダッシュボード全RPCを一括取得
 // ---------------------------------------------------------------------------
 
@@ -358,6 +512,11 @@ export interface KpiDashboardData {
   trainingStepFunnel: KpiTrainingStepFunnelRow[];
   trainingDaily: KpiTrainingDailyRow[];
   settings: KpiSettingsRow | null;
+  oejSummary: KpiOejSummaryRow | null;
+  oejArticle: KpiOejArticleSummaryRow[];
+  oejSource: KpiOejSourceSummaryRow[];
+  oejDaily: KpiOejDailyRow[];
+  oejAttribution: KpiOejAttributionRow[];
 }
 
 export interface KpiDashboardSectionError {
@@ -372,6 +531,11 @@ export interface KpiDashboardSectionError {
   trainingStepFunnel?: string;
   trainingDaily?: string;
   settings?: string;
+  oejSummary?: string;
+  oejArticle?: string;
+  oejSource?: string;
+  oejDaily?: string;
+  oejAttribution?: string;
 }
 
 export async function fetchKpiDashboard(params: KpiAdminParams): Promise<{
@@ -390,6 +554,11 @@ export async function fetchKpiDashboard(params: KpiAdminParams): Promise<{
     r_trainingTaskSummary,
     r_trainingStepFunnel,
     r_trainingDaily,
+    r_oejSummary,
+    r_oejArticle,
+    r_oejSource,
+    r_oejDaily,
+    r_oejAttribution,
   ] = await Promise.allSettled([
     adminGetKpiSettings(),
     adminGetKpiAcquisitionAuthSummary(params),
@@ -402,6 +571,11 @@ export async function fetchKpiDashboard(params: KpiAdminParams): Promise<{
     adminGetKpiTrainingTaskSummary(params),
     adminGetKpiTrainingStepFunnel(params),
     adminGetKpiTrainingDaily(params),
+    adminGetKpiOejSummary(params),
+    adminGetKpiOejArticleSummary(params),
+    adminGetKpiOejSourceSummary(params),
+    adminGetKpiOejDaily(params),
+    adminGetKpiOejAttribution(params),
   ]);
 
   const errors: KpiDashboardSectionError = {};
@@ -498,6 +672,26 @@ export async function fetchKpiDashboard(params: KpiAdminParams): Promise<{
       trainingDaily: extractArray<KpiTrainingDailyRow>(
         r_trainingDaily as PromiseSettledResult<{ data: KpiTrainingDailyRow[] | null; error: unknown }>,
         'trainingDaily',
+      ),
+      oejSummary: extractSingle<KpiOejSummaryRow>(
+        r_oejSummary as PromiseSettledResult<{ data: KpiOejSummaryRow[] | null; error: unknown }>,
+        'oejSummary',
+      ),
+      oejArticle: extractArray<KpiOejArticleSummaryRow>(
+        r_oejArticle as PromiseSettledResult<{ data: KpiOejArticleSummaryRow[] | null; error: unknown }>,
+        'oejArticle',
+      ),
+      oejSource: extractArray<KpiOejSourceSummaryRow>(
+        r_oejSource as PromiseSettledResult<{ data: KpiOejSourceSummaryRow[] | null; error: unknown }>,
+        'oejSource',
+      ),
+      oejDaily: extractArray<KpiOejDailyRow>(
+        r_oejDaily as PromiseSettledResult<{ data: KpiOejDailyRow[] | null; error: unknown }>,
+        'oejDaily',
+      ),
+      oejAttribution: extractArray<KpiOejAttributionRow>(
+        r_oejAttribution as PromiseSettledResult<{ data: KpiOejAttributionRow[] | null; error: unknown }>,
+        'oejAttribution',
       ),
     },
     errors,

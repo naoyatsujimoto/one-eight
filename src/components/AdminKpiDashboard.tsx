@@ -21,6 +21,11 @@ import {
   type KpiTrainingTaskSummaryRow,
   type KpiTrainingStepFunnelRow,
   type KpiTrainingDailyRow,
+  type KpiOejSummaryRow,
+  type KpiOejArticleSummaryRow,
+  type KpiOejSourceSummaryRow,
+  type KpiOejDailyRow,
+  type KpiOejAttributionRow,
 } from '../lib/kpiAdmin';
 
 // ---------------------------------------------------------------------------
@@ -647,6 +652,385 @@ function SectionSystemHealth({
 }
 
 // ---------------------------------------------------------------------------
+// セクション G: ONE EIGHT JOURNAL
+// ---------------------------------------------------------------------------
+
+const OEJ_SOURCE_ORDER = [
+  'x', 'instagram', 'google', 'bing', 'direct', 'one_eight_internal', 'other_external',
+];
+
+function oejSourceSort(rows: KpiOejSourceSummaryRow[]): KpiOejSourceSummaryRow[] {
+  return [...rows].sort((a, b) => {
+    const ai = OEJ_SOURCE_ORDER.indexOf(String(a.traffic_source ?? ''));
+    const bi = OEJ_SOURCE_ORDER.indexOf(String(b.traffic_source ?? ''));
+    const an = ai === -1 ? 999 : ai;
+    const bn = bi === -1 ? 999 : bi;
+    return an - bn;
+  });
+}
+
+function SectionOejOverview({
+  data,
+  error,
+  loading,
+}: {
+  data: KpiOejSummaryRow | null;
+  error?: string;
+  loading: boolean;
+}) {
+  return (
+    <>
+      <div className="kpi-subsection-title">A. Overview</div>
+      {loading && <Loading />}
+      {!loading && error && <SectionError msg={error} />}
+      {!loading && !error && !data && (
+        <div className="kpi-status kpi-status--empty">No data</div>
+      )}
+      {!loading && !error && data && (
+        <>
+          {data.is_reference_period && (
+            <div className="kpi-reference-notice">REFERENCE PERIOD</div>
+          )}
+          <div className="kpi-card-grid">
+            <KpiCard label="Unique Readers" value={fmtNum(data.unique_readers)} />
+            <KpiCard label="Article Opens" value={fmtNum(data.article_opens)} />
+            <KpiCard label="Completion Rate" value={fmtPct(data.completion_rate)} />
+            <KpiCard label="Avg Active Seconds" value={data.average_active_seconds !== null && data.average_active_seconds !== undefined ? fmtDec(data.average_active_seconds, 1) : '—'} />
+            <KpiCard label="Game CTA Clicks" value={fmtNum(data.game_cta_clicks)} />
+            <KpiCard label="Game CTA Rate" value={fmtPct(data.game_cta_rate)} />
+            <KpiCard label="Reference Clicks" value={fmtNum(data.reference_clicks)} />
+            <KpiCard label="Load Failures" value={fmtNum(data.load_failures)} />
+          </div>
+          <div className="kpi-card-grid kpi-card-grid--wide">
+            <KpiCard label="List Views" value={fmtNum(data.list_views)} />
+            <KpiCard label="Impressions" value={fmtNum(data.impressions)} />
+            <KpiCard label="Fallback Opens" value={fmtNum(data.fallback_opens)} />
+            <KpiCard label="Fallback Rate" value={fmtPct(data.fallback_rate)} />
+            <KpiCard label="Sessions" value={fmtNum(data.sessions)} />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function SectionOejSource({
+  data,
+  error,
+  loading,
+}: {
+  data: KpiOejSourceSummaryRow[];
+  error?: string;
+  loading: boolean;
+}) {
+  const sorted = oejSourceSort(data);
+  return (
+    <>
+      <div className="kpi-subsection-title">B. Traffic Source</div>
+      {loading && <Loading />}
+      {!loading && error && <SectionError msg={error} />}
+      {!loading && !error && data.length === 0 && (
+        <div className="kpi-status kpi-status--empty">No data</div>
+      )}
+      {!loading && !error && data.length > 0 && (
+        <div className="kpi-table-wrap">
+          <table className="kpi-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>List Views</th>
+                <th>Article Opens</th>
+                <th>Unique Readers</th>
+                <th>Completion Rate</th>
+                <th>Avg Active Seconds</th>
+                <th>Game CTA Clicks</th>
+                <th>Game CTA Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((r, i) => (
+                <tr key={i}>
+                  <td>{String(r.traffic_source ?? '—')}</td>
+                  <td>{fmtNum(r.list_views)}</td>
+                  <td>{fmtNum(r.article_opens)}</td>
+                  <td>{fmtNum(r.unique_readers)}</td>
+                  <td>{fmtPct(r.completion_rate)}</td>
+                  <td>{r.average_active_seconds !== null && r.average_active_seconds !== undefined ? fmtDec(r.average_active_seconds, 1) : '—'}</td>
+                  <td>{fmtNum(r.game_cta_clicks)}</td>
+                  <td>{fmtPct(r.game_cta_rate)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SectionOejArticle({
+  data,
+  error,
+  loading,
+}: {
+  data: KpiOejArticleSummaryRow[];
+  error?: string;
+  loading: boolean;
+}) {
+  return (
+    <>
+      <div className="kpi-subsection-title">C. Article Performance</div>
+      {loading && <Loading />}
+      {!loading && error && <SectionError msg={error} />}
+      {!loading && !error && data.length === 0 && (
+        <div className="kpi-status kpi-status--empty">No data</div>
+      )}
+      {!loading && !error && data.length > 0 && (
+        <div className="kpi-table-wrap">
+          <table className="kpi-table">
+            <thead>
+              <tr>
+                <th>Article Slug</th>
+                <th>Impressions</th>
+                <th>Article Opens</th>
+                <th>Unique Readers</th>
+                <th>List to Open Rate</th>
+                <th>Completion Rate</th>
+                <th>Avg Active Seconds</th>
+                <th>Avg Max Scroll</th>
+                <th>Reference Clicks</th>
+                <th>Game CTA Clicks</th>
+                <th>Game CTA Rate</th>
+                <th>Fallback Opens</th>
+                <th>Load Failures</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((r, i) => (
+                <tr key={i}>
+                  <td>{String(r.article_slug ?? '—')}</td>
+                  <td>{fmtNum(r.impressions)}</td>
+                  <td>{fmtNum(r.article_opens)}</td>
+                  <td>{fmtNum(r.unique_readers)}</td>
+                  <td>{fmtPct(r.list_to_open_rate)}</td>
+                  <td>{fmtPct(r.completion_rate)}</td>
+                  <td>{r.average_active_seconds !== null && r.average_active_seconds !== undefined ? fmtDec(r.average_active_seconds, 1) : '—'}</td>
+                  <td>{r.average_max_scroll_percent !== null && r.average_max_scroll_percent !== undefined ? fmtDec(r.average_max_scroll_percent, 1) : '—'}</td>
+                  <td>{fmtNum(r.reference_clicks)}</td>
+                  <td>{fmtNum(r.game_cta_clicks)}</td>
+                  <td>{fmtPct(r.game_cta_rate)}</td>
+                  <td>{fmtNum(r.fallback_opens)}</td>
+                  <td>{fmtNum(r.load_failures)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SectionOejAttribution({
+  data,
+  error,
+  loading,
+}: {
+  data: KpiOejAttributionRow[];
+  error?: string;
+  loading: boolean;
+}) {
+  const overall = data.find((r) => String(r.dimension_type ?? '') === 'overall') ?? null;
+  const sourceRows = data
+    .filter((r) => String(r.dimension_type ?? '') === 'source')
+    .sort((a, b) => {
+      const ai = OEJ_SOURCE_ORDER.indexOf(String(a.dimension_value ?? ''));
+      const bi = OEJ_SOURCE_ORDER.indexOf(String(b.dimension_value ?? ''));
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+  const articleRows = data.filter((r) => String(r.dimension_type ?? '') === 'article');
+
+  return (
+    <>
+      <div className="kpi-subsection-title">D. Acquisition Attribution</div>
+      {loading && <Loading />}
+      {!loading && error && <SectionError msg={error} />}
+      {!loading && !error && data.length === 0 && (
+        <div className="kpi-status kpi-status--empty">No data</div>
+      )}
+      {!loading && !error && overall && (
+        <>
+          {overall.is_reference_period && (
+            <div className="kpi-reference-notice">REFERENCE PERIOD</div>
+          )}
+          <div className="kpi-card-grid">
+            <KpiCard label="Auth Started" value={fmtNum(overall.auth_started)} />
+            <KpiCard label="Registrations" value={fmtNum(overall.registrations)} />
+            <KpiCard label="Auth to Reg Rate" value={fmtPct(overall.auth_to_registration_rate)} />
+            <KpiCard label="Attributed Auth Started" value={fmtNum(overall.attributed_auth_started)} />
+            <KpiCard label="Attributed Regs" value={fmtNum(overall.attributed_registrations)} />
+            <KpiCard label="Unattributed Auth Started" value={fmtNum(overall.unattributed_auth_started)} />
+            <KpiCard label="Unattributed Regs" value={fmtNum(overall.unattributed_registrations)} />
+          </div>
+        </>
+      )}
+      {!loading && !error && sourceRows.length > 0 && (
+        <>
+          <div className="kpi-subsection-title" style={{ marginTop: '16px' }}>Source Attribution</div>
+          <div className="kpi-table-wrap">
+            <table className="kpi-table">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Auth Started</th>
+                  <th>Registrations</th>
+                  <th>Auth to Reg Rate</th>
+                  <th>Attributed Auth Started</th>
+                  <th>Attributed Regs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sourceRows.map((r, i) => (
+                  <tr key={i}>
+                    <td>{String(r.dimension_value ?? '—')}</td>
+                    <td>{fmtNum(r.auth_started)}</td>
+                    <td>{fmtNum(r.registrations)}</td>
+                    <td>{fmtPct(r.auth_to_registration_rate)}</td>
+                    <td>{fmtNum(r.attributed_auth_started)}</td>
+                    <td>{fmtNum(r.attributed_registrations)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      {!loading && !error && articleRows.length > 0 && (
+        <>
+          <div className="kpi-subsection-title" style={{ marginTop: '16px' }}>Article Attribution</div>
+          <div className="kpi-table-wrap">
+            <table className="kpi-table">
+              <thead>
+                <tr>
+                  <th>Article Slug</th>
+                  <th>Auth Started</th>
+                  <th>Registrations</th>
+                  <th>Auth to Reg Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {articleRows.map((r, i) => (
+                  <tr key={i}>
+                    <td>{String(r.dimension_value ?? '—')}</td>
+                    <td>{fmtNum(r.auth_started)}</td>
+                    <td>{fmtNum(r.registrations)}</td>
+                    <td>{fmtPct(r.auth_to_registration_rate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function SectionOejDaily({
+  data,
+  error,
+  loading,
+}: {
+  data: KpiOejDailyRow[];
+  error?: string;
+  loading: boolean;
+}) {
+  return (
+    <>
+      <div className="kpi-subsection-title">E. Daily</div>
+      {loading && <Loading />}
+      {!loading && error && <SectionError msg={error} />}
+      {!loading && !error && data.length === 0 && (
+        <div className="kpi-status kpi-status--empty">No data</div>
+      )}
+      {!loading && !error && data.length > 0 && (
+        <div className="kpi-table-wrap">
+          <table className="kpi-table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>List Views</th>
+                <th>Article Opens</th>
+                <th>Unique Readers</th>
+                <th>Completion Rate</th>
+                <th>Game CTA Clicks</th>
+                <th>X Opens</th>
+                <th>Instagram Opens</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((r, i) => (
+                <tr key={i}>
+                  <td>{String(r.day ?? '').slice(5, 10)}</td>
+                  <td>{fmtNum(r.list_views)}</td>
+                  <td>{fmtNum(r.article_opens)}</td>
+                  <td>{fmtNum(r.unique_readers)}</td>
+                  <td>{fmtPct(r.completion_rate)}</td>
+                  <td>{fmtNum(r.game_cta_clicks)}</td>
+                  <td>{fmtNum(r.x_article_opens)}</td>
+                  <td>{fmtNum(r.instagram_article_opens)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SectionOej({
+  summary,
+  article,
+  source,
+  daily,
+  attribution,
+  summaryError,
+  articleError,
+  sourceError,
+  dailyError,
+  attributionError,
+  loading,
+}: {
+  summary: KpiOejSummaryRow | null;
+  article: KpiOejArticleSummaryRow[];
+  source: KpiOejSourceSummaryRow[];
+  daily: KpiOejDailyRow[];
+  attribution: KpiOejAttributionRow[];
+  summaryError?: string;
+  articleError?: string;
+  sourceError?: string;
+  dailyError?: string;
+  attributionError?: string;
+  loading: boolean;
+}) {
+  return (
+    <section className="kpi-section">
+      <div className="kpi-section__header">
+        <h2 className="kpi-section__title">G. ONE EIGHT JOURNAL</h2>
+      </div>
+      <div className="kpi-section__body">
+        <SectionOejOverview data={summary} error={summaryError} loading={loading} />
+        <SectionOejSource data={source} error={sourceError} loading={loading} />
+        <SectionOejArticle data={article} error={articleError} loading={loading} />
+        <SectionOejAttribution data={attribution} error={attributionError} loading={loading} />
+        <SectionOejDaily data={daily} error={dailyError} loading={loading} />
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // JSONをkey-value表に整形
 // ---------------------------------------------------------------------------
 
@@ -858,6 +1242,19 @@ export function AdminKpiDashboard({ onBack }: Props) {
           <SectionSystemHealth
             data={data?.systemHealth ?? null}
             error={errors.systemHealth}
+            loading={loading}
+          />
+          <SectionOej
+            summary={data?.oejSummary ?? null}
+            article={data?.oejArticle ?? []}
+            source={data?.oejSource ?? []}
+            daily={data?.oejDaily ?? []}
+            attribution={data?.oejAttribution ?? []}
+            summaryError={errors.oejSummary}
+            articleError={errors.oejArticle}
+            sourceError={errors.oejSource}
+            dailyError={errors.oejDaily}
+            attributionError={errors.oejAttribution}
             loading={loading}
           />
         </div>
