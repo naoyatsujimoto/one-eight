@@ -8,7 +8,7 @@ import { formatDate } from '../lib/localeFormat';
 import { SUPPORTED_LOCALES, getLocaleLabel } from '../lib/locales';
 import type { LocaleCode } from '../lib/locales';
 import { CompactLanguageSelector } from './CompactLanguageSelector';
-import { track } from '../lib/kpiTracker';
+import { track, flushForNavigation } from '../lib/kpiTracker';
 import {
   resolveTrafficSource,
   getSanitizedUtm,
@@ -195,6 +195,7 @@ export function JournalListPage() {
             className="jl-footer-play-link"
             onClick={() => {
               track('journal_game_cta_clicked', { context: 'list_footer' });
+              flushForNavigation();
             }}
           >
             {ui.playOneEight}

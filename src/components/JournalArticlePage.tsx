@@ -72,6 +72,12 @@ export function JournalArticlePage() {
   const visibleStartRef = useRef<number | null>(null);
   const articleBodyRef = useRef<HTMLDivElement | null>(null);
 
+  // Stable refs for sendEngagement — effetの依存配列にstateを持たせないためrefで保持
+  const articleRef = useRef<JournalArticleDetail | null>(null);
+  const requestedLocaleRef = useRef<LocaleCode>(initLocale);
+  const articleReadyRef = useRef(false); // true = 記事本文が初めて画面に表示された
+  const initialScrollDoneRef = useRef(false);
+
   // redirect if no slug
   useEffect(() => {
     if (!slug) {
@@ -112,6 +118,14 @@ export function JournalArticlePage() {
         }
       } else {
         setArticle(a);
+        articleRef.current = a;
+        // active_seconds: 記事が初めて表示された時点で計測開始
+        if (!articleReadyRef.current) {
+          articleReadyRef.current = true;
+          if (document.visibilityState === 'visible') {
+            visibleStartRef.current = Date.now();
+          }
+        }
         // KPI: journal_article_opened — 同一slugにつき1回（言語変更再取得では再送しない）
         if (!articleOpenedSentRef.current) {
           articleOpenedSentRef.current = true;
@@ -158,9 +172,10 @@ export function JournalArticlePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Engagement: visibility time計測
+  // Engagement: visibility time計測（記事表示後のみ）
   useEffect(() => {
     function handleVisibilityChange() {
+      if (!articleReadyRef.current) return; // 記事表示前はカウントしない
       if (document.visibilityState === 'visible') {
         visibleStartRef.current = Date.now();
       } else {
@@ -173,15 +188,12 @@ export function JournalArticlePage() {
         }
       }
     }
-    // 初期状態が visible なら計測開始
-    if (document.visibilityState === 'visible') {
-      visibleStartRef.current = Date.now();
-    }
+    // 計測開始は記事fetch成功時（articleReadyRef=true）に行う。ここでは開始しない。
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // unmount時に可視時間を確定
-      if (visibleStartRef.current !== null) {
+      // unmount時に可視時間を確定（記事表示済みの場合のみ）
+      if (articleReadyRef.current && visibleStartRef.current !== null) {
         activeSecondsRef.current = Math.min(
           86400,
           activeSecondsRef.current + Math.round((Date.now() - visibleStartRef.current) / 1000),
@@ -191,7 +203,7 @@ export function JournalArticlePage() {
     };
   }, []);
 
-  // pagehide で engagement 送信
+  // pagehide で engagement 送信（stableなeffect: refで最新値を参照するため依存なし）
   useEffect(() => {
     function handlePageHide() {
       sendEngagement();
@@ -201,23 +213,44 @@ export function JournalArticlePage() {
       window.removeEventListener('pagehide', handlePageHide);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, selectedLocale, article]);
+  }, []);
 
-  // component unmount で engagement 送信
+  // component unmount で engagement 送信（stableなeffect: refで最新値を参照するため依存なし）
   useEffect(() => {
     return () => {
       sendEngagement();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, article]);
+  }, []);
+
+  // Engagement: 記事本文表示後にscrollを1回初期計算
+  useEffect(() => {
+    if (!article) return;
+    if (initialScrollDoneRef.current) return;
+    initialScrollDoneRef.current = true;
+    requestAnimationFrame(() => {
+      const bodyEl = articleBodyRef.current;
+      if (!bodyEl) return;
+      const rect = bodyEl.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const scrolled = Math.min(
+        100,
+        Math.max(0, Math.round(((viewportH - rect.top) / rect.height) * 100)),
+      );
+      if (scrolled > maxScrollRef.current) {
+        maxScrollRef.current = scrolled;
+      }
+    });
+  }, [article]);
 
   function sendEngagement() {
     if (engagementSentRef.current) return;
-    if (!article) return; // 記事未取得なら送らない
+    const a = articleRef.current;
+    if (!a) return; // 記事未取得なら送らない
     engagementSentRef.current = true;
 
-    // 最終可視時間確定
-    if (visibleStartRef.current !== null) {
+    // 最終可視時間確定（記事表示済みの場合のみ）
+    if (articleReadyRef.current && visibleStartRef.current !== null) {
       activeSecondsRef.current = Math.min(
         86400,
         activeSecondsRef.current + Math.round((Date.now() - visibleStartRef.current) / 1000),
@@ -228,15 +261,16 @@ export function JournalArticlePage() {
     const maxScroll = Math.min(100, Math.max(0, maxScrollRef.current));
     const activeSec = Math.min(86400, Math.max(0, activeSecondsRef.current));
     const completed = maxScroll >= 90 && activeSec >= 30;
+    const reqLocale = requestedLocaleRef.current;
 
     track('journal_article_engagement', {
       article_slug: slug.slice(0, 200),
       max_scroll_percent: maxScroll,
       active_seconds: activeSec,
       completed,
-      requested_locale: selectedLocale.slice(0, 20),
-      displayed_locale: (article.translation?.lang ?? selectedLocale).slice(0, 20),
-      fallback: article.fallback,
+      requested_locale: reqLocale.slice(0, 20),
+      displayed_locale: (a.translation?.lang ?? reqLocale).slice(0, 20),
+      fallback: a.fallback,
     });
 
     flushForNavigation();
@@ -253,6 +287,7 @@ export function JournalArticlePage() {
       });
       prevLocaleRef.current = code;
     }
+    requestedLocaleRef.current = code;
     setSelectedLocale(code);
     setLang(code);
     const url = new URL(window.location.href);

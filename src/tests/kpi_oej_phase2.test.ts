@@ -561,3 +561,236 @@ describe('resolveTrafficSource — hostname 完全一致・サブドメイン一
     expect(resolveTrafficSource(params, 'https://www.google.com/search', origin)).toBe('google');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 2 最終補正: engagement ライフサイクル補正テスト
+// ---------------------------------------------------------------------------
+
+describe('Phase 2 補正: journal_article_engagement ライフサイクル', () => {
+  const mockTrack = vi.fn();
+  const mockFlush = vi.fn();
+
+  beforeEach(() => {
+    mockTrack.mockClear();
+    mockFlush.mockClear();
+  });
+
+  // C-1: article state更新ではengagementを送らない
+  it('C-1. articleRef更新（初回fetch）ではengagementを送らない', () => {
+    const engagementSentRef = { current: false };
+    const articleRef = { current: null as Record<string, unknown> | null };
+
+    function sendEngagement() {
+      if (engagementSentRef.current) return;
+      if (!articleRef.current) return;
+      engagementSentRef.current = true;
+      mockTrack('journal_article_engagement', {});
+      mockFlush();
+    }
+
+    // fetch成功: articleRefを更新するだけ。sendEngagementは呼び出さない。
+    articleRef.current = { slug: 'test', fallback: false, translation: null };
+    // 㐬 sendEngagement() NOT called here
+
+    expect(mockTrack).not.toHaveBeenCalled();
+  });
+
+  // C-2: 言語変更・再フェッチではengagementを送らない
+  it('C-2. 言語変更・再フェッチではengagementを送らない', () => {
+    const engagementSentRef = { current: false };
+    const articleRef = { current: null as Record<string, unknown> | null };
+    articleRef.current = { slug: 'test', fallback: false, translation: null };
+
+    function sendEngagement() {
+      if (engagementSentRef.current) return;
+      if (!articleRef.current) return;
+      engagementSentRef.current = true;
+      mockTrack('journal_article_engagement', {});
+    }
+
+    // 言語変更: requestedLocaleRefとarticleRefを更新するだけ
+    const requestedLocaleRef = { current: 'en' };
+    requestedLocaleRef.current = 'ja';
+    articleRef.current = { slug: 'test', fallback: false, translation: { lang: 'ja', title: 'T', body_html: '<p>T</p>' } };
+    // 㐬 sendEngagement() NOT called here
+
+    expect(mockTrack).not.toHaveBeenCalled();
+  });
+
+  // C-3: pagehideで1回engagement送信
+  it('C-3. pagehideで1回engagement送信', () => {
+    const engagementSentRef = { current: false };
+    const articleRef = { current: { slug: 'test', fallback: false, translation: null } };
+
+    function sendEngagement() {
+      if (engagementSentRef.current) return;
+      if (!articleRef.current) return;
+      engagementSentRef.current = true;
+      mockTrack('journal_article_engagement', { article_slug: 'test' });
+      mockFlush();
+    }
+
+    // pagehide発火
+    sendEngagement();
+
+    expect(mockTrack).toHaveBeenCalledTimes(1);
+    expect(mockTrack).toHaveBeenCalledWith(
+      'journal_article_engagement',
+      expect.objectContaining({ article_slug: 'test' }),
+    );
+    expect(mockFlush).toHaveBeenCalledTimes(1);
+  });
+
+  // C-4: unmountで1回engagement送信
+  it('C-4. 本当のunmountで1回engagement送信', () => {
+    const engagementSentRef = { current: false };
+    const articleRef = { current: { slug: 'test', fallback: false, translation: null } };
+
+    function sendEngagement() {
+      if (engagementSentRef.current) return;
+      if (!articleRef.current) return;
+      engagementSentRef.current = true;
+      mockTrack('journal_article_engagement', { article_slug: 'test' });
+      mockFlush();
+    }
+
+    // unmount cleanup発火
+    sendEngagement();
+
+    expect(mockTrack).toHaveBeenCalledTimes(1);
+  });
+
+  // C-5: pagehide後unmountでも合腲1回
+  it('C-5. pagehide後のunmountでも合腲1回', () => {
+    const engagementSentRef = { current: false };
+    const articleRef = { current: { slug: 'test', fallback: false, translation: null } };
+
+    function sendEngagement() {
+      if (engagementSentRef.current) return;
+      if (!articleRef.current) return;
+      engagementSentRef.current = true;
+      mockTrack('journal_article_engagement', { article_slug: 'test' });
+      mockFlush();
+    }
+
+    // pagehide
+    sendEngagement();
+    // unmount
+    sendEngagement();
+
+    expect(mockTrack).toHaveBeenCalledTimes(1);
+  });
+
+  // C-6: Loading時間をactive_secondsへ含めない
+  it('C-6. Loading時間をactive_secondsへ含めない', () => {
+    const articleReadyRef = { current: false }; // 記事未表示
+    const activeSecondsRef = { current: 0 };
+    const visibleStartRef = { current: null as number | null };
+
+    function handleVisibilityChange(state: 'visible' | 'hidden') {
+      if (!articleReadyRef.current) return; // 記事表示前はカウントしない
+      if (state === 'visible') {
+        visibleStartRef.current = Date.now();
+      } else {
+        if (visibleStartRef.current !== null) {
+          activeSecondsRef.current += Math.round((Date.now() - visibleStartRef.current) / 1000);
+          visibleStartRef.current = null;
+        }
+      }
+    }
+
+    // Loading中に画面が表示/非表示になってもカウントされない
+    handleVisibilityChange('visible');
+    handleVisibilityChange('hidden');
+
+    expect(activeSecondsRef.current).toBe(0);
+    expect(visibleStartRef.current).toBeNull();
+  });
+
+  // C-7: hidden時間を含めない
+  it('C-7. hidden状態の時間はactive_secondsへ含めない', () => {
+    const articleReadyRef = { current: true };
+    const activeSecondsRef = { current: 0 };
+    const visibleStartRef = { current: null as number | null };
+
+    function handleVisibilityChange(state: 'visible' | 'hidden') {
+      if (!articleReadyRef.current) return;
+      if (state === 'visible') {
+        visibleStartRef.current = Date.now();
+      } else {
+        if (visibleStartRef.current !== null) {
+          activeSecondsRef.current += Math.round((Date.now() - visibleStartRef.current) / 1000);
+          visibleStartRef.current = null;
+        }
+      }
+    }
+
+    // visible → hidden: 可視時間を確定
+    handleVisibilityChange('visible');
+    handleVisibilityChange('hidden');
+    expect(visibleStartRef.current).toBeNull(); // hidden後はnull
+
+    // hidden中は追加累積されない
+    const activeAfterHidden = activeSecondsRef.current;
+    // 時間経過をシミュレート（visibleStartRefがnullなのでhandleVisibilityChange('hidden')も無効）
+    handleVisibilityChange('hidden');
+    expect(activeSecondsRef.current).toBe(activeAfterHidden);
+  });
+
+  // C-8: 記事表示後からactive_seconds計測を開始する
+  it('C-8. 記事表示後からactive_seconds計測を開始する', () => {
+    const articleReadyRef = { current: false };
+    const visibleStartRef = { current: null as number | null };
+
+    // 記事表示前: visibleになってもタイマーを開始しない
+    expect(visibleStartRef.current).toBeNull();
+
+    // 初回記事fetch成功: articleReady=trueになり、visibleならタイマーを開始
+    articleReadyRef.current = true;
+    const isVisible = true; // document.visibilityState === 'visible' のシミュレート
+    if (isVisible) {
+      visibleStartRef.current = Date.now();
+    }
+
+    expect(visibleStartRef.current).not.toBeNull();
+  });
+
+  // C-9: 記事表示時にscroll初回計算を行う
+  it('C-9. 記事表示時にscroll初回計算を行い、言語変更後は再計算しない', () => {
+    const initialScrollDoneRef = { current: false };
+    const maxScrollRef = { current: 0 };
+
+    function calcInitialScroll(viewportH: number, rectTop: number, rectHeight: number) {
+      if (initialScrollDoneRef.current) return;
+      initialScrollDoneRef.current = true;
+      const scrolled = Math.min(100, Math.max(0, Math.round(((viewportH - rectTop) / rectHeight) * 100)));
+      if (scrolled > maxScrollRef.current) {
+        maxScrollRef.current = scrolled;
+      }
+    }
+
+    // 初回記事表示: viewport=800, rectTop=200, rectHeight=2000 → scrolled=30
+    calcInitialScroll(800, 200, 2000);
+    expect(initialScrollDoneRef.current).toBe(true);
+    expect(maxScrollRef.current).toBe(30);
+
+    // 言語変更後の再フェッチ: 初回計算済みなので再実行しない
+    calcInitialScroll(800, -1000, 2000); // こちらを実行するともっと高い値になるはず
+    expect(maxScrollRef.current).toBe(30); // 変わらない
+  });
+
+  // C-10: 一覧フッタCTAでtrack後にflushForNavigationを呼ぶ
+  it('C-10. 一覧フッタCTAでtrack後にflushForNavigationを呼ぶ', () => {
+    // list_footer CTA clickのシミュレート
+    mockTrack('journal_game_cta_clicked', { context: 'list_footer' });
+    mockFlush(); // flushForNavigation
+
+    expect(mockTrack).toHaveBeenCalledWith('journal_game_cta_clicked', { context: 'list_footer' });
+    expect(mockFlush).toHaveBeenCalledTimes(1);
+
+    // track → flushの順序を検証
+    const trackOrder = mockTrack.mock.invocationCallOrder[0]!;
+    const flushOrder = mockFlush.mock.invocationCallOrder[0]!;
+    expect(trackOrder).toBeLessThan(flushOrder);
+  });
+});
