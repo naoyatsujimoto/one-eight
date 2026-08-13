@@ -309,6 +309,14 @@ describe('KPI Migration Order — Phase 3 静的検証', () => {
     expect(sql).toContain("WHEN 'rpc_call_completed' THEN");
   });
 
+  it('24. OEJ Phase 3-A fix migration (20260811000004) が存在すること', () => {
+    expect(existsSync(migrationPath('20260811000004_kpi_oej_phase3a_source_summary_fix.sql'))).toBe(true);
+  });
+
+  it('25. OEJ Phase 3-A fix migration 番号が 20260811000003 より大きいこと', () => {
+    expect(20260811000004).toBeGreaterThan(20260811000003);
+  });
+
   it('23. DB validator Phase 3 のevent名がTypeScriptと一致すること', () => {
     const sql = readMigration('20260810000001_kpi_phase3_match_event.sql');
     const phase3Events = ['match_started', 'rpc_call_completed'];

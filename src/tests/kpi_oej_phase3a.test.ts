@@ -416,3 +416,88 @@ describe('OEJ KPI Phase 3-A — Migration Order', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// describe 6: Phase 3-A source_summary fix (20260811000004)
+// ---------------------------------------------------------------------------
+
+const PHASE3A_FIX_MIGRATION = '20260811000004_kpi_oej_phase3a_source_summary_fix.sql';
+const PHASE3A_FIX_MIGRATION_PATH = join(MIGRATIONS_DIR, PHASE3A_FIX_MIGRATION);
+
+describe('OEJ KPI Phase 3-A source_summary fix — 20260811000004', () => {
+
+  it('fix migrationファイルが存在すること', () => {
+    expect(existsSync(PHASE3A_FIX_MIGRATION_PATH)).toBe(true);
+  });
+
+  it('CREATE OR REPLACE FUNCTION admin_get_kpi_oej_source_summary が含まれること', () => {
+    const sql = readFileSync(PHASE3A_FIX_MIGRATION_PATH, 'utf-8');
+    expect(sql).toContain('CREATE OR REPLACE FUNCTION public.admin_get_kpi_oej_source_summary');
+  });
+
+  it('RETURNS TABLE の列名が元定義と一致すること（戻り契約維持）', () => {
+    const sql = readFileSync(PHASE3A_FIX_MIGRATION_PATH, 'utf-8');
+    const expectedColumns = [
+      'traffic_source',
+      'list_views',
+      'article_opens',
+      'unique_readers',
+      'sessions',
+      'engagement_events',
+      'completed_reads',
+      'completion_rate',
+      'average_active_seconds',
+      'game_cta_clicks',
+      'game_cta_rate',
+    ];
+    for (const col of expectedColumns) {
+      expect(sql, `fix migration RETURNS TABLE should include column: ${col}`).toContain(col);
+    }
+  });
+
+  it('未修飾の traffic_source SELECT が存在しないこと（完全修飾で衝突解消）', () => {
+    const sql = readFileSync(PHASE3A_FIX_MIGRATION_PATH, 'utf-8');
+    // cta_attributed で修飾されていること
+    expect(sql).toContain('caa.traffic_source');
+    expect(sql).toContain('cla.traffic_source');
+    // list_by_src で修飾されていること
+    expect(sql).toContain('le.traffic_source');
+    // open_by_src で修飾されていること
+    expect(sql).toContain('oe.traffic_source');
+    // sess_by_src で修飾されていること
+    expect(sql).toContain('ss.traffic_source');
+    // 未修飾パターン "SELECT traffic_source AS src" が残っていないこと
+    const unqualified = /\bSELECT\s+traffic_source\s+AS\s+src\b/;
+    const bodyMatch = sql.match(/\$\$([\.\s\S]+?)\$\$/);
+    expect(bodyMatch).not.toBeNull();
+    expect(
+      unqualified.test(bodyMatch![1]!),
+      'Should not have unqualified SELECT traffic_source AS src in function body'
+    ).toBe(false);
+  });
+
+  it('他の3 RPCが fix migration に含まれないこと（変更範囲最小化）', () => {
+    const sql = readFileSync(PHASE3A_FIX_MIGRATION_PATH, 'utf-8');
+    expect(sql).not.toContain('admin_get_kpi_oej_summary(');
+    expect(sql).not.toContain('admin_get_kpi_oej_article_summary(');
+    expect(sql).not.toContain('admin_get_kpi_oej_daily(');
+  });
+
+  it('SECURITY DEFINER / REVOKE / GRANT が維持されていること', () => {
+    const sql = readFileSync(PHASE3A_FIX_MIGRATION_PATH, 'utf-8');
+    expect(sql).toContain('SECURITY DEFINER');
+    expect(sql).toContain('REVOKE ALL ON FUNCTION');
+    expect(sql).toContain('FROM anon');
+    expect(sql).toContain('FROM PUBLIC');
+    expect(sql).toContain('TO authenticated, service_role, postgres');
+  });
+
+  it('7つの固定sourceが全てVALUESに含まれること', () => {
+    const sql = readFileSync(PHASE3A_FIX_MIGRATION_PATH, 'utf-8');
+    const sources = ['x', 'instagram', 'google', 'bing', 'one_eight_internal', 'direct', 'other_external'];
+    for (const src of sources) {
+      expect(sql, `Fix migration VALUES should include source: ${src}`).toContain(`'${src}'`);
+    }
+  });
+
+});
