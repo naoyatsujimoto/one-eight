@@ -161,8 +161,12 @@ export const PT_BR_TRANSLATIONS = {
     trainingBoardCoordDesc: 'Aprenda a localização de Positions e Gates no tabuleiro.',
     trainingBuildUpDesc: 'Aprenda o tamanho dos Assets e os tipos Massive, Selective e Quad Build.',
     trainingPosCaptureDesc: 'Use a vantagem de Build up para capturar uma Position do oponente.',
-    trainingT1PositionStep: (pos: string) => `Toque na Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => `Toque no Gate ${gate}.`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'As Positions s\u00e3o os espa\u00e7os circulares no centro do tabuleiro. A\u2013M v\u00e3o de cima para baixo, da esquerda para a direita dentro de cada linha. Primeiro, toque na Position A.'
+      : `Toque na Position ${pos}.`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'As Gates circundam o tabuleiro no sentido hor\u00e1rio. A Gate 1 fica no canto superior esquerdo; 2\u20133 ficam em cima; 4 fica no canto superior direito; 5\u20136 ficam \u00e0 direita; 7 fica no canto inferior direito; 8\u20139 ficam embaixo; 10 fica no canto inferior esquerdo; e 11\u201312 ficam \u00e0 esquerda. Primeiro, toque na Gate 1.'
+      : `Toque no Gate ${gate}.`,
     trainingT2BuildStep1: 'No Build up, você coloca Assets em um Gate conectado à Position selecionada.\n\nDentro do mesmo Gate, um Middle Asset cria um Build mais forte do que preencher todos os Small Slots. Um Large Asset cria um Build mais forte do que preencher todos os Middle e Small Slots. Você não precisa memorizar valores numéricos. Compare o tamanho dos Assets.\n\nSelecione a Position G e toque em um Large Slot no Gate 7. Massive Build coloca um Large Asset em um Gate.',
     trainingT2BuildStep2: 'Selecione a Position M e toque em um Middle Slot no Gate 6 e um no Gate 8. Selective Build coloca Middle Assets em dois Gates.',
     trainingT2BuildStep3: 'Selecione a Position A e toque em um Small Slot em cada Gate conectado: 1, 2, 7 e 12. Quad Build coloca Small Assets em quatro Gates.',

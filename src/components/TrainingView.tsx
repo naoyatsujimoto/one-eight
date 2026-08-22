@@ -278,22 +278,42 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     }
   }, []);
 
+  // ── Centralized coordinate_pick handler ──────────────────────────────────
+  // Handles both position and gate taps for coordinate quiz steps.
+  // Correct type+target → advance; anything else (wrong id or wrong type) → incorrect.
+  const handleCoordinatePick = useCallback((
+    type: 'position' | 'gate',
+    value: string,
+  ) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'coordinate_pick') return;
+
+    const isCorrect = step.targetType === type && step.target === value;
+    kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, isCorrect);
+    if (isCorrect) {
+      const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
+      commitSession(advanced);
+    } else {
+      commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+    }
+  }, [t, kpiTrackAttemptResult, advanceSession, commitSession]);
+
+  // Gate-level coordinate callback (passed to Board as onCoordinateGateClick)
+  const handleCoordinateGateClick = useCallback((gateId: GateId) => {
+    handleCoordinatePick('gate', String(gateId));
+  }, [handleCoordinatePick]);
+
   const handleSelectPosition = useCallback((positionId: PositionId) => {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
     if (!step) return;
 
-    // coordinate_pick: position tap
-    if (step.kind === 'coordinate_pick' && step.targetType === 'position') {
-      if (positionId === step.target) {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
-        commitSession(advanced);
-      } else {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
-        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
-      }
+    // coordinate_pick: route to central handler (wrong type = incorrect)
+    if (step.kind === 'coordinate_pick') {
+      handleCoordinatePick('position', positionId);
       return;
     }
 
@@ -303,7 +323,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     commitSession({ ...prev, gameState: nextState, feedback: null });
     setBuildState(EMPTY_BUILD);
     if (didSelect) playSymbol();
-  }, [t, playSymbol, commitSession, kpiTrackAttemptResult, advanceSession]);
+  }, [t, playSymbol, commitSession, handleCoordinatePick, advanceSession]);
 
   const handleMiddlePocketClick = useCallback((gateId: GateId) => {
     const prev = sessionRef.current;
@@ -353,22 +373,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step) return;
-
-    // coordinate_pick: gate tap
-    if (step.kind === 'coordinate_pick' && step.targetType === 'gate') {
-      if (String(gateId) === step.target) {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
-        commitSession(advanced);
-      } else {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
-        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
-      }
-      return;
-    }
-
-    if (step.kind !== 'user_move') return;
+    if (!step || step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     const nextState = applyMassiveBuild(prev.gameState, gateId);
@@ -421,22 +426,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step) return;
-
-    // coordinate_pick: gate tap
-    if (step.kind === 'coordinate_pick' && step.targetType === 'gate') {
-      if (String(gateId) === step.target) {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
-        commitSession(advanced);
-      } else {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
-        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
-      }
-      return;
-    }
-
-    if (step.kind !== 'user_move') return;
+    if (!step || step.kind !== 'user_move') return;
     const pos = prev.gameState.selectedPosition;
     if (!pos) return;
     if (step.expected.build.type !== 'quad') return;
@@ -487,22 +477,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step) return;
-
-    // coordinate_pick: gate tap
-    if (step.kind === 'coordinate_pick' && step.targetType === 'gate') {
-      if (String(gateId) === step.target) {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
-        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
-        commitSession(advanced);
-      } else {
-        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
-        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
-      }
-      return;
-    }
-
-    if (step.kind !== 'user_move') return;
+    if (!step || step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     if (prev.selectiveFirst !== null) {
@@ -861,6 +836,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               onLargePocketClick={handleLargePocketClick}
               onMiddlePocketClick={handleMiddleOrSelective}
               onSmallPocketClick={handleSmallPocketClick}
+              onCoordinateGateClick={currentStep?.kind === 'coordinate_pick' && currentStep.targetType === 'gate' ? handleCoordinateGateClick : undefined}
               showLabelToggle={false}
               defaultLabels={true}
               labelPerspective="black"

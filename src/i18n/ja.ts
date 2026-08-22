@@ -157,8 +157,12 @@ export const JA_TRANSLATIONS = {
     trainingBoardCoordDesc: '盤面のPositionとGateの配置を確認する。',
     trainingBuildUpDesc: 'AssetサイズとMassive・Selective・Quad Buildを学ぶ。',
     trainingPosCaptureDesc: 'Build up優勢を使って相手のPositionを奪取する。',
-    trainingT1PositionStep: (pos: string) => `Position ${pos} をタップしてください。`,
-    trainingT1GateStep: (gate: string) => `Gate ${gate} をタップしてください。`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Positionは盤面中央の円形エリアです。A〜Mは上から下へ、各段を左から右へ並びます。まずPosition Aをタップしてください。'
+      : `Position ${pos}をタップしてください。`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Gateは盤面の外周にあり、1から12まで時計回りに並びます。1は左上、2・3は上、4は右上、5・6は右、7は右下、8・9は下、10は左下、11・12は左です。まずGate 1をタップしてください。'
+      : `Gate ${gate}をタップしてください。`,
     trainingT2BuildStep1: 'Build upでは、選択したPositionに接続したGateにAssetを置きます。\n\n同じGate内では、Middle Asset 1つはSmall Slotをすべて埋めるよりも強いBuildになります。Large Asset 1つはMiddle SlotとSmall Slotをすべて埋めるよりも強いBuildになります。数値を覚える必要はありません。Assetの大きさで比較してください。\n\nPosition Gを選び、Gate 7のLarge Slotをタップしてください。Massive Buildは1つのGateにLarge Assetを置きます。',
     trainingT2BuildStep2: 'Position Mを選び、Gate 6とGate 8のMiddle Slotを1つずつタップしてください。Selective Buildは2つのGateにMiddle Assetを置きます。',
     trainingT2BuildStep3: 'Position Aを選び、接続するGate 1、2、7、12のSmall Slotを1つずつタップしてください。Quad Buildは4つのGateにSmall Assetを置きます。',

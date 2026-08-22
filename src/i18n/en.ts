@@ -158,8 +158,12 @@ export const EN_TRANSLATIONS = {
     trainingBoardCoordDesc: 'Learn the board layout by tapping Positions and Gates.',
     trainingBuildUpDesc: 'Learn Asset strength and Massive, Selective, and Quad Build.',
     trainingPosCaptureDesc: "Use Build up dominance to capture an opponent's Position.",
-    trainingT1PositionStep: (pos: string) => `Tap Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => `Tap Gate ${gate}.`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Positions are the circular spaces in the center of the board. A\u2013M run from top to bottom, from left to right within each row. First, tap Position A.'
+      : `Tap Position ${pos}.`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Gates run clockwise around the edge of the board. Gate 1 is at the upper left; 2\u20133 are at the top; 4 is at the upper right; 5\u20136 are on the right; 7 is at the lower right; 8\u20139 are at the bottom; 10 is at the lower left; and 11\u201312 are on the left. First, tap Gate 1.'
+      : `Tap Gate ${gate}.`,
     trainingT2BuildStep1: "In Build up, you place Assets in a Gate connected to the selected Position.\n\nWithin the same Gate, one Middle Asset creates a stronger Build than filling every Small Slot. One Large Asset creates a stronger Build than filling every Middle and Small Slot. You do not need to memorize numerical values. Compare Asset sizes instead.\n\nFirst, select Position G, then tap a Large Slot at Gate 7. Massive Build places a Large Asset in one Gate.",
     trainingT2BuildStep2: 'Select Position M, then tap one Middle Slot at Gate 6 and one at Gate 8. Selective Build places Middle Assets in two Gates.',
     trainingT2BuildStep3: 'Select Position A, then tap one Small Slot at each connected Gate: 1, 2, 7, and 12. Quad Build places Small Assets in four Gates.',

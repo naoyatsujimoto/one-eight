@@ -162,8 +162,12 @@ export const ZH_HANS_TRANSLATIONS = {
     trainingBoardCoordDesc: '确认棋盘上 Position 和 Gate 的位置。',
     trainingBuildUpDesc: '学习 Asset 大小以及 Massive、Selective 和 Quad Build。',
     trainingPosCaptureDesc: '利用 Build up 优势夺取对手的 Position。',
-    trainingT1PositionStep: (pos: string) => `点击 Position ${pos}。`,
-    trainingT1GateStep: (gate: string) => `点击 Gate ${gate}。`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Position 是棋盘中心的圆形区域。A–M 从上到下、每行从左到右排列。首先，点击 Position A。'
+      : `点击 Position ${pos}。`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Gate 沿棋盘边缘顺时针方向排列、1 在左上方；2–3 在上方；4 在右上方；5–6 在右方；7 在右下方；8–9 在下方；10 在左下方；11–12 在左方。首先，点击 Gate 1。'
+      : `点击 Gate ${gate}。`,
     trainingT2BuildStep1: "在 Build up 中，你将 Asset 放入与所选 Position 相连的 Gate。\n\n在同一 Gate 内，1 个 Middle Asset 比填满所有 Small Slot 的 Build 更强。1 个 Large Asset 比填满所有 Middle Slot 和 Small Slot 的 Build 更强。你不需要记住数値，只需比较 Asset 的大小即可。\n\n选择 Position G，然后点击 Gate 7 的 Large Slot。Massive Build 在一个 Gate 中放置 Large Asset。",
     trainingT2BuildStep2: '选择 Position M，然后分别点击 Gate 6 和 Gate 8 的 Middle Slot。Selective Build 在两个 Gate 中各放置 Middle Asset。',
     trainingT2BuildStep3: '选择 Position A，然后在相连的 Gate 1、2、7、12 中各点击一个 Small Slot。Quad Build 在四个 Gate 中各放置 Small Asset。',

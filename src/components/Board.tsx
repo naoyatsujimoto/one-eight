@@ -450,6 +450,7 @@ function GateCard({
   onLarge,
   onMiddle,
   onSmall,
+  onCoordinateClick,
 }: {
   gate: GameState['gates'][GateId];
   gateId: GateId;
@@ -463,6 +464,7 @@ function GateCard({
   onLarge: () => void;
   onMiddle: () => void;
   onSmall: () => void;
+  onCoordinateClick?: () => void;
 }) {
   const anySelected = ps.large === 'selected' || ps.middle === 'selected' || ps.small === 'selected';
   const cardClass = [
@@ -470,6 +472,7 @@ function GateCard({
     hasPosition ? (isRelated ? 'gate-card-active' : 'gate-card-inactive') : '',
     anySelected ? 'gate-card-selected' : '',
     tutorialHighlight ? 'gate-card-tutorial-hl' : '',
+    onCoordinateClick ? 'gate-card-coord-target' : '',
   ].filter(Boolean).join(' ');
 
   const isCorner = gateType.startsWith('corner');
@@ -479,6 +482,10 @@ function GateCard({
       className={cardClass}
       data-gate-id={gateId}
       aria-label={`Gate ${gateId}`}
+      onClick={onCoordinateClick}
+      onKeyDown={onCoordinateClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCoordinateClick(); } } : undefined}
+      role={onCoordinateClick ? 'button' : undefined}
+      tabIndex={onCoordinateClick ? 0 : undefined}
     >
       {renderGateCluster({ gate, gateType, ps, lastOpponentPocketSize, ghostPocketOpacities, onLarge, onMiddle, onSmall })}
     </div>
@@ -570,6 +577,7 @@ export function Board({
   onLargePocketClick,
   onMiddlePocketClick,
   onSmallPocketClick,
+  onCoordinateGateClick,
   tutorialGateHighlights,
   tutorialHighlightAllPositions,
   showLabelToggle = true,
@@ -597,6 +605,7 @@ export function Board({
   onLargePocketClick: (gateId: GateId) => void;
   onMiddlePocketClick: (gateId: GateId) => void;
   onSmallPocketClick: (gateId: GateId) => void;
+  onCoordinateGateClick?: (gateId: GateId) => void;
   tutorialGateHighlights?: Set<GateId>;
   tutorialHighlightAllPositions?: boolean;
   showLabelToggle?: boolean;
@@ -891,6 +900,7 @@ export function Board({
                 onLarge={() => onLargePocketClick(gateId)}
                 onMiddle={() => onMiddlePocketClick(gateId)}
                 onSmall={() => onSmallPocketClick(gateId)}
+                onCoordinateClick={onCoordinateGateClick ? () => onCoordinateGateClick(gateId) : undefined}
               />
               <div
                 className="gate-card-id"

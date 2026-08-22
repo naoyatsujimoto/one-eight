@@ -161,8 +161,12 @@ export const FR_TRANSLATIONS = {
     trainingBoardCoordDesc: "Apprenez l'emplacement des Positions et des Gates sur le plateau.",
     trainingBuildUpDesc: 'Apprenez la taille des Assets et les types Massive, Selective et Quad Build.',
     trainingPosCaptureDesc: 'Utilisez la domination du Build up pour capturer une Position adverse.',
-    trainingT1PositionStep: (pos: string) => `Appuyez sur la Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => `Appuyez sur le Gate ${gate}.`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Les Positions sont les espaces circulaires au centre du plateau. A\u2013M vont de haut en bas, de gauche \u00e0 droite dans chaque rang\u00e9e. D\u2019abord, appuyez sur la Position A.'
+      : `Appuyez sur la Position ${pos}.`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Les Gates entourent le plateau dans le sens des aiguilles d\u2019une montre. La Gate 1 est en haut \u00e0 gauche\u00a0; 2\u20133 sont en haut\u00a0; 4 est en haut \u00e0 droite\u00a0; 5\u20136 sont \u00e0 droite\u00a0; 7 est en bas \u00e0 droite\u00a0; 8\u20139 sont en bas\u00a0; 10 est en bas \u00e0 gauche\u00a0; et 11\u201312 sont \u00e0 gauche. D\u2019abord, appuyez sur la Gate 1.'
+      : `Appuyez sur le Gate ${gate}.`,
     trainingT2BuildStep1: "En Build up, vous placez des Assets dans un Gate connecté à la Position sélectionnée.\n\nDans un même Gate, un Middle Asset crée un Build plus fort que remplir tous les Small Slots. Un Large Asset crée un Build plus fort que remplir tous les Middle et Small Slots. Vous n'avez pas besoin de mémoriser des valeurs numériques. Comparez simplement la taille des Assets.\n\nSélectionnez la Position G, puis appuyez sur un Large Slot dans le Gate 7. Massive Build place un Large Asset dans un Gate.",
     trainingT2BuildStep2: 'Sélectionnez la Position M, puis appuyez sur un Middle Slot dans le Gate 6 et un dans le Gate 8. Selective Build place des Middle Assets dans deux Gates.',
     trainingT2BuildStep3: 'Sélectionnez la Position A, puis appuyez sur un Small Slot dans chacun des Gates connectés : 1, 2, 7 et 12. Quad Build place des Small Assets dans quatre Gates.',

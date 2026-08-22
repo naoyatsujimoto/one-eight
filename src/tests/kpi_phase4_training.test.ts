@@ -139,8 +139,8 @@ describe('Event schema — training_run_id 必須', () => {
     }
   });
 
-  it('ALLOWED_KPI_EVENT_NAMES は 27 件のまま', () => {
-    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(27);
+  it('ALLOWED_KPI_EVENT_NAMES は現仕様の 35 件', () => {
+    expect(ALLOWED_KPI_EVENT_NAMES.length).toBe(35);
   });
 
   it('training_started に training_run_id プロパティが存在する（型確認）', () => {

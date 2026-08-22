@@ -162,8 +162,12 @@ export const KO_TRANSLATIONS = {
     trainingBoardCoordDesc: '보드의 Position과 Gate 위치를 확인합니다.',
     trainingBuildUpDesc: 'Asset 크기와 Massive, Selective, Quad Build를 학습합니다.',
     trainingPosCaptureDesc: 'Build up 우위를 활용하여 상대의 Position을 탈취합니다.',
-    trainingT1PositionStep: (pos: string) => `Position ${pos}을 탭하세요.`,
-    trainingT1GateStep: (gate: string) => `Gate ${gate}을 탭하세요.`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Position은 보드 중앙의 원형 공간입니다. A–M은 위에서 아래로, 각 행에서 왼쪽에서 오른쪽 순서로 나열됩니다. 먼저 Position A를 탭하세요.'
+      : `Position ${pos}을 탭하세요.`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Gate는 보드 가장자리를 시계 방향으로 나열됩니다. 1은 왼쪽 위, 2–3은 위, 4는 오른쪽 위, 5–6은 오른쪽, 7은 오른쪽 아래, 8–9는 아래, 10은 왼쪽 아래, 11–12는 왼쪽에 있습니다. 먼저 Gate 1을 탭하세요.'
+      : `Gate ${gate}을 탭하세요.`,
     trainingT2BuildStep1: 'Build up에서는 선택한 Position에 연결된 Gate에 Asset을 배치합니다.\n\n같은 Gate 내에서 Middle Asset 1개는 Small Slot을 모두 채우는 것보다 강한 Build가 됩니다. Large Asset 1개는 Middle Slot과 Small Slot을 모두 채우는 것보다 강한 Build가 됩니다. 수치를 암기할 필요는 없습니다. Asset 크기로 비교하세요.\n\nPosition G를 선택하고 Gate 7의 Large Slot을 탭하세요. Massive Build는 하나의 Gate에 Large Asset을 배치합니다.',
     trainingT2BuildStep2: 'Position M을 선택하고 Gate 6과 Gate 8의 Middle Slot을 각각 하나씩 탭하세요. Selective Build는 두 개의 Gate에 Middle Asset을 배치합니다.',
     trainingT2BuildStep3: 'Position A를 선택하고 연결된 Gate 1, 2, 7, 12에 각각 Small Slot을 하나씩 탭하세요. Quad Build는 네 개의 Gate에 Small Asset을 배치합니다.',

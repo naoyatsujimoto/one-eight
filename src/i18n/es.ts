@@ -161,8 +161,12 @@ export const ES_TRANSLATIONS = {
     trainingBoardCoordDesc: 'Aprende la ubicación de Positions y Gates en el tablero.',
     trainingBuildUpDesc: 'Aprende el tamaño de Assets y los tipos Massive, Selective y Quad Build.',
     trainingPosCaptureDesc: 'Usa la ventaja de Build up para capturar una Position del oponente.',
-    trainingT1PositionStep: (pos: string) => `Toca la Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => `Toca el Gate ${gate}.`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Las Positions son los espacios circulares en el centro del tablero. A\u2013M van de arriba a abajo, de izquierda a derecha dentro de cada fila. Primero, toca la Position A.'
+      : `Toca la Position ${pos}.`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Las Gates rodean el tablero en sentido horario. La Gate 1 est\u00e1 en la parte superior izquierda; 2\u20133 est\u00e1n arriba; 4 est\u00e1 en la parte superior derecha; 5\u20136 est\u00e1n a la derecha; 7 est\u00e1 en la parte inferior derecha; 8\u20139 est\u00e1n abajo; 10 est\u00e1 en la parte inferior izquierda; y 11\u201312 est\u00e1n a la izquierda. Primero, toca la Gate 1.'
+      : `Toca el Gate ${gate}.`,
     trainingT2BuildStep1: 'En Build up, colocas Assets en un Gate conectado a la Position seleccionada.\n\nDentro del mismo Gate, un Middle Asset crea un Build más fuerte que llenar todos los Small Slots. Un Large Asset crea un Build más fuerte que llenar todos los Middle y Small Slots. No necesitas memorizar valores numéricos. Compara el tamaño de los Assets.\n\nSelecciona la Position G, luego toca un Large Slot en el Gate 7. Massive Build coloca un Large Asset en un Gate.',
     trainingT2BuildStep2: 'Selecciona la Position M, luego toca un Middle Slot en el Gate 6 y uno en el Gate 8. Selective Build coloca Middle Assets en dos Gates.',
     trainingT2BuildStep3: 'Selecciona la Position A, luego toca un Small Slot en cada Gate conectado: 1, 2, 7 y 12. Quad Build coloca Small Assets en cuatro Gates.',

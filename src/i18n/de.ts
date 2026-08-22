@@ -161,8 +161,12 @@ export const DE_TRANSLATIONS = {
     trainingBoardCoordDesc: 'Lerne die Positionen und Gates auf dem Spielfeld kennen.',
     trainingBuildUpDesc: 'Lerne die Asset-Größen und die Typen Massive, Selective und Quad Build.',
     trainingPosCaptureDesc: 'Nutze die Build-up-Überlegenheit, um eine Position des Gegners zu erobern.',
-    trainingT1PositionStep: (pos: string) => `Tippe auf Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => `Tippe auf Gate ${gate}.`,
+    trainingT1PositionStep: (pos: string) => pos === 'A'
+      ? 'Positions sind die kreisf\u00f6rmigen Felder in der Mitte des Spielfelds. A\u2013M verlaufen von oben nach unten, innerhalb jeder Reihe von links nach rechts. Tippe zuerst auf Position A.'
+      : `Tippe auf Position ${pos}.`,
+    trainingT1GateStep: (gate: string) => gate === '1'
+      ? 'Gates verlaufen im Uhrzeigersinn um den Rand des Spielfelds. Gate 1 befindet sich oben links; 2\u20133 sind oben; 4 ist oben rechts; 5\u20136 sind rechts; 7 ist unten rechts; 8\u20139 sind unten; 10 ist unten links; und 11\u201312 sind links. Tippe zuerst auf Gate 1.'
+      : `Tippe auf Gate ${gate}.`,
     trainingT2BuildStep1: 'Beim Build up platzierst du Assets in einem Gate, das mit der gewählten Position verbunden ist.\n\nInnerhalb desselben Gates ist ein Middle Asset stärker als alle Small Slots zu füllen. Ein Large Asset ist stärker als alle Middle und Small Slots zu füllen. Du musst keine Zahlenwerte auswendig lernen. Vergleiche einfach die Asset-Größen.\n\nWähle Position G und tippe auf einen Large Slot bei Gate 7. Massive Build platziert einen Large Asset in einem Gate.',
     trainingT2BuildStep2: 'Wähle Position M und tippe je auf einen Middle Slot bei Gate 6 und Gate 8. Selective Build platziert Middle Assets in zwei Gates.',
     trainingT2BuildStep3: 'Wähle Position A und tippe je auf einen Small Slot bei den verbundenen Gates 1, 2, 7 und 12. Quad Build platziert Small Assets in vier Gates.',
