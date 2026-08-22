@@ -148,7 +148,24 @@ export const JA_TRANSLATIONS = {
     trainingGuidedGameTitle: '一局指南',
     trainingGuidedGameCardDesc: '実戦の流れでONE EIGHTの全体戦略を学ぶコース。Black番で22手を指し切ります。',
     trainingTasksSection: '小課題 Training',
-    trainingTasksSectionDesc: '基本操作・Capture・終局などを短い課題で学びます。',
+    trainingTasksSectionDesc: '盤面、Build up、Position Captureを3つの小課題で学びます。',
+
+    // Phase 5: New task keys
+    trainingBoardCoordTitle: '盤面の座標',
+    trainingBuildUpTitle: 'Build up',
+    trainingPosCaptureTitle: 'Position Capture',
+    trainingBoardCoordDesc: '盤面のPositionとGateの配置を確認する。',
+    trainingBuildUpDesc: 'AssetサイズとMassive・Selective・Quad Buildを学ぶ。',
+    trainingPosCaptureDesc: 'Build up優勢を使って相手のPositionを奪取する。',
+    trainingT1PositionStep: (pos: string) => `Position ${pos} をタップしてください。`,
+    trainingT1GateStep: (gate: string) => `Gate ${gate} をタップしてください。`,
+    trainingT2BuildStep1: 'Build upでは、選択したPositionに接続したGateにAssetを置きます。\n\n同じGate内では、Middle Asset 1つはSmall Slotをすべて埋めるよりも強いBuildになります。Large Asset 1つはMiddle SlotとSmall Slotをすべて埋めるよりも強いBuildになります。数値を覚える必要はありません。Assetの大きさで比較してください。\n\nPosition Gを選び、Gate 7のLarge Slotをタップしてください。Massive Buildは1つのGateにLarge Assetを置きます。',
+    trainingT2BuildStep2: 'Position Mを選び、Gate 6とGate 8のMiddle Slotを1つずつタップしてください。Selective Buildは2つのGateにMiddle Assetを置きます。',
+    trainingT2BuildStep3: 'Position Aを選び、接続するGate 1、2、7、12のSmall Slotを1つずつタップしてください。Quad Buildは4つのGateにSmall Assetを置きます。',
+    trainingBuildUpComplete: 'Build up 完了。Massiveは1つのGateにLarge Asset、Selectiveは2つのGateにMiddle Asset、Quadは4つのGateにSmall Assetを置きます。Buildの強さはAssetの大きさで比較します。',
+    trainingT3Step1: 'Positionの奪取は、そのPositionにつながる4つのDiagonal Gateのうち、Build upが最も進んだGateで判定します。最も進んだGateが複数ある場合は、その中でより多くのGateを支配する側が優勢です。同数なら奪取できません。\n\nPosition EはWhiteの所有です。EのDiagonal Gateは2、4、6、10です。現在はGate 6のBuild upが最も進んでおり、Blackが支配しています。\n\nPosition Eを選んで奪取し、Gate 10にMassive Buildを行ってください。',
+    trainingPosCaptureComplete: 'Position Capture 完了。Build upが最も進んだDiagonal Gateの支配で優勢なら、相手のPositionを選択して奪取できます。同数の場合は奪取できません。',
+    trainingBoardCoordComplete: '盤面の座標 完了。Position（A〜M）とGate（1〜12）の位置を確認できました。',
 
     // Guided Game (FullGameTrainingRunner) UI strings — Training専用
     trainingBackBtn: '← 戻る',

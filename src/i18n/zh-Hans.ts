@@ -153,7 +153,24 @@ export const ZH_HANS_TRANSLATIONS = {
     trainingGuidedGameTitle: '全局引导',
     trainingGuidedGameCardDesc: '通过一局完整引导对局学习 ONE EIGHT 策略。以 Black 身份进行 22 手。',
     trainingTasksSection: '训练任务',
-    trainingTasksSectionDesc: '通过简短练习学习基本操作、Capture 和终局规则。',
+    trainingTasksSectionDesc: '通过三个简短课题学习棋盘、Build up 和 Position Capture。',
+
+    // Phase 5: New task keys
+    trainingBoardCoordTitle: '棋盘坐标',
+    trainingBuildUpTitle: 'Build up',
+    trainingPosCaptureTitle: 'Position Capture',
+    trainingBoardCoordDesc: '确认棋盘上 Position 和 Gate 的位置。',
+    trainingBuildUpDesc: '学习 Asset 大小以及 Massive、Selective 和 Quad Build。',
+    trainingPosCaptureDesc: '利用 Build up 优势夺取对手的 Position。',
+    trainingT1PositionStep: (pos: string) => `点击 Position ${pos}。`,
+    trainingT1GateStep: (gate: string) => `点击 Gate ${gate}。`,
+    trainingT2BuildStep1: "在 Build up 中，你将 Asset 放入与所选 Position 相连的 Gate。\n\n在同一 Gate 内，1 个 Middle Asset 比填满所有 Small Slot 的 Build 更强。1 个 Large Asset 比填满所有 Middle Slot 和 Small Slot 的 Build 更强。你不需要记住数値，只需比较 Asset 的大小即可。\n\n选择 Position G，然后点击 Gate 7 的 Large Slot。Massive Build 在一个 Gate 中放置 Large Asset。",
+    trainingT2BuildStep2: '选择 Position M，然后分别点击 Gate 6 和 Gate 8 的 Middle Slot。Selective Build 在两个 Gate 中各放置 Middle Asset。',
+    trainingT2BuildStep3: '选择 Position A，然后在相连的 Gate 1、2、7、12 中各点击一个 Small Slot。Quad Build 在四个 Gate 中各放置 Small Asset。',
+    trainingBuildUpComplete: 'Build up 完成。Massive 在一个 Gate 中放置 Large Asset，Selective 在两个 Gate 中放置 Middle Asset，Quad 在四个 Gate 中放置 Small Asset。通过 Asset 大小比较 Build 的强度。',
+    trainingT3Step1: '夺取判定基于 Position 的四个 Diagonal Gate 中 Build up 最进展的 Gate。若多个 Gate 并列最高，则控制更多此类 Gate 的一方占优。若数量相同，则无法夺取。\n\nPosition E 由 White 持有。E 的 Diagonal Gate 为 2、4、6、10。当前 Gate 6 的 Build up 最为进展，由 Black 控制。\n\n选择 Position E 以夺取，然后对 Gate 10 执行 Massive Build。',
+    trainingPosCaptureComplete: 'Position Capture 完成。当你控制更多 Build up 最进展的 Diagonal Gate 时，可夺取对手的 Position。数量相同时无法夺取。',
+    trainingBoardCoordComplete: '棋盘坐标完成。你现在可以识别棋盘上任意 Position（A–M）和 Gate（1–12）的位置。',
 
     // Guided Game (FullGameTrainingRunner) UI strings — Training
     trainingBackBtn: '← 返回',

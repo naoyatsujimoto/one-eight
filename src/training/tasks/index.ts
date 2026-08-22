@@ -1,4 +1,8 @@
 import type { TrainingTask } from '../types';
+import { T1_BOARD_COORDINATES } from './T1_board_coordinates';
+import { T2_BUILD_UP } from './T2_build_up';
+import { T3_POSITION_CAPTURE } from './T3_position_capture';
+// 旧task imports は既存テストのため残す
 import { T1_BUILD_BASICS } from './T1_build_basics';
 import { T2_CAPTURE_BUILD } from './T2_capture_build';
 import { T7_DIAGONAL_GATES } from './T7_diagonal_gates';
@@ -22,70 +26,34 @@ export interface TrainingTaskMeta {
 
 export const TRAINING_TASK_META: TrainingTaskMeta[] = [
   {
-    task: T1_BUILD_BASICS,
+    task: T1_BOARD_COORDINATES,
     order: 1,
-    titleKey: 'trainingT1Title',
+    titleKey: 'trainingBoardCoordTitle',
     prerequisite: null,
   },
   {
-    task: T2_CAPTURE_BUILD,
+    task: T2_BUILD_UP,
     order: 2,
-    titleKey: 'trainingT2Title',
-    prerequisite: 'T1_build_basics',
+    titleKey: 'trainingBuildUpTitle',
+    prerequisite: 'T1_board_coordinates',
   },
   {
-    task: T7_DIAGONAL_GATES,
+    task: T3_POSITION_CAPTURE,
     order: 3,
-    titleKey: 'trainingT7Title',
-    prerequisite: 'T2_capture_build',
-  },
-  {
-    task: T4_PARTIAL_BUILD,
-    order: 4,
-    titleKey: 'trainingT4Title',
-    prerequisite: 'T7_diagonal_gates',
-  },
-  {
-    task: T6_ASSET_VALUES,
-    order: 5,
-    titleKey: 'trainingT6Title',
-    prerequisite: 'T4_partial_build',
-  },
-  {
-    task: T5_CAPTURE_TIE,
-    order: 6,
-    titleKey: 'trainingT5Title',
-    prerequisite: 'T6_asset_values',
-  },
-  {
-    task: T8_PREPARE_CAPTURE,
-    order: 7,
-    titleKey: 'trainingT8Title',
-    prerequisite: 'T5_capture_tie',
-  },
-  {
-    task: T9_NO_BUILD_ENDGAME,
-    order: 8,
-    titleKey: 'trainingT9Title',
-    prerequisite: 'T8_prepare_capture',
-  },
-  {
-    task: T10_DEFENSIVE_BUILD,
-    order: 9,
-    titleKey: 'trainingT10Title',
-    prerequisite: 'T9_no_build_endgame',
+    titleKey: 'trainingPosCaptureTitle',
+    prerequisite: 'T2_build_up',
   },
 ];
 
 export const TRAINING_TASKS: TrainingTask[] = [
-  T1_BUILD_BASICS,
-  T2_CAPTURE_BUILD,
-  T7_DIAGONAL_GATES,
-  T4_PARTIAL_BUILD,
-  T6_ASSET_VALUES,
-  T5_CAPTURE_TIE,
-  T8_PREPARE_CAPTURE,
-  T9_NO_BUILD_ENDGAME,
-  T10_DEFENSIVE_BUILD,
+  T1_BOARD_COORDINATES,
+  T2_BUILD_UP,
+  T3_POSITION_CAPTURE,
 ];
-export { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE, T8_PREPARE_CAPTURE, T9_NO_BUILD_ENDGAME, T10_DEFENSIVE_BUILD };
+
+export {
+  T1_BOARD_COORDINATES, T2_BUILD_UP, T3_POSITION_CAPTURE,
+  T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES,
+  T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE,
+  T8_PREPARE_CAPTURE, T9_NO_BUILD_ENDGAME, T10_DEFENSIVE_BUILD,
+};

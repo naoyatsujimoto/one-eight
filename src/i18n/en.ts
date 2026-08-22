@@ -149,7 +149,24 @@ export const EN_TRANSLATIONS = {
     trainingGuidedGameTitle: 'Guided Game',
     trainingGuidedGameCardDesc: 'Learn ONE EIGHT strategy through the flow of one guided game. Play 22 moves as Black.',
     trainingTasksSection: 'Training Tasks',
-    trainingTasksSectionDesc: 'Learn basic actions, capture, and endgame rules through short exercises.',
+    trainingTasksSectionDesc: 'Learn the board, Build up, and Position Capture through three short lessons.',
+
+    // Phase 5: New task keys
+    trainingBoardCoordTitle: 'Board Coordinates',
+    trainingBuildUpTitle: 'Build up',
+    trainingPosCaptureTitle: 'Position Capture',
+    trainingBoardCoordDesc: 'Learn the board layout by tapping Positions and Gates.',
+    trainingBuildUpDesc: 'Learn Asset strength and Massive, Selective, and Quad Build.',
+    trainingPosCaptureDesc: "Use Build up dominance to capture an opponent's Position.",
+    trainingT1PositionStep: (pos: string) => `Tap Position ${pos}.`,
+    trainingT1GateStep: (gate: string) => `Tap Gate ${gate}.`,
+    trainingT2BuildStep1: "In Build up, you place Assets in a Gate connected to the selected Position.\n\nWithin the same Gate, one Middle Asset creates a stronger Build than filling every Small Slot. One Large Asset creates a stronger Build than filling every Middle and Small Slot. You do not need to memorize numerical values. Compare Asset sizes instead.\n\nFirst, select Position G, then tap a Large Slot at Gate 7. Massive Build places a Large Asset in one Gate.",
+    trainingT2BuildStep2: 'Select Position M, then tap one Middle Slot at Gate 6 and one at Gate 8. Selective Build places Middle Assets in two Gates.',
+    trainingT2BuildStep3: 'Select Position A, then tap one Small Slot at each connected Gate: 1, 2, 7, and 12. Quad Build places Small Assets in four Gates.',
+    trainingBuildUpComplete: 'Build up complete. Massive places a Large Asset in one Gate, Selective places Middle Assets in two Gates, and Quad places Small Assets in four Gates. Compare Build strength by Asset size.',
+    trainingT3Step1: "Capture is determined by the Gate or Gates with the greatest total Build among a Position's four Diagonal Gates. If several Gates are tied for the greatest Build, the player who controls more of those Gates has the advantage. If the control count is tied, the Position cannot be captured.\n\nPosition E belongs to White. Its Diagonal Gates are 2, 4, 6, and 10. Gate 6 currently has the greatest Build, and Black controls it.\n\nSelect Position E to capture it, then apply Massive Build to Gate 10.",
+    trainingPosCaptureComplete: "Position Capture complete. You can capture an opponent's Position when you control more of its greatest-Build Diagonal Gates. A tied control count does not allow Capture.",
+    trainingBoardCoordComplete: 'Board Coordinates complete. You can now identify any Position (A\u2013M) and Gate (1\u201312) on the board.',
 
     // Guided Game (FullGameTrainingRunner) UI strings - Training-specific
     trainingBackBtn: '← Back',

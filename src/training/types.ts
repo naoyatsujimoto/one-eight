@@ -1,6 +1,6 @@
 import type { GameState, GateId, PositionId } from '../game/types';
 
-export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates' | 'T4_partial_build' | 'T6_asset_values' | 'T5_capture_tie' | 'T8_prepare_capture' | 'T9_no_build_endgame' | 'T10_defensive_build' | 'full-game-v1';
+export type TrainingTaskId = 'T1_build_basics' | 'T2_capture_build' | 'T7_diagonal_gates' | 'T4_partial_build' | 'T6_asset_values' | 'T5_capture_tie' | 'T8_prepare_capture' | 'T9_no_build_endgame' | 'T10_defensive_build' | 'full-game-v1' | 'T1_board_coordinates' | 'T2_build_up' | 'T3_position_capture';
 
 export type ExpectedMove =
   | { positioning: PositionId; build: { type: 'massive'; gate: GateId; allowedGates?: GateId[] } }
@@ -14,7 +14,8 @@ export type FixedCpuMove =
 
 export type TrainingStep =
   | { kind: 'user_move'; expected: ExpectedMove; labelKey: string }
-  | { kind: 'cpu_fixed_move'; move: FixedCpuMove };
+  | { kind: 'cpu_fixed_move'; move: FixedCpuMove }
+  | { kind: 'coordinate_pick'; targetType: 'position' | 'gate'; target: string; labelKey: string };
 
 export interface TrainingTask {
   id: TrainingTaskId;

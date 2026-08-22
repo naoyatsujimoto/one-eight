@@ -9,7 +9,7 @@ import type { GateId, PositionId } from '../game/types';
 import type { BoardBuildState } from '../app/App';
 import { useLang } from '../lib/lang';
 import { useSound } from '../hooks/useSound';
-import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE, T8_PREPARE_CAPTURE, T9_NO_BUILD_ENDGAME, TRAINING_TASK_META } from '../training/tasks/index';
+import { T1_BUILD_BASICS, T2_CAPTURE_BUILD, T7_DIAGONAL_GATES, T4_PARTIAL_BUILD, T6_ASSET_VALUES, T5_CAPTURE_TIE, T8_PREPARE_CAPTURE, T9_NO_BUILD_ENDGAME, T10_DEFENSIVE_BUILD, T1_BOARD_COORDINATES, T2_BUILD_UP, T3_POSITION_CAPTURE, TRAINING_TASK_META } from '../training/tasks/index';
 import { validateMove } from '../training/validateMove';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { saveTrainingProgress, isTaskCompleted } from '../training/trainingProgress';
@@ -74,7 +74,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // 一局指南の一時中断状態（同一セッション内でのresume用、リロード後は消える）
   const [fullGameResumeState, setFullGameResumeState] = useState<FullGameResumeState | null>(null);
   const [fullGameCompleted, setFullGameCompleted] = useState(() => isFullGameCompleted());
-  const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BUILD_BASICS));
+  const [session, setSession] = useState<TrainingSession>(() => makeSession(T1_BOARD_COORDINATES));
   const sessionRef = useRef<TrainingSession>(session);
   useEffect(() => { sessionRef.current = session; }, [session]);
   const commitSession = useCallback((next: TrainingSession) => {
@@ -86,6 +86,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   // Completion state loaded from localStorage
   const [completedTasks, setCompletedTasks] = useState<Set<TrainingTaskId>>(() => {
     const set = new Set<TrainingTaskId>();
+    // 旧task
     if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
     if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
     if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
@@ -95,6 +96,10 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (isTaskCompleted('T8_prepare_capture')) set.add('T8_prepare_capture');
     if (isTaskCompleted('T9_no_build_endgame')) set.add('T9_no_build_endgame');
     if (isTaskCompleted('T10_defensive_build')) set.add('T10_defensive_build');
+    // 新task
+    if (isTaskCompleted('T1_board_coordinates')) set.add('T1_board_coordinates');
+    if (isTaskCompleted('T2_build_up')) set.add('T2_build_up');
+    if (isTaskCompleted('T3_position_capture')) set.add('T3_position_capture');
     return set;
   });
 
@@ -103,6 +108,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     if (mode === 'intro') {
       setFullGameCompleted(isFullGameCompleted());
       const set = new Set<TrainingTaskId>();
+      // 旧task
       if (isTaskCompleted('T1_build_basics')) set.add('T1_build_basics');
       if (isTaskCompleted('T2_capture_build')) set.add('T2_capture_build');
       if (isTaskCompleted('T7_diagonal_gates')) set.add('T7_diagonal_gates');
@@ -112,6 +118,10 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       if (isTaskCompleted('T8_prepare_capture')) set.add('T8_prepare_capture');
       if (isTaskCompleted('T9_no_build_endgame')) set.add('T9_no_build_endgame');
       if (isTaskCompleted('T10_defensive_build')) set.add('T10_defensive_build');
+      // 新task
+      if (isTaskCompleted('T1_board_coordinates')) set.add('T1_board_coordinates');
+      if (isTaskCompleted('T2_build_up')) set.add('T2_build_up');
+      if (isTaskCompleted('T3_position_capture')) set.add('T3_position_capture');
       setCompletedTasks(set);
     }
   }, [mode]);
@@ -164,7 +174,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     // KPI: training_step_reached for the new user_move step (if not yet reached)
     if (s.status === 'playing') {
       const nextStep = s.task.steps[s.stepIndex];
-      if (nextStep && nextStep.kind === 'user_move' && !kpiReachedStepsRef.current.has(s.stepIndex)) {
+      if (nextStep && (nextStep.kind === 'user_move' || nextStep.kind === 'coordinate_pick') && !kpiReachedStepsRef.current.has(s.stepIndex)) {
         kpiReachedStepsRef.current.add(s.stepIndex);
         const totalUserMoves = countTotalUserMoves(s.task.steps);
         const userMoveIdx = countUserMovesBefore(s.task.steps, s.stepIndex);
@@ -203,9 +213,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     kpiReachedStepsRef.current = new Set();
     kpiCompletionSentRef.current = false;
     kpiStartedSentRef.current = true;
-    // user_move steps only — first step index 0
+    // user_move / coordinate_pick steps — first step index 0
     const totalUserMoves = countTotalUserMoves(task.steps);
-    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move');
+    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick');
     track('training_started', {
       training_run_id: newRunId,
       task_id: task.id as string,
@@ -233,18 +243,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
   function handleBackToIntro() {
     setMode('intro');
   }
-
-  const handleSelectPosition = useCallback((positionId: PositionId) => {
-    const prev = sessionRef.current;
-    if (prev.status !== 'playing') return;
-    const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
-    const nextState = selectPosition(prev.gameState, positionId);
-    const didSelect = nextState.selectedPosition !== null && nextState.selectedPosition !== prev.gameState.selectedPosition;
-    commitSession({ ...prev, gameState: nextState, feedback: null });
-    setBuildState(EMPTY_BUILD);
-    if (didSelect) playSymbol();
-  }, [playSymbol, commitSession]);
 
   // ── KPI helper: track attempt result for individual training steps ──────────────
   // Called via setTimeout to avoid calling track() inside setState updaters directly
@@ -279,6 +277,33 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       });
     }
   }, []);
+
+  const handleSelectPosition = useCallback((positionId: PositionId) => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step) return;
+
+    // coordinate_pick: position tap
+    if (step.kind === 'coordinate_pick' && step.targetType === 'position') {
+      if (positionId === step.target) {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
+        commitSession(advanced);
+      } else {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      }
+      return;
+    }
+
+    if (step.kind !== 'user_move') return;
+    const nextState = selectPosition(prev.gameState, positionId);
+    const didSelect = nextState.selectedPosition !== null && nextState.selectedPosition !== prev.gameState.selectedPosition;
+    commitSession({ ...prev, gameState: nextState, feedback: null });
+    setBuildState(EMPTY_BUILD);
+    if (didSelect) playSymbol();
+  }, [t, playSymbol, commitSession, kpiTrackAttemptResult, advanceSession]);
 
   const handleMiddlePocketClick = useCallback((gateId: GateId) => {
     const prev = sessionRef.current;
@@ -328,7 +353,22 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step) return;
+
+    // coordinate_pick: gate tap
+    if (step.kind === 'coordinate_pick' && step.targetType === 'gate') {
+      if (String(gateId) === step.target) {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
+        commitSession(advanced);
+      } else {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      }
+      return;
+    }
+
+    if (step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     const nextState = applyMassiveBuild(prev.gameState, gateId);
@@ -381,7 +421,22 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step) return;
+
+    // coordinate_pick: gate tap
+    if (step.kind === 'coordinate_pick' && step.targetType === 'gate') {
+      if (String(gateId) === step.target) {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
+        commitSession(advanced);
+      } else {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      }
+      return;
+    }
+
+    if (step.kind !== 'user_move') return;
     const pos = prev.gameState.selectedPosition;
     if (!pos) return;
     if (step.expected.build.type !== 'quad') return;
@@ -432,7 +487,22 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step) return;
+
+    // coordinate_pick: gate tap
+    if (step.kind === 'coordinate_pick' && step.targetType === 'gate') {
+      if (String(gateId) === step.target) {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, true);
+        const advanced = advanceSession({ ...prev, stepIndex: prev.stepIndex + 1, feedback: null });
+        commitSession(advanced);
+      } else {
+        kpiTrackAttemptResult(prev.task.id as string, prev.task.steps, prev.stepIndex, false);
+        commitSession({ ...prev, attemptCount: prev.attemptCount + 1, feedback: t.trainingFeedbackWrong });
+      }
+      return;
+    }
+
+    if (step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     if (prev.selectiveFirst !== null) {
@@ -510,7 +580,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     kpiStartedSentRef.current = true;
     const task = session.task;
     const totalUserMoves = countTotalUserMoves(task.steps);
-    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move');
+    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick');
     track('training_started', {
       training_run_id: newRunId,
       task_id: task.id as string,
@@ -635,6 +705,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               T9_no_build_endgame: 'trainingT9Desc',
               T10_defensive_build: 'trainingT10Desc',
               'full-game-v1': 'trainingFullGameDesc',
+              T1_board_coordinates: 'trainingBoardCoordDesc',
+              T2_build_up: 'trainingBuildUpDesc',
+              T3_position_capture: 'trainingPosCaptureDesc',
             };
             const descKey = descKeyMap[taskId] ?? '';
             const descText = (t as Record<string, unknown>)[descKey] as string | undefined;
@@ -693,6 +766,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
   // ── Task screen (task mode render) ────────────────────────────────────────
   const completeTitle: string = (() => {
+    if (session.task.id === 'T1_board_coordinates') return (t as Record<string, unknown>)['trainingBoardCoordComplete'] as string ?? t.trainingCompleteTitle;
+    if (session.task.id === 'T2_build_up') return (t as Record<string, unknown>)['trainingBuildUpComplete'] as string ?? t.trainingCompleteTitle;
+    if (session.task.id === 'T3_position_capture') return (t as Record<string, unknown>)['trainingPosCaptureComplete'] as string ?? t.trainingCompleteTitle;
     if (session.task.id === 'T2_capture_build') return t.trainingT2Complete;
     if (session.task.id === 'T7_diagonal_gates') return t.trainingT7Complete;
     if (session.task.id === 'T4_partial_build') return t.trainingT4Complete;
@@ -706,15 +782,24 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
   const stepLabel: string = (() => {
     if (session.status === 'complete') return completeTitle;
-    if (!currentStep || currentStep.kind !== 'user_move') return '';
+    if (!currentStep) return '';
+    if (currentStep.kind === 'coordinate_pick') {
+      const key = currentStep.labelKey as keyof typeof t;
+      const fn = (t as Record<string, unknown>)[key as string];
+      if (typeof fn === 'function') {
+        return (fn as (s: string) => string)(currentStep.target);
+      }
+      return (fn as string) ?? currentStep.labelKey;
+    }
+    if (currentStep.kind !== 'user_move') return '';
     const key = currentStep.labelKey as keyof typeof t;
     return (t[key] as string) ?? currentStep.labelKey;
   })();
 
   const userStepNum = session.task.steps
     .slice(0, session.stepIndex + 1)
-    .filter((s) => s.kind === 'user_move').length;
-  const totalUserSteps = session.task.steps.filter((s) => s.kind === 'user_move').length;
+    .filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
+  const totalUserSteps = session.task.steps.filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
 
   return (
     <div className="trn-screen">
@@ -788,7 +873,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       <div className="trn-actions-sticky">
         {session.status === 'complete' ? (
           <>
-            {session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && session.task.id !== 'T5_capture_tie' && session.task.id !== 'T8_prepare_capture' && session.task.id !== 'T9_no_build_endgame' && session.task.id !== 'T10_defensive_build' && (
+            {session.task.id !== 'T3_position_capture' && session.task.id !== 'T7_diagonal_gates' && session.task.id !== 'T6_asset_values' && session.task.id !== 'T5_capture_tie' && session.task.id !== 'T8_prepare_capture' && session.task.id !== 'T9_no_build_endgame' && session.task.id !== 'T10_defensive_build' && (
               <button type="button" className="action-btn action-btn-primary" onClick={handleNextTraining}>
                 {t.trainingNextTraining}
               </button>
