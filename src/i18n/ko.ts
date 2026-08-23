@@ -162,19 +162,35 @@ export const KO_TRANSLATIONS = {
     trainingBoardCoordDesc: '보드의 Position과 Gate 위치를 확인합니다.',
     trainingBuildUpDesc: 'Asset 크기와 Massive, Selective, Quad Build를 학습합니다.',
     trainingPosCaptureDesc: 'Build up 우위를 활용하여 상대의 Position을 탈취합니다.',
-    trainingT1PositionStep: (pos: string) => pos === 'A'
-      ? 'Position은 보드 중앙의 원형 공간입니다. A–M은 위에서 아래로, 각 행에서 왼쪽에서 오른쪽 순서로 나열됩니다. 먼저 Position A를 탭하세요.'
-      : `Position ${pos}을 탭하세요.`,
-    trainingT1GateStep: (gate: string) => gate === '1'
-      ? 'Gate는 보드 가장자리를 시계 방향으로 나열됩니다. 1은 왼쪽 위, 2–3은 위, 4는 오른쪽 위, 5–6은 오른쪽, 7은 오른쪽 아래, 8–9는 아래, 10은 왼쪽 아래, 11–12는 왼쪽에 있습니다. 먼저 Gate 1을 탭하세요.'
-      : `Gate ${gate}을 탭하세요.`,
-    trainingT2BuildStep1: 'Build up에서는 선택한 Position에 연결된 Gate에 Asset을 배치합니다.\n\n같은 Gate 내에서 Middle Asset 1개는 Small Slot을 모두 채우는 것보다 강한 Build가 됩니다. Large Asset 1개는 Middle Slot과 Small Slot을 모두 채우는 것보다 강한 Build가 됩니다. 수치를 암기할 필요는 없습니다. Asset 크기로 비교하세요.\n\nPosition G를 선택하고 Gate 7의 Large Slot을 탭하세요. Massive Build는 하나의 Gate에 Large Asset을 배치합니다.',
+    trainingT1PositionStep: (pos: string) => `Position ${pos}를 탭하세요.`,
+    // T1 explanation cards
+    trainingT1Exp1: 'Position은 보드 중앙의 원형 공간입니다.',
+    trainingT1Exp2: 'Position A–M은 위에서 아래로, 각 행은 왼쪽에서 오른쪽으로 이어집니다.',
+    trainingT1Exp3: 'Gate 1–12는 보드 가장자리를 따라 시계 방향으로 이어집니다.',
+    trainingT1Exp4: '네 모서리는 왼쪽 위 Gate 1, 오른쪽 위 Gate 4, 오른쪽 아래 Gate 7, 왼쪽 아래 Gate 10입니다.',
+    trainingT1Exp5: '그 사이에 위는 Gate 2–3, 오른쪽은 Gate 5–6, 아래는 Gate 8–9, 왼쪽은 Gate 11–12가 있습니다.',
+    // T2 explanation cards
+    trainingT2Exp1: 'Build up에서는 선택한 Position에 연결된 Gate에 Asset을 배치합니다.',
+    trainingT2Exp2: 'Asset 강도는 크기로 비교합니다. 수치를 암기할 필요는 없습니다.',
+    trainingT2Exp3: '같은 Gate 내에서 Middle Asset 1개는 모든 Small Slot을 채우는 것보다 강한 Build입니다.',
+    trainingT2Exp4: 'Large Asset 1개는 같은 Gate의 모든 Middle Slot과 Small Slot을 채우는 것보다 강한 Build입니다.',
+    trainingT2Exp5: 'Massive Build는 한 Gate에 Large Asset을 배치합니다.',
+    trainingT2Exp6: 'Selective Build는 두 Gate에 Middle Asset을 하나씩 배치합니다.',
+    trainingT2Exp7: 'Quad Build는 Position에 연결된 네 Gate에 Small Asset을 하나씩 배치합니다.',
+    trainingT1GateStep: (gate: string) => `Gate ${gate}를 탭하세요.`,
+    trainingT2BuildStep1: 'Position G를 선택하고 Gate 7의 Large Slot을 탭하세요.',
     trainingT2BuildStep2: 'Position M을 선택하고 Gate 6과 Gate 8의 Middle Slot을 각각 하나씩 탭하세요. Selective Build는 두 개의 Gate에 Middle Asset을 배치합니다.',
     trainingT2BuildStep3: 'Position A를 선택하고 연결된 Gate 1, 2, 7, 12에 각각 Small Slot을 하나씩 탭하세요. Quad Build는 네 개의 Gate에 Small Asset을 배치합니다.',
-    trainingBuildUpComplete: 'Build up 완료. Massive는 하나의 Gate에 Large Asset을, Selective는 두 개의 Gate에 Middle Asset을, Quad는 네 개의 Gate에 Small Asset을 배치합니다. Build 강도는 Asset 크기로 비교합니다.',
-    trainingT3Step1: '탈취는 Position의 네 Diagonal Gate 중 Build up이 가장 진행된 Gate를 기준으로 판정합니다. 최고 수준의 Gate가 여러 개인 경우, 그 Gate를 더 많이 지배하는 쪽이 유리합니다. 수가 같으면 탈취할 수 없습니다.\n\nPosition E는 White의 소유입니다. E의 Diagonal Gate는 2, 4, 6, 10입니다. 현재 Gate 6의 Build up이 가장 진행되어 있으며 Black이 지배하고 있습니다.\n\nPosition E를 선택하여 탈취하고 Gate 10에 Massive Build를 실행하세요.',
-    trainingPosCaptureComplete: 'Position Capture 완료. Build up이 가장 진행된 Diagonal Gate를 더 많이 지배하면 상대의 Position을 탈취할 수 있습니다. 수가 같으면 탈취할 수 없습니다.',
-    trainingBoardCoordComplete: '보드 좌표 완료. 보드의 모든 Position(A–M)과 Gate(1–12) 위치를 확인했습니다.',
+    trainingBuildUpComplete: 'Build up 완료. 세 가지 Build 유형과 Asset 크기 비교를 배웠습니다.',
+    // T3 explanation cards
+    trainingT3Exp1: '각 Position은 네 개의 Diagonal Gate와 연결되어 있습니다.',
+    trainingT3Exp2: '탈취 판정 시 Build up이 가장 진행된 Gate를 비교합니다.',
+    trainingT3Exp3: '여러 Gate가 동률인 경우 더 많이 지배하는 쪽이 유리합니다. 수가 같으면 탈취할 수 없습니다.',
+    trainingT3Exp4: 'Position E는 White의 소유입니다. Diagonal Gate는 Gate 2, 4, 6, 10입니다.',
+    trainingT3Exp5: '이 보드에서 Gate 6의 Build up이 가장 진행되었고 Black이 지배합니다. 지금 Position E를 탈취할 수 있습니다.',
+    trainingT3Step1: 'Position E를 선택하여 탈취하고 Gate 10에 Massive Build를 실행하세요.',
+    trainingPosCaptureComplete: 'Position Capture 완료. Build up 우위로 Position을 탈취했습니다.',
+    trainingBoardCoordComplete: '보드의 모든 Position과 Gate 위치를 확인했습니다.',
 
     // Guided Game (FullGameTrainingRunner) UI strings — Training
     trainingBackBtn: '← 뒤로',

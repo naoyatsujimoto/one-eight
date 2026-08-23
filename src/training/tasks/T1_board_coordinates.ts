@@ -8,12 +8,24 @@ export const T1_BOARD_COORDINATES: TrainingTask = {
   id: 'T1_board_coordinates',
   titleKey: 'trainingBoardCoordTitle',
   steps: [
+    // Explanation 1
+    { kind: 'explanation', labelKey: 'trainingT1Exp1' },
+    // Explanation 2
+    { kind: 'explanation', labelKey: 'trainingT1Exp2' },
+    // Position A–M (13 questions)
     ...POSITION_ORDER.map((pos) => ({
       kind: 'coordinate_pick' as const,
       targetType: 'position' as const,
       target: pos,
       labelKey: 'trainingT1PositionStep',
     })),
+    // Explanation 3
+    { kind: 'explanation', labelKey: 'trainingT1Exp3' },
+    // Explanation 4
+    { kind: 'explanation', labelKey: 'trainingT1Exp4' },
+    // Explanation 5
+    { kind: 'explanation', labelKey: 'trainingT1Exp5' },
+    // Gate 1–12 (12 questions)
     ...GATE_ORDER.map((gate) => ({
       kind: 'coordinate_pick' as const,
       targetType: 'gate' as const,

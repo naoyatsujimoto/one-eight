@@ -161,19 +161,35 @@ export const DE_TRANSLATIONS = {
     trainingBoardCoordDesc: 'Lerne die Positionen und Gates auf dem Spielfeld kennen.',
     trainingBuildUpDesc: 'Lerne die Asset-Größen und die Typen Massive, Selective und Quad Build.',
     trainingPosCaptureDesc: 'Nutze die Build-up-Überlegenheit, um eine Position des Gegners zu erobern.',
-    trainingT1PositionStep: (pos: string) => pos === 'A'
-      ? 'Positions sind die kreisf\u00f6rmigen Felder in der Mitte des Spielfelds. A\u2013M verlaufen von oben nach unten, innerhalb jeder Reihe von links nach rechts. Tippe zuerst auf Position A.'
-      : `Tippe auf Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => gate === '1'
-      ? 'Gates verlaufen im Uhrzeigersinn um den Rand des Spielfelds. Gate 1 befindet sich oben links; 2\u20133 sind oben; 4 ist oben rechts; 5\u20136 sind rechts; 7 ist unten rechts; 8\u20139 sind unten; 10 ist unten links; und 11\u201312 sind links. Tippe zuerst auf Gate 1.'
-      : `Tippe auf Gate ${gate}.`,
-    trainingT2BuildStep1: 'Beim Build up platzierst du Assets in einem Gate, das mit der gewählten Position verbunden ist.\n\nInnerhalb desselben Gates ist ein Middle Asset stärker als alle Small Slots zu füllen. Ein Large Asset ist stärker als alle Middle und Small Slots zu füllen. Du musst keine Zahlenwerte auswendig lernen. Vergleiche einfach die Asset-Größen.\n\nWähle Position G und tippe auf einen Large Slot bei Gate 7. Massive Build platziert einen Large Asset in einem Gate.',
-    trainingT2BuildStep2: 'Wähle Position M und tippe je auf einen Middle Slot bei Gate 6 und Gate 8. Selective Build platziert Middle Assets in zwei Gates.',
-    trainingT2BuildStep3: 'Wähle Position A und tippe je auf einen Small Slot bei den verbundenen Gates 1, 2, 7 und 12. Quad Build platziert Small Assets in vier Gates.',
-    trainingBuildUpComplete: 'Build up abgeschlossen. Massive platziert einen Large Asset in einem Gate, Selective platziert Middle Assets in zwei Gates und Quad platziert Small Assets in vier Gates. Vergleiche die Build-Stärke anhand der Asset-Größe.',
-    trainingT3Step1: 'Die Capture wird durch das Gate mit dem höchsten Build-Gesamtwert unter den vier Diagonal Gates einer Position bestimmt. Wenn mehrere Gates gleichauf liegen, hat der Spieler die Überlegenheit, der mehr dieser Gates kontrolliert. Bei gleichem Stand ist keine Capture möglich.\n\nPosition E gehört White. Ihre Diagonal Gates sind 2, 4, 6 und 10. Gate 6 hat aktuell den höchsten Build und wird von Black kontrolliert.\n\nWähle Position E, um sie zu erobern, und führe dann Massive Build bei Gate 10 aus.',
-    trainingPosCaptureComplete: 'Position Capture abgeschlossen. Du kannst die Position eines Gegners erobern, wenn du mehr seiner Diagonal Gates mit dem höchsten Build kontrollierst. Bei einem Gleichstand ist keine Capture möglich.',
-    trainingBoardCoordComplete: 'Koordinaten des Spielfelds abgeschlossen. Du kannst nun jede Position (A–M) und jedes Gate (1–12) auf dem Spielfeld identifizieren.',
+    trainingT1PositionStep: (pos: string) => `Tippe auf Position ${pos}.`,
+    // T1 explanation cards
+    trainingT1Exp1: 'Positions sind die kreisförmigen Felder in der Mitte des Spielfelds.',
+    trainingT1Exp2: 'Position A–M verläuft von oben nach unten, innerhalb jeder Reihe von links nach rechts.',
+    trainingT1Exp3: 'Gate 1–12 verläuft im Uhrzeigersinn um den Rand des Spielfelds.',
+    trainingT1Exp4: 'Die vier Ecken sind Gate 1 oben links, Gate 4 oben rechts, Gate 7 unten rechts und Gate 10 unten links.',
+    trainingT1Exp5: 'Dazwischen liegen oben Gate 2–3, rechts Gate 5–6, unten Gate 8–9 und links Gate 11–12.',
+    // T2 explanation cards
+    trainingT2Exp1: 'Beim Build up platzierst du Assets in einem Gate, das mit der gewählten Position verbunden ist.',
+    trainingT2Exp2: 'Vergleiche die Stärke der Assets anhand ihrer Größe. Du musst keine Zahlenwerte auswendig lernen.',
+    trainingT2Exp3: 'Innerhalb desselben Gates ist ein Middle Asset stärker als alle Small Slots zu füllen.',
+    trainingT2Exp4: 'Ein Large Asset ist stärker als alle Middle und Small Slots desselben Gates zu füllen.',
+    trainingT2Exp5: 'Massive Build platziert einen Large Asset in einem Gate.',
+    trainingT2Exp6: 'Selective Build platziert einen Middle Asset in jedem von zwei Gates.',
+    trainingT2Exp7: 'Quad Build platziert einen Small Asset in jedem der vier mit der Position verbundenen Gates.',
+    trainingT1GateStep: (gate: string) => `Tippe auf Gate ${gate}.`,
+    trainingT2BuildStep1: 'Wähle Position G und tippe auf einen Large Slot bei Gate 7.',
+    trainingT2BuildStep2: 'Wähle Position M und tippe je einen Middle Slot bei Gate 6 und Gate 8.',
+    trainingT2BuildStep3: 'Wähle Position A und tippe je einen Small Slot bei Gate 1, 2, 7 und 12.',
+    trainingBuildUpComplete: 'Build up abgeschlossen. Du hast die drei Build-Typen und den Asset-Größenvergleich gelernt.',
+    // T3 explanation cards
+    trainingT3Exp1: 'Jede Position ist mit vier Diagonal Gates verbunden.',
+    trainingT3Exp2: 'Um Capture zu bestimmen, vergleiche das Gate oder die Gates mit dem höchsten Build.',
+    trainingT3Exp3: 'Wenn mehrere Gates gleichauf liegen, hat der Spieler die Überlegenheit, der mehr kontrolliert. Gleichstand ermöglicht keine Capture.',
+    trainingT3Exp4: 'Position E gehört White. Ihre Diagonal Gates sind Gate 2, 4, 6 und 10.',
+    trainingT3Exp5: 'Auf diesem Spielfeld hat Gate 6 den höchsten Build und Black kontrolliert es. Position E kann jetzt erobert werden.',
+    trainingT3Step1: 'Wähle Position E, um sie zu erobern, und führe Massive Build bei Gate 10 aus.',
+    trainingPosCaptureComplete: 'Position Capture abgeschlossen. Du hast eine Position durch deinen Build-up-Vorteil erobert.',
+    trainingBoardCoordComplete: 'Du hast die Position aller Positions und Gates identifiziert.',
 
     // Guided Game (FullGameTrainingRunner) UI strings — Training
     trainingBackBtn: '← Zurück',

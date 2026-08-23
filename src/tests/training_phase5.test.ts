@@ -124,9 +124,9 @@ describe('T1_board_coordinates structure', () => {
     );
   });
 
-  // ── 5. 正しいcoordinate tapで進む — step 0 target is Position A
-  it('5. first step is coordinate_pick for Position A', () => {
-    const step = T1_BOARD_COORDINATES.steps[0];
+  // ── 5. 正しいcoordinate tapで進む — first coordinate_pick step is Position A
+  it('5. first coordinate_pick step is Position A (after explanations)', () => {
+    const step = T1_BOARD_COORDINATES.steps.find((s) => s.kind === 'coordinate_pick');
     expect(step?.kind).toBe('coordinate_pick');
     if (step?.kind === 'coordinate_pick') {
       expect(step.targetType).toBe('position');
@@ -134,27 +134,39 @@ describe('T1_board_coordinates structure', () => {
     }
   });
 
-  // ── 6. 誤ったtapで進まない — different target means wrong tap
-  it('6. step 0 target (A) differs from step 1 target (B)', () => {
-    const s0 = T1_BOARD_COORDINATES.steps[0];
-    const s1 = T1_BOARD_COORDINATES.steps[1];
+  // ── 6. 誤ったtapで進まない — different targets
+  it('6. Position A step target differs from Position B step target', () => {
+    const posSteps = T1_BOARD_COORDINATES.steps.filter(
+      (s) => s.kind === 'coordinate_pick' && s.targetType === 'position'
+    );
+    const s0 = posSteps[0];
+    const s1 = posSteps[1];
     if (s0?.kind === 'coordinate_pick' && s1?.kind === 'coordinate_pick') {
       expect(s0.target).not.toBe(s1.target);
     }
   });
 
   // ── 7. coordinate taskでGameState/historyが変化しない
-  it('7. initial gameState history is empty (no engine calls in coordinate_pick)', () => {
+  it('7. initial gameState history is empty; coordinate/explanation steps do not change state', () => {
     expect(T1_BOARD_COORDINATES.initialState.history).toHaveLength(0);
-    // coordinate_pick steps do not call engine functions — gameState stays unchanged
-    const allCoord = T1_BOARD_COORDINATES.steps.every((s) => s.kind === 'coordinate_pick');
-    expect(allCoord).toBe(true);
+    // no user_move steps in T1
+    const userMoveSteps = T1_BOARD_COORDINATES.steps.filter((s) => s.kind === 'user_move');
+    expect(userMoveSteps).toHaveLength(0);
   });
 
   // ── 8. coordinate taskで通常Build callbackが動かない
   it('8. T1 has no user_move steps — build callbacks are never triggered', () => {
     const userMoveSteps = T1_BOARD_COORDINATES.steps.filter((s) => s.kind === 'user_move');
     expect(userMoveSteps).toHaveLength(0);
+  });
+
+  // ── 8b. explanation steps exist before Position and Gate sections
+  it('8b. T1 has explanation steps before Position A and between Position M and Gate 1', () => {
+    const { steps } = T1_BOARD_COORDINATES;
+    const firstExpIdx = steps.findIndex((s) => s.kind === 'explanation');
+    const firstPosIdx = steps.findIndex((s) => s.kind === 'coordinate_pick' && s.targetType === 'position');
+    expect(firstExpIdx).toBeGreaterThanOrEqual(0);
+    expect(firstExpIdx).toBeLessThan(firstPosIdx);
   });
 });
 
@@ -179,41 +191,44 @@ describe('T2_build_up initial state', () => {
 
 // ── 10. T2の手順 ─────────────────────────────────────────────────────────────
 describe('T2_build_up steps', () => {
-  it('10a. step sequence: user/cpu/user/cpu/user (5 steps)', () => {
+  it('10a. interactive sequence: user/cpu/user/cpu/user (3 user_move, 2 cpu) with explanation steps', () => {
     const { steps } = T2_BUILD_UP;
-    expect(steps).toHaveLength(5);
-    expect(steps[0]?.kind).toBe('user_move');
-    expect(steps[1]?.kind).toBe('cpu_fixed_move');
-    expect(steps[2]?.kind).toBe('user_move');
-    expect(steps[3]?.kind).toBe('cpu_fixed_move');
-    expect(steps[4]?.kind).toBe('user_move');
+    // Total steps = 5 explanation + 3 user_move + 2 cpu_fixed_move = 12
+    const userMoves = steps.filter((s) => s.kind === 'user_move');
+    const cpuMoves = steps.filter((s) => s.kind === 'cpu_fixed_move');
+    const explanations = steps.filter((s) => s.kind === 'explanation');
+    expect(userMoves).toHaveLength(3);
+    expect(cpuMoves).toHaveLength(2);
+    expect(explanations.length).toBeGreaterThan(0);
   });
 
   it('10b. G,m(7) → cpu K,m(4) → M,s(6,8) → cpu L,m(9) → A,q', () => {
     const { steps } = T2_BUILD_UP;
-    if (steps[0]?.kind === 'user_move') {
-      expect(steps[0].expected.positioning).toBe('G');
-      expect(steps[0].expected.build.type).toBe('massive');
-      if (steps[0].expected.build.type === 'massive') expect(steps[0].expected.build.gate).toBe(7);
+    const userMoves = steps.filter((s) => s.kind === 'user_move');
+    const cpuMoves = steps.filter((s) => s.kind === 'cpu_fixed_move');
+    if (userMoves[0]?.kind === 'user_move') {
+      expect(userMoves[0].expected.positioning).toBe('G');
+      expect(userMoves[0].expected.build.type).toBe('massive');
+      if (userMoves[0].expected.build.type === 'massive') expect(userMoves[0].expected.build.gate).toBe(7);
     }
-    if (steps[1]?.kind === 'cpu_fixed_move') {
-      expect(steps[1].move.positioning).toBe('K');
-      if (steps[1].move.build.type === 'massive') expect(steps[1].move.build.gate).toBe(4);
+    if (cpuMoves[0]?.kind === 'cpu_fixed_move') {
+      expect(cpuMoves[0].move.positioning).toBe('K');
+      if (cpuMoves[0].move.build.type === 'massive') expect(cpuMoves[0].move.build.gate).toBe(4);
     }
-    if (steps[2]?.kind === 'user_move') {
-      expect(steps[2].expected.positioning).toBe('M');
-      expect(steps[2].expected.build.type).toBe('selective');
-      if (steps[2].expected.build.type === 'selective') {
-        expect([...steps[2].expected.build.gates].sort()).toEqual([6, 8]);
+    if (userMoves[1]?.kind === 'user_move') {
+      expect(userMoves[1].expected.positioning).toBe('M');
+      expect(userMoves[1].expected.build.type).toBe('selective');
+      if (userMoves[1].expected.build.type === 'selective') {
+        expect([...userMoves[1].expected.build.gates].sort()).toEqual([6, 8]);
       }
     }
-    if (steps[3]?.kind === 'cpu_fixed_move') {
-      expect(steps[3].move.positioning).toBe('L');
-      if (steps[3].move.build.type === 'massive') expect(steps[3].move.build.gate).toBe(9);
+    if (cpuMoves[1]?.kind === 'cpu_fixed_move') {
+      expect(cpuMoves[1].move.positioning).toBe('L');
+      if (cpuMoves[1].move.build.type === 'massive') expect(cpuMoves[1].move.build.gate).toBe(9);
     }
-    if (steps[4]?.kind === 'user_move') {
-      expect(steps[4].expected.positioning).toBe('A');
-      expect(steps[4].expected.build.type).toBe('quad');
+    if (userMoves[2]?.kind === 'user_move') {
+      expect(userMoves[2].expected.positioning).toBe('A');
+      expect(userMoves[2].expected.build.type).toBe('quad');
     }
   });
 
@@ -222,8 +237,8 @@ describe('T2_build_up steps', () => {
     state = selectPosition(state, 'G');
     state = applyMassiveBuild(state, 7);
     const record = state.history[state.history.length - 1]!;
-    const step = T2_BUILD_UP.steps[0]!;
-    if (step.kind === 'user_move') {
+    const step = T2_BUILD_UP.steps.find((s) => s.kind === 'user_move')!;
+    if (step?.kind === 'user_move') {
       expect(validateMove(record, step.expected)).toBe(true);
     }
   });
@@ -236,8 +251,9 @@ describe('T2_build_up steps', () => {
     state = selectPosition(state, 'M');
     state = applySelectiveBuild(state, [6, 8]);
     const record = state.history[state.history.length - 1]!;
-    const step = T2_BUILD_UP.steps[2]!;
-    if (step.kind === 'user_move') {
+    const userMoves = T2_BUILD_UP.steps.filter((s) => s.kind === 'user_move');
+    const step = userMoves[1]!;
+    if (step?.kind === 'user_move') {
       expect(validateMove(record, step.expected)).toBe(true);
     }
   });
@@ -265,7 +281,7 @@ describe('T3_position_capture initial state', () => {
 // ── 12. T3の正解がE,m(10) ────────────────────────────────────────────────────
 describe('T3_position_capture correct move', () => {
   it('12. expected move is E,m(10)', () => {
-    const step = T3_POSITION_CAPTURE.steps[0];
+    const step = T3_POSITION_CAPTURE.steps.find((s) => s.kind === 'user_move');
     expect(step?.kind).toBe('user_move');
     if (step?.kind === 'user_move') {
       expect(step.expected.positioning).toBe('E');
@@ -285,8 +301,8 @@ describe('T3 after E,m(10)', () => {
     state = applyMassiveBuild(state, 10);
     expect(state.positions['E']!.owner).toBe('black');
     const record = state.history[state.history.length - 1]!;
-    const step = T3_POSITION_CAPTURE.steps[0]!;
-    if (step.kind === 'user_move') {
+    const step = T3_POSITION_CAPTURE.steps.find((s) => s.kind === 'user_move')!;
+    if (step?.kind === 'user_move') {
       expect(validateMove(record, step.expected)).toBe(true);
     }
   });
@@ -320,6 +336,11 @@ const NEW_STRING_KEYS = [
   'trainingT3Step1',
   'trainingPosCaptureComplete',
   'trainingBoardCoordComplete',
+  // explanation step keys
+  'trainingT1Exp1', 'trainingT1Exp2', 'trainingT1Exp3', 'trainingT1Exp4', 'trainingT1Exp5',
+  'trainingT2Exp1', 'trainingT2Exp2', 'trainingT2Exp3', 'trainingT2Exp4', 'trainingT2Exp5',
+  'trainingT2Exp6', 'trainingT2Exp7',
+  'trainingT3Exp1', 'trainingT3Exp2', 'trainingT3Exp3', 'trainingT3Exp4', 'trainingT3Exp5',
 ];
 
 const NEW_FUNCTION_KEYS = ['trainingT1PositionStep', 'trainingT1GateStep'];
@@ -451,8 +472,8 @@ import { ALLOWED_KPI_EVENT_NAMES } from '../lib/kpiEvents';
 // B2. Position問題中、別Positionで進まない
 // B3. Position問題中、Gateタップで進まない
 describe('B1-B3: coordinate_pick routing — position steps', () => {
-  it('B1. step 0 target is A (correct position tap would advance)', () => {
-    const step = T1_BOARD_COORDINATES.steps[0];
+  it('B1. first coordinate_pick step target is A (correct position tap would advance)', () => {
+    const step = T1_BOARD_COORDINATES.steps.find((s) => s.kind === 'coordinate_pick');
     expect(step?.kind).toBe('coordinate_pick');
     if (step?.kind === 'coordinate_pick') {
       expect(step.targetType).toBe('position');
@@ -461,7 +482,7 @@ describe('B1-B3: coordinate_pick routing — position steps', () => {
   });
 
   it('B2. tapping B during Position A step is incorrect (target mismatch)', () => {
-    const step = T1_BOARD_COORDINATES.steps[0];
+    const step = T1_BOARD_COORDINATES.steps.find((s) => s.kind === 'coordinate_pick');
     if (step?.kind === 'coordinate_pick') {
       const isCorrect = step.targetType === 'position' && step.target === 'B';
       expect(isCorrect).toBe(false);
@@ -469,7 +490,7 @@ describe('B1-B3: coordinate_pick routing — position steps', () => {
   });
 
   it('B3. tapping a gate during Position step is incorrect (type mismatch)', () => {
-    const step = T1_BOARD_COORDINATES.steps[0];
+    const step = T1_BOARD_COORDINATES.steps.find((s) => s.kind === 'coordinate_pick');
     if (step?.kind === 'coordinate_pick') {
       // type='gate' never matches targetType='position'
       const isCorrect = step.targetType === 'gate' && step.target === 'A';
@@ -533,10 +554,11 @@ describe('B7-B10: Board onCoordinateGateClick callback', () => {
   it('B8. coordinate gate tap does not modify gameState history (no engine call)', () => {
     // T1 initial state history is empty; coordinate_pick has no engine call
     expect(T1_BOARD_COORDINATES.initialState.history).toHaveLength(0);
-    const allStepsAreCoord = T1_BOARD_COORDINATES.steps.every(
-      (s) => s.kind === 'coordinate_pick',
+    // T1 has only coordinate_pick and explanation steps (no user_move, no engine calls)
+    const hasOnlyCoordAndExplanation = T1_BOARD_COORDINATES.steps.every(
+      (s) => s.kind === 'coordinate_pick' || s.kind === 'explanation',
     );
-    expect(allStepsAreCoord).toBe(true);
+    expect(hasOnlyCoordAndExplanation).toBe(true);
   });
 
   it('B9. T1 has no user_move steps — build/asset-placement callbacks not triggered', () => {
@@ -552,43 +574,68 @@ describe('B7-B10: Board onCoordinateGateClick callback', () => {
   });
 });
 
-// B11. JA/ENの最初のPosition/Gate promptに配置説明がある
-describe('B11-B12: first Position and Gate prompts contain description', () => {
-  it('B11-EN: first position prompt (pos=A) contains description text', () => {
+// B11. 全言語でtrainingT1PositionStep/GateStepが全問短文統一
+describe('B11-B12: Position and Gate prompts are uniform short text', () => {
+  it('B11-EN: all position prompts use the same short format', () => {
     const fn = (EN as Record<string, unknown>)['trainingT1PositionStep'] as (s: string) => string;
-    const first = fn('A');
-    const other = fn('B');
-    expect(first.length).toBeGreaterThan(other.length);
-    expect(first).toContain('A');
-    // description distinguishes from plain prompt
-    expect(first).not.toBe(other);
+    const promptA = fn('A');
+    const promptB = fn('B');
+    // Both should be short (no embedded explanation)
+    expect(promptA).toContain('A');
+    expect(promptB).toContain('B');
+    // Both should have same structure (short format)
+    expect(promptA.length).toBeLessThan(100);
+    expect(promptB.length).toBeLessThan(100);
   });
 
-  it('B11-EN: first gate prompt (gate=1) contains description text', () => {
+  it('B11-EN: all gate prompts use the same short format', () => {
     const fn = (EN as Record<string, unknown>)['trainingT1GateStep'] as (s: string) => string;
-    const first = fn('1');
-    const other = fn('2');
-    expect(first.length).toBeGreaterThan(other.length);
-    expect(first).not.toBe(other);
+    const prompt1 = fn('1');
+    const prompt2 = fn('2');
+    expect(prompt1).toContain('1');
+    expect(prompt2).toContain('2');
+    expect(prompt1.length).toBeLessThan(100);
+    expect(prompt2.length).toBeLessThan(100);
   });
 
-  it('B11-JA: first position/gate prompts contain description', () => {
+  it('B11-JA: position/gate prompts are short for all values', () => {
     const posFn = (JA as Record<string, unknown>)['trainingT1PositionStep'] as (s: string) => string;
     const gateFn = (JA as Record<string, unknown>)['trainingT1GateStep'] as (s: string) => string;
-    expect(posFn('A').length).toBeGreaterThan(posFn('B').length);
-    expect(gateFn('1').length).toBeGreaterThan(gateFn('2').length);
+    expect(posFn('A').length).toBeLessThan(100);
+    expect(posFn('M').length).toBeLessThan(100);
+    expect(gateFn('1').length).toBeLessThan(100);
+    expect(gateFn('12').length).toBeLessThan(100);
   });
 
-  // B12. 残り8言語も最初の説明と通常promptを返す
-  it('B12: all 8 other locales: first prompts longer than normal prompts', () => {
+  // B12. 残り8言語も全問短文
+  it('B12: all 8 other locales: prompts are short for all values', () => {
     const otherDicts = [ZH_HANS, ZH_HANT, KO, ES, PT_BR, DE, FR, IT] as Array<Record<string, unknown>>;
     for (const dict of otherDicts) {
       const posFn = dict['trainingT1PositionStep'] as (s: string) => string;
       const gateFn = dict['trainingT1GateStep'] as (s: string) => string;
       expect(typeof posFn).toBe('function');
       expect(typeof gateFn).toBe('function');
-      expect(posFn('A').length, 'first position prompt should be longer').toBeGreaterThan(posFn('B').length);
-      expect(gateFn('1').length, 'first gate prompt should be longer').toBeGreaterThan(gateFn('2').length);
+      expect(posFn('A').length).toBeLessThan(100);
+      expect(gateFn('1').length).toBeLessThan(100);
+    }
+  });
+
+  // B11b. explanation keys exist in all locales
+  it('B11b-EN: T1 explanation keys exist and are non-empty strings', () => {
+    const expKeys = ['trainingT1Exp1', 'trainingT1Exp2', 'trainingT1Exp3', 'trainingT1Exp4', 'trainingT1Exp5'];
+    for (const key of expKeys) {
+      const val = (EN as Record<string, unknown>)[key];
+      expect(val, `EN.${key} missing`).toBeDefined();
+      expect(typeof val).toBe('string');
+      expect((val as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('B11b-JA: T1 explanation keys exist', () => {
+    const expKeys = ['trainingT1Exp1', 'trainingT1Exp2', 'trainingT1Exp3', 'trainingT1Exp4', 'trainingT1Exp5'];
+    for (const key of expKeys) {
+      const val = (JA as Record<string, unknown>)[key];
+      expect(val, `JA.${key} missing`).toBeDefined();
     }
   });
 });

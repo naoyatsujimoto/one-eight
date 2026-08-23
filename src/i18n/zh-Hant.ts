@@ -162,19 +162,35 @@ export const ZH_HANT_TRANSLATIONS = {
     trainingBoardCoordDesc: '確認棋盤上 Position 和 Gate 的位置。',
     trainingBuildUpDesc: '學習 Asset 大小以及 Massive、Selective 和 Quad Build。',
     trainingPosCaptureDesc: '利用 Build up 優勢夺取對手的 Position。',
-    trainingT1PositionStep: (pos: string) => pos === 'A'
-      ? 'Position 是棋盤中心的圓形區域。A–M 從上到下、每行從左到右排列。首先，點擊 Position A。'
-      : `點擊 Position ${pos}。`,
-    trainingT1GateStep: (gate: string) => gate === '1'
-      ? 'Gate 沿棋盤邊緃順時针方向排列、1 在左上方；2–3 在上方；4 在右上方；5–6 在右方；7 在右下方；8–9 在下方；10 在左下方；11–12 在左方。首先，點擊 Gate 1。'
-      : `點擊 Gate ${gate}。`,
-    trainingT2BuildStep1: "在 Build up 中，你將 Asset 放入與所選 Position 相連的 Gate。\n\n在同一 Gate 內，1 個 Middle Asset 比填滿所有 Small Slot 的 Build 更強。1 個 Large Asset 比填滿所有 Middle Slot 和 Small Slot 的 Build 更強。你不需要記住數値，只需比較 Asset 的大小即可。\n\n選擇 Position G，然後點擊 Gate 7 的 Large Slot。Massive Build 在一個 Gate 中放置 Large Asset。",
-    trainingT2BuildStep2: '選擇 Position M，然後分別點擊 Gate 6 和 Gate 8 的 Middle Slot。Selective Build 在兩個 Gate 中各放置 Middle Asset。',
-    trainingT2BuildStep3: '選擇 Position A，然後在相連的 Gate 1、2、7、12 中各點擊一個 Small Slot。Quad Build 在四個 Gate 中各放置 Small Asset。',
-    trainingBuildUpComplete: 'Build up 完成。Massive 在一個 Gate 中放置 Large Asset，Selective 在兩個 Gate 中放置 Middle Asset，Quad 在四個 Gate 中放置 Small Asset。透過 Asset 大小比較 Build 的強度。',
-    trainingT3Step1: '夺取判定基於 Position 的四個 Diagonal Gate 中 Build up 最進展的 Gate。若多個 Gate 並列最高，則控制更多此類 Gate 的一方佔優。若數量相同，則無法夺取。\n\nPosition E 由 White 持有。E 的 Diagonal Gate 為 2、4、6、10。目前 Gate 6 的 Build up 最為進展，由 Black 控制。\n\n選擇 Position E 以夺取，然後對 Gate 10 執行 Massive Build。',
-    trainingPosCaptureComplete: 'Position Capture 完成。當你控制更多 Build up 最進展的 Diagonal Gate 時，可夺取對手的 Position。數量相同時無法夺取。',
-    trainingBoardCoordComplete: '棋盤座標完成。你現在可以識別棋盤上任意 Position（A–M）和 Gate（1–12）的位置。',
+    trainingT1PositionStep: (pos: string) => `點擊 Position ${pos}。`,
+    // T1 explanation cards
+    trainingT1Exp1: 'Position 是棋盤中心的圓形區域。',
+    trainingT1Exp2: 'Position A–M 從上到下、每行從左到右排列。',
+    trainingT1Exp3: 'Gate 1–12 沿棋盤邊緣順時針方向排列。',
+    trainingT1Exp4: '四個角分別是左上 Gate 1、右上 Gate 4、右下 Gate 7、左下 Gate 10。',
+    trainingT1Exp5: '其間，上方是 Gate 2–3，右方是 Gate 5–6，下方是 Gate 8–9，左方是 Gate 11–12。',
+    // T2 explanation cards
+    trainingT2Exp1: '在 Build up 中，你將 Asset 放入與所選 Position 相連的 Gate。',
+    trainingT2Exp2: '透過大小比較 Asset 強度。不需要記住數值。',
+    trainingT2Exp3: '在同一 Gate 內，1 個 Middle Asset 比填滿所有 Small Slot 的 Build 更強。',
+    trainingT2Exp4: '1 個 Large Asset 比填滿同一 Gate 所有 Middle Slot 和 Small Slot 的 Build 更強。',
+    trainingT2Exp5: 'Massive Build 在一個 Gate 中放置 Large Asset。',
+    trainingT2Exp6: 'Selective Build 在兩個 Gate 中各放置一個 Middle Asset。',
+    trainingT2Exp7: 'Quad Build 在與 Position 相連的四個 Gate 中各放置一個 Small Asset。',
+    trainingT1GateStep: (gate: string) => `點擊 Gate ${gate}。`,
+    trainingT2BuildStep1: '選擇 Position G，然後點擊 Gate 7 的 Large Slot。',
+    trainingT2BuildStep2: '選擇 Position M，然後分別點擊 Gate 6 和 Gate 8 的一個 Middle Slot。',
+    trainingT2BuildStep3: '選擇 Position A，然後在 Gate 1、2、7、12 中各點擊一個 Small Slot。',
+    trainingBuildUpComplete: 'Build up 完成。你已學習三種 Build 類型及 Asset 大小對比。',
+    // T3 explanation cards
+    trainingT3Exp1: '每個 Position 與四個 Diagonal Gate 相連。',
+    trainingT3Exp2: '判定奪取時，比較 Build up 最進展的 Gate。',
+    trainingT3Exp3: '若多個 Gate 並列，控制較多者佔優。數量相同時無法奪取。',
+    trainingT3Exp4: 'Position E 由 White 持有。其 Diagonal Gate 為 Gate 2、4、6、10。',
+    trainingT3Exp5: '在這局棋面中，Gate 6 的 Build up 最進展且 Black 控制它。現在可以奪取 Position E。',
+    trainingT3Step1: '選擇 Position E 以奪取，然後對 Gate 10 執行 Massive Build。',
+    trainingPosCaptureComplete: 'Position Capture 完成。你透過 Build up 優勢奪取了一個 Position。',
+    trainingBoardCoordComplete: '你已識別棋盤上所有 Position 和 Gate 的位置。',
 
     // Guided Game (FullGameTrainingRunner) UI strings — Training
     trainingBackBtn: '← 返回',

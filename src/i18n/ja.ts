@@ -157,19 +157,35 @@ export const JA_TRANSLATIONS = {
     trainingBoardCoordDesc: '盤面のPositionとGateの配置を確認する。',
     trainingBuildUpDesc: 'AssetサイズとMassive・Selective・Quad Buildを学ぶ。',
     trainingPosCaptureDesc: 'Build up優勢を使って相手のPositionを奪取する。',
-    trainingT1PositionStep: (pos: string) => pos === 'A'
-      ? 'Positionは盤面中央の円形エリアです。A〜Mは上から下へ、各段を左から右へ並びます。まずPosition Aをタップしてください。'
-      : `Position ${pos}をタップしてください。`,
-    trainingT1GateStep: (gate: string) => gate === '1'
-      ? 'Gateは盤面の外周にあり、1から12まで時計回りに並びます。1は左上、2・3は上、4は右上、5・6は右、7は右下、8・9は下、10は左下、11・12は左です。まずGate 1をタップしてください。'
-      : `Gate ${gate}をタップしてください。`,
-    trainingT2BuildStep1: 'Build upでは、選択したPositionに接続したGateにAssetを置きます。\n\n同じGate内では、Middle Asset 1つはSmall Slotをすべて埋めるよりも強いBuildになります。Large Asset 1つはMiddle SlotとSmall Slotをすべて埋めるよりも強いBuildになります。数値を覚える必要はありません。Assetの大きさで比較してください。\n\nPosition Gを選び、Gate 7のLarge Slotをタップしてください。Massive Buildは1つのGateにLarge Assetを置きます。',
-    trainingT2BuildStep2: 'Position Mを選び、Gate 6とGate 8のMiddle Slotを1つずつタップしてください。Selective Buildは2つのGateにMiddle Assetを置きます。',
-    trainingT2BuildStep3: 'Position Aを選び、接続するGate 1、2、7、12のSmall Slotを1つずつタップしてください。Quad Buildは4つのGateにSmall Assetを置きます。',
-    trainingBuildUpComplete: 'Build up 完了。Massiveは1つのGateにLarge Asset、Selectiveは2つのGateにMiddle Asset、Quadは4つのGateにSmall Assetを置きます。Buildの強さはAssetの大きさで比較します。',
-    trainingT3Step1: 'Positionの奪取は、そのPositionにつながる4つのDiagonal Gateのうち、Build upが最も進んだGateで判定します。最も進んだGateが複数ある場合は、その中でより多くのGateを支配する側が優勢です。同数なら奪取できません。\n\nPosition EはWhiteの所有です。EのDiagonal Gateは2、4、6、10です。現在はGate 6のBuild upが最も進んでおり、Blackが支配しています。\n\nPosition Eを選んで奪取し、Gate 10にMassive Buildを行ってください。',
-    trainingPosCaptureComplete: 'Position Capture 完了。Build upが最も進んだDiagonal Gateの支配で優勢なら、相手のPositionを選択して奪取できます。同数の場合は奪取できません。',
-    trainingBoardCoordComplete: '盤面の座標 完了。Position（A〜M）とGate（1〜12）の位置を確認できました。',
+    trainingT1PositionStep: (pos: string) => `Position ${pos}をタップしてください。`,
+    trainingT1GateStep: (gate: string) => `Gate ${gate}をタップしてください。`,
+    // T1 explanation cards
+    trainingT1Exp1: 'Positionは盤面中央の円形エリアです。',
+    trainingT1Exp2: 'Position A〜Mは、上から下へ、各段を左から右へ並びます。',
+    trainingT1Exp3: 'Gateは盤面の外周にあり、1から12まで時計回りに並びます。',
+    trainingT1Exp4: '四隅は、左上がGate 1、右上がGate 4、右下がGate 7、左下がGate 10です。',
+    trainingT1Exp5: 'その間に、上はGate 2・3、右はGate 5・6、下はGate 8・9、左はGate 11・12が並びます。',
+    // T2 explanation cards
+    trainingT2Exp1: 'Build upでは、選択したPositionにつながるGateへAssetを置きます。',
+    trainingT2Exp2: 'Assetの強さは大きさで比べます。数値を覚える必要はありません。',
+    trainingT2Exp3: '同じGateでは、Middle Asset 1つはSmall Slotをすべて埋めるよりも強いBuildです。',
+    trainingT2Exp4: 'Large Asset 1つは、同じGateのMiddle SlotとSmall Slotをすべて埋めるよりも強いBuildです。',
+    trainingT2Exp5: 'Massive Buildは、1つのGateにLarge Assetを置きます。',
+    trainingT2Exp6: 'Selective Buildは、2つのGateにMiddle Assetを1つずつ置きます。',
+    trainingT2Exp7: 'Quad Buildは、Positionにつながる4つのGateにSmall Assetを1つずつ置きます。',
+    trainingT2BuildStep1: 'Position Gを選び、Gate 7のLarge Slotをタップしてください。',
+    trainingT2BuildStep2: 'Position Mを選び、Gate 6とGate 8のMiddle Slotを1つずつタップしてください。',
+    trainingT2BuildStep3: 'Position Aを選び、Gate 1、2、7、12のSmall Slotを1つずつタップしてください。',
+    trainingBuildUpComplete: 'Build up 完了。3種類のBuildとAssetサイズの強さを確認しました。',
+    // T3 explanation cards
+    trainingT3Exp1: '1つのPositionには、4つのDiagonal Gateがつながっています。',
+    trainingT3Exp2: '奪取判定では、その中でBuild upが最も進んだGateを比べます。',
+    trainingT3Exp3: '最も進んだGateが複数なら、より多く支配する側が優勢です。同数なら奪取できません。',
+    trainingT3Exp4: 'Position EはWhiteの所有です。Diagonal GateはGate 2、4、6、10です。',
+    trainingT3Exp5: 'この盤面ではGate 6のBuild upが最も進み、Blackが支配しています。今ならPosition Eを奪取できます。',
+    trainingT3Step1: 'Position Eを選んで奪取し、Gate 10にMassive Buildを行ってください。',
+    trainingPosCaptureComplete: 'Position Capture 完了。Build upで優勢なPositionを奪取しました。',
+    trainingBoardCoordComplete: 'PositionとGateの位置を確認しました。',
 
     // Guided Game (FullGameTrainingRunner) UI strings — Training専用
     trainingBackBtn: '← 戻る',

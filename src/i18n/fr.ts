@@ -161,19 +161,35 @@ export const FR_TRANSLATIONS = {
     trainingBoardCoordDesc: "Apprenez l'emplacement des Positions et des Gates sur le plateau.",
     trainingBuildUpDesc: 'Apprenez la taille des Assets et les types Massive, Selective et Quad Build.',
     trainingPosCaptureDesc: 'Utilisez la domination du Build up pour capturer une Position adverse.',
-    trainingT1PositionStep: (pos: string) => pos === 'A'
-      ? 'Les Positions sont les espaces circulaires au centre du plateau. A\u2013M vont de haut en bas, de gauche \u00e0 droite dans chaque rang\u00e9e. D\u2019abord, appuyez sur la Position A.'
-      : `Appuyez sur la Position ${pos}.`,
-    trainingT1GateStep: (gate: string) => gate === '1'
-      ? 'Les Gates entourent le plateau dans le sens des aiguilles d\u2019une montre. La Gate 1 est en haut \u00e0 gauche\u00a0; 2\u20133 sont en haut\u00a0; 4 est en haut \u00e0 droite\u00a0; 5\u20136 sont \u00e0 droite\u00a0; 7 est en bas \u00e0 droite\u00a0; 8\u20139 sont en bas\u00a0; 10 est en bas \u00e0 gauche\u00a0; et 11\u201312 sont \u00e0 gauche. D\u2019abord, appuyez sur la Gate 1.'
-      : `Appuyez sur le Gate ${gate}.`,
-    trainingT2BuildStep1: "En Build up, vous placez des Assets dans un Gate connecté à la Position sélectionnée.\n\nDans un même Gate, un Middle Asset crée un Build plus fort que remplir tous les Small Slots. Un Large Asset crée un Build plus fort que remplir tous les Middle et Small Slots. Vous n'avez pas besoin de mémoriser des valeurs numériques. Comparez simplement la taille des Assets.\n\nSélectionnez la Position G, puis appuyez sur un Large Slot dans le Gate 7. Massive Build place un Large Asset dans un Gate.",
-    trainingT2BuildStep2: 'Sélectionnez la Position M, puis appuyez sur un Middle Slot dans le Gate 6 et un dans le Gate 8. Selective Build place des Middle Assets dans deux Gates.',
-    trainingT2BuildStep3: 'Sélectionnez la Position A, puis appuyez sur un Small Slot dans chacun des Gates connectés : 1, 2, 7 et 12. Quad Build place des Small Assets dans quatre Gates.',
-    trainingBuildUpComplete: 'Build up terminé. Massive place un Large Asset dans un Gate, Selective place des Middle Assets dans deux Gates et Quad place des Small Assets dans quatre Gates. Comparez la force du Build par la taille des Assets.',
-    trainingT3Step1: "La Capture est déterminée par le Gate ayant le Build total le plus élevé parmi les quatre Diagonal Gates d'une Position. Si plusieurs Gates sont à égalité, le joueur qui en contrôle le plus a l'avantage. En cas d'égalité, la Position ne peut pas être capturée.\n\nLa Position E appartient à White. Ses Diagonal Gates sont 2, 4, 6 et 10. Le Gate 6 a actuellement le Build le plus élevé et Black le contrôle.\n\nSélectionnez la Position E pour la capturer, puis appliquez Massive Build sur le Gate 10.",
-    trainingPosCaptureComplete: "Position Capture terminé. Vous pouvez capturer la Position d'un adversaire lorsque vous contrôlez plus de ses Diagonal Gates avec le Build le plus élevé. Une égalité de contrôle ne permet pas la Capture.",
-    trainingBoardCoordComplete: "Coordonnées du plateau terminé. Vous pouvez maintenant identifier n'importe quelle Position (A–M) et Gate (1–12) sur le plateau.",
+    trainingT1PositionStep: (pos: string) => `Touchez la Position ${pos}.`,
+    // T1 explanation cards
+    trainingT1Exp1: 'Les Positions sont les espaces circulaires au centre du plateau.',
+    trainingT1Exp2: 'Position A–M vont de haut en bas, de gauche à droite dans chaque rangée.',
+    trainingT1Exp3: 'Gate 1–12 font le tour du plateau dans le sens des aiguilles d’une montre.',
+    trainingT1Exp4: 'Les quatre coins sont Gate 1 en haut à gauche, Gate 4 en haut à droite, Gate 7 en bas à droite et Gate 10 en bas à gauche.',
+    trainingT1Exp5: 'Entre eux, Gate 2–3 sont en haut, Gate 5–6 à droite, Gate 8–9 en bas et Gate 11–12 à gauche.',
+    // T2 explanation cards
+    trainingT2Exp1: 'En Build up, vous placez des Assets dans un Gate connecté à la Position sélectionnée.',
+    trainingT2Exp2: 'Comparez la force des Assets par leur taille. Vous n’avez pas besoin de mémoriser de valeurs numériques.',
+    trainingT2Exp3: 'Dans un même Gate, un Middle Asset crée un Build plus fort que de remplir tous les Small Slots.',
+    trainingT2Exp4: 'Un Large Asset crée un Build plus fort que de remplir tous les Middle et Small Slots du même Gate.',
+    trainingT2Exp5: 'Massive Build place un Large Asset dans un Gate.',
+    trainingT2Exp6: 'Selective Build place un Middle Asset dans chacun de deux Gates.',
+    trainingT2Exp7: 'Quad Build place un Small Asset dans chacun des quatre Gates connectés à la Position.',
+    trainingT1GateStep: (gate: string) => `Touchez le Gate ${gate}.`,
+    trainingT2BuildStep1: 'Sélectionnez la Position G et appuyez sur un Large Slot dans le Gate 7.',
+    trainingT2BuildStep2: 'Sélectionnez la Position M et appuyez sur un Middle Slot dans le Gate 6 et un dans le Gate 8.',
+    trainingT2BuildStep3: 'Sélectionnez la Position A et appuyez sur un Small Slot dans chaque Gate : 1, 2, 7 et 12.',
+    trainingBuildUpComplete: 'Build up terminé. Vous avez appris les trois types de Build et comment comparer la taille des Assets.',
+    // T3 explanation cards
+    trainingT3Exp1: 'Chaque Position est connectée à quatre Diagonal Gates.',
+    trainingT3Exp2: 'Pour déterminer la Capture, comparez le Gate ou les Gates avec le plus grand Build.',
+    trainingT3Exp3: 'Si plusieurs Gates sont à égalité, le joueur qui en contrôle le plus a l’avantage. L’égalité ne permet pas la Capture.',
+    trainingT3Exp4: 'La Position E appartient à White. Ses Diagonal Gates sont Gate 2, 4, 6 et 10.',
+    trainingT3Exp5: 'Sur ce plateau, Gate 6 a le plus grand Build et Black le contrôle. La Position E peut maintenant être capturée.',
+    trainingT3Step1: 'Sélectionnez la Position E pour la capturer et appliquez Massive Build sur le Gate 10.',
+    trainingPosCaptureComplete: 'Position Capture terminé. Vous avez capturé une Position grâce à votre avantage en Build up.',
+    trainingBoardCoordComplete: 'Vous avez identifié l’emplacement de toutes les Positions et Gates.',
 
     // Guided Game (FullGameTrainingRunner) UI strings - Training
     trainingBackBtn: '← Retour',

@@ -74,13 +74,15 @@ export function fullGameMoveIndex(stepIndex: number): number {
 /**
  * Count user_move steps from the beginning up to (but not including) stepIndex.
  * This gives the 0-based userMoveIndex for the current user_move step.
+ * explanation steps are NOT counted.
  */
 export function countUserMovesBefore(steps: TrainingStep[], stepIndex: number): number {
   return steps.slice(0, stepIndex).filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
 }
 
 /**
- * Total number of user_move steps in a task.
+ * Total number of interactive (user_move / coordinate_pick) steps in a task.
+ * explanation steps are NOT counted.
  */
 export function countTotalUserMoves(steps: TrainingStep[]): number {
   return steps.filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;

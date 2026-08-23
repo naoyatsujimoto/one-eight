@@ -15,7 +15,8 @@ export type FixedCpuMove =
 export type TrainingStep =
   | { kind: 'user_move'; expected: ExpectedMove; labelKey: string }
   | { kind: 'cpu_fixed_move'; move: FixedCpuMove }
-  | { kind: 'coordinate_pick'; targetType: 'position' | 'gate'; target: string; labelKey: string };
+  | { kind: 'coordinate_pick'; targetType: 'position' | 'gate'; target: string; labelKey: string }
+  | { kind: 'explanation'; labelKey: string };
 
 export interface TrainingTask {
   id: TrainingTaskId;

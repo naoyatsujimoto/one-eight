@@ -128,6 +128,18 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
   const currentStep = session.task.steps[session.stepIndex];
 
+  // ── Explanation step tap handler ───────────────────────────────────────
+  const handleExplanationAdvance = useCallback(() => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing') return;
+    const step = prev.task.steps[prev.stepIndex];
+    if (!step || step.kind !== 'explanation') return;
+    // Advance to next step — no KPI, no sound, no GameState change
+    const nextSess = { ...prev, stepIndex: prev.stepIndex + 1, feedback: null };
+    const advanced = advanceSession(nextSess);
+    commitSession(advanced);
+  }, [commitSession]);
+
   // Advance past all consecutive cpu_fixed_move steps automatically
   function advanceSession(sess: TrainingSession): TrainingSession {
     let s = sess;
@@ -311,6 +323,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const step = prev.task.steps[prev.stepIndex];
     if (!step) return;
 
+    // explanation step: board interaction is disabled
+    if (step.kind === 'explanation') return;
+
     // coordinate_pick: route to central handler (wrong type = incorrect)
     if (step.kind === 'coordinate_pick') {
       handleCoordinatePick('position', positionId);
@@ -329,7 +344,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step || step.kind === 'explanation') return;
+    if (step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     // selective: first or second click
@@ -373,7 +389,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step || step.kind === 'explanation') return;
+    if (step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     const nextState = applyMassiveBuild(prev.gameState, gateId);
@@ -399,7 +416,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step || step.kind === 'explanation') return;
+    if (step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
     if (prev.selectiveFirst !== null) return;
 
@@ -426,7 +444,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step || step.kind === 'explanation') return;
+    if (step.kind !== 'user_move') return;
     const pos = prev.gameState.selectedPosition;
     if (!pos) return;
     if (step.expected.build.type !== 'quad') return;
@@ -477,7 +496,8 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const prev = sessionRef.current;
     if (prev.status !== 'playing') return;
     const step = prev.task.steps[prev.stepIndex];
-    if (!step || step.kind !== 'user_move') return;
+    if (!step || step.kind === 'explanation') return;
+    if (step.kind !== 'user_move') return;
     if (!prev.gameState.selectedPosition) return;
 
     if (prev.selectiveFirst !== null) {
@@ -755,9 +775,36 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     return t.trainingCompleteTitle;
   })();
 
+  // Whether the current step is an explanation card
+  const isExplanationStep = currentStep?.kind === 'explanation';
+
+  // For explanation steps: the "next interactive step" number is the count of
+  // interactive steps that come AFTER the current position (including those
+  // already completed up to now). We show the NEXT interactive step index.
+  const nextInteractiveStepNum = (() => {
+    if (!isExplanationStep) return 0;
+    // Count interactive steps after the current stepIndex
+    const stepsAfter = session.task.steps.slice(session.stepIndex + 1);
+    const firstInteractiveAfter = stepsAfter.findIndex(
+      (s) => s.kind === 'user_move' || s.kind === 'coordinate_pick'
+    );
+    if (firstInteractiveAfter < 0) return 0;
+    // Count all interactive steps up to and including this next one
+    return session.task.steps
+      .slice(0, session.stepIndex + 1 + firstInteractiveAfter + 1)
+      .filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
+  })();
+
+  const explanationText: string = (() => {
+    if (!currentStep || currentStep.kind !== 'explanation') return '';
+    const key = currentStep.labelKey as string;
+    return (t as Record<string, unknown>)[key] as string ?? key;
+  })();
+
   const stepLabel: string = (() => {
     if (session.status === 'complete') return completeTitle;
     if (!currentStep) return '';
+    if (currentStep.kind === 'explanation') return explanationText;
     if (currentStep.kind === 'coordinate_pick') {
       const key = currentStep.labelKey as keyof typeof t;
       const fn = (t as Record<string, unknown>)[key as string];
@@ -771,9 +818,12 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     return (t[key] as string) ?? currentStep.labelKey;
   })();
 
-  const userStepNum = session.task.steps
-    .slice(0, session.stepIndex + 1)
-    .filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
+  const userStepNum = (() => {
+    if (isExplanationStep) return nextInteractiveStepNum;
+    return session.task.steps
+      .slice(0, session.stepIndex + 1)
+      .filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
+  })();
   const totalUserSteps = session.task.steps.filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
 
   return (
@@ -809,21 +859,36 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       )}
 
       {/* Step instruction */}
-      <div className="trn-instruction-band">
-        {session.status === 'complete' ? (
-          <div className="trn-complete-title">{completeTitle}</div>
-        ) : (
-          <>
-            <div className="trn-step-counter">Step {userStepNum} / {totalUserSteps}</div>
-            <div className="trn-instruction-text">{stepLabel}</div>
-          </>
-        )}
-        {session.feedback && (
-          <div className={`trn-feedback ${session.feedback === t.trainingFeedbackWrong ? 'trn-feedback-wrong' : 'trn-feedback-ok'}`}>
-            {session.feedback}
-          </div>
-        )}
-      </div>
+      {isExplanationStep ? (
+        <button
+          type="button"
+          className="trn-instruction-band trn-explanation-card"
+          onClick={handleExplanationAdvance}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleExplanationAdvance(); } }}
+          aria-label={explanationText}
+          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+        >
+          <div className="trn-step-counter">Step {String(userStepNum).padStart(2, '0')} / {totalUserSteps}</div>
+          <div className="trn-instruction-text">{explanationText}</div>
+          <div className="trn-tap-to-continue">{(t as Record<string, unknown>)['trainingTapToContinue'] as string}</div>
+        </button>
+      ) : (
+        <div className="trn-instruction-band">
+          {session.status === 'complete' ? (
+            <div className="trn-complete-title">{completeTitle}</div>
+          ) : (
+            <>
+              <div className="trn-step-counter">Step {String(userStepNum).padStart(2, '0')} / {totalUserSteps}</div>
+              <div className="trn-instruction-text">{stepLabel}</div>
+            </>
+          )}
+          {session.feedback && (
+            <div className={`trn-feedback ${session.feedback === t.trainingFeedbackWrong ? 'trn-feedback-wrong' : 'trn-feedback-ok'}`}>
+              {session.feedback}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Board */}
       {session.status !== 'complete' && (
@@ -836,7 +901,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               onLargePocketClick={handleLargePocketClick}
               onMiddlePocketClick={handleMiddleOrSelective}
               onSmallPocketClick={handleSmallPocketClick}
-              onCoordinateGateClick={currentStep?.kind === 'coordinate_pick' && currentStep.targetType === 'gate' ? handleCoordinateGateClick : undefined}
+              onCoordinateGateClick={currentStep?.kind === 'coordinate_pick' && currentStep.targetType === 'gate' && !isExplanationStep ? handleCoordinateGateClick : undefined}
               showLabelToggle={false}
               defaultLabels={true}
               labelPerspective="black"
