@@ -866,7 +866,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
           onClick={handleExplanationAdvance}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleExplanationAdvance(); } }}
           aria-label={explanationText}
-          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+
         >
           <div className="trn-step-counter">Step {String(userStepNum).padStart(2, '0')} / {totalUserSteps}</div>
           <div className="trn-instruction-text">{explanationText}</div>
