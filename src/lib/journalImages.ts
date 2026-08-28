@@ -55,6 +55,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-agrarian-expertise-affect_who-the-problem-belongs-to_thumb.jpg',
     alt: 'Diagonal flowering stalk with small purple and pale tubular flowers against a white background',
   },
+  'where-is-the-center-of-your-city': {
+    hero: '/journal/oej-2026-urban-polycentricity-mobility_where-is-the-center-of-your-city_hero.jpg',
+    thumbnail: '/journal/oej-2026-urban-polycentricity-mobility_where-is-the-center-of-your-city_thumb.jpg',
+    alt: 'Black nodes connected by intersecting lines across a white field',
+  },
 };
 
 /**
