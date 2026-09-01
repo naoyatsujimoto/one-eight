@@ -925,6 +925,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               onMiddlePocketClick={handleMiddleOrSelective}
               onSmallPocketClick={handleSmallPocketClick}
               onCoordinateGateClick={currentStep?.kind === 'coordinate_pick' && currentStep.targetType === 'gate' && !isExplanationStep ? handleCoordinateGateClick : undefined}
+              connectionPreviewPosition={session.task.id === 'T3_position_capture' && isExplanationStep ? 'E' : undefined}
               showLabelToggle={false}
               defaultLabels={true}
               labelPerspective="black"

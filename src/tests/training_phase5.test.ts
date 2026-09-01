@@ -46,6 +46,9 @@ import { DE_TRANSLATIONS } from '../i18n/de';
 import { FR_TRANSLATIONS } from '../i18n/fr';
 import { IT_TRANSLATIONS } from '../i18n/it';
 import { selectPosition, applyMassiveBuild, applySelectiveBuild } from '../game/engine';
+import { canCapturePosition } from '../game/capture';
+import { gateTotalValue } from '../game/build';
+import { POSITION_TO_GATES } from '../game/constants';
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { validateMove } from '../training/validateMove';
 import { FULL_GAME_V1 } from '../training/tasks/fullGameV1';
@@ -293,9 +296,30 @@ describe('T3_position_capture initial state', () => {
     expect(slot?.owner).toBe('black');
   });
 
-  it('11c. currentPlayer=black, moveNumber=3', () => {
+  it('11c. currentPlayer=black on a mid-game move number', () => {
     expect(T3_POSITION_CAPTURE.initialState.currentPlayer).toBe('black');
-    expect(T3_POSITION_CAPTURE.initialState.moveNumber).toBe(3);
+    expect(T3_POSITION_CAPTURE.initialState.moveNumber).toBe(17);
+  });
+
+  it('11d. presents a populated mid-game board rather than a one-Asset fixture', () => {
+    const state = T3_POSITION_CAPTURE.initialState;
+    const ownedPositions = Object.values(state.positions).filter((position) => position.owner !== null);
+    const placedAssets = Object.values(state.gates).flatMap((gate) => [
+      ...gate.largeSlots,
+      ...gate.middleSlots,
+      ...gate.smallSlots,
+    ]).filter((asset) => asset !== null);
+    expect(ownedPositions.length).toBeGreaterThanOrEqual(7);
+    expect(placedAssets.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it('11e. Gate 6 is the unique strongest Diagonal Gate of E and permits Black to capture', () => {
+    const state = T3_POSITION_CAPTURE.initialState;
+    expect(POSITION_TO_GATES.E).toEqual([2, 4, 6, 10]);
+    const totals = POSITION_TO_GATES.E.map((gateId) => [gateId, gateTotalValue(state.gates[gateId])] as const);
+    const maximum = Math.max(...totals.map(([, total]) => total));
+    expect(totals.filter(([, total]) => total === maximum).map(([gateId]) => gateId)).toEqual([6]);
+    expect(canCapturePosition(state, 'black', 'E')).toBe(true);
   });
 });
 
@@ -449,6 +473,21 @@ describe('15b. explanation navigation', () => {
 
   it('does not let the forward control skip an interactive step', () => {
     expect(source).toContain('disabled={!isExplanationStep}');
+  });
+});
+
+describe('15c. T3 Diagonal Gate connection preview', () => {
+  const trainingSource = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf8');
+  const boardSource = readFileSync(join(__dirname, '../components/Board.tsx'), 'utf8');
+
+  it('requests an E connection preview only during T3 explanations', () => {
+    expect(trainingSource).toContain("connectionPreviewPosition={session.task.id === 'T3_position_capture' && isExplanationStep ? 'E' : undefined}");
+  });
+
+  it('uses the normal selected-Position connection renderer without selecting E in game state', () => {
+    expect(boardSource).toContain('const connectionPositionId = selectedId ?? connectionPreviewPosition ?? null');
+    expect(boardSource).toContain('POSITION_TO_GATES[connectionPositionId]');
+    expect(boardSource).toContain('state.selectedPosition === id');
   });
 });
 

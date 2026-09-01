@@ -570,6 +570,8 @@ const GATE_LABEL_OFFSET: Record<GateType, { left: number; top: number }> = {
 
 // ── Board component ───────────────────────────────────────────────────────────
 
+const EMPTY_GATE_IDS: GateId[] = [];
+
 export function Board({
   state,
   buildState,
@@ -578,6 +580,7 @@ export function Board({
   onMiddlePocketClick,
   onSmallPocketClick,
   onCoordinateGateClick,
+  connectionPreviewPosition,
   tutorialGateHighlights,
   tutorialHighlightAllPositions,
   showLabelToggle = true,
@@ -606,6 +609,7 @@ export function Board({
   onMiddlePocketClick: (gateId: GateId) => void;
   onSmallPocketClick: (gateId: GateId) => void;
   onCoordinateGateClick?: (gateId: GateId) => void;
+  connectionPreviewPosition?: PositionId;
   tutorialGateHighlights?: Set<GateId>;
   tutorialHighlightAllPositions?: boolean;
   showLabelToggle?: boolean;
@@ -638,6 +642,7 @@ export function Board({
   const _ghostProOnlyTooltip = ghostProOnlyTooltip ?? t.ghostProOnlyTitle;
 
   const selectedId = state.selectedPosition;
+  const connectionPositionId = selectedId ?? connectionPreviewPosition ?? null;
 
   // Ghost Mode: opacityMap / gateMap を ghostUtils で生成
   // - gate_ids_str 文字列 split に依存しない構造化カラムを使用
@@ -647,7 +652,8 @@ export function Board({
       ? ghostMovesToDisplayTargets(ghostMoves)
       : { opacityMap: new Map<string, number>(), gateMap: new Map<string, number>() }
   );
-  const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : [];
+  const relatedGates: GateId[] = selectedId ? POSITION_TO_GATES[selectedId] : EMPTY_GATE_IDS;
+  const connectionGates: GateId[] = connectionPositionId ? POSITION_TO_GATES[connectionPositionId] : EMPTY_GATE_IDS;
 
   // Derive the last opponent's positioned move for subtle highlight
   const lastOpponentPositionId: PositionId | null = (() => {
@@ -730,7 +736,7 @@ export function Board({
   }, [applyScale]);
 
   useEffect(() => {
-    if (!selectedId || !containerRef.current) {
+    if (!connectionPositionId || !containerRef.current) {
       setLines([]);
       return;
     }
@@ -743,14 +749,14 @@ export function Board({
     // them back to the SVG's internal coordinate space (0-680).
     const scale = container.offsetWidth > 0 ? cRect.width / container.offsetWidth : 1;
 
-    const posBtn = container.querySelector<HTMLElement>(`[data-pos-id="${selectedId}"]`);
+    const posBtn = container.querySelector<HTMLElement>(`[data-pos-id="${connectionPositionId}"]`);
     if (!posBtn) { setLines([]); return; }
     const pRect = posBtn.getBoundingClientRect();
     const posX = (pRect.left + pRect.width / 2 - cRect.left) / scale;
     const posY = (pRect.top + pRect.height / 2 - cRect.top) / scale;
 
     const newLines: LineCoord[] = [];
-    for (const gateId of relatedGates) {
+    for (const gateId of connectionGates) {
       const gateEl = container.querySelector<HTMLElement>(`[data-gate-id="${gateId}"]`);
       if (!gateEl) continue;
       const gRect = gateEl.getBoundingClientRect();
@@ -812,7 +818,7 @@ export function Board({
       newLines.push({ x1: posX, y1: posY, x2, y2 });
     }
     setLines(newLines);
-  }, [selectedId, relatedGates]);
+  }, [connectionPositionId, connectionGates]);
 
   return (
     <section className="board-section">
