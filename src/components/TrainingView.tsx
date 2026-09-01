@@ -140,6 +140,28 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     commitSession(advanced);
   }, [commitSession]);
 
+  // Move back only into the contiguous explanation block immediately before
+  // the current message. Never cross an already-completed user/CPU move.
+  const handleMessageBack = useCallback(() => {
+    const prev = sessionRef.current;
+    if (prev.status !== 'playing' || prev.stepIndex <= 0) return;
+    const current = prev.task.steps[prev.stepIndex];
+    const previous = prev.task.steps[prev.stepIndex - 1];
+    if (!current || !previous || previous.kind !== 'explanation') return;
+    if (current.kind !== 'explanation' && current.kind !== 'user_move' && current.kind !== 'coordinate_pick') return;
+
+    const returningFromInteractive = current.kind === 'user_move' || current.kind === 'coordinate_pick';
+    commitSession({
+      ...prev,
+      stepIndex: prev.stepIndex - 1,
+      gameState: returningFromInteractive ? prev.snapshot : prev.gameState,
+      selectiveFirst: null,
+      quadSelected: [],
+      feedback: null,
+    });
+    setBuildState(EMPTY_BUILD);
+  }, [commitSession]);
+
   // Advance past all consecutive cpu_fixed_move steps automatically
   function advanceSession(sess: TrainingSession): TrainingSession {
     let s = sess;
@@ -225,9 +247,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     kpiReachedStepsRef.current = new Set();
     kpiCompletionSentRef.current = false;
     kpiStartedSentRef.current = true;
-    // user_move / coordinate_pick steps — first step index 0
-    const totalUserMoves = countTotalUserMoves(task.steps);
-    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick');
     track('training_started', {
       training_run_id: newRunId,
       task_id: task.id as string,
@@ -235,19 +254,9 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       move_index: 0,
       resumed: false,
     });
-    // training_step_reached for first user step (if exists)
-    if (firstUserStep >= 0 && totalUserMoves > 0) {
-      kpiReachedStepsRef.current.add(firstUserStep);
-      track('training_step_reached', {
-        training_run_id: newRunId,
-        task_id: task.id as string,
-        move_id: taskMoveId(task.id as string, 0),
-        move_index: 0,
-        step: 1,
-        total_steps: totalUserMoves,
-      });
-    }
-    commitSession(makeSession(task));
+    // Reach is recorded only if the initial session actually lands on an
+    // interactive step. Explanation-first tasks remain at reached=0.
+    commitSession(advanceSession(makeSession(task)));
     setBuildState(EMPTY_BUILD);
     setMode('task');
   }
@@ -574,8 +583,6 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     kpiCompletionSentRef.current = false;
     kpiStartedSentRef.current = true;
     const task = session.task;
-    const totalUserMoves = countTotalUserMoves(task.steps);
-    const firstUserStep = task.steps.findIndex((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick');
     track('training_started', {
       training_run_id: newRunId,
       task_id: task.id as string,
@@ -583,18 +590,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       move_index: 0,
       resumed: false,
     });
-    if (firstUserStep >= 0 && totalUserMoves > 0) {
-      kpiReachedStepsRef.current.add(firstUserStep);
-      track('training_step_reached', {
-        training_run_id: newRunId,
-        task_id: task.id as string,
-        move_id: taskMoveId(task.id as string, 0),
-        move_index: 0,
-        step: 1,
-        total_steps: totalUserMoves,
-      });
-    }
-    commitSession(makeSession(task));
+    commitSession(advanceSession(makeSession(task)));
     setBuildState(EMPTY_BUILD);
   }
 
@@ -788,7 +784,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
     const firstInteractiveAfter = stepsAfter.findIndex(
       (s) => s.kind === 'user_move' || s.kind === 'coordinate_pick'
     );
-    if (firstInteractiveAfter < 0) return 0;
+    if (firstInteractiveAfter < 0) {
+      // A post-action explanation belongs to the last completed interactive
+      // step, so keep the progress at e.g. 03 / 3 instead of showing 00 / 3.
+      return session.task.steps
+        .slice(0, session.stepIndex)
+        .filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
+    }
     // Count all interactive steps up to and including this next one
     return session.task.steps
       .slice(0, session.stepIndex + 1 + firstInteractiveAfter + 1)
@@ -825,6 +827,31 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
       .filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
   })();
   const totalUserSteps = session.task.steps.filter((s) => s.kind === 'user_move' || s.kind === 'coordinate_pick').length;
+  const canGoBackToExplanation = session.status === 'playing'
+    && session.stepIndex > 0
+    && session.task.steps[session.stepIndex - 1]?.kind === 'explanation'
+    && (currentStep?.kind === 'explanation' || currentStep?.kind === 'user_move' || currentStep?.kind === 'coordinate_pick');
+
+  const messageNavigation = session.status === 'playing' && (isExplanationStep || canGoBackToExplanation) ? (
+    <div className="trn-message-nav">
+      <button
+        type="button"
+        className="trn-message-nav-btn trn-message-nav-btn--back"
+        onClick={handleMessageBack}
+        disabled={!canGoBackToExplanation}
+      >
+        {t.trainingTapToGoBack}
+      </button>
+      <button
+        type="button"
+        className="trn-message-nav-btn trn-message-nav-btn--forward"
+        onClick={handleExplanationAdvance}
+        disabled={!isExplanationStep}
+      >
+        {t.trainingTapToContinue}
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="trn-screen">
@@ -860,18 +887,13 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
 
       {/* Step instruction */}
       {isExplanationStep ? (
-        <button
-          type="button"
+        <div
           className="trn-instruction-band trn-explanation-card"
-          onClick={handleExplanationAdvance}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleExplanationAdvance(); } }}
-          aria-label={explanationText}
-
         >
           <div className="trn-step-counter">Step {String(userStepNum).padStart(2, '0')} / {totalUserSteps}</div>
           <div className="trn-instruction-text">{explanationText}</div>
-          <div className="trn-tap-to-continue">{(t as Record<string, unknown>)['trainingTapToContinue'] as string}</div>
-        </button>
+          {messageNavigation}
+        </div>
       ) : (
         <div className="trn-instruction-band">
           {session.status === 'complete' ? (
@@ -887,6 +909,7 @@ export function TrainingView({ onExit, userId = null }: TrainingViewProps) {
               {session.feedback}
             </div>
           )}
+          {messageNavigation}
         </div>
       )}
 

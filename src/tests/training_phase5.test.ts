@@ -49,6 +49,8 @@ import { selectPosition, applyMassiveBuild, applySelectiveBuild } from '../game/
 import { applyFixedCpuMove } from '../training/applyFixedCpuMove';
 import { validateMove } from '../training/validateMove';
 import { FULL_GAME_V1 } from '../training/tasks/fullGameV1';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 // ── Supabase mock ─────────────────────────────────────────────────────────────
 const mockFrom = vi.hoisted(() => vi.fn());
@@ -193,13 +195,32 @@ describe('T2_build_up initial state', () => {
 describe('T2_build_up steps', () => {
   it('10a. interactive sequence: user/cpu/user/cpu/user (3 user_move, 2 cpu) with explanation steps', () => {
     const { steps } = T2_BUILD_UP;
-    // Total steps = 5 explanation + 3 user_move + 2 cpu_fixed_move = 12
+    // Interactive count stays fixed even though explanations are interleaved.
     const userMoves = steps.filter((s) => s.kind === 'user_move');
     const cpuMoves = steps.filter((s) => s.kind === 'cpu_fixed_move');
     const explanations = steps.filter((s) => s.kind === 'explanation');
     expect(userMoves).toHaveLength(3);
     expect(cpuMoves).toHaveLength(2);
     expect(explanations.length).toBeGreaterThan(0);
+  });
+
+  it('10a-2. explanations appear before and after the corresponding placed Assets', () => {
+    expect(T2_BUILD_UP.steps.map((step) => step.kind === 'explanation' ? step.labelKey : step.kind)).toEqual([
+      'trainingT2Exp1',
+      'trainingT2Exp2',
+      'trainingT2Exp3',
+      'trainingT2Exp4',
+      'user_move',
+      'cpu_fixed_move',
+      'trainingT2Exp5',
+      'trainingT2Exp6',
+      'user_move',
+      'cpu_fixed_move',
+      'trainingT2Exp7',
+      'trainingT2Exp8',
+      'user_move',
+      'trainingT2Exp9',
+    ]);
   });
 
   it('10b. G,m(7) → cpu K,m(4) → M,s(6,8) → cpu L,m(9) → A,q', () => {
@@ -339,7 +360,7 @@ const NEW_STRING_KEYS = [
   // explanation step keys
   'trainingT1Exp1', 'trainingT1Exp2', 'trainingT1Exp3', 'trainingT1Exp4', 'trainingT1Exp5',
   'trainingT2Exp1', 'trainingT2Exp2', 'trainingT2Exp3', 'trainingT2Exp4', 'trainingT2Exp5',
-  'trainingT2Exp6', 'trainingT2Exp7',
+  'trainingT2Exp6', 'trainingT2Exp7', 'trainingT2Exp8', 'trainingT2Exp9',
   'trainingT3Exp1', 'trainingT3Exp2', 'trainingT3Exp3', 'trainingT3Exp4', 'trainingT3Exp5',
 ];
 
@@ -370,6 +391,15 @@ describe('14. all 10 locales have new i18n keys', () => {
 // ── 15. Asset Value 1/8/64 表記なし ──────────────────────────────────────────
 describe('15. no Asset Value 1/8/64 in new keys', () => {
   const CHECK_KEYS = [
+    'trainingT2Exp1',
+    'trainingT2Exp2',
+    'trainingT2Exp3',
+    'trainingT2Exp4',
+    'trainingT2Exp5',
+    'trainingT2Exp6',
+    'trainingT2Exp7',
+    'trainingT2Exp8',
+    'trainingT2Exp9',
     'trainingT2BuildStep1',
     'trainingT2BuildStep2',
     'trainingT2BuildStep3',
@@ -396,6 +426,30 @@ describe('15. no Asset Value 1/8/64 in new keys', () => {
       }
     });
   }
+
+  it('JA/EN no longer say that numerical values need not be memorized', () => {
+    expect(JA_TRANSLATIONS.trainingT2Exp2).not.toContain('数値を覚える必要はありません');
+    expect(EN_TRANSLATIONS.trainingT2Exp2).not.toContain('do not need to memorize');
+  });
+});
+
+describe('15b. explanation navigation', () => {
+  const source = readFileSync(join(__dirname, '../components/TrainingView.tsx'), 'utf8');
+
+  it('renders localized back and forward controls in the message area', () => {
+    expect(source).toContain('{t.trainingTapToGoBack}');
+    expect(source).toContain('{t.trainingTapToContinue}');
+    expect(source).toContain('className="trn-message-nav"');
+  });
+
+  it('allows back only when the immediately preceding step is an explanation', () => {
+    expect(source).toContain("previous.kind !== 'explanation'");
+    expect(source).toContain('disabled={!canGoBackToExplanation}');
+  });
+
+  it('does not let the forward control skip an interactive step', () => {
+    expect(source).toContain('disabled={!isExplanationStep}');
+  });
 });
 
 // ── 16. KPI total_steps が 25 / 3 / 1 ────────────────────────────────────────

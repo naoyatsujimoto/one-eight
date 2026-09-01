@@ -13,8 +13,6 @@ export const T2_BUILD_UP: TrainingTask = {
     { kind: 'explanation', labelKey: 'trainingT2Exp3' },
     // Explanation 4
     { kind: 'explanation', labelKey: 'trainingT2Exp4' },
-    // Explanation 5
-    { kind: 'explanation', labelKey: 'trainingT2Exp5' },
     // User Step 1: G,m(7)
     {
       kind: 'user_move',
@@ -26,7 +24,8 @@ export const T2_BUILD_UP: TrainingTask = {
       kind: 'cpu_fixed_move',
       move: { positioning: 'K', build: { type: 'massive', gate: 4 } },
     },
-    // Explanation 6
+    // Explain the placed Large Asset, then introduce Selective Build
+    { kind: 'explanation', labelKey: 'trainingT2Exp5' },
     { kind: 'explanation', labelKey: 'trainingT2Exp6' },
     // User Step 2: M,s(6,8)
     {
@@ -39,14 +38,17 @@ export const T2_BUILD_UP: TrainingTask = {
       kind: 'cpu_fixed_move',
       move: { positioning: 'L', build: { type: 'massive', gate: 9 } },
     },
-    // Explanation 7
+    // Explain the placed Middle Assets, then introduce Quad Build
     { kind: 'explanation', labelKey: 'trainingT2Exp7' },
+    { kind: 'explanation', labelKey: 'trainingT2Exp8' },
     // User Step 3: A,q
     {
       kind: 'user_move',
       expected: { positioning: 'A', build: { type: 'quad', minGates: 4 } },
       labelKey: 'trainingT2BuildStep3',
     },
+    // Explain the placed Small Assets before completion
+    { kind: 'explanation', labelKey: 'trainingT2Exp9' },
   ],
   initialState: { ...createInitialState('white'), trainingMode: true },
 };

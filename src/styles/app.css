@@ -3609,10 +3609,8 @@ ol { padding-left: 20px; }
   flex-direction: column;
   gap: 6px;
 }
-/* explanation card: button reset + ink color; padding comes from .trn-instruction-band */
+/* explanation card; padding comes from .trn-instruction-band */
 .trn-explanation-card {
-  appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -3621,15 +3619,42 @@ ol { padding-left: 20px; }
   color: var(--ink);
   background: transparent;
   text-align: left;
-  border: 0;
   border-top: 1px solid var(--rule);
-  cursor: pointer;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+.trn-message-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 32px;
+  margin-top: 8px;
+}
+.trn-message-nav-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 112px;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.3;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.trn-tap-to-continue {
-  color: var(--ink-3);
+.trn-message-nav-btn--back {
+  text-align: left;
+}
+.trn-message-nav-btn--forward {
+  margin-left: auto;
+  text-align: right;
+}
+.trn-message-nav-btn:disabled {
+  visibility: hidden;
+  pointer-events: none;
 }
 .trn-instruction-band--tappable {
   cursor: pointer;
