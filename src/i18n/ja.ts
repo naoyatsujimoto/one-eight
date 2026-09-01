@@ -705,6 +705,8 @@ export const JA_TRANSLATIONS = {
     inboxNoMessages: 'メッセージはありません',
     inboxLoadFailed: 'メッセージの読み込みに失敗しました',
     inboxCloseLabel: '閉じる',
+    welcomeGuideTitle: 'ONE EIGHTへようこそ',
+    welcomeGuideBody: 'まずは「新しいゲーム」から最初の対局を始められます。\n\nルールを学びたいときや戦略を磨きたいときは「TRAINING」を開いてください。一局指南と小課題を用意しています。\n\n「プロフィール」では、表示名・言語・STATS公開設定を変更できます。\n\nそれでは、盤上にあなたの一手を刻んでください。',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `お知らせ：${arenaLabel} Master 報酬` : 'お知らせ：Master 報酬',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `おめでとうございます。\n\n${arenaLabel} の Master報酬の受給資格が付与されました。Master報酬は、次回のMaster戦に出場できるよう、自身の予定を最大限調整する義務を引き受けることへの固定報酬です。\n\nMaster報酬を受け取るには、支払い情報、税務確認、および PayPal 受取メールアドレスの提出が必要です。\n\nUser Page の Master報酬 セクションから必要事項をご提出ください。\n\n提出された機密情報は Winner File として保存された後、情報セキュリティ対策として 72 時間以内にオンラインデータベースから削除されます。`

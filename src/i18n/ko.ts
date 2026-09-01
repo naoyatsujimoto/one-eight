@@ -688,6 +688,8 @@ export const KO_TRANSLATIONS = {
     inboxNoMessages: '메시지가 없습니다',
     inboxLoadFailed: '메시지를 불러오지 못했습니다',
     inboxCloseLabel: '닫기',
+    welcomeGuideTitle: 'ONE EIGHT에 오신 것을 환영합니다',
+    welcomeGuideBody: '먼저 「새 게임」에서 첫 대국을 시작할 수 있습니다.\n\n규칙을 배우거나 전략을 연마하고 싶을 때는 「훈련」을 열어 주세요. 한 판 가이드와 짧은 과제가 준비되어 있습니다.\n\n프로필에서 표시 이름, 언어, STATS 공개 설정을 변경할 수 있습니다.\n\n이제 보드 위에 첫 수를 남겨 보세요.',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `알림：${arenaLabel} Master 보상` : '알림：Master 보상',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `축하합니다.\n\n${arenaLabel} Master 보상 수령 자격이 부여되었습니다. Master 보상은 다음 Master 경기에 참가할 수 있도록 최대한 일정을 조정해야 하는 의무를 수락하는 것에 대한 고정 보상입니다.\n\nMaster 보상을 받으려면 지급 정보, 세금 확인 및 PayPal 수신 이메일을 제출해야 합니다.\n\nUser Page의 Master 보상 섹션에서 필요한 정보를 제출해 주세요.\n\n제출된 민감한 정보는 Winner File로 저장된 후, 정보 보안 조치의 일환으로 72시간 이내에 온라인 데이터베이스에서 삭제됩니다.`

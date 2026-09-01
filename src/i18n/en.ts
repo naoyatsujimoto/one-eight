@@ -728,6 +728,8 @@ export const EN_TRANSLATIONS = {
     inboxNoMessages: 'No messages',
     inboxLoadFailed: 'Failed to load messages',
     inboxCloseLabel: 'Close',
+    welcomeGuideTitle: 'Welcome to ONE EIGHT',
+    welcomeGuideBody: 'Start your first match from New Game.\n\nOpen Training whenever you want to learn the rules or sharpen your strategy. Guided Game and short Training Tasks are ready for you.\n\nFrom your Profile, you can change your display name, language, and STATS visibility.\n\nNow leave your mark on the board.',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Notice: ${arenaLabel} Master Reward` : 'Notice: Master Reward',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `Congratulations.\n\nYou are eligible for the Master Reward for ${arenaLabel}. The Master Reward is a fixed compensation for the obligation to make every effort to adjust their schedule so they can participate in the next Master match.\n\nTo receive the Master Reward, you need to submit payout information, tax confirmation, and a PayPal receiving email.\n\nPlease submit the required information from the Master Reward section on your User Page.\n\nAfter the submitted sensitive information is saved as a Winner File, it will generally be deleted from the online database within 72 hours as an information security measure.`

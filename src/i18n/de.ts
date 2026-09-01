@@ -680,6 +680,8 @@ export const DE_TRANSLATIONS = {
     inboxNoMessages: 'Keine Nachrichten',
     inboxLoadFailed: 'Nachrichten konnten nicht geladen werden',
     inboxCloseLabel: 'Schließen',
+    welcomeGuideTitle: 'Willkommen bei ONE EIGHT',
+    welcomeGuideBody: 'Starte deine erste Partie über „Neues Spiel“.\n\nÖffne „Training“, wenn du die Regeln lernen oder deine Strategie verbessern möchtest. Dort warten eine geführte Partie und kurze Aufgaben auf dich.\n\nIn deinem Profil kannst du Anzeigenamen, Sprache und die Sichtbarkeit deiner STATS ändern.\n\nSetze jetzt deinen ersten Zug auf dem Brett.',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Hinweis: ${arenaLabel} Master-Belohnung` : 'Hinweis: Master-Belohnung',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `Herzlichen Glückwunsch.\n\nDu bist berechtigt, die Master-Belohnung für ${arenaLabel} zu erhalten. Die Master-Belohnung ist eine feste Vergütung für die Verpflichtung, alle Anstrengungen zu unternehmen, um den eigenen Zeitplan anzupassen, damit eine Teilnahme am nächsten Master-Spiel möglich ist.\n\nUm die Master-Belohnung zu erhalten, musst du Auszahlungsinformationen, eine Steuerbestätigung und eine PayPal-Empfänger-E-Mail-Adresse einreichen.\n\nBitte reiche die erforderlichen Informationen über den Bereich Master-Belohnung auf deiner User Page ein.\n\nNachdem die eingereichten sensiblen Informationen als Winner File gespeichert wurden, werden sie im Allgemeinen innerhalb von 72 Stunden als Informationssicherheitsmaßnahme aus der Online-Datenbank gelöscht.`

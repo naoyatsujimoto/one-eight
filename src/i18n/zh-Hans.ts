@@ -688,6 +688,8 @@ export const ZH_HANS_TRANSLATIONS = {
     inboxNoMessages: '暂无消息',
     inboxLoadFailed: '消息加载失败',
     inboxCloseLabel: '关闭',
+    welcomeGuideTitle: '欢迎来到 ONE EIGHT',
+    welcomeGuideBody: '从“新游戏”开始你的第一场对局。\n\n想学习规则或磨练策略时，请打开“训练”。这里准备了全局指导和小课题。\n\n你可以在个人资料中更改显示名称、语言和 STATS 公开设置。\n\n现在，在棋盘上留下你的第一步吧。',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `通知：${arenaLabel} Master 奖励` : '通知：Master 奖励',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `恭喜您。\n\n您已获得 ${arenaLabel} 的 Master 奖励资格。Master 奖励是承担尽一切努力调整自己的日程安排以便参加下一场Master对局的义务的固定报酬。\n\n领取 Master 奖励需提交收款信息、税务确认及 PayPal 收款电子邮件。\n\n请从 User Page 的 Master 奖励栏目提交所需信息。\n\n提交的敏感信息保存为 Winner File 后，作为信息安全措施，将在 72 小时内从在线数据库中删除。`

@@ -680,6 +680,8 @@ export const FR_TRANSLATIONS = {
     inboxNoMessages: 'Aucun message',
     inboxLoadFailed: 'Échec du chargement des messages',
     inboxCloseLabel: 'Fermer',
+    welcomeGuideTitle: 'Bienvenue dans ONE EIGHT',
+    welcomeGuideBody: 'Lancez votre première partie depuis « Nouvelle partie ».\n\nOuvrez « Entraînement » pour apprendre les règles ou affiner votre stratégie. Une partie guidée et de courts exercices vous y attendent.\n\nDepuis votre profil, vous pouvez modifier votre nom affiché, votre langue et la visibilité de vos STATS.\n\nÀ vous de jouer votre premier coup sur le plateau.',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Avis : Récompense Master ${arenaLabel}` : 'Avis : Récompense Master',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `Félicitations.\n\nVous êtes éligible à la Récompense Master pour ${arenaLabel}. La Récompense Master est une compensation fixe pour l'obligation de faire tout son possible pour adapter son emploi du temps afin de participer au prochain match Master.\n\nPour recevoir la Récompense Master, vous devez soumettre vos informations de paiement, une confirmation fiscale et une adresse e-mail de réception PayPal.\n\nVeuillez soumettre les informations requises depuis la section Récompense Master de votre User Page.\n\nUne fois les informations sensibles soumises enregistrées en tant que Winner File, elles seront généralement supprimées de la base de données en ligne dans les 72 heures, en tant que mesure de sécurité des informations.`

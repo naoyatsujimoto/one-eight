@@ -680,6 +680,8 @@ export const IT_TRANSLATIONS = {
     inboxNoMessages: 'Nessun messaggio',
     inboxLoadFailed: 'Caricamento messaggi non riuscito',
     inboxCloseLabel: 'Chiudi',
+    welcomeGuideTitle: 'Benvenuto in ONE EIGHT',
+    welcomeGuideBody: 'Inizia la tua prima partita da “Nuova partita”.\n\nApri “Allenamento” quando vuoi imparare le regole o perfezionare la tua strategia. Troverai una partita guidata e brevi esercizi.\n\nDal tuo profilo puoi cambiare il nome visualizzato, la lingua e la visibilità delle STATS.\n\nOra lascia la tua prima mossa sulla plancia.',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `Avviso: Ricompensa Master ${arenaLabel}` : 'Avviso: Ricompensa Master',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `Congratulazioni.\n\nSei idoneo/a a ricevere la Ricompensa Master per ${arenaLabel}. La Ricompensa Master è un compenso fisso per l'obbligo di fare ogni sforzo per adattare la propria agenda in modo da poter partecipare alla prossima partita Master.\n\nPer ricevere la Ricompensa Master, devi inviare le informazioni di pagamento, la conferma fiscale e un indirizzo email di ricezione PayPal.\n\nInvia le informazioni richieste dalla sezione Ricompensa Master nella tua User Page.\n\nDopo che le informazioni sensibili inviate vengono salvate come Winner File, verranno generalmente eliminate dal database online entro 72 ore come misura di sicurezza delle informazioni.`

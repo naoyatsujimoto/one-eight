@@ -711,6 +711,8 @@ export const ZH_HANT_TRANSLATIONS = {
     inboxNoMessages: '沒有訊息',
     inboxLoadFailed: '訊息載入失敗',
     inboxCloseLabel: '關閉',
+    welcomeGuideTitle: '歡迎來到 ONE EIGHT',
+    welcomeGuideBody: '從「新遊戲」開始你的第一場對局。\n\n想學習規則或磨練策略時，請開啟「訓練」。這裡備有一局指導與小課題。\n\n你可以在個人資料中變更顯示名稱、語言與 STATS 公開設定。\n\n現在，在棋盤上留下你的第一步吧。',
     arenaMasterRewardTitle: (arenaLabel: string) => arenaLabel ? `通知：${arenaLabel} Master 獎勵` : '通知：Master 獎勵',
     arenaMasterRewardBody: (arenaLabel: string) => arenaLabel
       ? `恭喜您。\n\n您已獲得 ${arenaLabel} 的 Master 獎勵資格。Master 獎勵是承擔盡一切努力調整自身行程以參加下一場Master對局的義務的固定報酬。\n\n領取 Master 獎勵需提交收款資訊、稅務確認及 PayPal 收款電子郵件。\n\n請從 User Page 的 Master 獎勵區塊提交所需資料。\n\n提交的敏感資訊儲存為 Winner File 後，基於資訊安全措施，將在 72 小時內從線上資料庫中刪除。`

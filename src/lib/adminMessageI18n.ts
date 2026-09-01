@@ -3,7 +3,7 @@
  * Resolves localized title/body for admin_messages rows.
  *
  * Resolution order:
- *   1. Recognized message_key  → use t.arenaMasterReward* functions
+ *   1. Recognized message_key  → use the matching UI dictionary entry
  *   2. translations[locale]    → use the exact-locale translation
  *   3. translations['en']      → English fallback
  *   4. Legacy title/body       → last resort
@@ -24,7 +24,7 @@ export type AdminMessageRow = {
   message_params?: Record<string, unknown> | null;
 };
 
-const KNOWN_MESSAGE_KEYS = ['arena_master_reward_eligible'] as const;
+const KNOWN_MESSAGE_KEYS = ['arena_master_reward_eligible', 'welcome_guide'] as const;
 
 export function resolveAdminMessageContent(
   message: AdminMessageRow,
@@ -40,6 +40,13 @@ export function resolveAdminMessageContent(
     return {
       title: t.arenaMasterRewardTitle(arenaLabel),
       body: t.arenaMasterRewardBody(arenaLabel),
+    };
+  }
+
+  if (message.message_key === 'welcome_guide') {
+    return {
+      title: t.welcomeGuideTitle,
+      body: t.welcomeGuideBody,
     };
   }
 
