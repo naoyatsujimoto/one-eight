@@ -59,15 +59,12 @@ describe('B. subscription.updated / active / ends_at 欠落', () => {
     })).toBe(true);
   });
 
-  it('ends_at 欠落で current_period_end が null に上書きされた場合 → isProActive = true (null は有効扱い)', () => {
-    // NOTE: isProActive では status=active かつ current_period_end=null は「制限なし有効」として true を返す
-    // webhook で null 上書きされた場合は過剰にProになるリスクがあるため、
-    // 修正後の webhook は ends_at 欠落時に current_period_end を更新しない
+  it('ends_at 欠落で current_period_end が null の場合 → isProActive = false (fail closed)', () => {
     expect(isProActive({
       plan: 'pro',
       subscription_status: 'active',
       current_period_end: null,
-    })).toBe(true);
+    })).toBe(false);
   });
 });
 
@@ -89,8 +86,8 @@ describe('C. stale event guard', () => {
 
 // ────────────────────────────────────────────────────────────────────────────
 // D. duplicate event_id (冪等性)
-//    → 2回目以降は paddle_webhook_events の PRIMARY KEY 衝突でスキップ
-//    → profile は最初の処理結果を維持
+//    → terminal はno-op、error/期限切れpendingはclaim/leaseで安全に再処理
+//    → profile state timestampにより古い状態へ巻き戻さない
 // ────────────────────────────────────────────────────────────────────────────
 describe('D. duplicate event_id (冪等性)', () => {
   it('冪等処理後も isProActive が正しく動作する', () => {

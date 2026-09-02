@@ -2,3 +2,6 @@ project_id = "farieecfyajbtmjxelop"
 
 [functions.paddle-webhook]
 verify_jwt = false
+
+[functions.paddle-reconcile]
+verify_jwt = false

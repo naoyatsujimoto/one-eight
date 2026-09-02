@@ -44,12 +44,9 @@ export function isProActive(profile: {
 
   const now = new Date();
 
-  // active: current_period_end があればその期限内、なければ有効
+  // active: paid period end is mandatory. Missing billing data fails closed.
   if (profile.subscription_status === 'active') {
-    if (profile.current_period_end) {
-      return new Date(profile.current_period_end) > now;
-    }
-    return true;
+    return profile.current_period_end !== null && new Date(profile.current_period_end) > now;
   }
 
   // canceled: 解約済みでも current_period_end までは Pro 維持

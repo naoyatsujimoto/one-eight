@@ -1,532 +1,749 @@
 /**
- * Edge Function: paddle-webhook
- * Phase Paddle-W1 — Paddle → Supabase profiles 反映
+ * Paddle webhook -> subscription state synchronization.
  *
- * 処理対象イベント:
- *   subscription.activated / updated / canceled / past_due
- *
- * 安全設計:
- *   - HMAC-SHA256 署名検証 + timestamp freshness (5分以内)
- *   - timing-safe HMAC 比較
- *   - 冪等性: INSERT-first (event_id PRIMARY KEY 衝突で即終了)
- *   - 順序逆転対策: profiles.paddle_last_event_at で stale guard
- *   - email cross-verify: auth.users.email / customData.supabase_email / Paddle customer.email の3点一致
- *   - customer.email が payload に含まれない場合は Paddle API で取得 (PADDLE_API_KEY)
- *   - supabase_uid が custom_data に存在しない場合は customer_id → subscription_id でプロフィール照合 (fallback)
- *   - is_test_account guard
- *   - info@tentomushi.co.jp 明示 deny
- *   - profiles UPDATE のみ (UPSERT 禁止) + SQL-level guard
- *   - secret / key はすべて環境変数
- *   - 早期 audit_log: request 受信直後に stage を記録し、クラッシュ箇所を特定可能にする
+ * A bound (customer_id, subscription_id) pair is authoritative. Initial
+ * binding requires Auth/custom/Paddle email equality and an allowlisted Pro
+ * price. Infrastructure failures remain retryable; profile state and event
+ * completion are finalized atomically by SQL.
  */
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  fetchPaddleResource,
+  type PaddleApiResult,
+} from '../_shared/paddleApi.ts';
+import {
+  decideSubscriptionBinding,
+  extractSubscriptionPriceIds,
+  hasAllowedProPrice,
+  isCustomIdentityConsistent,
+  isStrictlyNewerSubscription,
+  isValidPaddleCustomerId,
+  isValidPaddleSubscriptionId,
+  mapPaddleSubscriptionState,
+  normalizeEmail,
+  normalizePaddleStateTimestamp,
+  parseAllowedPriceIds,
+  requiresPaddleCustomerVerification,
+  subscriptionIdPrefix,
+  verifyInitialEmailBinding,
+  type StoredPaddleIdentity,
+} from '../_shared/paddleSyncPolicy.ts';
 
-// ── 環境変数 (Supabase Edge Function secrets に設定) ──────────────────────
-const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-/** Paddle Webhook 署名検証用 secret (Paddle Dashboard > Notifications > secret) */
-const PADDLE_WEBHOOK_SECRET     = Deno.env.get('PADDLE_WEBHOOK_SECRET')!;
-/** Paddle REST API key (customer email fallback 取得用) */
-const PADDLE_API_KEY            = Deno.env.get('PADDLE_API_KEY')!;
+const PADDLE_WEBHOOK_SECRET = Deno.env.get('PADDLE_WEBHOOK_SECRET') ?? '';
+const PADDLE_API_KEY = Deno.env.get('PADDLE_API_KEY') ?? '';
+const ALLOWED_PRICE_IDS = parseAllowedPriceIds(Deno.env.get('PADDLE_PRO_PRICE_IDS'));
+const SIGNATURE_FRESHNESS_SECONDS = 5 * 60;
+const EVENT_LEASE_SECONDS = 120;
 
-// ── 定数 ─────────────────────────────────────────────────────────────────────
-const SIGNATURE_FRESHNESS_SEC = 5 * 60; // 5分
-
-const HANDLED_EVENTS = new Set([
+const SUBSCRIPTION_EVENTS = new Set([
+  'subscription.created',
   'subscription.activated',
   'subscription.updated',
+  'subscription.trialing',
+  'subscription.paused',
+  'subscription.resumed',
   'subscription.canceled',
   'subscription.past_due',
 ]);
-
-/** 明示 deny 対象アカウント (test account 化はしないが webhook で Pro 化禁止) */
-const DENIED_EMAILS = new Set([
-  'info@tentomushi.co.jp',
+const OBSERVED_TRANSACTION_EVENTS = new Set([
+  'transaction.completed',
+  'transaction.payment_failed',
 ]);
+const DENIED_EMAILS = new Set(['info@tentomushi.co.jp']);
 
-// ── メインハンドラ ────────────────────────────────────────────────────────────
-Deno.serve(async (req: Request) => {
-  if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
+type SupabaseClient = ReturnType<typeof createClient>;
 
-  const body      = await req.text();
-  const signature = req.headers.get('paddle-signature') ?? '';
-  const remoteAddr = req.headers.get('x-forwarded-for') ?? 'unknown';
+interface ProfileRow extends StoredPaddleIdentity {
+  plan: string;
+  subscription_status: string;
+  current_period_end: string | null;
+  is_test_account: boolean;
+  is_internal_test_account: boolean;
+  paddle_state_updated_at: string | null;
+}
+interface PaddleSubscriptionData {
+  id?: string;
+  customer_id?: string;
+  subscription_id?: string;
+  origin?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  current_billing_period?: { ends_at?: string | null } | null;
+  custom_data?: Record<string, unknown> | null;
+  customer?: { email?: string | null } | null;
+  items?: unknown[];
+  [key: string]: unknown;
+}
+interface PaddleWebhookPayload {
+  event_id?: string;
+  event_type?: string;
+  occurred_at?: string;
+  data?: PaddleSubscriptionData;
+}
+interface ClaimRow {
+  claim_action: 'process' | 'terminal' | 'in_progress' | 'conflict';
+  claim_token: string | null;
+  claim_attempt_count: number;
+}
 
-  // ── supabase client を早期生成 (audit_log への早期書き込みに必要) ──────────
+Deno.serve(async (request: Request) => {
+  if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+
+  const body = await request.text();
+  const signature = request.headers.get('paddle-signature') ?? '';
+  const signatureResult = await verifyPaddleSignature(body, signature, PADDLE_WEBHOOK_SECRET);
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-  // ① 署名検証 (timestamp freshness 含む)
-  const sigResult = await verifyPaddleSignature(body, signature, PADDLE_WEBHOOK_SECRET);
-  if (!sigResult.valid) {
-    // payload 本文は保存しない。メタ情報のみ audit_log に記録
-    await auditLog(supabase, {
-      eventId: null, eventType: null, supabaseUid: null,
-      reason: 'invalid_signature', action: 'denied',
-      detail: {
-        signature_present: signature.length > 0,
-        body_length: body.length,
-        remote_addr: remoteAddr,
-        failure_reason: sigResult.reason,
-      },
+  if (!signatureResult.valid) {
+    await auditLog(supabase, null, null, null, 'invalid_signature', 'denied', {
+      signature_present: signature.length > 0,
+      body_length: body.length,
+      failure_reason: signatureResult.reason ?? 'invalid',
     });
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // ② ペイロード解析
   let payload: PaddleWebhookPayload;
   try {
-    payload = JSON.parse(body);
+    payload = JSON.parse(body) as PaddleWebhookPayload;
   } catch {
-    await auditLog(supabase, {
-      eventId: null, eventType: null, supabaseUid: null,
-      reason: 'payload_parse_error', action: 'error',
-      detail: { body_length: body.length },
+    await auditLog(supabase, null, null, null, 'payload_parse_error', 'error', { body_length: body.length });
+    return new Response('Bad Request', { status: 400 });
+  }
+
+  const eventId = typeof payload.event_id === 'string' ? payload.event_id : '';
+  const eventType = typeof payload.event_type === 'string' ? payload.event_type : '';
+  const occurredAt = typeof payload.occurred_at === 'string' ? payload.occurred_at : '';
+  if (!/^evt_[a-z0-9]+$/.test(eventId) || !eventType || !Number.isFinite(Date.parse(occurredAt))) {
+    await auditLog(supabase, eventId || null, eventType || null, null, 'invalid_event_envelope', 'error', {
+      has_event_id: Boolean(eventId),
+      has_event_type: Boolean(eventType),
+      has_occurred_at: Boolean(occurredAt),
     });
     return new Response('Bad Request', { status: 400 });
   }
 
-  const eventId    = payload?.event_id;
-  const eventType  = payload?.event_type;
-  const occurredAt = payload?.occurred_at;
-
-  if (!eventId || !eventType || !occurredAt) {
-    await auditLog(supabase, {
-      eventId: eventId ?? null,
-      eventType: eventType ?? null,
-      supabaseUid: null,
-      reason: 'missing_required_fields',
-      action: 'error',
-      detail: {
-        has_event_id: !!eventId,
-        has_event_type: !!eventType,
-        has_occurred_at: !!occurredAt,
-      },
-    });
-    return new Response('Bad Request', { status: 400 });
-  }
-
-  // ③ 対象外イベントは即 200 (記録なし)
-  if (!HANDLED_EVENTS.has(eventType)) {
+  if (!SUBSCRIPTION_EVENTS.has(eventType) && !OBSERVED_TRANSACTION_EVENTS.has(eventType)) {
     return new Response('OK', { status: 200 });
   }
 
-  // ④ INSERT-first 冪等性
-  //    event_id PRIMARY KEY 衝突 → 既処理として即終了
-  //    INSERT 成功したリクエストだけが続きへ進む (race condition 防止)
-  const { error: insertErr } = await supabase
-    .from('paddle_webhook_events')
-    .insert({
-      event_id:    eventId,
-      event_type:  eventType,
-      occurred_at: occurredAt,
-      payload:     payload,
-      result:      'pending',
-    });
-
-  if (insertErr) {
-    // PRIMARY KEY 衝突 (23505) = 重複イベント → 正常扱い
-    if (insertErr.code === '23505') {
-      return new Response('OK', { status: 200 });
-    }
-    // その他 DB エラー
-    await auditLog(supabase, {
-      eventId, eventType, supabaseUid: null,
-      reason: 'event_insert_failed',
-      action: 'error',
-      detail: { db_error_code: insertErr.code, db_error_message: insertErr.message },
-    });
-    return new Response('Internal Server Error', { status: 500 });
-  }
-
-  // ⑤ occurred_at の Invalid Date 検証
-  const occurredDate = new Date(occurredAt);
-  if (isNaN(occurredDate.getTime())) {
-    await auditLog(supabase, {
-      eventId, eventType, supabaseUid: null,
-      reason: 'invalid_occurred_at', action: 'error',
-      detail: { occurred_at: occurredAt },
-    });
-    await updateEventResult(supabase, eventId, 'error');
+  const claim = await claimEvent(supabase, eventId, eventType, occurredAt, payload);
+  if (!claim.ok) return new Response('Internal Server Error', { status: 500 });
+  if (claim.row.claim_action === 'terminal') return new Response('OK', { status: 200 });
+  if (claim.row.claim_action === 'in_progress') return new Response('Retry Later', { status: 503 });
+  if (claim.row.claim_action === 'conflict') {
+    await auditLog(supabase, eventId, eventType, null, 'event_id_metadata_conflict', 'denied', {});
     return new Response('OK', { status: 200 });
   }
+  if (!claim.row.claim_token) return new Response('Internal Server Error', { status: 500 });
 
-  // ⑥ Stale guard (グローバル: 48h 以上前)
-  const staleThreshold  = new Date(Date.now() - 48 * 3600 * 1000);
-  if (occurredDate < staleThreshold) {
-    await auditLog(supabase, { eventId, eventType, reason: 'stale_event', action: 'skipped', detail: { occurred_at: occurredAt } });
-    await updateEventResult(supabase, eventId, 'skipped');
-    return new Response('OK', { status: 200 });
+  if (OBSERVED_TRANSACTION_EVENTS.has(eventType)) {
+    return handleObservedTransaction(supabase, payload, eventId, claim.row.claim_token);
   }
-
-  // ⑦ データ抽出
-  const sub                  = payload?.data ?? {};
-  const customData           = sub?.custom_data ?? {};
-  const paddleCustomerId     = sub?.customer_id ?? '';
-  const paddleSubscriptionId = sub?.id ?? '';
-
-  // current_billing_period.ends_at の取得
-  // subscription.updated の場合、ends_at が存在することを検証する (active 時は必須)
-  const currentPeriodEnd: string | null = sub?.current_billing_period?.ends_at ?? null;
-
-  const supabaseUid  = (customData?.supabase_uid ?? '').trim();
-  const customEmail  = (customData?.supabase_email ?? '').toLowerCase().trim();
-
-  // ⑧ Paddle customer email 取得
-  //    payload 内に data.customer.email があればそれを使用
-  //    ない場合は Paddle API GET /customers/{customer_id} で取得
-  let paddleEmail = (sub?.customer?.email ?? '').toLowerCase().trim();
-
-  if (!paddleEmail && paddleCustomerId) {
-    const fetched = await getPaddleCustomerEmail(paddleCustomerId, PADDLE_API_KEY);
-    if (fetched === null) {
-      // API 取得失敗 → audit_log に記録して終了
-      await auditLog(supabase, {
-        eventId, eventType, supabaseUid: supabaseUid || null,
-        reason: 'paddle_customer_email_fetch_failed', action: 'denied',
-        detail: { customer_id_prefix: paddleCustomerId.slice(0, 8) },
-      });
-      await updateEventResult(supabase, eventId, 'denied');
-      return new Response('OK', { status: 200 });
-    }
-    paddleEmail = fetched;
-  }
-
-  // ⑨ プロフィール照合
-  //    優先順位:
-  //      1) supabase_uid (custom_data) が存在する場合: uid で直接取得
-  //      2) supabase_uid が空の場合 (fallback): paddle_customer_id → paddle_subscription_id で照合
-  let profile: {
-    id: string;
-    plan: string;
-    subscription_status: string;
-    is_test_account: boolean;
-    paddle_last_event_at: string | null;
-  } | null = null;
-  let resolvedUid = supabaseUid;
-
-  if (supabaseUid) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, plan, subscription_status, is_test_account, paddle_last_event_at')
-      .eq('id', supabaseUid)
-      .maybeSingle();
-    profile = data ?? null;
-  } else if (paddleCustomerId) {
-    // custom_data に supabase_uid がない場合: customer_id で照合
-    const { data: rows } = await supabase
-      .from('profiles')
-      .select('id, plan, subscription_status, is_test_account, paddle_last_event_at')
-      .eq('paddle_customer_id', paddleCustomerId)
-      .limit(1);
-    if (rows && rows.length > 0) {
-      profile = rows[0] as typeof profile;
-      resolvedUid = profile!.id;
-    }
-  }
-
-  // ⑩ email cross-verify
-  //    auth.users.email / customData.supabase_email / Paddle customer.email の3点一致
-  //    NOTE: supabase_uid が custom_data になかった場合 (customer_id fallback) は
-  //          authEmail を profile.id から取得する
-  let authEmail = '';
-  if (resolvedUid) {
-    const { data: authUserData } = await supabase.auth.admin.getUserById(resolvedUid);
-    authEmail = (authUserData?.user?.email ?? '').toLowerCase().trim();
-  }
-
-  const emailsMatch = (
-    authEmail.length > 0 &&
-    paddleEmail.length > 0 &&
-    authEmail === paddleEmail &&
-    // customEmail は存在する場合のみ照合 (custom_data に入っていない場合は authEmail/paddleEmail の2点一致で許容)
-    (customEmail.length === 0 || customEmail === paddleEmail)
+  return handleSubscriptionEvent(
+    supabase, payload, eventId, eventType, occurredAt, claim.row.claim_token,
   );
-
-  if (!emailsMatch) {
-    await auditLog(supabase, {
-      eventId, eventType, supabaseUid: resolvedUid || null, reason: 'email_mismatch', action: 'denied',
-      detail: { has_auth_email: !!authEmail, has_custom_email: !!customEmail, has_paddle_email: !!paddleEmail },
-    });
-    await updateEventResult(supabase, eventId, 'denied');
-    return new Response('OK', { status: 200 });
-  }
-
-  // ⑪ info@tentomushi.co.jp 明示 deny
-  //    3点のいずれかが一致した場合に発動 (is_test_account とは独立)
-  const allEmails = [authEmail, customEmail, paddleEmail].filter(e => e.length > 0);
-  if (allEmails.some(e => DENIED_EMAILS.has(e))) {
-    await auditLog(supabase, { eventId, eventType, supabaseUid: resolvedUid || null, reason: 'denied_account', action: 'denied', detail: {} });
-    await updateEventResult(supabase, eventId, 'denied');
-    return new Response('OK', { status: 200 });
-  }
-
-  // ⑫ プロフィール存在確認 (UPDATE のみ。存在しなければ deny)
-  if (!profile) {
-    await auditLog(supabase, { eventId, eventType, supabaseUid: resolvedUid || null, reason: 'no_profile', action: 'denied', detail: {} });
-    await updateEventResult(supabase, eventId, 'denied');
-    return new Response('OK', { status: 200 });
-  }
-
-  // ⑬ is_test_account guard (アプリ側)
-  if (profile.is_test_account) {
-    await auditLog(supabase, { eventId, eventType, supabaseUid: resolvedUid, reason: 'is_test_account', action: 'skipped', detail: {} });
-    await updateEventResult(supabase, eventId, 'skipped');
-    return new Response('OK', { status: 200 });
-  }
-
-  // ⑭ Stale guard (プロファイル単位: paddle_last_event_at より古いまたは同時刻のイベントは無視)
-  if (profile.paddle_last_event_at && occurredDate <= new Date(profile.paddle_last_event_at)) {
-    await auditLog(supabase, {
-      eventId, eventType, supabaseUid: resolvedUid, reason: 'stale_event', action: 'skipped',
-      detail: { occurred_at: occurredAt, last_event_at: profile.paddle_last_event_at },
-    });
-    await updateEventResult(supabase, eventId, 'skipped');
-    return new Response('OK', { status: 200 });
-  }
-
-  // ⑮ イベント別の plan / subscription_status 決定
-  let newPlan   = profile.plan as string;
-  let newStatus: string;
-  let shouldUpdateCurrentPeriodEnd = true;
-
-  switch (eventType) {
-    case 'subscription.activated':
-      newPlan   = 'pro';
-      newStatus = 'active';
-      break;
-    case 'subscription.updated': {
-      // Paddle では支払い方法変更・pause・trialing・past_due でも subscription.updated が発火するため
-      // data.status を参照して正確に状態マッピングする (一律 active 扱いを禁止)
-      const dataStatus = String((sub as { status?: unknown }).status ?? '').toLowerCase();
-      if (dataStatus === 'active') {
-        newPlan   = 'pro';
-        newStatus = 'active';
-
-        // active + current_billing_period.ends_at が存在しない場合はエラー
-        // ends_at を null や過去日に上書きするのは危険なため、更新をスキップしてエラー記録
-        if (!currentPeriodEnd) {
-          await auditLog(supabase, {
-            eventId, eventType, supabaseUid: resolvedUid,
-            reason: 'missing_current_billing_period_ends_at',
-            action: 'error',
-            detail: {
-              data_status: dataStatus,
-              subscription_id_prefix: paddleSubscriptionId.slice(0, 8),
-              customer_id_prefix: paddleCustomerId.slice(0, 8),
-            },
-          });
-          await updateEventResult(supabase, eventId, 'error');
-          // Paddle には 200 を返して再送させない (payload 構造の問題のため再送しても同じ)
-          return new Response('OK', { status: 200 });
-        }
-      } else if (dataStatus === 'past_due') {
-        // plan は既存 profile の値を維持 (isProActive が false を返す)
-        newStatus = 'past_due';
-        shouldUpdateCurrentPeriodEnd = false; // past_due 時は current_period_end を変更しない
-      } else if (dataStatus === 'canceled') {
-        newPlan   = 'pro'; // current_period_end まで Pro 維持 (isProActive の canceled 処理と整合)
-        newStatus = 'canceled';
-      } else {
-        // paused / trialing / unknown → active にしない
-        // DB subscription_status 許容値 (SubscriptionStatus): inactive | active | trial | canceled | past_due
-        // paused / trialing は許容値外のため 'inactive' で安全側に倒す
-        newStatus = 'inactive';
-        shouldUpdateCurrentPeriodEnd = false;
-        await auditLog(supabase, {
-          eventId, eventType, supabaseUid: resolvedUid,
-          reason: 'subscription_updated_non_active_status',
-          action: 'skipped',
-          detail: { data_status: dataStatus || '(empty)' },
-        });
-        await updateEventResult(supabase, eventId, 'skipped');
-        return new Response('OK', { status: 200 });
-      }
-      break;
-    }
-    case 'subscription.canceled':
-      newPlan   = 'pro';      // current_period_end まで Pro 維持
-      newStatus = 'canceled';
-      break;
-    case 'subscription.past_due':
-      newStatus = 'past_due'; // Pro 無効 (isProActive が false を返す)
-      shouldUpdateCurrentPeriodEnd = false; // past_due 時は current_period_end を変更しない
-      break;
-    default:
-      newStatus = profile.subscription_status as string;
-      shouldUpdateCurrentPeriodEnd = false;
-  }
-
-  // ⑯ profiles UPDATE
-  //    SQL-level guard: is_test_account = false かつ stale でないことを二重確認
-  //    current_period_end は shouldUpdateCurrentPeriodEnd の場合のみ更新
-  const updateFields: Record<string, unknown> = {
-    plan:                   newPlan,
-    subscription_status:    newStatus,
-    paddle_customer_id:     paddleCustomerId,
-    paddle_subscription_id: paddleSubscriptionId,
-    paddle_last_event_at:   occurredAt,
-  };
-
-  if (shouldUpdateCurrentPeriodEnd && currentPeriodEnd) {
-    updateFields.current_period_end = currentPeriodEnd;
-  }
-
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update(updateFields)
-    .eq('id', resolvedUid)
-    .eq('is_test_account', false)                            // SQL-level guard ①
-    .or(`paddle_last_event_at.is.null,paddle_last_event_at.lt.${occurredAt}`); // SQL-level guard ②
-
-  const finalResult = updateError ? 'error' : 'processed';
-  await updateEventResult(supabase, eventId, finalResult);
-
-  if (updateError) {
-    await auditLog(supabase, {
-      eventId, eventType, supabaseUid: resolvedUid, reason: 'profile_update_failed', action: 'error',
-      detail: { db_error_code: updateError.code, db_error_message: updateError.message },
-    });
-    // DB 更新失敗は 5xx で返し、Paddle に再送を促す
-    return new Response('Internal Server Error', { status: 500 });
-  }
-
-  return new Response('OK', { status: 200 });
 });
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Paddle customer email を Paddle API から取得 (payload に含まれない場合の fallback) */
-async function getPaddleCustomerEmail(customerId: string, apiKey: string): Promise<string | null> {
-  try {
-    const res = await fetch(`https://api.paddle.com/customers/${customerId}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!res.ok) return null;
-    const json = await res.json() as { data?: { email?: string } };
-    const email = (json?.data?.email ?? '').toLowerCase().trim();
-    return email || null;
-  } catch {
-    return null;
+async function handleObservedTransaction(
+  supabase: SupabaseClient,
+  payload: PaddleWebhookPayload,
+  eventId: string,
+  claimToken: string,
+): Promise<Response> {
+  const data = payload.data ?? {};
+  const customerId = typeof data.customer_id === 'string' ? data.customer_id : '';
+  const subscriptionId = typeof data.subscription_id === 'string' ? data.subscription_id : '';
+  const isRecurringBilling = data.origin === 'subscription_recurring';
+  let profileId: string | null = null;
+  if (isValidPaddleCustomerId(customerId) && isValidPaddleSubscriptionId(subscriptionId)) {
+    const exact = await selectProfileByPair(supabase, customerId, subscriptionId);
+    if (!exact.ok) {
+      return retryableFailure(supabase, eventId, claimToken, null, subscriptionId, 'profile_read_failed');
+    }
+    if (!exact.profile) {
+      // Transactions can arrive before the subscription lifecycle event. Keep
+      // the delivery retryable and visible instead of terminally discarding
+      // the only signal that a paid subscription is not yet bound.
+      return retryableFailure(
+        supabase, eventId, claimToken, null, subscriptionId,
+        'transaction_subscription_not_bound', true,
+      );
+    }
+    profileId = exact.profile.id;
   }
+  const finalized = await finalizeEvent(supabase, {
+    eventId,
+    claimToken,
+    // Initial checkout/update transactions must not be counted as renewals.
+    result: isRecurringBilling ? 'processed' : 'skipped',
+    profileId,
+  });
+  return finalized
+    ? new Response('OK', { status: 200 })
+    : new Response('Internal Server Error', { status: 500 });
 }
 
-/** Paddle Billing HMAC-SHA256 署名検証 + timestamp freshness */
+async function handleSubscriptionEvent(
+  supabase: SupabaseClient,
+  payload: PaddleWebhookPayload,
+  eventId: string,
+  eventType: string,
+  occurredAt: string,
+  claimToken: string,
+): Promise<Response> {
+  let subscription = payload.data ?? {};
+  const customerId = typeof subscription.customer_id === 'string' ? subscription.customer_id : '';
+  const subscriptionId = typeof subscription.id === 'string' ? subscription.id : '';
+  const customData = subscription.custom_data ?? {};
+  const customUid = typeof customData.supabase_uid === 'string' ? customData.supabase_uid.trim() : '';
+  const customEmail = normalizeEmail(customData.supabase_email);
+
+  if (!isValidPaddleCustomerId(customerId) || !isValidPaddleSubscriptionId(subscriptionId)) {
+    return terminalFailure(
+      supabase, eventId, eventType, claimToken, null, subscriptionId,
+      'invalid_subscription_ids', 'denied',
+    );
+  }
+
+  const lookup = await resolveProfileForSubscription(supabase, customerId, subscriptionId, customUid);
+  if (!lookup.ok) {
+    return lookup.infrastructureFailure
+      ? retryableFailure(supabase, eventId, claimToken, null, subscriptionId, 'profile_read_failed')
+      : terminalFailure(
+        supabase, eventId, eventType, claimToken, lookup.profileId,
+        subscriptionId, lookup.reason, 'denied',
+      );
+  }
+  const { profile, bindingMode } = lookup;
+
+  if (profile.is_test_account || profile.is_internal_test_account) {
+    return terminalFailure(
+      supabase, eventId, eventType, claimToken, profile.id,
+      subscriptionId, 'test_profile', 'skipped',
+    );
+  }
+
+  const authResult = await supabase.auth.admin.getUserById(profile.id);
+  if (authResult.error) {
+    return retryableFailure(
+      supabase, eventId, claimToken, profile.id, subscriptionId, 'auth_user_read_failed',
+    );
+  }
+  const authEmail = normalizeEmail(authResult.data?.user?.email);
+  if (!authEmail) {
+    return terminalFailure(
+      supabase, eventId, eventType, claimToken, profile.id,
+      subscriptionId, 'auth_email_missing', 'denied',
+    );
+  }
+  if (DENIED_EMAILS.has(authEmail) || (customEmail && DENIED_EMAILS.has(customEmail))) {
+    return terminalFailure(
+      supabase, eventId, eventType, claimToken, profile.id,
+      subscriptionId, 'denied_account', 'denied',
+    );
+  }
+
+  if (!requiresPaddleCustomerVerification(bindingMode)) {
+    if (!isCustomIdentityConsistent(authEmail, customEmail)) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'custom_email_mismatch', 'denied',
+      );
+    }
+  } else {
+    if (!customUid || !customEmail) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'initial_identity_incomplete', 'denied',
+      );
+    }
+    let paddleEmail = normalizeEmail(subscription.customer?.email);
+    if (!paddleEmail) {
+      const customerResult = await fetchPaddleResource<{ id?: string; email?: string }>(
+        `/customers/${encodeURIComponent(customerId)}`, PADDLE_API_KEY,
+      );
+      if (!customerResult.ok) {
+        return apiFailureResponse(
+          supabase, eventId, eventType, claimToken, profile.id, subscriptionId, customerResult,
+        );
+      }
+      if (customerResult.data.id !== customerId) {
+        return terminalFailure(
+          supabase, eventId, eventType, claimToken, profile.id,
+          subscriptionId, 'paddle_customer_id_mismatch', 'denied',
+        );
+      }
+      paddleEmail = normalizeEmail(customerResult.data.email);
+    }
+    if (!verifyInitialEmailBinding(authEmail, customEmail, paddleEmail)) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'initial_email_mismatch', 'denied',
+      );
+    }
+  }
+
+  const payloadPriceIds = extractSubscriptionPriceIds(subscription);
+  let rawStatus = statusForEvent(eventType, subscription.status);
+  let periodEnd = subscription.current_billing_period?.ends_at ?? null;
+  const needsCanonicalSubscription =
+    bindingMode === 'subscription_replacement' ||
+    payloadPriceIds.length === 0 || !rawStatus || !subscription.updated_at ||
+    (rawStatus === 'active' && !periodEnd);
+
+  if (payloadPriceIds.length > 0 && !hasAllowedProPrice(subscription, ALLOWED_PRICE_IDS)) {
+    return terminalFailure(
+      supabase, eventId, eventType, claimToken, profile.id,
+      subscriptionId, 'pro_price_not_allowed', 'denied',
+    );
+  }
+
+  if (needsCanonicalSubscription) {
+    const subscriptionResult = await fetchPaddleResource<PaddleSubscriptionData>(
+      `/subscriptions/${encodeURIComponent(subscriptionId)}`, PADDLE_API_KEY,
+    );
+    if (!subscriptionResult.ok) {
+      return apiFailureResponse(
+        supabase, eventId, eventType, claimToken, profile.id, subscriptionId, subscriptionResult,
+      );
+    }
+    if (subscriptionResult.data.id !== subscriptionId
+        || subscriptionResult.data.customer_id !== customerId) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'paddle_subscription_identity_mismatch', 'denied',
+      );
+    }
+    subscription = subscriptionResult.data;
+    rawStatus = statusForEvent(eventType, subscription.status);
+    periodEnd = subscription.current_billing_period?.ends_at ?? null;
+  }
+
+  if (!hasAllowedProPrice(subscription, ALLOWED_PRICE_IDS)) {
+    return terminalFailure(
+      supabase, eventId, eventType, claimToken, profile.id,
+      subscriptionId, 'pro_price_not_allowed', 'denied',
+    );
+  }
+
+  if (bindingMode === 'subscription_replacement') {
+    const previousSubscriptionId = profile.paddle_subscription_id;
+    if (!previousSubscriptionId || !isValidPaddleSubscriptionId(previousSubscriptionId)) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'replacement_previous_subscription_invalid', 'denied',
+      );
+    }
+    const previousResult = await fetchPaddleResource<PaddleSubscriptionData>(
+      `/subscriptions/${encodeURIComponent(previousSubscriptionId)}`, PADDLE_API_KEY,
+    );
+    if (!previousResult.ok) {
+      return apiFailureResponse(
+        supabase, eventId, eventType, claimToken, profile.id, subscriptionId, previousResult,
+      );
+    }
+    const previous = previousResult.data;
+    if (previous.id !== previousSubscriptionId || previous.customer_id !== customerId) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'replacement_previous_identity_mismatch', 'denied',
+      );
+    }
+    if (String(previous.status ?? '').trim().toLowerCase() !== 'canceled') {
+      return retryableFailure(
+        supabase, eventId, claimToken, profile.id, subscriptionId,
+        'replacement_previous_subscription_not_canceled', true,
+      );
+    }
+    const incomingStatus = String(subscription.status ?? '').trim().toLowerCase();
+    if (!['active', 'trialing', 'trial'].includes(incomingStatus)
+        || !isStrictlyNewerSubscription(subscription.created_at, previous.created_at)) {
+      return terminalFailure(
+        supabase, eventId, eventType, claimToken, profile.id,
+        subscriptionId, 'replacement_subscription_not_newer', 'denied',
+      );
+    }
+  }
+
+  const mapped = mapPaddleSubscriptionState(rawStatus, periodEnd, profile.current_period_end);
+  if (!mapped.ok || !mapped.subscriptionStatus) {
+    return retryableFailure(
+      supabase, eventId, claimToken, profile.id, subscriptionId,
+      mapped.reason ?? 'unsupported_subscription_status', true,
+    );
+  }
+  const stateUpdatedAt = normalizePaddleStateTimestamp(subscription.updated_at, null);
+  if (!stateUpdatedAt) {
+    return retryableFailure(
+      supabase, eventId, claimToken, profile.id, subscriptionId, 'invalid_state_timestamp',
+    );
+  }
+
+  const finalResult = await finalizeEvent(supabase, {
+    eventId,
+    claimToken,
+    result: 'processed',
+    profileId: profile.id,
+    applySubscription: true,
+    customerId,
+    subscriptionId,
+    subscriptionStatus: mapped.subscriptionStatus,
+    currentPeriodEnd: mapped.currentPeriodEnd ?? null,
+    updateCurrentPeriodEnd: mapped.shouldUpdateCurrentPeriodEnd,
+    stateUpdatedAt,
+    syncSource: 'webhook',
+    webhookOccurredAt: occurredAt,
+    allowInitialBinding: bindingMode === 'initial_verification',
+    allowSubscriptionReplacement: bindingMode === 'subscription_replacement',
+    expectedPreviousSubscriptionId: bindingMode === 'subscription_replacement'
+      ? profile.paddle_subscription_id
+      : null,
+  });
+  if (finalResult === 'processed' || finalResult === 'skipped') {
+    await resolveIssues(supabase, profile.id, subscriptionId);
+    return new Response('OK', { status: 200 });
+  }
+  return new Response('Internal Server Error', { status: 500 });
+}
+
+function statusForEvent(eventType: string, payloadStatus: unknown): string {
+  const status = typeof payloadStatus === 'string' ? payloadStatus.trim().toLowerCase() : '';
+  if (status) return status;
+  if (eventType === 'subscription.activated') return 'active';
+  if (eventType === 'subscription.trialing') return 'trialing';
+  if (eventType === 'subscription.paused') return 'paused';
+  if (eventType === 'subscription.resumed') return 'active';
+  if (eventType === 'subscription.canceled') return 'canceled';
+  if (eventType === 'subscription.past_due') return 'past_due';
+  return '';
+}
+
+async function resolveProfileForSubscription(
+  supabase: SupabaseClient,
+  customerId: string,
+  subscriptionId: string,
+  customUid: string,
+): Promise<
+  | {
+      ok: true;
+      profile: ProfileRow;
+      bindingMode: 'established' | 'initial_verification' | 'subscription_replacement';
+    }
+  | { ok: false; infrastructureFailure: boolean; reason: string; profileId: string | null }
+> {
+  const [customer, subscription] = await Promise.all([
+    selectProfileByField(supabase, 'paddle_customer_id', customerId),
+    selectProfileByField(supabase, 'paddle_subscription_id', subscriptionId),
+  ]);
+  if (!customer.ok || !subscription.ok) {
+    return { ok: false, infrastructureFailure: true, reason: 'profile_read_failed', profileId: null };
+  }
+  let candidate = customer.profile ?? subscription.profile;
+  if (!candidate && customUid) {
+    const custom = await selectProfileById(supabase, customUid);
+    if (!custom.ok) {
+      return { ok: false, infrastructureFailure: true, reason: 'profile_read_failed', profileId: null };
+    }
+    candidate = custom.profile;
+  }
+  const decision = decideSubscriptionBinding({
+    payloadCustomerId: customerId,
+    payloadSubscriptionId: subscriptionId,
+    customUid,
+    candidate,
+    customerOwnerId: customer.profile?.id ?? null,
+    subscriptionOwnerId: subscription.profile?.id ?? null,
+    allowSubscriptionReplacement: true,
+  });
+  if (!decision.ok || !candidate) {
+    return {
+      ok: false,
+      infrastructureFailure: false,
+      reason: decision.ok ? 'no_profile' : decision.reason,
+      profileId: candidate?.id ?? null,
+    };
+  }
+  return { ok: true, profile: candidate, bindingMode: decision.mode };
+}
+
+const PROFILE_COLUMNS = [
+  'id', 'plan', 'subscription_status', 'current_period_end', 'is_test_account',
+  'is_internal_test_account', 'paddle_customer_id', 'paddle_subscription_id',
+  'paddle_state_updated_at',
+].join(',');
+
+async function selectProfileByPair(
+  supabase: SupabaseClient,
+  customerId: string,
+  subscriptionId: string,
+): Promise<{ ok: boolean; profile: ProfileRow | null }> {
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS)
+    .eq('paddle_customer_id', customerId)
+    .eq('paddle_subscription_id', subscriptionId)
+    .maybeSingle();
+  return error
+    ? { ok: false, profile: null }
+    : { ok: true, profile: (data as ProfileRow | null) ?? null };
+}
+
+async function selectProfileByField(
+  supabase: SupabaseClient,
+  field: 'paddle_customer_id' | 'paddle_subscription_id',
+  value: string,
+): Promise<{ ok: boolean; profile: ProfileRow | null }> {
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS)
+    .eq(field, value).maybeSingle();
+  return error
+    ? { ok: false, profile: null }
+    : { ok: true, profile: (data as ProfileRow | null) ?? null };
+}
+
+async function selectProfileById(
+  supabase: SupabaseClient,
+  profileId: string,
+): Promise<{ ok: boolean; profile: ProfileRow | null }> {
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS)
+    .eq('id', profileId).maybeSingle();
+  return error
+    ? { ok: false, profile: null }
+    : { ok: true, profile: (data as ProfileRow | null) ?? null };
+}
+
+async function claimEvent(
+  supabase: SupabaseClient,
+  eventId: string,
+  eventType: string,
+  occurredAt: string,
+  payload: PaddleWebhookPayload,
+): Promise<{ ok: true; row: ClaimRow } | { ok: false }> {
+  const { data, error } = await supabase.rpc('claim_paddle_webhook_event', {
+    p_event_id: eventId,
+    p_event_type: eventType,
+    p_occurred_at: occurredAt,
+    p_payload: payload,
+    p_lease_seconds: EVENT_LEASE_SECONDS,
+  });
+  const row = Array.isArray(data) ? data[0] as ClaimRow | undefined : undefined;
+  if (error || !row) {
+    await auditLog(supabase, eventId, eventType, null, 'event_claim_failed', 'error', {
+      db_error_code: error?.code ?? 'missing_result',
+    });
+    return { ok: false };
+  }
+  return { ok: true, row };
+}
+
+async function finalizeEvent(
+  supabase: SupabaseClient,
+  input: {
+    eventId: string;
+    claimToken: string;
+    result: 'processed' | 'skipped' | 'denied' | 'error';
+    failureCode?: string | null;
+    profileId?: string | null;
+    applySubscription?: boolean;
+    customerId?: string | null;
+    subscriptionId?: string | null;
+    subscriptionStatus?: string | null;
+    currentPeriodEnd?: string | null;
+    updateCurrentPeriodEnd?: boolean;
+    stateUpdatedAt?: string | null;
+    syncSource?: 'webhook' | 'reconciliation';
+    webhookOccurredAt?: string | null;
+    allowInitialBinding?: boolean;
+    allowSubscriptionReplacement?: boolean;
+    expectedPreviousSubscriptionId?: string | null;
+  },
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc('finalize_paddle_webhook_event', {
+    p_event_id: input.eventId,
+    p_claim_token: input.claimToken,
+    p_result: input.result,
+    p_failure_code: input.failureCode ?? null,
+    p_profile_id: input.profileId ?? null,
+    p_apply_subscription: input.applySubscription ?? false,
+    p_customer_id: input.customerId ?? null,
+    p_subscription_id: input.subscriptionId ?? null,
+    p_subscription_status: input.subscriptionStatus ?? null,
+    p_current_period_end: input.currentPeriodEnd ?? null,
+    p_update_current_period_end: input.updateCurrentPeriodEnd ?? false,
+    p_state_updated_at: input.stateUpdatedAt ?? null,
+    p_sync_source: input.syncSource ?? 'webhook',
+    p_webhook_occurred_at: input.webhookOccurredAt ?? null,
+    p_allow_initial_binding: input.allowInitialBinding ?? false,
+    p_allow_subscription_replacement: input.allowSubscriptionReplacement ?? false,
+    p_expected_previous_subscription_id: input.expectedPreviousSubscriptionId ?? null,
+  });
+  if (error || typeof data !== 'string') {
+    await auditLog(
+      supabase, input.eventId, null, input.profileId ?? null,
+      'event_finalize_failed', 'error', { db_error_code: error?.code ?? 'missing_result' },
+    );
+    return null;
+  }
+  return data;
+}
+
+async function apiFailureResponse<T>(
+  supabase: SupabaseClient,
+  eventId: string,
+  eventType: string,
+  claimToken: string,
+  profileId: string | null,
+  subscriptionId: string,
+  failure: Extract<PaddleApiResult<T>, { ok: false }>,
+): Promise<Response> {
+  return failure.retryable
+    ? retryableFailure(
+      supabase, eventId, claimToken, profileId, subscriptionId,
+      failure.failureCode, true,
+    )
+    : terminalFailure(
+      supabase, eventId, eventType, claimToken, profileId, subscriptionId,
+      failure.failureCode, 'denied',
+    );
+}
+
+async function terminalFailure(
+  supabase: SupabaseClient,
+  eventId: string,
+  eventType: string,
+  claimToken: string,
+  profileId: string | null,
+  subscriptionId: string,
+  failureCode: string,
+  result: 'denied' | 'skipped',
+): Promise<Response> {
+  await auditLog(supabase, eventId, eventType, profileId, failureCode, result, {
+    subscription_id_prefix: subscriptionIdPrefix(subscriptionId),
+  });
+  if (profileId) await recordIssue(supabase, profileId, subscriptionId, failureCode, false);
+  const finalized = await finalizeEvent(supabase, {
+    eventId, claimToken, result, failureCode, profileId,
+  });
+  return finalized
+    ? new Response('OK', { status: 200 })
+    : new Response('Internal Server Error', { status: 500 });
+}
+
+async function retryableFailure(
+  supabase: SupabaseClient,
+  eventId: string,
+  claimToken: string,
+  profileId: string | null,
+  subscriptionId: string,
+  failureCode: string,
+  retryable = true,
+): Promise<Response> {
+  await auditLog(supabase, eventId, null, profileId, failureCode, 'error', {
+    subscription_id_prefix: subscriptionIdPrefix(subscriptionId), retryable,
+  });
+  if (profileId) await recordIssue(supabase, profileId, subscriptionId, failureCode, retryable);
+  await finalizeEvent(supabase, {
+    eventId, claimToken, result: 'error', failureCode, profileId,
+  });
+  return new Response('Retry Later', { status: 503 });
+}
+
+async function recordIssue(
+  supabase: SupabaseClient,
+  profileId: string,
+  subscriptionId: string,
+  failureCode: string,
+  retryable: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc('record_paddle_sync_issue', {
+    p_profile_id: profileId,
+    p_subscription_id_prefix: subscriptionIdPrefix(subscriptionId) || null,
+    p_failure_code: failureCode,
+    p_retryable: retryable,
+    p_source: 'webhook',
+  });
+  if (error) console.error('[paddle-webhook] sync issue write failed', error.code ?? 'unknown');
+}
+
+async function resolveIssues(
+  supabase: SupabaseClient,
+  profileId: string,
+  subscriptionId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('resolve_paddle_sync_issues', {
+    p_profile_id: profileId,
+    p_source: 'webhook',
+    p_subscription_id_prefix: subscriptionIdPrefix(subscriptionId) || null,
+  });
+  if (error) console.error('[paddle-webhook] sync issue resolve failed', error.code ?? 'unknown');
+}
+
+async function auditLog(
+  supabase: SupabaseClient,
+  eventId: string | null,
+  eventType: string | null,
+  profileId: string | null,
+  reason: string,
+  action: 'denied' | 'skipped' | 'error',
+  detail: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await supabase.from('paddle_webhook_audit_log').insert({
+    event_id: eventId,
+    event_type: eventType,
+    supabase_uid: profileId,
+    reason,
+    action,
+    detail,
+  });
+  if (error) console.error('[paddle-webhook] audit write failed', error.code ?? 'unknown');
+}
+
 async function verifyPaddleSignature(
   body: string,
   signature: string,
   secret: string,
 ): Promise<{ valid: boolean; reason?: string }> {
   try {
-    const parts: Record<string, string> = Object.fromEntries(
-      signature.split(';').map(p => {
-        const idx = p.indexOf('=');
-        return [p.slice(0, idx), p.slice(idx + 1)];
-      })
-    );
-    const ts = parts['ts'];
-    const h1 = parts['h1'];
-    if (!ts || !h1) return { valid: false, reason: 'missing_ts_or_h1' };
-
-    // timestamp freshness (5分以内)
-    const tsNum = parseInt(ts, 10);
-    if (isNaN(tsNum)) return { valid: false, reason: 'invalid_ts' };
-    const diffSec = Math.abs(Date.now() / 1000 - tsNum);
-    if (diffSec > SIGNATURE_FRESHNESS_SEC) {
-      return { valid: false, reason: `ts_too_old_${Math.round(diffSec)}s` };
+    if (!secret) return { valid: false, reason: 'secret_missing' };
+    let timestamp = '';
+    const signatureHashes: string[] = [];
+    for (const part of signature.split(';')) {
+      const index = part.indexOf('=');
+      if (index <= 0) continue;
+      const name = part.slice(0, index).trim();
+      const value = part.slice(index + 1).trim();
+      if (name === 'ts' && !timestamp) timestamp = value;
+      if (name === 'h1' && value) signatureHashes.push(value);
     }
-
-    // HMAC-SHA256 計算
-    const signedPayload = `${ts}:${body}`;
-    const keyMaterial = new TextEncoder().encode(secret);
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw', keyMaterial, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    );
-    const mac = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(signedPayload));
-    const computed = Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // timing-safe 比較
-    if (!timingSafeEqual(computed, h1)) {
-      return { valid: false, reason: 'hmac_mismatch' };
+    if (!timestamp || signatureHashes.length === 0) {
+      return { valid: false, reason: 'signature_fields_missing' };
     }
-    return { valid: true };
+    const timestampNumber = Number.parseInt(timestamp, 10);
+    if (!Number.isFinite(timestampNumber)) return { valid: false, reason: 'signature_timestamp_invalid' };
+    if (Math.abs(Date.now() / 1000 - timestampNumber) > SIGNATURE_FRESHNESS_SECONDS) {
+      return { valid: false, reason: 'signature_timestamp_stale' };
+    }
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    );
+    const digest = await crypto.subtle.sign(
+      'HMAC', key, new TextEncoder().encode(`${timestamp}:${body}`),
+    );
+    const computed = [...new Uint8Array(digest)]
+      .map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    return signatureHashes.some((signatureHash) => timingSafeEqual(computed, signatureHash))
+      ? { valid: true }
+      : { valid: false, reason: 'signature_mismatch' };
   } catch {
-    return { valid: false, reason: 'exception' };
+    return { valid: false, reason: 'signature_exception' };
   }
 }
 
-/** Timing-safe 文字列比較 (長さが異なる場合も即 false だが early-return なし) */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+function timingSafeEqual(left: string, right: string): boolean {
+  const maxLength = Math.max(left.length, right.length);
+  let diff = left.length ^ right.length;
+  for (let index = 0; index < maxLength; index += 1) {
+    diff |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
   }
   return diff === 0;
-}
-
-async function auditLog(
-  supabase: ReturnType<typeof createClient>,
-  opts: {
-    eventId: string | null;
-    eventType: string | null;
-    supabaseUid?: string | null;
-    reason: string;
-    action: 'denied' | 'skipped' | 'error';
-    detail: object;
-  }
-): Promise<void> {
-  try {
-    const { error } = await supabase.from('paddle_webhook_audit_log').insert({
-      event_id:     opts.eventId,
-      event_type:   opts.eventType,
-      supabase_uid: opts.supabaseUid ?? null,
-      reason:       opts.reason,
-      action:       opts.action,
-      detail:       opts.detail,
-    });
-    if (error) {
-      console.error('[paddle-webhook] auditLog insert failed:', error.code, error.message);
-    }
-  } catch (e) {
-    console.error('[paddle-webhook] auditLog unexpected error:', (e as Error).message);
-  }
-}
-
-async function updateEventResult(
-  supabase: ReturnType<typeof createClient>,
-  eventId: string,
-  result: string,
-): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from('paddle_webhook_events')
-      .update({ result, processed_at: new Date().toISOString() })
-      .eq('event_id', eventId);
-    if (error) {
-      console.error('[paddle-webhook] updateEventResult failed:', error.code, error.message);
-    }
-  } catch (e) {
-    console.error('[paddle-webhook] updateEventResult unexpected error:', (e as Error).message);
-  }
-}
-
-// ── 型定義 ───────────────────────────────────────────────────────────────────
-interface PaddleWebhookPayload {
-  event_id:    string;
-  event_type:  string;
-  occurred_at: string;
-  data?: {
-    id?: string;
-    customer_id?: string;
-    customer?: { email?: string };
-    current_billing_period?: { ends_at?: string };
-    custom_data?: Record<string, string>;
-    [key: string]: unknown;
-  };
 }

@@ -30,8 +30,8 @@ describe('isProActive', () => {
     expect(isProActive({ plan: 'pro', subscription_status: 'active', current_period_end: future })).toBe(true);
   });
 
-  it('plan=pro, status=active, current_period_end=null → true', () => {
-    expect(isProActive({ plan: 'pro', subscription_status: 'active', current_period_end: null })).toBe(true);
+  it('plan=pro, status=active, current_period_end=null → false (fail closed)', () => {
+    expect(isProActive({ plan: 'pro', subscription_status: 'active', current_period_end: null })).toBe(false);
   });
 
   it('plan=free, status=active → false', () => {

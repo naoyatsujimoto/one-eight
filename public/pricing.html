@@ -343,7 +343,7 @@
       if (profile.plan !== 'pro') return false;
       const now = new Date();
       if (profile.subscription_status === 'active') {
-        return profile.current_period_end ? new Date(profile.current_period_end) > now : true;
+        return profile.current_period_end ? new Date(profile.current_period_end) > now : false;
       }
       if (profile.subscription_status === 'canceled') {
         return profile.current_period_end ? new Date(profile.current_period_end) > now : false;
