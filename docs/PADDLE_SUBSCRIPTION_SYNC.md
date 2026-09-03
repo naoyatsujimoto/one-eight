@@ -63,14 +63,17 @@ time.
    lifecycle events handled by `paddle-webhook` (created, activated, updated,
    trialing, paused, resumed, canceled, and past_due) plus transaction.completed
    and transaction.payment_failed.
-4. Apply migrations `20260902000001` through `20260902000004`.
+4. Apply migrations `20260902000001` through
+   `20260903000001_paddle_sync_operational_hardening`. The operational migration
+   installs the cron jobs but leaves live reconciliation disabled.
 5. Deploy `paddle-webhook` and `paddle-reconcile`.
-6. Call reconciliation with `{ "force": true, "dry_run": true }`. This checks
+6. Call `public.request_paddle_reconciliation_dry_run()`. This queues
+   reconciliation with `{ "force": true, "dry_run": true }` and checks
    one bounded batch (up to 10); stop on any API authentication, identity, or
    price error.
-7. Call it with `{ "force": true, "dry_run": false }` repeatedly until every
-   bound production profile has a `paddle_last_synced_at` from this rollout.
-   Forced live calls rotate fairly because each claim records its attempt.
+7. After verifying an HTTP 200 dry-run response with no failures, call
+   `public.set_paddle_reconciliation_live(TRUE)`. Never enable the live gate
+   before the dry-run succeeds.
 8. Verify all Paddle-active subscriptions, including the Sep 2 affected
    account, now have the Paddle period end and a recent
    `paddle_last_synced_at`. Do not hand-edit individual billing rows.
@@ -79,10 +82,16 @@ time.
 ## Monitoring
 
 Unresolved failures are deduplicated in
-`public.paddle_subscription_sync_issues`. Alert on any unresolved row, a cron
-HTTP failure, or a webhook event left in `error`/expired `pending`. Logs and
-responses use fixed failure codes and counts only; they do not include email,
-tokens, raw Paddle responses, or subscription IDs.
+`public.paddle_subscription_sync_issues`. New issues and cron/HTTP failures
+create one deduplicated, admin-only ONE EIGHT MAIL notification. The monitor
+runs two minutes after each reconciliation interval. Logs, responses, and
+alerts use fixed failure codes and counts only; they do not include email,
+tokens, raw Paddle responses, or full subscription IDs.
+
+Paddle must also have a separate administrator email destination for
+`api_key.expiring`, `api_key.expired`, `api_key.revoked`, and
+`api_key_exposure.created`; these events are operational alerts and are not
+sent to the subscription webhook handler.
 
 The reconciliation launcher raises a database error when its Vault secret is
 missing, so pg_cron cannot report a false-success run with no HTTP request.

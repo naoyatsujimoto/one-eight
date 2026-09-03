@@ -258,6 +258,7 @@ describe('SQL and Edge Function safety contracts', () => {
   const foundation = read('supabase/migrations/20260902000001_paddle_sync_foundation.sql');
   const rpcs = read('supabase/migrations/20260902000002_paddle_sync_rpcs.sql');
   const schedule = read('supabase/migrations/20260902000003_paddle_reconciliation_schedule.sql');
+  const operations = read('supabase/migrations/20260903000001_paddle_sync_operational_hardening.sql');
   const entitlement = read('supabase/migrations/20260902000004_paddle_entitlement_fail_closed.sql');
   const webhook = read('supabase/functions/paddle-webhook/index.ts');
   const reconcile = read('supabase/functions/paddle-reconcile/index.ts');
@@ -346,12 +347,26 @@ describe('SQL and Edge Function safety contracts', () => {
     expect(config).toContain('[functions.paddle-reconcile]');
   });
 
-  it('schedules a deduplicated five-minute backstop with a Vault secret', () => {
-    expect(schedule).toContain("jobname = 'paddle-subscription-reconciliation'");
-    expect(schedule).toContain("'*/5 * * * *'");
+  it('keeps the foundation migration passive and gates the five-minute live backstop', () => {
+    expect(schedule).not.toContain('cron.schedule(');
     expect(schedule).toContain("one_eight_paddle_reconcile_secret");
     expect(schedule).toContain("RAISE EXCEPTION 'PADDLE_RECONCILE_SECRET_NOT_CONFIGURED'");
     expect(schedule).not.toMatch(/Bearer\s+[A-Za-z0-9_-]{32,}/);
+    expect(operations).toContain('live_enabled BOOLEAN NOT NULL DEFAULT FALSE');
+    expect(operations).toContain('request_paddle_reconciliation_dry_run');
+    expect(operations).toContain('set_paddle_reconciliation_live');
+    expect(operations).toContain("'*/5 * * * *'");
+    expect(operations).toContain("body := jsonb_build_object('force', p_force, 'dry_run', p_dry_run)");
+  });
+
+  it('alerts administrators once for sync issues and cron/http failures without sensitive data', () => {
+    expect(operations).toContain('public._create_paddle_sync_admin_alert');
+    expect(operations).toContain("'paddle-sync-issue:' || v_issue_id::TEXT");
+    expect(operations).toContain("'reconcile_cron_failed'");
+    expect(operations).toContain("'reconcile_http_failed'");
+    expect(operations).toContain('ON CONFLICT (source_id, target)');
+    expect(operations).not.toContain('decrypted_secret,');
+    expect(operations).not.toContain('payload JSONB');
   });
 
   it('revokes subscription synchronization surfaces from clients', () => {

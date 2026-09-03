@@ -45,16 +45,7 @@ $$;
 REVOKE ALL ON FUNCTION public.invoke_paddle_subscription_reconciliation() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.invoke_paddle_subscription_reconciliation() TO service_role, postgres;
 
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'paddle-subscription-reconciliation') THEN
-    PERFORM cron.unschedule('paddle-subscription-reconciliation');
-  END IF;
-
-  PERFORM cron.schedule(
-    'paddle-subscription-reconciliation',
-    '*/5 * * * *',
-    'SELECT public.invoke_paddle_subscription_reconciliation();'
-  );
-END
-$$;
+-- Do not activate the live cron in the foundation migration. A later
+-- operational-hardening migration installs an explicit disabled-by-default
+-- gate and schedules the job. Production rollout must pass a dry-run before
+-- that gate is enabled.
