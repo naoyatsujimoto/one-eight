@@ -60,6 +60,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-urban-polycentricity-mobility_where-is-the-center-of-your-city_thumb.jpg',
     alt: 'Black nodes connected by intersecting lines across a white field',
   },
+  'if-you-cannot-see-it': {
+    hero: '/journal/oej-2026-toxicity-visibility-taranto_if-you-cannot-see-it_hero.jpg',
+    thumbnail: '/journal/oej-2026-toxicity-visibility-taranto_if-you-cannot-see-it_thumb.jpg',
+    alt: 'Line-drawn gravestones receding along a flat horizon, the nearest one marked with green patches',
+  },
 };
 
 /**
