@@ -24,7 +24,7 @@ import './JournalListPage.css';
  *
  * i18n: selectedLocale は10言語 (LocaleCode)
  *       DB取得用 journalLang は resolveJournalLang() で JournalLang に1:1変換
- *       編集指針等の UI 固定文言は selectedLocale をキーに journalUi.ts から取得する
+ *       UI 固定文言は selectedLocale をキーに journalUi.ts から取得する
  */
 export function JournalListPage() {
   const { lang: ctxLang, setLang } = useLang();
@@ -141,16 +141,6 @@ export function JournalListPage() {
           />
         </div>
       </header>
-
-      {/* Hero */}
-      <section className="jl-hero">
-        <p className="jl-hero-eyebrow">
-          {ui.editorialPolicy.toUpperCase()}
-        </p>
-        <p className="jl-hero-body">
-          {ui.editorialGuideline}
-        </p>
-      </section>
 
       {/* Content */}
       <main className="jl-main">

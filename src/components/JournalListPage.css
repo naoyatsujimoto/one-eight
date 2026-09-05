@@ -111,40 +111,12 @@
   color: #111;
 }
 
-/* ── Hero ────────────────────────────────────────────────── */
-.jl-hero {
-  padding: 4rem 2rem 3rem;
-  max-width: 720px;
-  margin: 0 auto;
-  text-align: left;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.jl-hero-eyebrow {
-  font-family: 'Arial', 'Helvetica', sans-serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #888;
-  margin: 0 0 1rem;
-}
-
-.jl-hero-body {
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 0.78rem;
-  color: #333;
-  line-height: 1.75;
-  margin: 0;
-  max-width: 600px;
-}
-
 /* ── Main content ────────────────────────────────────────── */
 .jl-main {
   flex: 1;
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 2rem 4rem;
+  padding: 3rem 2rem 4rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -318,12 +290,8 @@
     padding: 1rem 1.25rem;
   }
 
-  .jl-hero {
-    padding: 2.5rem 1.25rem 2rem;
-  }
-
   .jl-main {
-    padding: 0 1.25rem 3rem;
+    padding: 2rem 1.25rem 3rem;
   }
 
   .jl-footer {
