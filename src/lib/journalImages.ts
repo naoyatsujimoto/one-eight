@@ -65,6 +65,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-toxicity-visibility-taranto_if-you-cannot-see-it_thumb.jpg',
     alt: 'Line-drawn gravestones receding along a flat horizon, the nearest one marked with green patches',
   },
+  'who-could-afford-the-witch-hunt': {
+    hero: '/journal/oej-2026-persecution-elite-resources-scotland_who-could-afford-the-witch-hunt_hero.jpg',
+    thumbnail: '/journal/oej-2026-persecution-elite-resources-scotland_who-could-afford-the-witch-hunt_thumb.jpg',
+    alt: 'Line drawing of a standing woman facing five seated men at a long table strewn with papers and a dark red ledger',
+  },
 };
 
 /**
