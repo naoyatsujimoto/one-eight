@@ -4,7 +4,11 @@
 -- 言語: en / ja / zh-Hant / zh-Hans / ko / es / pt-BR / de / fr / it
 -- 適用: supabase db push (via migration)
 -- 出典: approved/oej-2026-persecution-elite-resources-scotland_who-could-afford-the-witch-hunt_APPROVED_multilingual.md
--- 注記: tags は approved front matter に存在しないため付与しない（DB既定値 '{}'）。
+-- 注記: tags はこの migration では扱わない（INSERT 列にも ON CONFLICT DO UPDATE にも含まれない）。
+--       承認済みの 8 タグ（economic history / persecution / witch trials /
+--       early modern Scotland / elites / climate / commodity prices / institutions）は
+--       2026-09-08 のタグ更新指示書に基づき本番 DB へ登録済み。
+--       この migration を再適用しても既存の tags は保持される。
 -- =============================================================================
 
 BEGIN;
