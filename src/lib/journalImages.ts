@@ -70,6 +70,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-persecution-elite-resources-scotland_who-could-afford-the-witch-hunt_thumb.jpg',
     alt: 'Line drawing of a standing woman facing five seated men at a long table strewn with papers and a dark red ledger',
   },
+  'what-growing-up-together-changes': {
+    hero: '/journal/oej-2026-social-rearing-gecko-cognition_what-growing-up-together-changes_hero.jpg',
+    thumbnail: '/journal/oej-2026-social-rearing-gecko-cognition_what-growing-up-together-changes_thumb.jpg',
+    alt: 'Line drawing of three geckos stacked in an even row on the left and five geckos scattered at varied angles on the right',
+  },
 };
 
 /**
