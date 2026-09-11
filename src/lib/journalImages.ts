@@ -75,6 +75,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-social-rearing-gecko-cognition_what-growing-up-together-changes_thumb.jpg',
     alt: 'Line drawing of three geckos stacked in an even row on the left and five geckos scattered at varied angles on the right',
   },
+  'when-a-skyline-is-a-costume': {
+    hero: '/journal/oej-2026-congo-concrete-sape-urban-display_when-a-skyline-is-a-costume_hero.jpg',
+    thumbnail: '/journal/oej-2026-congo-concrete-sape-urban-display_when-a-skyline-is-a-costume_thumb.jpg',
+    alt: 'Line drawing of a high-rise with a polished dark red glass front and an unfinished open-floored side, standing above a cracked, flooded road',
+  },
 };
 
 /**
