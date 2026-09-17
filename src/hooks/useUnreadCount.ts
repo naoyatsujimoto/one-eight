@@ -11,7 +11,7 @@ export function useUnreadCount(
     if (!userId) { setCount(0); return; }
     let query = supabase
       .from('admin_messages')
-      .select('read_by')
+      .select('read_by, source_id')
       .or(`target.eq.all,target.eq.${userId}`);
 
     // Only count messages sent after the user confirmed their email
@@ -22,7 +22,8 @@ export function useUnreadCount(
     const { data, error } = await query;
     if (!error && data) {
       const unread = data.filter(
-        (m: { read_by: string[] }) => !m.read_by.includes(userId)
+        (m: { read_by: string[]; source_id: string | null }) =>
+          !m.source_id?.startsWith('paddle-') && !m.read_by.includes(userId)
       ).length;
       setCount(unread);
     }

@@ -259,10 +259,13 @@ describe('SQL and Edge Function safety contracts', () => {
   const rpcs = read('supabase/migrations/20260902000002_paddle_sync_rpcs.sql');
   const schedule = read('supabase/migrations/20260902000003_paddle_reconciliation_schedule.sql');
   const operations = read('supabase/migrations/20260903000001_paddle_sync_operational_hardening.sql');
+  const privateAlerts = read('supabase/migrations/20260917000001_paddle_alerts_outside_game_mail.sql');
   const entitlement = read('supabase/migrations/20260902000004_paddle_entitlement_fail_closed.sql');
   const webhook = read('supabase/functions/paddle-webhook/index.ts');
   const reconcile = read('supabase/functions/paddle-reconcile/index.ts');
   const config = read('supabase/config.toml');
+  const inbox = read('src/components/AdminInbox.tsx');
+  const unreadCount = read('src/hooks/useUnreadCount.ts');
 
   it('preflights duplicates/partial bindings before adding both partial unique indexes', () => {
     expect(foundation).toContain('PADDLE_PREFLIGHT_DUPLICATE_CUSTOMER_ID');
@@ -359,12 +362,18 @@ describe('SQL and Edge Function safety contracts', () => {
     expect(operations).toContain("body := jsonb_build_object('force', p_force, 'dry_run', p_dry_run)");
   });
 
-  it('alerts administrators once for sync issues and cron/http failures without sensitive data', () => {
+  it('records sync issues and cron/http failures privately, outside player MAIL', () => {
     expect(operations).toContain('public._create_paddle_sync_admin_alert');
     expect(operations).toContain("'paddle-sync-issue:' || v_issue_id::TEXT");
     expect(operations).toContain("'reconcile_cron_failed'");
     expect(operations).toContain("'reconcile_http_failed'");
-    expect(operations).toContain('ON CONFLICT (source_id, target)');
+    expect(privateAlerts).toContain('CREATE TABLE public.paddle_sync_operational_alerts');
+    expect(privateAlerts).toContain('REVOKE ALL ON TABLE public.paddle_sync_operational_alerts FROM PUBLIC, anon, authenticated');
+    expect(privateAlerts).toContain('INSERT INTO public.paddle_sync_operational_alerts');
+    expect(privateAlerts).toContain('ON CONFLICT (source_id) DO NOTHING');
+    expect(privateAlerts).not.toContain('INSERT INTO public.admin_messages');
+    expect(inbox).toContain("!msg.source_id?.startsWith('paddle-')");
+    expect(unreadCount).toContain("!m.source_id?.startsWith('paddle-')");
     expect(operations).not.toContain('decrypted_secret,');
     expect(operations).not.toContain('payload JSONB');
   });

@@ -83,10 +83,11 @@ time.
 
 Unresolved failures are deduplicated in
 `public.paddle_subscription_sync_issues`. New issues and cron/HTTP failures
-create one deduplicated, admin-only ONE EIGHT MAIL notification. The monitor
-runs two minutes after each reconciliation interval. Logs, responses, and
-alerts use fixed failure codes and counts only; they do not include email,
-tokens, raw Paddle responses, or full subscription IDs.
+create one deduplicated record in the service-role-only
+`public.paddle_sync_operational_alerts` table. These are not player MAIL.
+The monitor runs two minutes after each reconciliation interval. Logs,
+responses, and alerts use fixed failure codes and counts only; they do not
+include email, tokens, raw Paddle responses, or full subscription IDs.
 
 Paddle must also have a separate administrator email destination for
 `api_key.expiring`, `api_key.expired`, `api_key.revoked`, and

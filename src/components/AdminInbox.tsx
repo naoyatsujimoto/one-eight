@@ -10,6 +10,7 @@ import { resolveAdminMessageContent } from '../lib/adminMessageI18n';
 type AdminMessage = AdminMessageRow & {
   id: string;
   target: string;
+  source_id: string | null;
   read_by: string[];
   created_at: string;
 };
@@ -31,7 +32,7 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
   async function load() {
     let query = supabase
       .from('admin_messages')
-      .select('id, title, body, target, read_by, created_at, translations, message_key, message_params')
+      .select('id, title, body, target, source_id, read_by, created_at, translations, message_key, message_params')
       .order('created_at', { ascending: false });
 
     // Only show messages created after the user confirmed their email
@@ -41,7 +42,8 @@ export function AdminInbox({ userId, userConfirmedAt, onClose, onUnreadChange }:
 
     const { data, error } = await query;
     if (!error && data) {
-      setMessages(data as AdminMessage[]);
+      // Legacy operational alerts must never appear in the player inbox.
+      setMessages((data as AdminMessage[]).filter((msg) => !msg.source_id?.startsWith('paddle-')));
       onUnreadChange?.();
     } else if (error) {
       setLoadError(true);
