@@ -80,6 +80,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-congo-concrete-sape-urban-display_when-a-skyline-is-a-costume_thumb.jpg',
     alt: 'Line drawing of a high-rise with a polished dark red glass front and an unfinished open-floored side, standing above a cracked, flooded road',
   },
+  'the-road-was-not-the-point': {
+    hero: '/journal/oej-2026-street-paving-capitalization-mexico_the-road-was-not-the-point_hero.jpg',
+    thumbnail: '/journal/oej-2026-street-paving-capitalization-mexico_the-road-was-not-the-point_thumb.jpg',
+    alt: 'Line drawing of a grey paved street running straight to the horizon between rows of flat-roofed white and dark red houses',
+  },
 };
 
 /**
