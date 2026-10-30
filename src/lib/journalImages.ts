@@ -85,6 +85,11 @@ const JOURNAL_IMAGE_MAP: Record<string, JournalArticleImages> = {
     thumbnail: '/journal/oej-2026-street-paving-capitalization-mexico_the-road-was-not-the-point_thumb.jpg',
     alt: 'Line drawing of a grey paved street running straight to the horizon between rows of flat-roofed white and dark red houses',
   },
+  'what-makes-many-cells-one-body': {
+    hero: '/journal/oej-2026-multicellular-bacteria-heterogeneity_what-makes-many-cells-one-body_hero.jpg',
+    thumbnail: '/journal/oej-2026-multicellular-bacteria-heterogeneity_what-makes-many-cells-one-body_thumb.jpg',
+    alt: 'Multicellular magnetotactic bacteria key visual',
+  },
 };
 
 /**
